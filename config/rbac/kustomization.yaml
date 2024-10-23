@@ -18,3 +18,18 @@ resources:
 - metrics_auth_role.yaml
 - metrics_auth_role_binding.yaml
 - metrics_reader_role.yaml
+# For each CRD, "Editor" and "Viewer" roles are scaffolded by
+# default, aiding admins in cluster management. Those roles are
+# not used by the Project itself. You can comment the following lines
+# if you do not want those helpers be installed with your Project.
+- kubeconfig_editor_role.yaml
+- kubeconfig_viewer_role.yaml
+- cacheserver_editor_role.yaml
+- cacheserver_viewer_role.yaml
+- shard_editor_role.yaml
+- shard_viewer_role.yaml
+- frontproxy_editor_role.yaml
+- frontproxy_viewer_role.yaml
+- kcpinstance_editor_role.yaml
+- kcpinstance_viewer_role.yaml
+

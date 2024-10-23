@@ -1,0 +1,122 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.16.1
+  name: cacheservers.operator.kcp.io
+spec:
+  group: operator.kcp.io
+  names:
+    kind: CacheServer
+    listKind: CacheServerList
+    plural: cacheservers
+    singular: cacheserver
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: CacheServer is the Schema for the cacheservers API
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: CacheServerSpec defines the desired state of CacheServer.
+            properties:
+              etcd:
+                description: Etcd configures the etcd cluster that this cache server
+                  should be using.
+                properties:
+                  clientCert:
+                    description: ClientCert configures the client certificate used
+                      to access etcd.
+                    properties:
+                      secretRef:
+                        description: SecretRef is the reference to a v1.Secret object
+                          that contains the TLS certificate.
+                        properties:
+                          name:
+                            default: ""
+                            description: |-
+                              Name of the referent.
+                              This field is effectively required, but due to backwards compatibility is
+                              allowed to be empty. Instances of this type with an empty value here are
+                              almost certainly wrong.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                            type: string
+                        type: object
+                        x-kubernetes-map-type: atomic
+                    required:
+                    - secretRef
+                    type: object
+                  endpoints:
+                    description: Endpoints is a list of http urls at which etcd nodes
+                      are available. The expected format is "https://etcd-hostname:2379".
+                    items:
+                      type: string
+                    type: array
+                required:
+                - clientCert
+                - endpoints
+                type: object
+              image:
+                description: 'Optional: Image overwrites the container image used
+                  to deploy the cache server.'
+                properties:
+                  imagePullSecrets:
+                    description: 'Optional: ImagePullSecrets is a list of secret references
+                      that should be used as image pull secrets (e.g. when a private
+                      registry is used).'
+                    items:
+                      description: |-
+                        LocalObjectReference contains enough information to let you locate the
+                        referenced object inside the same namespace.
+                      properties:
+                        name:
+                          default: ""
+                          description: |-
+                            Name of the referent.
+                            This field is effectively required, but due to backwards compatibility is
+                            allowed to be empty. Instances of this type with an empty value here are
+                            almost certainly wrong.
+                            More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                          type: string
+                      type: object
+                      x-kubernetes-map-type: atomic
+                    type: array
+                  repository:
+                    description: Repository is the container image repository to use
+                      for KCP containers. Defaults to `ghcr.io/kcp-dev/kcp`.
+                    type: string
+                  tag:
+                    description: Tag is the container image tag to use for KCP containers.
+                      Defaults to the latest kcp release that the operator supports.
+                    type: string
+                type: object
+            required:
+            - etcd
+            type: object
+          status:
+            description: CacheServerStatus defines the observed state of CacheServer
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
