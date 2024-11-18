@@ -26,3 +26,4 @@ go.work.sum
 
 # Downloaded and built binaries
 bin/
+tools
