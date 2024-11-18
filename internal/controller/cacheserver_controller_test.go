@@ -38,7 +38,7 @@ var _ = Describe("CacheServer Controller", func() {
 
 		typeNamespacedName := types.NamespacedName{
 			Name:      resourceName,
-			Namespace: "default", // TODO(user):Modify as needed
+			Namespace: "default",
 		}
 		cacheserver := &operatorkcpiov1alpha1.CacheServer{}
 
@@ -50,6 +50,11 @@ var _ = Describe("CacheServer Controller", func() {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      resourceName,
 						Namespace: "default",
+					},
+					Spec: operatorkcpiov1alpha1.CacheServerSpec{
+						Etcd: operatorkcpiov1alpha1.EtcdConfig{
+							Endpoints: []string{"https://localhost:2379"},
+						},
 					},
 					// TODO(user): Specify other spec details if needed.
 				}

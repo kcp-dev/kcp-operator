@@ -32,7 +32,7 @@ type KubeconfigSpec struct {
 	Groups []string `json:"groups,omitempty"`
 
 	// Validity configures the lifetime of the embedded TLS certificate. The kubeconfig secret will be automatically regenerated when the certificate expires.
-	Validity metav1.Time `json:"validity"`
+	Validity metav1.Duration `json:"validity"`
 
 	// SecretRef defines the v1.Secret object that the resulting kubeconfig should be written to.
 	SecretRef corev1.LocalObjectReference `json:"secretRef"`

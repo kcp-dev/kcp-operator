@@ -38,7 +38,7 @@ var _ = Describe("Shard Controller", func() {
 
 		typeNamespacedName := types.NamespacedName{
 			Name:      resourceName,
-			Namespace: "default", // TODO(user):Modify as needed
+			Namespace: "default",
 		}
 		shard := &operatorkcpiov1alpha1.Shard{}
 
@@ -51,7 +51,13 @@ var _ = Describe("Shard Controller", func() {
 						Name:      resourceName,
 						Namespace: "default",
 					},
-					// TODO(user): Specify other spec details if needed.
+					Spec: operatorkcpiov1alpha1.ShardSpec{
+						CommonShardSpec: operatorkcpiov1alpha1.CommonShardSpec{
+							Etcd: operatorkcpiov1alpha1.EtcdConfig{
+								Endpoints: []string{"https://localhost:2379"},
+							},
+						},
+					},
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 			}

@@ -421,7 +421,7 @@ func (in *KubeconfigSpec) DeepCopyInto(out *KubeconfigSpec) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
-	in.Validity.DeepCopyInto(&out.Validity)
+	out.Validity = in.Validity
 	out.SecretRef = in.SecretRef
 }
 
