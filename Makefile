@@ -1,7 +1,16 @@
-# Image URL to use all building/pushing image targets
-IMG ?= controller:latest
+# OPENSHIFT_GIMPORTS_VER defines which version of openshift-goimports to use
+# for checking import statements.
+OPENSHIFT_GOIMPORTS_VER := c72f1dc2e3aacfa00aece3391d938c9bc734e791
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.31.0
+## Tool Versions
+KUSTOMIZE_VERSION ?= v5.4.3
+CONTROLLER_TOOLS_VERSION ?= v0.16.1
+ENVTEST_VERSION ?= release-0.19
+GOLANGCI_LINT_VERSION ?= v1.59.1
+
+# Image URL to use all building/pushing image targets
+IMG ?= ghcr.io/kcp-dev/kcp-operator
 
 GO_INSTALL = ./hack/go-install.sh
 TOOLS_DIR=hack/tools
@@ -21,9 +30,6 @@ endif
 # tools. (i.e. podman)
 CONTAINER_TOOL ?= docker
 
-# OPENSHIFT_GIMPORTS_VER defines which version of openshift-goimports to use
-# for checking import statements.
-OPENSHIFT_GOIMPORTS_VER := c72f1dc2e3aacfa00aece3391d938c9bc734e791
 OPENSHIFT_GOIMPORTS_BIN := openshift-goimports
 OPENSHIFT_GOIMPORTS := $(TOOLS_DIR)/$(OPENSHIFT_GOIMPORTS_BIN)-$(OPENSHIFT_GOIMPORTS_VER)
 export OPENSHIFT_GOIMPORTS # so hack scripts can use it
@@ -97,7 +103,7 @@ $(OPENSHIFT_GOIMPORTS):
 
 .PHONY: imports
 imports: $(OPENSHIFT_GOIMPORTS)
-	$(OPENSHIFT_GOIMPORTS) -m github.com/kcp-dev/kcp
+	$(OPENSHIFT_GOIMPORTS) -m github.com/kcp-dev/kcp-operator
 
 .PHONY: verify
 verify: manifests generate fmt vet modules imports ## Run all codegen and formatting targets and check if files have changed
@@ -167,11 +173,6 @@ CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
 ENVTEST ?= $(LOCALBIN)/setup-envtest
 GOLANGCI_LINT = $(LOCALBIN)/golangci-lint
 
-## Tool Versions
-KUSTOMIZE_VERSION ?= v5.4.3
-CONTROLLER_TOOLS_VERSION ?= v0.16.1
-ENVTEST_VERSION ?= release-0.19
-GOLANGCI_LINT_VERSION ?= v1.59.1
 
 .PHONY: kustomize
 kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary.
