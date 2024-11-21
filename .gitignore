@@ -23,3 +23,7 @@ go.work.sum
 
 # env file
 .env
+
+# Downloaded and built binaries
+bin/
+tools

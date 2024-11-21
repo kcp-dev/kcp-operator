@@ -1,0 +1,152 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.16.1
+  name: frontproxies.operator.kcp.io
+spec:
+  group: operator.kcp.io
+  names:
+    kind: FrontProxy
+    listKind: FrontProxyList
+    plural: frontproxies
+    singular: frontproxy
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: FrontProxy is the Schema for the frontproxies API
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: FrontProxySpec defines the desired state of FrontProxy.
+            properties:
+              auth:
+                description: 'Optional: Auth configures various aspects of Authentication
+                  and Authorization for this front-proxy instance.'
+                properties:
+                  oidc:
+                    description: 'Optional: OIDC configures OpenID Connect Authentication'
+                    properties:
+                      clientID:
+                        description: ClientID is the OIDC client ID configured on
+                          the issuer side for this KCP instance.
+                        type: string
+                      clientSecret:
+                        description: |-
+                          Optionally provide the client secret for the OIDC client. This is not used by KCP itself, but is used to generate
+                          a OIDC kubeconfig that can be shared with users to log in via the OIDC provider.
+                        type: string
+                      enabled:
+                        type: boolean
+                      groupsClaim:
+                        description: 'Experimental: Optionally provides a custom claim
+                          for fetching groups. The claim must be a string or an array
+                          of strings.'
+                        type: string
+                      groupsPrefix:
+                        description: |-
+                          Optionally sets a custom groups prefix. This defaults to "oidc:" if unset, which means a group called "group1"
+                          on the OIDC side will be recognised as "oidc:group1" in KCP.
+                        type: string
+                      issuerURL:
+                        description: IssuerURL is used for the OIDC issuer URL. Only
+                          https URLs will be accepted.
+                        type: string
+                      usernameClaim:
+                        description: Optionally uses a custom claim for fetching the
+                          username. This defaults to "sub" if unset.
+                        type: string
+                      usernamePrefix:
+                        description: |-
+                          Optionally sets a custom username prefix. This defaults to "oidc:" if unset, which means a user called "user@example.com"
+                          on the OIDC side will be recognised as "oidc:user@example.com" in KCP.
+                        type: string
+                    required:
+                    - clientID
+                    - enabled
+                    - issuerURL
+                    type: object
+                type: object
+              replicas:
+                description: 'Optional: Replicas configures the replica count for
+                  the front-proxy Deployment.'
+                format: int32
+                type: integer
+              rootShard:
+                description: RootShard configures the kcp root shard that this front-proxy
+                  instance should connect to.
+                properties:
+                  ref:
+                    description: Reference references a local RootShard object.
+                    properties:
+                      apiVersion:
+                        description: API version of the referent.
+                        type: string
+                      fieldPath:
+                        description: |-
+                          If referring to a piece of an object instead of an entire object, this string
+                          should contain a valid JSON/Go field access statement, such as desiredState.manifest.containers[2].
+                          For example, if the object reference is to a container within a pod, this would take on a value like:
+                          "spec.containers{name}" (where "name" refers to the name of the container that triggered
+                          the event) or if no container name is specified "spec.containers[2]" (container with
+                          index 2 in this pod). This syntax is chosen only to have some well-defined way of
+                          referencing a part of an object.
+                        type: string
+                      kind:
+                        description: |-
+                          Kind of the referent.
+                          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+                        type: string
+                      name:
+                        description: |-
+                          Name of the referent.
+                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                        type: string
+                      namespace:
+                        description: |-
+                          Namespace of the referent.
+                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
+                        type: string
+                      resourceVersion:
+                        description: |-
+                          Specific resourceVersion to which this reference is made, if any.
+                          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency
+                        type: string
+                      uid:
+                        description: |-
+                          UID of the referent.
+                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids
+                        type: string
+                    type: object
+                    x-kubernetes-map-type: atomic
+                type: object
+            required:
+            - rootShard
+            type: object
+          status:
+            description: FrontProxyStatus defines the observed state of FrontProxy
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

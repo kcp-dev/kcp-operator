@@ -1,0 +1,44 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: manager-role
+rules:
+- apiGroups:
+  - operator.kcp.io
+  resources:
+  - cacheservers
+  - frontproxies
+  - kcpinstances
+  - kubeconfigs
+  - shards
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - operator.kcp.io
+  resources:
+  - cacheservers/finalizers
+  - frontproxies/finalizers
+  - kcpinstances/finalizers
+  - kubeconfigs/finalizers
+  - shards/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - operator.kcp.io
+  resources:
+  - cacheservers/status
+  - frontproxies/status
+  - kcpinstances/status
+  - kubeconfigs/status
+  - shards/status
+  verbs:
+  - get
+  - patch
+  - update

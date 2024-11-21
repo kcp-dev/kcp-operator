@@ -1,0 +1,96 @@
+presubmits:
+  - name: pull-kcp-operator-verify
+    always_run: true
+    decorate: true
+    clone_uri: "https://github.com/kcp-dev/kcp-operator"
+    labels:
+      preset-goproxy: "true"
+    spec:
+      containers:
+        - image: ghcr.io/kcp-dev/infra/build:1.22.7-1
+          command:
+            - make
+            - verify
+          resources:
+            requests:
+              memory: 1Gi
+              cpu: 1
+
+  - name: pull-kcp-operator-lint
+    always_run: true
+    decorate: true
+    clone_uri: "https://github.com/kcp-dev/kcp-operator"
+    labels:
+      preset-goproxy: "true"
+    spec:
+      containers:
+        - image: ghcr.io/kcp-dev/infra/build:1.22.7-1
+          command:
+            - make
+            - lint
+          resources:
+            requests:
+              memory: 4Gi
+              cpu: 2
+
+  - name: pull-kcp-operator-build-image
+    always_run: true
+    decorate: true
+    clone_uri: "https://github.com/kcp-dev/kcp-operator"
+    labels:
+      preset-goproxy: "true"
+    spec:
+      containers:
+        - image: quay.io/containers/buildah:v1.30.0
+          command:
+            - hack/ci/build-image.sh
+          env:
+            - name: DRY_RUN
+              value: '1'
+          # docker-in-docker needs privileged mode
+          securityContext:
+            privileged: true
+          resources:
+            requests:
+              memory: 1Gi
+              cpu: 1
+
+  - name: pull-kcp-operator-test
+    always_run: true
+    decorate: true
+    clone_uri: "https://github.com/kcp-dev/kcp-operator"
+    labels:
+      preset-goproxy: "true"
+    spec:
+      containers:
+        - image: ghcr.io/kcp-dev/infra/build:1.22.7-1
+          command:
+            - make
+            - test
+          env:
+            - name: USE_GOTESTSUM
+              value: '1'
+          resources:
+            requests:
+              memory: 4Gi
+              cpu: 2
+
+  - name: pull-kcp-operator-test-e2e
+    always_run: false
+    decorate: true
+    clone_uri: "https://github.com/kcp-dev/kcp-operator"
+    labels:
+      preset-goproxy: "true"
+    spec:
+      containers:
+        - image: ghcr.io/kcp-dev/infra/build:1.22.7-1
+          command:
+            - make
+            - test-e2e
+          env:
+            - name: USE_GOTESTSUM
+              value: '1'
+          resources:
+            requests:
+              memory: 4Gi
+              cpu: 2

@@ -1,0 +1,9 @@
+apiVersion: operator.kcp.io/v1alpha1
+kind: Shard
+metadata:
+  labels:
+    app.kubernetes.io/name: kcp-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: shard-sample
+spec:
+  # TODO(user): Add fields here
