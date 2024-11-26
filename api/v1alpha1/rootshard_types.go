@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"fmt"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -100,6 +102,33 @@ func (r *RootShard) GetResourceLabels() map[string]string {
 		appManagedByLabel: "kcp-operator",
 		appComponentLabel: "rootshard",
 	}
+}
+
+type Certificate string
+
+const (
+	ServerCertificate         Certificate = "server"
+	ServiceAccountCertificate             = "service-account"
+)
+
+func (r *RootShard) GetCertificateName(certName Certificate) string {
+	return fmt.Sprintf("%s-%s", r.Name, certName)
+}
+
+type CA string
+
+const (
+	RootCA                CA = "root"
+	ServiceAccountCA         = "service-account"
+	ClientCA                 = "client"
+	RequestHeaderClientCA    = "requestheader-client"
+)
+
+func (r *RootShard) GetCAName(caName CA) string {
+	if caName == RootCA {
+		return fmt.Sprintf("%s-ca", r.Name)
+	}
+	return fmt.Sprintf("%s-%s-ca", r.Name, caName)
 }
 
 // +kubebuilder:object:root=true

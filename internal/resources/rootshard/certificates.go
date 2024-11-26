@@ -17,7 +17,6 @@ limitations under the License.
 package rootshard
 
 import (
-	"fmt"
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -29,35 +28,34 @@ import (
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 )
 
-// RootCaCertificateReconciler creates the central CA used for the kcp setup around a specific RootShard. This shouldn't be called if the RootShard is configured to use a BYO CA certificate.
-func RootCaCertificateReconciler(rootShard *v1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
-	name := fmt.Sprintf("%s-ca", rootShard.Name)
+func ServerCertificateReconciler(rootShard *v1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
+	name := rootShard.GetCertificateName(v1alpha1.ServerCertificate)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
 			cert.SetLabels(rootShard.GetResourceLabels())
-
-			if rootShard.Spec.Certificates.IssuerRef == nil {
-				return nil, fmt.Errorf("no issuer ref configured in RootShard '%s/%s'", rootShard.Namespace, rootShard.Name)
-			}
-
 			cert.Spec = certmanagerv1.CertificateSpec{
-				IsCA:       true,
-				CommonName: name,
-				SecretName: name,
-				// Create CA certificate for ten years.
-				Duration:    &metav1.Duration{Duration: time.Hour * 24 * 365 * 10},
-				RenewBefore: &metav1.Duration{Duration: time.Hour * 24 * 30},
+				SecretName:  name,
+				Duration:    &metav1.Duration{Duration: time.Hour * 24 * 365},
+				RenewBefore: &metav1.Duration{Duration: time.Hour * 24 * 7},
 
 				PrivateKey: &certmanagerv1.CertificatePrivateKey{
 					Algorithm: certmanagerv1.RSAKeyAlgorithm,
 					Size:      4096,
 				},
 
+				Usages: []certmanagerv1.KeyUsage{
+					certmanagerv1.UsageServerAuth,
+				},
+
+				DNSNames: []string{
+					rootShard.Spec.Hostname,
+				},
+
 				IssuerRef: certmanagermetav1.ObjectReference{
-					Name:  rootShard.Spec.Certificates.IssuerRef.Name,
-					Kind:  rootShard.Spec.Certificates.IssuerRef.Kind,
-					Group: rootShard.Spec.Certificates.IssuerRef.Group,
+					Name:  rootShard.GetCAName(v1alpha1.RootCA),
+					Kind:  "Issuer",
+					Group: "cert-manager.io",
 				},
 			}
 
@@ -66,19 +64,17 @@ func RootCaCertificateReconciler(rootShard *v1alpha1.RootShard) reconciling.Name
 	}
 }
 
-func CaCertificateReconciler(rootShard *v1alpha1.RootShard, ca v1alpha1.CA, issuerName string) reconciling.NamedCertificateReconcilerFactory {
-	name := rootShard.GetCAName(ca)
+func ServiceAccountCertificateReconciler(rootShard *v1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
+	name := rootShard.GetCertificateName(v1alpha1.ServiceAccountCertificate)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
 			cert.SetLabels(rootShard.GetResourceLabels())
 			cert.Spec = certmanagerv1.CertificateSpec{
-				IsCA:       true,
-				CommonName: name,
-				SecretName: name,
-				// Create CA certificate for ten years.
-				Duration:    &metav1.Duration{Duration: time.Hour * 24 * 365 * 10},
-				RenewBefore: &metav1.Duration{Duration: time.Hour * 24 * 30},
+				CommonName:  name,
+				SecretName:  name,
+				Duration:    &metav1.Duration{Duration: time.Hour * 24 * 365},
+				RenewBefore: &metav1.Duration{Duration: time.Hour * 24 * 7},
 
 				PrivateKey: &certmanagerv1.CertificatePrivateKey{
 					Algorithm: certmanagerv1.RSAKeyAlgorithm,
@@ -86,7 +82,7 @@ func CaCertificateReconciler(rootShard *v1alpha1.RootShard, ca v1alpha1.CA, issu
 				},
 
 				IssuerRef: certmanagermetav1.ObjectReference{
-					Name:  issuerName,
+					Name:  rootShard.GetCAName(v1alpha1.ServiceAccountCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},

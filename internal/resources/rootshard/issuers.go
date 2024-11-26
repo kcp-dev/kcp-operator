@@ -17,8 +17,6 @@ limitations under the License.
 package rootshard
 
 import (
-	"fmt"
-
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 
 	"github.com/kcp-dev/kcp-operator/api/v1alpha1"
@@ -26,7 +24,7 @@ import (
 )
 
 func RootCAIssuerReconciler(rootShard *v1alpha1.RootShard) (reconciling.NamedIssuerReconcilerFactory, string) {
-	name := fmt.Sprintf("%s-ca", rootShard.Name)
+	name := rootShard.GetCAName(v1alpha1.RootCA)
 
 	secretName := name
 	if rootShard.Spec.Certificates.CASecretRef != nil {
@@ -49,8 +47,8 @@ func RootCAIssuerReconciler(rootShard *v1alpha1.RootShard) (reconciling.NamedIss
 	}, name
 }
 
-func CAIssuerReconciler(rootShard *v1alpha1.RootShard, caName string) reconciling.NamedIssuerReconcilerFactory {
-	name := fmt.Sprintf("%s-%s-ca", rootShard.Name, caName)
+func CAIssuerReconciler(rootShard *v1alpha1.RootShard, ca v1alpha1.CA) reconciling.NamedIssuerReconcilerFactory {
+	name := rootShard.GetCAName(ca)
 
 	return func() (string, reconciling.IssuerReconciler) {
 		return name, func(issuer *certmanagerv1.Issuer) (*certmanagerv1.Issuer, error) {

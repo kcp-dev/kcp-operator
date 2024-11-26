@@ -62,10 +62,10 @@ func (r *RootShardReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	// Intermediate CAs that we need to generate a certificate and an issuer for.
-	subordinateCAs := []string{
-		"requestheader-client",
-		"client",
-		"service-account",
+	subordinateCAs := []v1alpha1.CA{
+		v1alpha1.RequestHeaderClientCA,
+		v1alpha1.ClientCA,
+		v1alpha1.ServiceAccountCA,
 	}
 
 	caIssuerReconciler, caIssuerName := rootshard.RootCAIssuerReconciler(&rootShard)
@@ -73,7 +73,11 @@ func (r *RootShardReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	issuerReconcilers := []reconciling.NamedIssuerReconcilerFactory{
 		caIssuerReconciler,
 	}
-	certReconcilers := []reconciling.NamedCertificateReconcilerFactory{}
+
+	certReconcilers := []reconciling.NamedCertificateReconcilerFactory{
+		rootshard.ServerCertificateReconciler(&rootShard),
+		rootshard.ServiceAccountCertificateReconciler(&rootShard),
+	}
 
 	for _, ca := range subordinateCAs {
 		certReconcilers = append(certReconcilers, rootshard.CaCertificateReconciler(&rootShard, ca, caIssuerName))
