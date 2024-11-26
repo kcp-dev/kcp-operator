@@ -21,7 +21,6 @@ import (
 
 	"github.com/go-test/deep"
 	"go.uber.org/zap"
-
 	reconcilercompare "k8c.io/reconciler/pkg/compare"
 	reconcilerlog "k8c.io/reconciler/pkg/log"
 

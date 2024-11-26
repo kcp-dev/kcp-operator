@@ -35,6 +35,9 @@ type CommonShardSpec struct {
 	Etcd EtcdConfig `json:"etcd"`
 
 	Image *ImageSpec `json:"image,omitempty"`
+
+	// Replicas configures how many instances of this shard run in parallel. Defaults to 2 if not set.
+	Replicas *int32 `json:"replicas,omitempty"`
 }
 
 // ShardStatus defines the observed state of Shard

@@ -39,22 +39,6 @@ spec:
           spec:
             description: RootShardSpec defines the desired state of RootShard.
             properties:
-              caRef:
-                description: |-
-                  CARef is an optional reference to a cert-manager Certificate resources
-                  which can be used as CA for the kcp instance.
-                properties:
-                  name:
-                    default: ""
-                    description: |-
-                      Name of the referent.
-                      This field is effectively required, but due to backwards compatibility is
-                      allowed to be empty. Instances of this type with an empty value here are
-                      almost certainly wrong.
-                      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                    type: string
-                type: object
-                x-kubernetes-map-type: atomic
               cache:
                 description: Cache configures the cache server (with a Kubernetes-like
                   API) used by a sharded kcp instance.
@@ -69,6 +53,41 @@ spec:
                         type: boolean
                     required:
                     - enabled
+                    type: object
+                type: object
+              certificates:
+                properties:
+                  caSecretRef:
+                    description: |-
+                      LocalObjectReference contains enough information to let you locate the
+                      referenced object inside the same namespace.
+                    properties:
+                      name:
+                        default: ""
+                        description: |-
+                          Name of the referent.
+                          This field is effectively required, but due to backwards compatibility is
+                          allowed to be empty. Instances of this type with an empty value here are
+                          almost certainly wrong.
+                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                        type: string
+                    type: object
+                    x-kubernetes-map-type: atomic
+                  issuerRef:
+                    description: ObjectReference is a reference to an object with
+                      a given name, kind and group.
+                    properties:
+                      group:
+                        description: Group of the resource being referred to.
+                        type: string
+                      kind:
+                        description: Kind of the resource being referred to.
+                        type: string
+                      name:
+                        description: Name of the resource being referred to.
+                        type: string
+                    required:
+                    - name
                     type: object
                 type: object
               etcd:
@@ -146,8 +165,14 @@ spec:
                       Defaults to the latest kcp release that the operator supports.
                     type: string
                 type: object
+              replicas:
+                description: Replicas configures how many instances of this shard
+                  run in parallel. Defaults to 2 if not set.
+                format: int32
+                type: integer
             required:
             - cache
+            - certificates
             - etcd
             - hostname
             type: object

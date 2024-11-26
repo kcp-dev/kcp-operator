@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,6 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	apiv1alpha1 "github.com/kcp-dev/kcp-operator/api/v1alpha1"
 )
 
@@ -205,6 +206,80 @@ func ReconcileKubeconfigs(ctx context.Context, namedFactories []NamedKubeconfigR
 
 		if err := reconciling.EnsureNamedObject(ctx, types.NamespacedName{Namespace: namespace, Name: name}, reconcileObject, client, &apiv1alpha1.Kubeconfig{}, false); err != nil {
 			return fmt.Errorf("failed to ensure Kubeconfig %s/%s: %w", namespace, name, err)
+		}
+	}
+
+	return nil
+}
+
+// CertificateReconciler defines an interface to create/update Certificates.
+type CertificateReconciler = func(existing *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error)
+
+// NamedCertificateReconcilerFactory returns the name of the resource and the corresponding Reconciler function.
+type NamedCertificateReconcilerFactory = func() (name string, reconciler CertificateReconciler)
+
+// CertificateObjectWrapper adds a wrapper so the CertificateReconciler matches ObjectReconciler.
+// This is needed as Go does not support function interface matching.
+func CertificateObjectWrapper(reconciler CertificateReconciler) reconciling.ObjectReconciler {
+	return func(existing ctrlruntimeclient.Object) (ctrlruntimeclient.Object, error) {
+		if existing != nil {
+			return reconciler(existing.(*certmanagerv1.Certificate))
+		}
+		return reconciler(&certmanagerv1.Certificate{})
+	}
+}
+
+// ReconcileCertificates will create and update the Certificates coming from the passed CertificateReconciler slice.
+func ReconcileCertificates(ctx context.Context, namedFactories []NamedCertificateReconcilerFactory, namespace string, client ctrlruntimeclient.Client, objectModifiers ...reconciling.ObjectModifier) error {
+	for _, factory := range namedFactories {
+		name, reconciler := factory()
+		reconcileObject := CertificateObjectWrapper(reconciler)
+		reconcileObject = reconciling.CreateWithNamespace(reconcileObject, namespace)
+		reconcileObject = reconciling.CreateWithName(reconcileObject, name)
+
+		for _, objectModifier := range objectModifiers {
+			reconcileObject = objectModifier(reconcileObject)
+		}
+
+		if err := reconciling.EnsureNamedObject(ctx, types.NamespacedName{Namespace: namespace, Name: name}, reconcileObject, client, &certmanagerv1.Certificate{}, false); err != nil {
+			return fmt.Errorf("failed to ensure Certificate %s/%s: %w", namespace, name, err)
+		}
+	}
+
+	return nil
+}
+
+// IssuerReconciler defines an interface to create/update Issuers.
+type IssuerReconciler = func(existing *certmanagerv1.Issuer) (*certmanagerv1.Issuer, error)
+
+// NamedIssuerReconcilerFactory returns the name of the resource and the corresponding Reconciler function.
+type NamedIssuerReconcilerFactory = func() (name string, reconciler IssuerReconciler)
+
+// IssuerObjectWrapper adds a wrapper so the IssuerReconciler matches ObjectReconciler.
+// This is needed as Go does not support function interface matching.
+func IssuerObjectWrapper(reconciler IssuerReconciler) reconciling.ObjectReconciler {
+	return func(existing ctrlruntimeclient.Object) (ctrlruntimeclient.Object, error) {
+		if existing != nil {
+			return reconciler(existing.(*certmanagerv1.Issuer))
+		}
+		return reconciler(&certmanagerv1.Issuer{})
+	}
+}
+
+// ReconcileIssuers will create and update the Issuers coming from the passed IssuerReconciler slice.
+func ReconcileIssuers(ctx context.Context, namedFactories []NamedIssuerReconcilerFactory, namespace string, client ctrlruntimeclient.Client, objectModifiers ...reconciling.ObjectModifier) error {
+	for _, factory := range namedFactories {
+		name, reconciler := factory()
+		reconcileObject := IssuerObjectWrapper(reconciler)
+		reconcileObject = reconciling.CreateWithNamespace(reconcileObject, namespace)
+		reconcileObject = reconciling.CreateWithName(reconcileObject, name)
+
+		for _, objectModifier := range objectModifiers {
+			reconcileObject = objectModifier(reconcileObject)
+		}
+
+		if err := reconciling.EnsureNamedObject(ctx, types.NamespacedName{Namespace: namespace, Name: name}, reconcileObject, client, &certmanagerv1.Issuer{}, false); err != nil {
+			return fmt.Errorf("failed to ensure Issuer %s/%s: %w", namespace, name, err)
 		}
 	}
 

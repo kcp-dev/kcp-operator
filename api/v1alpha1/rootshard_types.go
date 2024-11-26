@@ -32,9 +32,12 @@ type RootShardSpec struct {
 	// Cache configures the cache server (with a Kubernetes-like API) used by a sharded kcp instance.
 	Cache CacheConfig `json:"cache"`
 
-	// CARef is an optional reference to a cert-manager Certificate resources
-	// which can be used as CA for the kcp instance.
-	CARef *corev1.LocalObjectReference `json:"caRef,omitempty"`
+	Certificates Certificates `json:"certificates"`
+}
+
+type Certificates struct {
+	IssuerRef   *ObjectReference             `json:"issuerRef,omitempty"`
+	CASecretRef *corev1.LocalObjectReference `json:"caSecretRef,omitempty"`
 }
 
 type CacheConfig struct {
@@ -88,6 +91,15 @@ type RootShard struct {
 
 	Spec   RootShardSpec   `json:"spec,omitempty"`
 	Status RootShardStatus `json:"status,omitempty"`
+}
+
+func (r *RootShard) GetResourceLabels() map[string]string {
+	return map[string]string{
+		appNameLabel:      "kcp",
+		appInstanceLabel:  r.Name,
+		appManagedByLabel: "kcp-operator",
+		appComponentLabel: "rootshard",
+	}
 }
 
 // +kubebuilder:object:root=true

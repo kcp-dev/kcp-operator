@@ -20,6 +20,13 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+const (
+	appNameLabel      = "app.kubernetes.io/name"
+	appInstanceLabel  = "app.kubernetes.io/instance"
+	appManagedByLabel = "app.kubernetes.io/managed-by"
+	appComponentLabel = "app.kubernetes.io/component"
+)
+
 // ImageSpec defines settings for using a specific image and overwriting the default images used.
 type ImageSpec struct {
 	// Repository is the container image repository to use for KCP containers. Defaults to `ghcr.io/kcp-dev/kcp`.
@@ -45,4 +52,16 @@ type EtcdConfig struct {
 type EtcdCertificate struct {
 	// SecretRef is the reference to a v1.Secret object that contains the TLS certificate.
 	SecretRef corev1.LocalObjectReference `json:"secretRef"`
+}
+
+// ObjectReference is a reference to an object with a given name, kind and group.
+type ObjectReference struct {
+	// Name of the resource being referred to.
+	Name string `json:"name"`
+	// Kind of the resource being referred to.
+	// +optional
+	Kind string `json:"kind,omitempty"`
+	// Group of the resource being referred to.
+	// +optional
+	Group string `json:"group,omitempty"`
 }
