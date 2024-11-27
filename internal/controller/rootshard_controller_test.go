@@ -52,7 +52,10 @@ var _ = Describe("RootShard Controller", func() {
 						Namespace: "default",
 					},
 					Spec: operatorkcpiov1alpha1.RootShardSpec{
-						Hostname: "example.kcp.io",
+						External: operatorkcpiov1alpha1.ExternalConfig{
+							Hostname: "example.kcp.io",
+							Port:     6443,
+						},
 						CommonShardSpec: operatorkcpiov1alpha1.CommonShardSpec{
 							Etcd: operatorkcpiov1alpha1.EtcdConfig{
 								Endpoints: []string{"https://localhost:2379"},

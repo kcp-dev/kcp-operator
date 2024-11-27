@@ -31,6 +31,8 @@ type ShardSpec struct {
 }
 
 type CommonShardSpec struct {
+	ClusterDomain string `json:"clusterDomain,omitempty"`
+
 	// Etcd configures the etcd cluster that this shard should be using.
 	Etcd EtcdConfig `json:"etcd"`
 

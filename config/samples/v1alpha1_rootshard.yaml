@@ -16,8 +16,5 @@ spec:
     embedded:
       enabled: true
   etcd:
-    clientCert:
-      secretRef:
-        name: etcd-client-cert
     endpoints:
-      - https://etcd-01:2379
+      - http://etcd.default.svc.cluster.local:2379

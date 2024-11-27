@@ -49,11 +49,47 @@ func ServerCertificateReconciler(rootShard *v1alpha1.RootShard) reconciling.Name
 				},
 
 				DNSNames: []string{
-					rootShard.Spec.Hostname,
+					rootShard.Spec.External.Hostname,
 				},
 
 				IssuerRef: certmanagermetav1.ObjectReference{
-					Name:  rootShard.GetCAName(v1alpha1.RootCA),
+					Name:  rootShard.GetCAName(v1alpha1.ServerCA),
+					Kind:  "Issuer",
+					Group: "cert-manager.io",
+				},
+			}
+
+			return cert, nil
+		}
+	}
+}
+
+func VirtualWorkspacesCertificateReconciler(rootShard *v1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
+	name := rootShard.GetCertificateName(v1alpha1.VirtualWorkspacesCertificate)
+
+	return func() (string, reconciling.CertificateReconciler) {
+		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
+			cert.SetLabels(rootShard.GetResourceLabels())
+			cert.Spec = certmanagerv1.CertificateSpec{
+				SecretName:  name,
+				Duration:    &metav1.Duration{Duration: time.Hour * 24 * 365},
+				RenewBefore: &metav1.Duration{Duration: time.Hour * 24 * 7},
+
+				PrivateKey: &certmanagerv1.CertificatePrivateKey{
+					Algorithm: certmanagerv1.RSAKeyAlgorithm,
+					Size:      4096,
+				},
+
+				Usages: []certmanagerv1.KeyUsage{
+					certmanagerv1.UsageServerAuth,
+				},
+
+				DNSNames: []string{
+					rootShard.Spec.External.Hostname,
+				},
+
+				IssuerRef: certmanagermetav1.ObjectReference{
+					Name:  rootShard.GetCAName(v1alpha1.ServerCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},

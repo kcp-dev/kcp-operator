@@ -31,7 +31,7 @@ import (
 
 // RootCaCertificateReconciler creates the central CA used for the kcp setup around a specific RootShard. This shouldn't be called if the RootShard is configured to use a BYO CA certificate.
 func RootCaCertificateReconciler(rootShard *v1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
-	name := fmt.Sprintf("%s-ca", rootShard.Name)
+	name := rootShard.GetCAName(v1alpha1.RootCA)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
@@ -66,7 +66,7 @@ func RootCaCertificateReconciler(rootShard *v1alpha1.RootShard) reconciling.Name
 	}
 }
 
-func CaCertificateReconciler(rootShard *v1alpha1.RootShard, ca v1alpha1.CA, issuerName string) reconciling.NamedCertificateReconcilerFactory {
+func CaCertificateReconciler(rootShard *v1alpha1.RootShard, ca v1alpha1.CA) reconciling.NamedCertificateReconcilerFactory {
 	name := rootShard.GetCAName(ca)
 
 	return func() (string, reconciling.CertificateReconciler) {
@@ -86,7 +86,7 @@ func CaCertificateReconciler(rootShard *v1alpha1.RootShard, ca v1alpha1.CA, issu
 				},
 
 				IssuerRef: certmanagermetav1.ObjectReference{
-					Name:  issuerName,
+					Name:  rootShard.GetCAName(v1alpha1.RootCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},

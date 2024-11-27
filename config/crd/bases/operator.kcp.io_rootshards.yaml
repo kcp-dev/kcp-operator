@@ -90,11 +90,19 @@ spec:
                     - name
                     type: object
                 type: object
+              clusterDomain:
+                type: string
               etcd:
                 description: Etcd configures the etcd cluster that this shard should
                   be using.
                 properties:
-                  clientCert:
+                  endpoints:
+                    description: Endpoints is a list of http urls at which etcd nodes
+                      are available. The expected format is "https://etcd-hostname:2379".
+                    items:
+                      type: string
+                    type: array
+                  tlsConfig:
                     description: ClientCert configures the client certificate used
                       to access etcd.
                     properties:
@@ -116,21 +124,23 @@ spec:
                     required:
                     - secretRef
                     type: object
-                  endpoints:
-                    description: Endpoints is a list of http urls at which etcd nodes
-                      are available. The expected format is "https://etcd-hostname:2379".
-                    items:
-                      type: string
-                    type: array
                 required:
-                - clientCert
                 - endpoints
                 type: object
-              hostname:
-                description: |-
-                  Hostname is the external name of the KCP instance. This should be matched by a DNS
-                  record pointing to the kcp-front-proxy Service's external IP address.
-                type: string
+              external:
+                properties:
+                  hostname:
+                    description: |-
+                      Hostname is the external name of the KCP instance. This should be matched by a DNS
+                      record pointing to the kcp-front-proxy Service's external IP address.
+                    type: string
+                  port:
+                    format: int32
+                    type: integer
+                required:
+                - hostname
+                - port
+                type: object
               image:
                 description: ImageSpec defines settings for using a specific image
                   and overwriting the default images used.
@@ -174,7 +184,7 @@ spec:
             - cache
             - certificates
             - etcd
-            - hostname
+            - external
             type: object
           status:
             description: RootShardStatus defines the observed state of RootShard

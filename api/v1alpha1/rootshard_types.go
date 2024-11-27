@@ -27,14 +27,19 @@ import (
 type RootShardSpec struct {
 	CommonShardSpec `json:",inline"`
 
-	// Hostname is the external name of the KCP instance. This should be matched by a DNS
-	// record pointing to the kcp-front-proxy Service's external IP address.
-	Hostname string `json:"hostname"`
+	External ExternalConfig `json:"external"`
 
 	// Cache configures the cache server (with a Kubernetes-like API) used by a sharded kcp instance.
 	Cache CacheConfig `json:"cache"`
 
 	Certificates Certificates `json:"certificates"`
+}
+
+type ExternalConfig struct {
+	// Hostname is the external name of the KCP instance. This should be matched by a DNS
+	// record pointing to the kcp-front-proxy Service's external IP address.
+	Hostname string `json:"hostname"`
+	Port     uint32 `json:"port"`
 }
 
 type Certificates struct {
@@ -104,11 +109,21 @@ func (r *RootShard) GetResourceLabels() map[string]string {
 	}
 }
 
+func (r *RootShard) GetShardBaseURL() string {
+	clusterDomain := r.Spec.ClusterDomain
+	if clusterDomain == "" {
+		clusterDomain = "cluster.local"
+	}
+
+	return fmt.Sprintf("https://%s.%s.svc.%s:6443", r.Name, r.Namespace, clusterDomain)
+}
+
 type Certificate string
 
 const (
-	ServerCertificate         Certificate = "server"
-	ServiceAccountCertificate             = "service-account"
+	ServerCertificate            Certificate = "server"
+	ServiceAccountCertificate    Certificate = "service-account"
+	VirtualWorkspacesCertificate Certificate = "virtual-workspaces"
 )
 
 func (r *RootShard) GetCertificateName(certName Certificate) string {
@@ -119,9 +134,10 @@ type CA string
 
 const (
 	RootCA                CA = "root"
-	ServiceAccountCA         = "service-account"
-	ClientCA                 = "client"
-	RequestHeaderClientCA    = "requestheader-client"
+	ServerCA              CA = "server"
+	ServiceAccountCA      CA = "service-account"
+	ClientCA              CA = "client"
+	RequestHeaderClientCA CA = "requestheader-client"
 )
 
 func (r *RootShard) GetCAName(caName CA) string {

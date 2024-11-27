@@ -25,6 +25,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	k8creconciling "k8c.io/reconciler/pkg/reconciling"
+
 	"github.com/kcp-dev/kcp-operator/api/v1alpha1"
 	operatorkcpiov1alpha1 "github.com/kcp-dev/kcp-operator/api/v1alpha1"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
@@ -63,24 +65,24 @@ func (r *RootShardReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 	// Intermediate CAs that we need to generate a certificate and an issuer for.
 	subordinateCAs := []v1alpha1.CA{
+		v1alpha1.ServerCA,
 		v1alpha1.RequestHeaderClientCA,
 		v1alpha1.ClientCA,
 		v1alpha1.ServiceAccountCA,
 	}
 
-	caIssuerReconciler, caIssuerName := rootshard.RootCAIssuerReconciler(&rootShard)
-
 	issuerReconcilers := []reconciling.NamedIssuerReconcilerFactory{
-		caIssuerReconciler,
+		rootshard.RootCAIssuerReconciler(&rootShard),
 	}
 
 	certReconcilers := []reconciling.NamedCertificateReconcilerFactory{
 		rootshard.ServerCertificateReconciler(&rootShard),
 		rootshard.ServiceAccountCertificateReconciler(&rootShard),
+		rootshard.VirtualWorkspacesCertificateReconciler(&rootShard),
 	}
 
 	for _, ca := range subordinateCAs {
-		certReconcilers = append(certReconcilers, rootshard.CaCertificateReconciler(&rootShard, ca, caIssuerName))
+		certReconcilers = append(certReconcilers, rootshard.CaCertificateReconciler(&rootShard, ca))
 		issuerReconcilers = append(issuerReconcilers, rootshard.CAIssuerReconciler(&rootShard, ca))
 	}
 	if rootShard.Spec.Certificates.IssuerRef != nil {
@@ -92,6 +94,18 @@ func (r *RootShardReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	if err := reconciling.ReconcileIssuers(ctx, issuerReconcilers, req.Namespace, r.Client); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	if err := k8creconciling.ReconcileDeployments(ctx, []k8creconciling.NamedDeploymentReconcilerFactory{
+		rootshard.DeploymentReconciler(&rootShard),
+	}, req.Namespace, r.Client); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	if err := k8creconciling.ReconcileServices(ctx, []k8creconciling.NamedServiceReconcilerFactory{
+		rootshard.ServiceReconciler(&rootShard),
+	}, req.Namespace, r.Client); err != nil {
 		return ctrl.Result{}, err
 	}
 

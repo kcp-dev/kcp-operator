@@ -25,6 +25,8 @@ const (
 	appInstanceLabel  = "app.kubernetes.io/instance"
 	appManagedByLabel = "app.kubernetes.io/managed-by"
 	appComponentLabel = "app.kubernetes.io/component"
+
+	defaultClusterDomain string = "cluster.local"
 )
 
 // ImageSpec defines settings for using a specific image and overwriting the default images used.
@@ -46,10 +48,11 @@ type EtcdConfig struct {
 	// Endpoints is a list of http urls at which etcd nodes are available. The expected format is "https://etcd-hostname:2379".
 	Endpoints []string `json:"endpoints"`
 	// ClientCert configures the client certificate used to access etcd.
-	ClientCert EtcdCertificate `json:"clientCert"`
+	// +optional
+	TLSConfig *EtcdTLSConfig `json:"tlsConfig,omitempty"`
 }
 
-type EtcdCertificate struct {
+type EtcdTLSConfig struct {
 	// SecretRef is the reference to a v1.Secret object that contains the TLS certificate.
 	SecretRef corev1.LocalObjectReference `json:"secretRef"`
 }

@@ -23,7 +23,7 @@ import (
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 )
 
-func RootCAIssuerReconciler(rootShard *v1alpha1.RootShard) (reconciling.NamedIssuerReconcilerFactory, string) {
+func RootCAIssuerReconciler(rootShard *v1alpha1.RootShard) reconciling.NamedIssuerReconcilerFactory {
 	name := rootShard.GetCAName(v1alpha1.RootCA)
 
 	secretName := name
@@ -44,7 +44,7 @@ func RootCAIssuerReconciler(rootShard *v1alpha1.RootShard) (reconciling.NamedIss
 
 			return issuer, nil
 		}
-	}, name
+	}
 }
 
 func CAIssuerReconciler(rootShard *v1alpha1.RootShard, ca v1alpha1.CA) reconciling.NamedIssuerReconcilerFactory {
