@@ -32,26 +32,24 @@ func ServiceReconciler(rootShard *v1alpha1.RootShard) reconciling.NamedServiceRe
 	return func() (string, reconciling.ServiceReconciler) {
 		return fmt.Sprintf("%s-kcp", rootShard.Name), func(svc *corev1.Service) (*corev1.Service, error) {
 			svc.SetLabels(rootShard.GetResourceLabels())
-			svc.Spec = corev1.ServiceSpec{
-				Type: corev1.ServiceTypeClusterIP,
-				Ports: []corev1.ServicePort{
-					{
-						Name:        "https",
-						Protocol:    corev1.ProtocolTCP,
-						Port:        6443,
-						TargetPort:  intstr.FromInt32(6443),
-						AppProtocol: ptr.To("https"),
-					},
-					{
-						Name:        "https-virtual-workspaces",
-						Protocol:    corev1.ProtocolTCP,
-						Port:        6444,
-						TargetPort:  intstr.FromInt32(6444),
-						AppProtocol: ptr.To("https"),
-					},
+			svc.Spec.Type = corev1.ServiceTypeClusterIP
+			svc.Spec.Ports = []corev1.ServicePort{
+				{
+					Name:        "https",
+					Protocol:    corev1.ProtocolTCP,
+					Port:        6443,
+					TargetPort:  intstr.FromInt32(6443),
+					AppProtocol: ptr.To("https"),
 				},
-				Selector: rootShard.GetResourceLabels(),
+				{
+					Name:        "https-virtual-workspaces",
+					Protocol:    corev1.ProtocolTCP,
+					Port:        6444,
+					TargetPort:  intstr.FromInt32(6444),
+					AppProtocol: ptr.To("https"),
+				},
 			}
+			svc.Spec.Selector = rootShard.GetResourceLabels()
 
 			return svc, nil
 		}

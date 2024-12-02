@@ -20,12 +20,12 @@ import (
 	"context"
 	"fmt"
 
+	k8creconciling "k8c.io/reconciler/pkg/reconciling"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	k8creconciling "k8c.io/reconciler/pkg/reconciling"
 
 	"github.com/kcp-dev/kcp-operator/api/v1alpha1"
 	operatorkcpiov1alpha1 "github.com/kcp-dev/kcp-operator/api/v1alpha1"

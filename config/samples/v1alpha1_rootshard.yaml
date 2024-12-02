@@ -6,7 +6,9 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
   name: shard-sample
 spec:
-  hostname: example.operator.kcp.io
+  external:
+    hostname: example.operator.kcp.io
+    port: 6443
   certificates:
     issuerRef:
       group: cert-manager.io
