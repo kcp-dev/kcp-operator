@@ -66,3 +66,43 @@ func CAIssuerReconciler(rootShard *operatorv1alpha1.RootShard, ca operatorv1alph
 		}
 	}
 }
+
+func ClientCAIssuerReconciler(rootshard *operatorv1alpha1.RootShard) reconciling.NamedIssuerReconcilerFactory {
+	name := resources.GetRootShardCAName(rootshard, operatorv1alpha1.ClientCA)
+	secretName := name
+
+	return func() (string, reconciling.IssuerReconciler) {
+		return name, func(issuer *certmanagerv1.Issuer) (*certmanagerv1.Issuer, error) {
+			issuer.SetLabels(resources.GetRootShardResourceLabels(rootshard))
+			issuer.Spec = certmanagerv1.IssuerSpec{
+				IssuerConfig: certmanagerv1.IssuerConfig{
+					CA: &certmanagerv1.CAIssuer{
+						SecretName: secretName,
+					},
+				},
+			}
+
+			return issuer, nil
+		}
+	}
+}
+
+func FrontProxyClientCAIssuerReconciler(rootshard *operatorv1alpha1.RootShard) reconciling.NamedIssuerReconcilerFactory {
+	name := resources.GetRootShardCAName(rootshard, operatorv1alpha1.FrontProxyClientCA)
+	secretName := name
+
+	return func() (string, reconciling.IssuerReconciler) {
+		return name, func(issuer *certmanagerv1.Issuer) (*certmanagerv1.Issuer, error) {
+			issuer.SetLabels(resources.GetRootShardResourceLabels(rootshard))
+			issuer.Spec = certmanagerv1.IssuerSpec{
+				IssuerConfig: certmanagerv1.IssuerConfig{
+					CA: &certmanagerv1.CAIssuer{
+						SecretName: secretName,
+					},
+				},
+			}
+
+			return issuer, nil
+		}
+	}
+}

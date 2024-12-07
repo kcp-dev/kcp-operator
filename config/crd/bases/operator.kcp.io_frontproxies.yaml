@@ -39,6 +39,30 @@ spec:
           spec:
             description: FrontProxySpec defines the desired state of FrontProxy.
             properties:
+              additionalPathMappings:
+                description: 'Optional: AdditionalPathMappings configures // TODO
+                  ?'
+                items:
+                  description: so we have to copy the struct type
+                  properties:
+                    backend:
+                      type: string
+                    backend_server_ca:
+                      type: string
+                    path:
+                      type: string
+                    proxy_client_cert:
+                      type: string
+                    proxy_client_key:
+                      type: string
+                  required:
+                  - backend
+                  - backend_server_ca
+                  - path
+                  - proxy_client_cert
+                  - proxy_client_key
+                  type: object
+                type: array
               auth:
                 description: 'Optional: Auth configures various aspects of Authentication
                   and Authorization for this front-proxy instance.'
@@ -86,6 +110,43 @@ spec:
                     - issuerURL
                     type: object
                 type: object
+              externalHostname:
+                description: ExternalHostname under which the FrontProxy can be reached
+                type: string
+              image:
+                description: 'Optional: Image defines the image to use. Defaults to
+                  the latest versioned image during the release of kcp-operator'
+                properties:
+                  imagePullSecrets:
+                    description: 'Optional: ImagePullSecrets is a list of secret references
+                      that should be used as image pull secrets (e.g. when a private
+                      registry is used).'
+                    items:
+                      description: |-
+                        LocalObjectReference contains enough information to let you locate the
+                        referenced object inside the same namespace.
+                      properties:
+                        name:
+                          default: ""
+                          description: |-
+                            Name of the referent.
+                            This field is effectively required, but due to backwards compatibility is
+                            allowed to be empty. Instances of this type with an empty value here are
+                            almost certainly wrong.
+                            More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                          type: string
+                      type: object
+                      x-kubernetes-map-type: atomic
+                    type: array
+                  repository:
+                    description: Repository is the container image repository to use
+                      for KCP containers. Defaults to `ghcr.io/kcp-dev/kcp`.
+                    type: string
+                  tag:
+                    description: Tag is the container image tag to use for KCP containers.
+                      Defaults to the latest kcp release that the operator supports.
+                    type: string
+                type: object
               replicas:
                 description: 'Optional: Replicas configures the replica count for
                   the front-proxy Deployment.'
@@ -111,6 +172,7 @@ spec:
                     x-kubernetes-map-type: atomic
                 type: object
             required:
+            - externalHostname
             - rootShard
             type: object
           status:

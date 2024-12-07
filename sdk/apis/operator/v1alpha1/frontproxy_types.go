@@ -28,6 +28,12 @@ type FrontProxySpec struct {
 	Replicas *int32 `json:"replicas,omitempty"`
 	// Optional: Auth configures various aspects of Authentication and Authorization for this front-proxy instance.
 	Auth *AuthSpec `json:"auth,omitempty"`
+	// Optional: AdditionalPathMappings configures // TODO ?
+	AdditionalPathMappings []PathMappingEntry `json:"additionalPathMappings,omitempty"`
+	// Optional: Image defines the image to use. Defaults to the latest versioned image during the release of kcp-operator
+	Image *ImageSpec `json:"image,omitempty"`
+	// ExternalHostname under which the FrontProxy can be reached
+	ExternalHostname string `json:"externalHostname"`
 }
 
 type AuthSpec struct {
@@ -61,6 +67,16 @@ type FrontProxyList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []FrontProxy `json:"items"`
+}
+
+// TODO for now the PathMappingEntry is defined inline at kcp upstream (https://github.com/kcp-dev/kcp/blob/f81a97d0fba951e6ac6f94e8e0f5339f49a9dd92/cmd/sharded-test-server/frontproxy.go#L69),
+// so we have to copy the struct type
+type PathMappingEntry struct {
+	Path            string `json:"path"`
+	Backend         string `json:"backend"`
+	BackendServerCA string `json:"backend_server_ca"`
+	ProxyClientCert string `json:"proxy_client_cert"`
+	ProxyClientKey  string `json:"proxy_client_key"`
 }
 
 func init() {

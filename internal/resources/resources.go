@@ -93,3 +93,28 @@ func GetRootShardCAName(r *v1alpha1.RootShard, caName v1alpha1.CA) string {
 	}
 	return fmt.Sprintf("%s-%s-ca", r.Name, caName)
 }
+
+func GetFrontProxyResourceLabels(fp *v1alpha1.FrontProxy) map[string]string {
+	return map[string]string{
+		appNameLabel:      "kcp",
+		appInstanceLabel:  fp.Name,
+		appManagedByLabel: "kcp-operator",
+		appComponentLabel: "frontproxy",
+	}
+}
+
+func GetFrontproxyCertificateName(r *v1alpha1.RootShard, f *v1alpha1.FrontProxy, certName v1alpha1.Certificate) string {
+	return fmt.Sprintf("%s-%s-%s", r.Name, f.Name, certName)
+}
+
+func GetFrontProxyDynamicKubeconfigName(r *v1alpha1.RootShard, f *v1alpha1.FrontProxy) string {
+	return fmt.Sprintf("%s-%s-dynamic-kubeconfig", r.Name, f.Name)
+}
+
+func GetFrontProxyRequestheaderName(r *v1alpha1.RootShard, f *v1alpha1.FrontProxy) string {
+	return fmt.Sprintf("%s-%s-requestheader", r.Name, f.Name)
+}
+
+func GetFrontProxyConfigName(f *v1alpha1.FrontProxy) string {
+	return fmt.Sprintf("%s-config", f.Name)
+}

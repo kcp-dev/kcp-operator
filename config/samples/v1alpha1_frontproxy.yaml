@@ -6,4 +6,7 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
   name: frontproxy-sample
 spec:
-  # TODO(user): Add fields here
+  rootShard:
+    ref:
+      name: shard-sample
+  externalHostname: kcp.example.com
