@@ -93,6 +93,7 @@ func DeploymentReconciler(rootShard *v1alpha1.RootShard) reconciling.NamedDeploy
 						MountPath: "/etc/kcp/tls/ca/root",
 					},
 				},
+				Resources: defaultResourceRequirements,
 			}
 
 			if rootShard.Spec.Etcd.TLSConfig != nil {

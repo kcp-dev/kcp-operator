@@ -25,8 +25,6 @@ const (
 	appInstanceLabel  = "app.kubernetes.io/instance"
 	appManagedByLabel = "app.kubernetes.io/managed-by"
 	appComponentLabel = "app.kubernetes.io/component"
-
-	defaultClusterDomain string = "cluster.local"
 )
 
 // ImageSpec defines settings for using a specific image and overwriting the default images used.
