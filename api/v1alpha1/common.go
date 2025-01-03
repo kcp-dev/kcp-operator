@@ -17,7 +17,10 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"time"
+
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -25,6 +28,13 @@ const (
 	appInstanceLabel  = "app.kubernetes.io/instance"
 	appManagedByLabel = "app.kubernetes.io/managed-by"
 	appComponentLabel = "app.kubernetes.io/component"
+)
+
+var (
+	DefaultCADuration          = metav1.Duration{Duration: time.Hour * 24 * 365 * 10}
+	DefaultCARenewal           = metav1.Duration{Duration: time.Hour * 24 * 30}
+	DefaultCertificateDuration = metav1.Duration{Duration: time.Hour * 24 * 365}
+	DefaultCertificateRenewal  = metav1.Duration{Duration: time.Hour * 24 * 7}
 )
 
 // ImageSpec defines settings for using a specific image and overwriting the default images used.

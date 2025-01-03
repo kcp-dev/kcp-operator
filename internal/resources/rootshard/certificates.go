@@ -17,27 +17,23 @@ limitations under the License.
 package rootshard
 
 import (
-	"time"
-
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	certmanagermetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/kcp-dev/kcp-operator/api/v1alpha1"
+	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/api/v1alpha1"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 )
 
-func ServerCertificateReconciler(rootShard *v1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
-	name := rootShard.GetCertificateName(v1alpha1.ServerCertificate)
+func ServerCertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
+	name := rootShard.GetCertificateName(operatorv1alpha1.ServerCertificate)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
 			cert.SetLabels(rootShard.GetResourceLabels())
 			cert.Spec = certmanagerv1.CertificateSpec{
 				SecretName:  name,
-				Duration:    &metav1.Duration{Duration: time.Hour * 24 * 365},
-				RenewBefore: &metav1.Duration{Duration: time.Hour * 24 * 7},
+				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
+				RenewBefore: &operatorv1alpha1.DefaultCertificateRenewal,
 
 				PrivateKey: &certmanagerv1.CertificatePrivateKey{
 					Algorithm: certmanagerv1.RSAKeyAlgorithm,
@@ -54,7 +50,7 @@ func ServerCertificateReconciler(rootShard *v1alpha1.RootShard) reconciling.Name
 				},
 
 				IssuerRef: certmanagermetav1.ObjectReference{
-					Name:  rootShard.GetCAName(v1alpha1.ServerCA),
+					Name:  rootShard.GetCAName(operatorv1alpha1.ServerCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},
@@ -65,16 +61,16 @@ func ServerCertificateReconciler(rootShard *v1alpha1.RootShard) reconciling.Name
 	}
 }
 
-func VirtualWorkspacesCertificateReconciler(rootShard *v1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
-	name := rootShard.GetCertificateName(v1alpha1.VirtualWorkspacesCertificate)
+func VirtualWorkspacesCertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
+	name := rootShard.GetCertificateName(operatorv1alpha1.VirtualWorkspacesCertificate)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
 			cert.SetLabels(rootShard.GetResourceLabels())
 			cert.Spec = certmanagerv1.CertificateSpec{
 				SecretName:  name,
-				Duration:    &metav1.Duration{Duration: time.Hour * 24 * 365},
-				RenewBefore: &metav1.Duration{Duration: time.Hour * 24 * 7},
+				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
+				RenewBefore: &operatorv1alpha1.DefaultCertificateRenewal,
 
 				PrivateKey: &certmanagerv1.CertificatePrivateKey{
 					Algorithm: certmanagerv1.RSAKeyAlgorithm,
@@ -90,7 +86,7 @@ func VirtualWorkspacesCertificateReconciler(rootShard *v1alpha1.RootShard) recon
 				},
 
 				IssuerRef: certmanagermetav1.ObjectReference{
-					Name:  rootShard.GetCAName(v1alpha1.ServerCA),
+					Name:  rootShard.GetCAName(operatorv1alpha1.ServerCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},
@@ -101,8 +97,8 @@ func VirtualWorkspacesCertificateReconciler(rootShard *v1alpha1.RootShard) recon
 	}
 }
 
-func ServiceAccountCertificateReconciler(rootShard *v1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
-	name := rootShard.GetCertificateName(v1alpha1.ServiceAccountCertificate)
+func ServiceAccountCertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
+	name := rootShard.GetCertificateName(operatorv1alpha1.ServiceAccountCertificate)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
@@ -110,8 +106,8 @@ func ServiceAccountCertificateReconciler(rootShard *v1alpha1.RootShard) reconcil
 			cert.Spec = certmanagerv1.CertificateSpec{
 				CommonName:  name,
 				SecretName:  name,
-				Duration:    &metav1.Duration{Duration: time.Hour * 24 * 365},
-				RenewBefore: &metav1.Duration{Duration: time.Hour * 24 * 7},
+				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
+				RenewBefore: &operatorv1alpha1.DefaultCertificateRenewal,
 
 				PrivateKey: &certmanagerv1.CertificatePrivateKey{
 					Algorithm: certmanagerv1.RSAKeyAlgorithm,
@@ -119,7 +115,7 @@ func ServiceAccountCertificateReconciler(rootShard *v1alpha1.RootShard) reconcil
 				},
 
 				IssuerRef: certmanagermetav1.ObjectReference{
-					Name:  rootShard.GetCAName(v1alpha1.ServiceAccountCA),
+					Name:  rootShard.GetCAName(operatorv1alpha1.ServiceAccountCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},

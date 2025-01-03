@@ -18,12 +18,9 @@ package rootshard
 
 import (
 	"fmt"
-	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	certmanagermetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	operatorkcpiov1alpha1 "github.com/kcp-dev/kcp-operator/api/v1alpha1"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
@@ -46,8 +43,8 @@ func RootCACertificateReconciler(rootShard *operatorkcpiov1alpha1.RootShard) rec
 				CommonName: name,
 				SecretName: name,
 				// Create CA certificate for ten years.
-				Duration:    &metav1.Duration{Duration: time.Hour * 24 * 365 * 10},
-				RenewBefore: &metav1.Duration{Duration: time.Hour * 24 * 30},
+				Duration:    &operatorkcpiov1alpha1.DefaultCADuration,
+				RenewBefore: &operatorkcpiov1alpha1.DefaultCARenewal,
 
 				PrivateKey: &certmanagerv1.CertificatePrivateKey{
 					Algorithm: certmanagerv1.RSAKeyAlgorithm,
@@ -77,8 +74,8 @@ func CACertificateReconciler(rootShard *operatorkcpiov1alpha1.RootShard, ca oper
 				CommonName: name,
 				SecretName: name,
 				// Create CA certificate for ten years.
-				Duration:    &metav1.Duration{Duration: time.Hour * 24 * 365 * 10},
-				RenewBefore: &metav1.Duration{Duration: time.Hour * 24 * 30},
+				Duration:    &operatorkcpiov1alpha1.DefaultCADuration,
+				RenewBefore: &operatorkcpiov1alpha1.DefaultCARenewal,
 
 				PrivateKey: &certmanagerv1.CertificatePrivateKey{
 					Algorithm: certmanagerv1.RSAKeyAlgorithm,
