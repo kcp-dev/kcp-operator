@@ -47,7 +47,7 @@ var _ = Describe("Kubeconfig Controller", func() {
 		rootShard := &operatorkcpiov1alpha1.RootShard{}
 
 		BeforeEach(func() {
-			By("creating the custom resource for the Kind RootShard")
+			By("creating a RootShard object")
 			err := k8sClient.Get(ctx, typeNamespacedName, rootShard)
 			if err != nil && errors.IsNotFound(err) {
 				resource := &operatorkcpiov1alpha1.RootShard{
@@ -70,7 +70,7 @@ var _ = Describe("Kubeconfig Controller", func() {
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 			}
 
-			By("creating the custom resource for the Kind Kubeconfig")
+			By("creating a Kubeconfig object")
 			err = k8sClient.Get(ctx, typeNamespacedName, kubeconfig)
 			if err != nil && errors.IsNotFound(err) {
 				resource := &operatorkcpiov1alpha1.Kubeconfig{
@@ -95,13 +95,24 @@ var _ = Describe("Kubeconfig Controller", func() {
 		})
 
 		AfterEach(func() {
-			// TODO(user): Cleanup logic after each test, like removing the resource instance.
 			resource := &operatorkcpiov1alpha1.Kubeconfig{}
 			err := k8sClient.Get(ctx, typeNamespacedName, resource)
 			Expect(err).NotTo(HaveOccurred())
 
-			By("Cleanup the specific resource instance Kubeconfig")
+			By("Cleanup the specific Kubeconfig object")
 			Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
+
+			rootShard := &operatorkcpiov1alpha1.RootShard{}
+			rootShardNamespacedName := types.NamespacedName{
+				Name:      fmt.Sprintf("rootshard-%s", resourceName),
+				Namespace: "default",
+			}
+			err = k8sClient.Get(ctx, rootShardNamespacedName, rootShard)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Cleanup the specific RootShard object")
+			Expect(k8sClient.Delete(ctx, rootShard)).To(Succeed())
+
 		})
 		It("should successfully reconcile the resource", func() {
 			By("Reconciling the created resource")

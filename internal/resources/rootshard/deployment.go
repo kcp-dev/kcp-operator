@@ -1,5 +1,5 @@
 /*
-Copyright 2024 The KCP Authors.
+Copyright 2025 The KCP Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -60,7 +60,8 @@ func DeploymentReconciler(rootShard *v1alpha1.RootShard) reconciling.NamedDeploy
 				MatchLabels: rootShard.GetResourceLabels(),
 			}
 			dep.Spec.Template.ObjectMeta.SetLabels(rootShard.GetResourceLabels())
-			dep.Spec.Template.Spec.Volumes = []corev1.Volume{
+
+			volumes := []corev1.Volume{
 				{
 					Name: "kcp-ca",
 					VolumeSource: corev1.VolumeSource{
@@ -76,7 +77,6 @@ func DeploymentReconciler(rootShard *v1alpha1.RootShard) reconciling.NamedDeploy
 					},
 				},
 			}
-			dep.Spec.Template.Spec.Containers = []corev1.Container{}
 
 			container := corev1.Container{
 				Name:    ServerContainerName,
@@ -97,7 +97,7 @@ func DeploymentReconciler(rootShard *v1alpha1.RootShard) reconciling.NamedDeploy
 			}
 
 			if rootShard.Spec.Etcd.TLSConfig != nil {
-				dep.Spec.Template.Spec.Volumes = append(dep.Spec.Template.Spec.Volumes, corev1.Volume{
+				volumes = append(volumes, corev1.Volume{
 					Name: "etcd-client-cert",
 					VolumeSource: corev1.VolumeSource{
 						Secret: &corev1.SecretVolumeSource{
@@ -117,7 +117,7 @@ func DeploymentReconciler(rootShard *v1alpha1.RootShard) reconciling.NamedDeploy
 				v1alpha1.ServiceAccountCA,
 				v1alpha1.RequestHeaderClientCA,
 			} {
-				dep.Spec.Template.Spec.Volumes = append(dep.Spec.Template.Spec.Volumes,
+				volumes = append(volumes,
 					corev1.Volume{
 						Name: fmt.Sprintf("%s-ca", ca),
 						VolumeSource: corev1.VolumeSource{
@@ -137,7 +137,7 @@ func DeploymentReconciler(rootShard *v1alpha1.RootShard) reconciling.NamedDeploy
 				v1alpha1.ServerCertificate,
 				v1alpha1.ServiceAccountCertificate,
 			} {
-				dep.Spec.Template.Spec.Volumes = append(dep.Spec.Template.Spec.Volumes, corev1.Volume{
+				volumes = append(volumes, corev1.Volume{
 					Name: string(cert),
 					VolumeSource: corev1.VolumeSource{
 						Secret: &corev1.SecretVolumeSource{
@@ -150,7 +150,8 @@ func DeploymentReconciler(rootShard *v1alpha1.RootShard) reconciling.NamedDeploy
 				})
 			}
 
-			dep.Spec.Template.Spec.Containers = append(dep.Spec.Template.Spec.Containers, container)
+			dep.Spec.Template.Spec.Containers = []corev1.Container{container}
+			dep.Spec.Template.Spec.Volumes = volumes
 
 			// explicitly set the replicas if it is configured in the RootShard
 			// object or if the existing Deployment object doesn't have replicas
@@ -168,7 +169,6 @@ func DeploymentReconciler(rootShard *v1alpha1.RootShard) reconciling.NamedDeploy
 }
 
 func getArgs(rootShard *v1alpha1.RootShard) []string {
-
 	args := []string{
 		// CA configuration.
 		fmt.Sprintf("--root-ca-file=/etc/kcp/tls/ca/%s/ca.crt", v1alpha1.RootCA),

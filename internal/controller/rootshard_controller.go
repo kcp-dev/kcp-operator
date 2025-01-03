@@ -56,15 +56,15 @@ type RootShardReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.19.0/pkg/reconcile
 func (r *RootShardReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
-
 	logger.Info("Reconciling RootShard object")
+
 	var rootShard v1alpha1.RootShard
 	if err := r.Client.Get(ctx, req.NamespacedName, &rootShard); err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to find %s/%s: %w", req.Namespace, req.Name, err)
 	}
 
 	// Intermediate CAs that we need to generate a certificate and an issuer for.
-	subordinateCAs := []v1alpha1.CA{
+	intermediateCAs := []v1alpha1.CA{
 		v1alpha1.ServerCA,
 		v1alpha1.RequestHeaderClientCA,
 		v1alpha1.ClientCA,
@@ -81,12 +81,12 @@ func (r *RootShardReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		rootshard.VirtualWorkspacesCertificateReconciler(&rootShard),
 	}
 
-	for _, ca := range subordinateCAs {
-		certReconcilers = append(certReconcilers, rootshard.CaCertificateReconciler(&rootShard, ca))
+	for _, ca := range intermediateCAs {
+		certReconcilers = append(certReconcilers, rootshard.CACertificateReconciler(&rootShard, ca))
 		issuerReconcilers = append(issuerReconcilers, rootshard.CAIssuerReconciler(&rootShard, ca))
 	}
 	if rootShard.Spec.Certificates.IssuerRef != nil {
-		certReconcilers = append(certReconcilers, rootshard.RootCaCertificateReconciler(&rootShard))
+		certReconcilers = append(certReconcilers, rootshard.RootCACertificateReconciler(&rootShard))
 	}
 
 	if err := reconciling.ReconcileCertificates(ctx, certReconcilers, req.Namespace, r.Client); err != nil {

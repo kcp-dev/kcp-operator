@@ -78,13 +78,13 @@ spec:
                       a given name, kind and group.
                     properties:
                       group:
-                        description: Group of the resource being referred to.
+                        description: Group of the object being referred to.
                         type: string
                       kind:
-                        description: Kind of the resource being referred to.
+                        description: Kind of the object being referred to.
                         type: string
                       name:
-                        description: Name of the resource being referred to.
+                        description: Name of the object being referred to.
                         type: string
                     required:
                     - name
@@ -131,7 +131,7 @@ spec:
                 properties:
                   hostname:
                     description: |-
-                      Hostname is the external name of the KCP instance. This should be matched by a DNS
+                      Hostname is the external name of the kcp instance. This should be matched by a DNS
                       record pointing to the kcp-front-proxy Service's external IP address.
                     type: string
                   port:

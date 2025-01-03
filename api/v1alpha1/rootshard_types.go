@@ -36,7 +36,7 @@ type RootShardSpec struct {
 }
 
 type ExternalConfig struct {
-	// Hostname is the external name of the KCP instance. This should be matched by a DNS
+	// Hostname is the external name of the kcp instance. This should be matched by a DNS
 	// record pointing to the kcp-front-proxy Service's external IP address.
 	Hostname string `json:"hostname"`
 	Port     uint32 `json:"port"`

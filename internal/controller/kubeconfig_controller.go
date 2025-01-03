@@ -23,7 +23,7 @@ import (
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	v1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	certmanagermetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	k8creconciling "k8c.io/reconciler/pkg/reconciling"
 
 	corev1 "k8s.io/api/core/v1"
@@ -63,7 +63,7 @@ func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	var kc operatorkcpiov1alpha1.Kubeconfig
 	if err := r.Client.Get(ctx, req.NamespacedName, &kc); err != nil {
-		return ctrl.Result{}, fmt.Errorf("failed to find %s/%s: %w", req.Namespace, req.Name, err)
+		return ctrl.Result{}, err
 	}
 
 	var (
@@ -93,14 +93,15 @@ func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	var certificate certmanagerv1.Certificate
 	if err := r.Client.Get(ctx, types.NamespacedName{Name: kc.GetCertificateName(), Namespace: req.Namespace}, &certificate); err != nil {
-		logger.Info("Certificate does not exist yet, trying later ...", "certificate", kc.GetCertificateName())
+		logger.V(6).Info("Certificate does not exist yet, trying later ...", "certificate", kc.GetCertificateName())
 		return ctrl.Result{RequeueAfter: time.Second * 5}, nil
 	}
 
 	ok := false
 	for _, cond := range certificate.Status.Conditions {
 		if cond.Type == certmanagerv1.CertificateConditionReady {
-			ok = (cond.Status == v1.ConditionTrue)
+			ok = (cond.Status == certmanagermetav1.ConditionTrue)
+			break
 		}
 	}
 
