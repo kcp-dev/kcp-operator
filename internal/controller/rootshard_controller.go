@@ -18,13 +18,19 @@ package controller
 
 import (
 	"context"
+	"fmt"
+
+	k8creconciling "k8c.io/reconciler/pkg/reconciling"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/kcp-dev/kcp-operator/api/v1alpha1"
 	operatorkcpiov1alpha1 "github.com/kcp-dev/kcp-operator/api/v1alpha1"
+	"github.com/kcp-dev/kcp-operator/internal/reconciling"
+	"github.com/kcp-dev/kcp-operator/internal/resources/rootshard"
 )
 
 // RootShardReconciler reconciles a RootShard object
@@ -36,6 +42,8 @@ type RootShardReconciler struct {
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=kcpinstances,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=kcpinstances/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=kcpinstances/finalizers,verbs=update
+// +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=cert-manager.io,resources=issuers,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -47,9 +55,59 @@ type RootShardReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.19.0/pkg/reconcile
 func (r *RootShardReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+	logger := log.FromContext(ctx)
+	logger.Info("Reconciling RootShard object")
 
-	// TODO(user): your logic here
+	var rootShard v1alpha1.RootShard
+	if err := r.Client.Get(ctx, req.NamespacedName, &rootShard); err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to find %s/%s: %w", req.Namespace, req.Name, err)
+	}
+
+	// Intermediate CAs that we need to generate a certificate and an issuer for.
+	intermediateCAs := []v1alpha1.CA{
+		v1alpha1.ServerCA,
+		v1alpha1.RequestHeaderClientCA,
+		v1alpha1.ClientCA,
+		v1alpha1.ServiceAccountCA,
+	}
+
+	issuerReconcilers := []reconciling.NamedIssuerReconcilerFactory{
+		rootshard.RootCAIssuerReconciler(&rootShard),
+	}
+
+	certReconcilers := []reconciling.NamedCertificateReconcilerFactory{
+		rootshard.ServerCertificateReconciler(&rootShard),
+		rootshard.ServiceAccountCertificateReconciler(&rootShard),
+		rootshard.VirtualWorkspacesCertificateReconciler(&rootShard),
+	}
+
+	for _, ca := range intermediateCAs {
+		certReconcilers = append(certReconcilers, rootshard.CACertificateReconciler(&rootShard, ca))
+		issuerReconcilers = append(issuerReconcilers, rootshard.CAIssuerReconciler(&rootShard, ca))
+	}
+	if rootShard.Spec.Certificates.IssuerRef != nil {
+		certReconcilers = append(certReconcilers, rootshard.RootCACertificateReconciler(&rootShard))
+	}
+
+	if err := reconciling.ReconcileCertificates(ctx, certReconcilers, req.Namespace, r.Client); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	if err := reconciling.ReconcileIssuers(ctx, issuerReconcilers, req.Namespace, r.Client); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	if err := k8creconciling.ReconcileDeployments(ctx, []k8creconciling.NamedDeploymentReconcilerFactory{
+		rootshard.DeploymentReconciler(&rootShard),
+	}, req.Namespace, r.Client); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	if err := k8creconciling.ReconcileServices(ctx, []k8creconciling.NamedServiceReconcilerFactory{
+		rootshard.ServiceReconciler(&rootShard),
+	}, req.Namespace, r.Client); err != nil {
+		return ctrl.Result{}, err
+	}
 
 	return ctrl.Result{}, nil
 }

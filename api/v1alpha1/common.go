@@ -17,7 +17,24 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"time"
+
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+const (
+	appNameLabel      = "app.kubernetes.io/name"
+	appInstanceLabel  = "app.kubernetes.io/instance"
+	appManagedByLabel = "app.kubernetes.io/managed-by"
+	appComponentLabel = "app.kubernetes.io/component"
+)
+
+var (
+	DefaultCADuration          = metav1.Duration{Duration: time.Hour * 24 * 365 * 10}
+	DefaultCARenewal           = metav1.Duration{Duration: time.Hour * 24 * 30}
+	DefaultCertificateDuration = metav1.Duration{Duration: time.Hour * 24 * 365}
+	DefaultCertificateRenewal  = metav1.Duration{Duration: time.Hour * 24 * 7}
 )
 
 // ImageSpec defines settings for using a specific image and overwriting the default images used.
@@ -39,10 +56,23 @@ type EtcdConfig struct {
 	// Endpoints is a list of http urls at which etcd nodes are available. The expected format is "https://etcd-hostname:2379".
 	Endpoints []string `json:"endpoints"`
 	// ClientCert configures the client certificate used to access etcd.
-	ClientCert EtcdCertificate `json:"clientCert"`
+	// +optional
+	TLSConfig *EtcdTLSConfig `json:"tlsConfig,omitempty"`
 }
 
-type EtcdCertificate struct {
+type EtcdTLSConfig struct {
 	// SecretRef is the reference to a v1.Secret object that contains the TLS certificate.
 	SecretRef corev1.LocalObjectReference `json:"secretRef"`
+}
+
+// ObjectReference is a reference to an object with a given name, kind and group.
+type ObjectReference struct {
+	// Name of the object being referred to.
+	Name string `json:"name"`
+	// Kind of the object being referred to.
+	// +optional
+	Kind string `json:"kind,omitempty"`
+	// Group of the object being referred to.
+	// +optional
+	Group string `json:"group,omitempty"`
 }

@@ -1,6 +1,7 @@
 # OPENSHIFT_GIMPORTS_VER defines which version of openshift-goimports to use
 # for checking import statements.
 OPENSHIFT_GOIMPORTS_VER := c72f1dc2e3aacfa00aece3391d938c9bc734e791
+K8C_RECONCILER_GEN_VER := v0.5.0
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.31.0
 ## Tool Versions
@@ -34,6 +35,9 @@ OPENSHIFT_GOIMPORTS_BIN := openshift-goimports
 OPENSHIFT_GOIMPORTS := $(TOOLS_DIR)/$(OPENSHIFT_GOIMPORTS_BIN)-$(OPENSHIFT_GOIMPORTS_VER)
 export OPENSHIFT_GOIMPORTS # so hack scripts can use it
 
+K8C_RECONCILER_GEN_BIN := reconciler-gen
+K8C_RECONCILER_GEN := $(TOOLS_DIR)/$(K8C_RECONCILER_GEN_BIN)-$(K8C_RECONCILER_GEN_VER)
+
 # Setting SHELL to bash allows bash commands to be executed by recipes.
 # Options are set to exit when a recipe line exits non-zero or a piped command fails.
 SHELL = /usr/bin/env bash -o pipefail
@@ -66,8 +70,9 @@ manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and Cust
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 
 .PHONY: generate
-generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
-	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
+generate: controller-gen k8c-reconciler-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
+	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."; \
+	$(K8C_RECONCILER_GEN) --config hack/reconciling.yaml > internal/reconciling/zz_generated_reconcile.go
 
 .PHONY: fmt
 fmt: ## Run go fmt against code.
@@ -97,9 +102,6 @@ lint-fix: golangci-lint ## Run golangci-lint linter and perform fixes
 .PHONY: modules
 modules: ## Run go mod tidy to ensure modules are up to date
 	hack/update-go-modules.sh
-
-$(OPENSHIFT_GOIMPORTS):
-	GOBIN=$(TOOLS_GOBIN_DIR) $(GO_INSTALL) github.com/openshift-eng/openshift-goimports $(OPENSHIFT_GOIMPORTS_BIN) $(OPENSHIFT_GOIMPORTS_VER)
 
 .PHONY: imports
 imports: $(OPENSHIFT_GOIMPORTS)
@@ -193,6 +195,16 @@ $(ENVTEST): $(LOCALBIN)
 golangci-lint: $(GOLANGCI_LINT) ## Download golangci-lint locally if necessary.
 $(GOLANGCI_LINT): $(LOCALBIN)
 	$(call go-install-tool,$(GOLANGCI_LINT),github.com/golangci/golangci-lint/cmd/golangci-lint,$(GOLANGCI_LINT_VERSION))
+
+.PHONY: k8c-reconciler-gen
+k8c-reconciler-gen: $(K8C_RECONCILER_GEN) ## Download reconciler-gen locally if necessary.
+$(K8C_RECONCILER_GEN):
+	GOBIN=$(TOOLS_GOBIN_DIR) $(GO_INSTALL) k8c.io/reconciler/cmd/reconciler-gen $(K8C_RECONCILER_GEN_BIN) $(K8C_RECONCILER_GEN_VER)
+
+.PHONY: openshift-goimports
+openshift-goimports: $(OPENSHIFT_GOIMPORTS)
+$(OPENSHIFT_GOIMPORTS):
+	GOBIN=$(TOOLS_GOBIN_DIR) $(GO_INSTALL) github.com/openshift-eng/openshift-goimports $(OPENSHIFT_GOIMPORTS_BIN) $(OPENSHIFT_GOIMPORTS_VER)
 
 # go-install-tool will 'go install' any package with custom target and name of binary, if it doesn't exist
 # $1 - target path with name of binary

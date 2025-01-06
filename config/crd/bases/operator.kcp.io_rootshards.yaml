@@ -39,22 +39,6 @@ spec:
           spec:
             description: RootShardSpec defines the desired state of RootShard.
             properties:
-              caRef:
-                description: |-
-                  CARef is an optional reference to a cert-manager Certificate resources
-                  which can be used as CA for the kcp instance.
-                properties:
-                  name:
-                    default: ""
-                    description: |-
-                      Name of the referent.
-                      This field is effectively required, but due to backwards compatibility is
-                      allowed to be empty. Instances of this type with an empty value here are
-                      almost certainly wrong.
-                      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                    type: string
-                type: object
-                x-kubernetes-map-type: atomic
               cache:
                 description: Cache configures the cache server (with a Kubernetes-like
                   API) used by a sharded kcp instance.
@@ -71,11 +55,54 @@ spec:
                     - enabled
                     type: object
                 type: object
+              certificates:
+                properties:
+                  caSecretRef:
+                    description: |-
+                      LocalObjectReference contains enough information to let you locate the
+                      referenced object inside the same namespace.
+                    properties:
+                      name:
+                        default: ""
+                        description: |-
+                          Name of the referent.
+                          This field is effectively required, but due to backwards compatibility is
+                          allowed to be empty. Instances of this type with an empty value here are
+                          almost certainly wrong.
+                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                        type: string
+                    type: object
+                    x-kubernetes-map-type: atomic
+                  issuerRef:
+                    description: ObjectReference is a reference to an object with
+                      a given name, kind and group.
+                    properties:
+                      group:
+                        description: Group of the object being referred to.
+                        type: string
+                      kind:
+                        description: Kind of the object being referred to.
+                        type: string
+                      name:
+                        description: Name of the object being referred to.
+                        type: string
+                    required:
+                    - name
+                    type: object
+                type: object
+              clusterDomain:
+                type: string
               etcd:
                 description: Etcd configures the etcd cluster that this shard should
                   be using.
                 properties:
-                  clientCert:
+                  endpoints:
+                    description: Endpoints is a list of http urls at which etcd nodes
+                      are available. The expected format is "https://etcd-hostname:2379".
+                    items:
+                      type: string
+                    type: array
+                  tlsConfig:
                     description: ClientCert configures the client certificate used
                       to access etcd.
                     properties:
@@ -97,21 +124,23 @@ spec:
                     required:
                     - secretRef
                     type: object
-                  endpoints:
-                    description: Endpoints is a list of http urls at which etcd nodes
-                      are available. The expected format is "https://etcd-hostname:2379".
-                    items:
-                      type: string
-                    type: array
                 required:
-                - clientCert
                 - endpoints
                 type: object
-              hostname:
-                description: |-
-                  Hostname is the external name of the KCP instance. This should be matched by a DNS
-                  record pointing to the kcp-front-proxy Service's external IP address.
-                type: string
+              external:
+                properties:
+                  hostname:
+                    description: |-
+                      Hostname is the external name of the kcp instance. This should be matched by a DNS
+                      record pointing to the kcp-front-proxy Service's external IP address.
+                    type: string
+                  port:
+                    format: int32
+                    type: integer
+                required:
+                - hostname
+                - port
+                type: object
               image:
                 description: ImageSpec defines settings for using a specific image
                   and overwriting the default images used.
@@ -146,10 +175,16 @@ spec:
                       Defaults to the latest kcp release that the operator supports.
                     type: string
                 type: object
+              replicas:
+                description: Replicas configures how many instances of this shard
+                  run in parallel. Defaults to 2 if not set.
+                format: int32
+                type: integer
             required:
             - cache
+            - certificates
             - etcd
-            - hostname
+            - external
             type: object
           status:
             description: RootShardStatus defines the observed state of RootShard

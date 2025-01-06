@@ -39,11 +39,19 @@ spec:
           spec:
             description: ShardSpec defines the desired state of Shard
             properties:
+              clusterDomain:
+                type: string
               etcd:
                 description: Etcd configures the etcd cluster that this shard should
                   be using.
                 properties:
-                  clientCert:
+                  endpoints:
+                    description: Endpoints is a list of http urls at which etcd nodes
+                      are available. The expected format is "https://etcd-hostname:2379".
+                    items:
+                      type: string
+                    type: array
+                  tlsConfig:
                     description: ClientCert configures the client certificate used
                       to access etcd.
                     properties:
@@ -65,14 +73,7 @@ spec:
                     required:
                     - secretRef
                     type: object
-                  endpoints:
-                    description: Endpoints is a list of http urls at which etcd nodes
-                      are available. The expected format is "https://etcd-hostname:2379".
-                    items:
-                      type: string
-                    type: array
                 required:
-                - clientCert
                 - endpoints
                 type: object
               image:
@@ -109,6 +110,11 @@ spec:
                       Defaults to the latest kcp release that the operator supports.
                     type: string
                 type: object
+              replicas:
+                description: Replicas configures how many instances of this shard
+                  run in parallel. Defaults to 2 if not set.
+                format: int32
+                type: integer
               rootShard:
                 properties:
                   ref:

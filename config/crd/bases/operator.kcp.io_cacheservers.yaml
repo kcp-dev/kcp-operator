@@ -43,7 +43,13 @@ spec:
                 description: Etcd configures the etcd cluster that this cache server
                   should be using.
                 properties:
-                  clientCert:
+                  endpoints:
+                    description: Endpoints is a list of http urls at which etcd nodes
+                      are available. The expected format is "https://etcd-hostname:2379".
+                    items:
+                      type: string
+                    type: array
+                  tlsConfig:
                     description: ClientCert configures the client certificate used
                       to access etcd.
                     properties:
@@ -65,14 +71,7 @@ spec:
                     required:
                     - secretRef
                     type: object
-                  endpoints:
-                    description: Endpoints is a list of http urls at which etcd nodes
-                      are available. The expected format is "https://etcd-hostname:2379".
-                    items:
-                      type: string
-                    type: array
                 required:
-                - clientCert
                 - endpoints
                 type: object
               image:

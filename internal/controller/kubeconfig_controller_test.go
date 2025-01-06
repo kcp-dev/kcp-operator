@@ -18,11 +18,13 @@ package controller
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -42,10 +44,34 @@ var _ = Describe("Kubeconfig Controller", func() {
 			Namespace: "default", // TODO(user):Modify as needed
 		}
 		kubeconfig := &operatorkcpiov1alpha1.Kubeconfig{}
+		rootShard := &operatorkcpiov1alpha1.RootShard{}
 
 		BeforeEach(func() {
-			By("creating the custom resource for the Kind Kubeconfig")
-			err := k8sClient.Get(ctx, typeNamespacedName, kubeconfig)
+			By("creating a RootShard object")
+			err := k8sClient.Get(ctx, typeNamespacedName, rootShard)
+			if err != nil && errors.IsNotFound(err) {
+				resource := &operatorkcpiov1alpha1.RootShard{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      fmt.Sprintf("rootshard-%s", resourceName),
+						Namespace: "default",
+					},
+					Spec: operatorkcpiov1alpha1.RootShardSpec{
+						External: operatorkcpiov1alpha1.ExternalConfig{
+							Hostname: "example.kcp.io",
+							Port:     6443,
+						},
+						CommonShardSpec: operatorkcpiov1alpha1.CommonShardSpec{
+							Etcd: operatorkcpiov1alpha1.EtcdConfig{
+								Endpoints: []string{"https://localhost:2379"},
+							},
+						},
+					},
+				}
+				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
+			}
+
+			By("creating a Kubeconfig object")
+			err = k8sClient.Get(ctx, typeNamespacedName, kubeconfig)
 			if err != nil && errors.IsNotFound(err) {
 				resource := &operatorkcpiov1alpha1.Kubeconfig{
 					ObjectMeta: metav1.ObjectMeta{
@@ -54,6 +80,14 @@ var _ = Describe("Kubeconfig Controller", func() {
 					},
 					Spec: operatorkcpiov1alpha1.KubeconfigSpec{
 						Validity: metav1.Duration{Duration: 24 * time.Hour},
+						SecretRef: corev1.LocalObjectReference{
+							Name: resourceName,
+						},
+						Target: operatorkcpiov1alpha1.KubeconfigTarget{
+							RootShardRef: &corev1.LocalObjectReference{
+								Name: fmt.Sprintf("rootshard-%s", resourceName),
+							},
+						},
 					},
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
@@ -61,13 +95,24 @@ var _ = Describe("Kubeconfig Controller", func() {
 		})
 
 		AfterEach(func() {
-			// TODO(user): Cleanup logic after each test, like removing the resource instance.
 			resource := &operatorkcpiov1alpha1.Kubeconfig{}
 			err := k8sClient.Get(ctx, typeNamespacedName, resource)
 			Expect(err).NotTo(HaveOccurred())
 
-			By("Cleanup the specific resource instance Kubeconfig")
+			By("Cleanup the specific Kubeconfig object")
 			Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
+
+			rootShard := &operatorkcpiov1alpha1.RootShard{}
+			rootShardNamespacedName := types.NamespacedName{
+				Name:      fmt.Sprintf("rootshard-%s", resourceName),
+				Namespace: "default",
+			}
+			err = k8sClient.Get(ctx, rootShardNamespacedName, rootShard)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Cleanup the specific RootShard object")
+			Expect(k8sClient.Delete(ctx, rootShard)).To(Succeed())
+
 		})
 		It("should successfully reconcile the resource", func() {
 			By("Reconciling the created resource")

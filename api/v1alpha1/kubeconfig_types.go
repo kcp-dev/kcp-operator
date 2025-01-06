@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"fmt"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -60,6 +62,10 @@ type Kubeconfig struct {
 
 	Spec   KubeconfigSpec   `json:"spec,omitempty"`
 	Status KubeconfigStatus `json:"status,omitempty"`
+}
+
+func (k *Kubeconfig) GetCertificateName() string {
+	return fmt.Sprintf("kubeconfig-cert-%s", k.Name)
 }
 
 // +kubebuilder:object:root=true

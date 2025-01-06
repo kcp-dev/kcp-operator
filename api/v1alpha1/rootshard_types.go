@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"fmt"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -25,16 +27,24 @@ import (
 type RootShardSpec struct {
 	CommonShardSpec `json:",inline"`
 
-	// Hostname is the external name of the KCP instance. This should be matched by a DNS
-	// record pointing to the kcp-front-proxy Service's external IP address.
-	Hostname string `json:"hostname"`
+	External ExternalConfig `json:"external"`
 
 	// Cache configures the cache server (with a Kubernetes-like API) used by a sharded kcp instance.
 	Cache CacheConfig `json:"cache"`
 
-	// CARef is an optional reference to a cert-manager Certificate resources
-	// which can be used as CA for the kcp instance.
-	CARef *corev1.LocalObjectReference `json:"caRef,omitempty"`
+	Certificates Certificates `json:"certificates"`
+}
+
+type ExternalConfig struct {
+	// Hostname is the external name of the kcp instance. This should be matched by a DNS
+	// record pointing to the kcp-front-proxy Service's external IP address.
+	Hostname string `json:"hostname"`
+	Port     uint32 `json:"port"`
+}
+
+type Certificates struct {
+	IssuerRef   *ObjectReference             `json:"issuerRef,omitempty"`
+	CASecretRef *corev1.LocalObjectReference `json:"caSecretRef,omitempty"`
 }
 
 type CacheConfig struct {
@@ -88,6 +98,53 @@ type RootShard struct {
 
 	Spec   RootShardSpec   `json:"spec,omitempty"`
 	Status RootShardStatus `json:"status,omitempty"`
+}
+
+func (r *RootShard) GetResourceLabels() map[string]string {
+	return map[string]string{
+		appNameLabel:      "kcp",
+		appInstanceLabel:  r.Name,
+		appManagedByLabel: "kcp-operator",
+		appComponentLabel: "rootshard",
+	}
+}
+
+func (r *RootShard) GetShardBaseURL() string {
+	clusterDomain := r.Spec.ClusterDomain
+	if clusterDomain == "" {
+		clusterDomain = "cluster.local"
+	}
+
+	return fmt.Sprintf("https://%s.%s.svc.%s:6443", r.Name, r.Namespace, clusterDomain)
+}
+
+type Certificate string
+
+const (
+	ServerCertificate            Certificate = "server"
+	ServiceAccountCertificate    Certificate = "service-account"
+	VirtualWorkspacesCertificate Certificate = "virtual-workspaces"
+)
+
+func (r *RootShard) GetCertificateName(certName Certificate) string {
+	return fmt.Sprintf("%s-%s", r.Name, certName)
+}
+
+type CA string
+
+const (
+	RootCA                CA = "root"
+	ServerCA              CA = "server"
+	ServiceAccountCA      CA = "service-account"
+	ClientCA              CA = "client"
+	RequestHeaderClientCA CA = "requestheader-client"
+)
+
+func (r *RootShard) GetCAName(caName CA) string {
+	if caName == RootCA {
+		return fmt.Sprintf("%s-ca", r.Name)
+	}
+	return fmt.Sprintf("%s-%s-ca", r.Name, caName)
 }
 
 // +kubebuilder:object:root=true

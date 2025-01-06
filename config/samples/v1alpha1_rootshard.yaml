@@ -1,0 +1,22 @@
+apiVersion: operator.kcp.io/v1alpha1
+kind: RootShard
+metadata:
+  labels:
+    app.kubernetes.io/name: kcp-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: shard-sample
+spec:
+  external:
+    hostname: example.operator.kcp.io
+    port: 6443
+  certificates:
+    issuerRef:
+      group: cert-manager.io
+      kind: Issuer
+      name: selfsigned
+  cache:
+    embedded:
+      enabled: true
+  etcd:
+    endpoints:
+      - http://etcd.default.svc.cluster.local:2379

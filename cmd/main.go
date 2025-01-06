@@ -21,6 +21,9 @@ import (
 	"flag"
 	"os"
 
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/go-logr/zapr"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -34,6 +37,7 @@ import (
 
 	operatorkcpiov1alpha1 "github.com/kcp-dev/kcp-operator/api/v1alpha1"
 	"github.com/kcp-dev/kcp-operator/internal/controller"
+	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -46,6 +50,7 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	utilruntime.Must(operatorkcpiov1alpha1.AddToScheme(scheme))
+	utilruntime.Must(certmanagerv1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -72,7 +77,9 @@ func main() {
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
 
-	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+	log := zap.NewRaw(zap.UseFlagOptions(&opts))
+	ctrl.SetLogger(zapr.NewLogger(log))
+	reconciling.Configure(log.Sugar())
 
 	// if the enable-http2 flag is false (the default), http/2 should be disabled
 	// due to its vulnerabilities. More specifically, disabling http/2 will
