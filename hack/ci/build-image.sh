@@ -38,25 +38,29 @@ EOF
 fi
 
 repository=ghcr.io/kcp-dev/kcp-operator
-architectures="amd64 arm64"
+architectures="${ARCHITECTURES:-amd64 arm64}"
 
 # when building locally, just tag with the current HEAD hash
-version="$(git rev-parse --short HEAD)"
+version="${IMAGE_TAG:-}"
 branchName=""
 
-# deduce the tag from the Prow job metadata
-if [ -n "${PULL_BASE_REF:-}" ]; then
-  version="$(git tag --list "$PULL_BASE_REF")"
+if [ -z "$version" ]; then
+  version="$(git rev-parse --short HEAD)"
 
-  if [ -z "$version" ]; then
-    # if the base ref did not point to a tag, it's a branch name
-    version="$(git rev-parse --short "$PULL_BASE_REF")"
-    branchName="$PULL_BASE_REF"
-  else
-    # If PULL_BASE_REF is a tag, there is no branch available locally, plus
-    # there is no guarantee that vX.Y.Z is tagged _only_ in the release-X.Y
-    # branch; because of this we have to deduce the branch name from the tag
-    branchName="$(echo "$version" | sed -E 's/^v([0-9]+)\.([0-9]+)\..*/release-\1.\2/')"
+  # deduce the tag from the Prow job metadata
+  if [ -n "${PULL_BASE_REF:-}" ]; then
+    version="$(git tag --list "$PULL_BASE_REF")"
+
+    if [ -z "$version" ]; then
+      # if the base ref did not point to a tag, it's a branch name
+      version="$(git rev-parse --short "$PULL_BASE_REF")"
+      branchName="$PULL_BASE_REF"
+    else
+      # If PULL_BASE_REF is a tag, there is no branch available locally, plus
+      # there is no guarantee that vX.Y.Z is tagged _only_ in the release-X.Y
+      # branch; because of this we have to deduce the branch name from the tag
+      branchName="$(echo "$version" | sed -E 's/^v([0-9]+)\.([0-9]+)\..*/release-\1.\2/')"
+    fi
   fi
 fi
 
