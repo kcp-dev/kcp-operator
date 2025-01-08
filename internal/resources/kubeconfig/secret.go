@@ -28,7 +28,7 @@ import (
 	"github.com/kcp-dev/kcp-operator/api/v1alpha1"
 )
 
-func KubeconfigSecretReconciler(kubeconfig *v1alpha1.Kubeconfig, certSecret *corev1.Secret, serverName, serverUrl string) reconciling.NamedSecretReconcilerFactory {
+func KubeconfigSecretReconciler(kubeconfig *v1alpha1.Kubeconfig, certSecret *corev1.Secret, serverName, serverURL string) reconciling.NamedSecretReconcilerFactory {
 	return func() (string, reconciling.SecretReconciler) {
 		return kubeconfig.Spec.SecretRef.Name, func(secret *corev1.Secret) (*corev1.Secret, error) {
 			var config *clientcmdapi.Config
@@ -41,7 +41,7 @@ func KubeconfigSecretReconciler(kubeconfig *v1alpha1.Kubeconfig, certSecret *cor
 
 			config.Clusters = map[string]*clientcmdapi.Cluster{
 				serverName: {
-					Server:                   serverUrl,
+					Server:                   serverURL,
 					CertificateAuthorityData: certSecret.Data["ca.crt"],
 				},
 			}

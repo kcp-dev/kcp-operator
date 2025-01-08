@@ -180,9 +180,6 @@ func ConnectWithKubeconfig(
 	parts := strings.Split(hostname, ".")
 	serviceName := parts[0]
 
-	// HACK/workaround: service name in URL is wrong
-	serviceName += "-kcp"
-
 	portNum, err := strconv.ParseInt(portString, 10, 32)
 	if err != nil {
 		t.Fatalf("Failed to parse kubeconfig's port %q: %v", portString, err)

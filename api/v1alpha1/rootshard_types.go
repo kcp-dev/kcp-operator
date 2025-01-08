@@ -115,7 +115,7 @@ func (r *RootShard) GetShardBaseURL() string {
 		clusterDomain = "cluster.local"
 	}
 
-	return fmt.Sprintf("https://%s.%s.svc.%s:6443", r.Name, r.Namespace, clusterDomain)
+	return fmt.Sprintf("https://%s-kcp.%s.svc.%s:6443", r.Name, r.Namespace, clusterDomain)
 }
 
 type Certificate string
