@@ -17,125 +17,233 @@ limitations under the License.
 package utils
 
 import (
+	"context"
 	"fmt"
-	"os"
+	"net"
+	"net/url"
 	"os/exec"
+	"strconv"
 	"strings"
+	"testing"
+	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	//nolint:golint,revive
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/scale/scheme"
+	"k8s.io/client-go/tools/clientcmd"
+	ctrlruntime "sigs.k8s.io/controller-runtime"
+	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
+
+	kcpoperatorv1alpha1 "github.com/kcp-dev/kcp-operator/api/v1alpha1"
 )
 
-const (
-	prometheusOperatorVersion = "v0.72.0"
-	prometheusOperatorURL     = "https://github.com/prometheus-operator/prometheus-operator/" +
-		"releases/download/%s/bundle.yaml"
-
-	certmanagerVersion = "v1.14.4"
-	certmanagerURLTmpl = "https://github.com/jetstack/cert-manager/releases/download/%s/cert-manager.yaml"
-)
-
-func warnError(err error) {
-	_, _ = fmt.Fprintf(GinkgoWriter, "warning: %v\n", err)
+func GetSelfSignedIssuerRef() *kcpoperatorv1alpha1.ObjectReference {
+	return &kcpoperatorv1alpha1.ObjectReference{
+		Group: "cert-manager.io",
+		Kind:  "ClusterIssuer",
+		Name:  "selfsigned",
+	}
 }
 
-// InstallPrometheusOperator installs the prometheus Operator to be used to export the enabled metrics.
-func InstallPrometheusOperator() error {
-	url := fmt.Sprintf(prometheusOperatorURL, prometheusOperatorVersion)
-	cmd := exec.Command("kubectl", "create", "-f", url)
-	_, err := Run(cmd)
-	return err
-}
+func GetKubeClient(t *testing.T) ctrlruntimeclient.Client {
+	t.Helper()
 
-// Run executes the provided command within this context
-func Run(cmd *exec.Cmd) ([]byte, error) {
-	dir, _ := GetProjectDir()
-	cmd.Dir = dir
-
-	if err := os.Chdir(cmd.Dir); err != nil {
-		_, _ = fmt.Fprintf(GinkgoWriter, "chdir dir: %s\n", err)
+	sc := runtime.NewScheme()
+	if err := scheme.AddToScheme(sc); err != nil {
+		t.Fatal(err)
+	}
+	if err := corev1.AddToScheme(sc); err != nil {
+		t.Fatal(err)
+	}
+	if err := kcpoperatorv1alpha1.AddToScheme(sc); err != nil {
+		t.Fatal(err)
 	}
 
-	cmd.Env = append(os.Environ(), "GO111MODULE=on")
-	command := strings.Join(cmd.Args, " ")
-	_, _ = fmt.Fprintf(GinkgoWriter, "running: %s\n", command)
-	output, err := cmd.CombinedOutput()
+	config, err := ctrlruntime.GetConfig()
 	if err != nil {
-		return output, fmt.Errorf("%s failed with error: (%v) %s", command, err, string(output))
+		t.Fatalf("Failed to get kubeconfig: %v", err)
 	}
 
-	return output, nil
-}
-
-// UninstallPrometheusOperator uninstalls the prometheus
-func UninstallPrometheusOperator() {
-	url := fmt.Sprintf(prometheusOperatorURL, prometheusOperatorVersion)
-	cmd := exec.Command("kubectl", "delete", "-f", url)
-	if _, err := Run(cmd); err != nil {
-		warnError(err)
+	c, err := ctrlruntimeclient.New(config, ctrlruntimeclient.Options{
+		Scheme: sc,
+	})
+	if err != nil {
+		t.Fatalf("Failed to create client: %v", err)
 	}
+
+	return c
 }
 
-// UninstallCertManager uninstalls the cert manager
-func UninstallCertManager() {
-	url := fmt.Sprintf(certmanagerURLTmpl, certmanagerVersion)
-	cmd := exec.Command("kubectl", "delete", "-f", url)
-	if _, err := Run(cmd); err != nil {
-		warnError(err)
+func CreateSelfDestructingNamespace(t *testing.T, ctx context.Context, client ctrlruntimeclient.Client, name string) {
+	t.Helper()
+
+	ns := corev1.Namespace{}
+	ns.Name = name
+
+	t.Logf("Creating namespace %s…", name)
+	if err := client.Create(ctx, &ns); err != nil {
+		t.Fatal(err)
 	}
-}
 
-// InstallCertManager installs the cert manager bundle.
-func InstallCertManager() error {
-	url := fmt.Sprintf(certmanagerURLTmpl, certmanagerVersion)
-	cmd := exec.Command("kubectl", "apply", "-f", url)
-	if _, err := Run(cmd); err != nil {
-		return err
-	}
-	// Wait for cert-manager-webhook to be ready, which can take time if cert-manager
-	// was re-installed after uninstalling on a cluster.
-	cmd = exec.Command("kubectl", "wait", "deployment.apps/cert-manager-webhook",
-		"--for", "condition=Available",
-		"--namespace", "cert-manager",
-		"--timeout", "5m",
-	)
-
-	_, err := Run(cmd)
-	return err
-}
-
-// LoadImageToKindClusterWithName loads a local docker image to the kind cluster
-func LoadImageToKindClusterWithName(name string) error {
-	cluster := "kind"
-	if v, ok := os.LookupEnv("KIND_CLUSTER"); ok {
-		cluster = v
-	}
-	kindOptions := []string{"load", "docker-image", name, "--name", cluster}
-	cmd := exec.Command("kind", kindOptions...)
-	_, err := Run(cmd)
-	return err
-}
-
-// GetNonEmptyLines converts given command output string into individual objects
-// according to line breakers, and ignores the empty elements in it.
-func GetNonEmptyLines(output string) []string {
-	var res []string
-	elements := strings.Split(output, "\n")
-	for _, element := range elements {
-		if element != "" {
-			res = append(res, element)
+	t.Cleanup(func() {
+		t.Logf("Deleting namespace %s…", name)
+		if err := client.Delete(ctx, &ns); err != nil {
+			t.Fatal(err)
 		}
-	}
-
-	return res
+	})
 }
 
-// GetProjectDir will return the directory where the project is
-func GetProjectDir() (string, error) {
-	wd, err := os.Getwd()
-	if err != nil {
-		return wd, err
+func SelfDestuctingPortForward(
+	t *testing.T,
+	ctx context.Context,
+	namespace string,
+	target string,
+	targetPort int,
+	localPort int,
+) {
+	t.Helper()
+
+	args := []string{
+		"port-forward",
+		"--namespace", namespace,
+		target,
+		fmt.Sprintf("%d:%d", localPort, targetPort),
 	}
-	wd = strings.Replace(wd, "/test/e2e", "", -1)
-	return wd, nil
+
+	t.Logf("Exposing %s:%d on port %d…", target, targetPort, localPort)
+
+	localCtx, cancel := context.WithCancel(ctx)
+
+	cmd := exec.CommandContext(localCtx, "kubectl", args...)
+	if err := cmd.Start(); err != nil {
+		t.Fatalf("Failed to start port-forwarding: %v", err)
+	}
+
+	time.Sleep(3 * time.Second)
+
+	t.Cleanup(func() {
+		cancel()
+		_ = cmd.Wait()
+	})
+}
+
+var currentPort = 56029
+
+func getPort() int {
+	port := currentPort
+	currentPort++
+
+	return port
+}
+
+func ConnectWithKubeconfig(
+	t *testing.T,
+	ctx context.Context,
+	client ctrlruntimeclient.Client,
+	namespace string,
+	kubeconfigName string,
+) ctrlruntimeclient.Client {
+	t.Helper()
+
+	// get kubeconfig
+	config := &kcpoperatorv1alpha1.Kubeconfig{}
+	key := types.NamespacedName{Namespace: namespace, Name: kubeconfigName}
+	if err := client.Get(ctx, key, config); err != nil {
+		t.Fatal(err)
+	}
+
+	// get the kubeconfig's secret
+	secret := &corev1.Secret{}
+	key = types.NamespacedName{Namespace: namespace, Name: config.Spec.SecretRef.Name}
+	if err := client.Get(ctx, key, secret); err != nil {
+		t.Fatal(err)
+	}
+
+	// parse kubeconfig
+	clientConfig, err := clientcmd.RESTConfigFromKubeConfig(secret.Data["kubeconfig"])
+	if err != nil {
+		t.Fatalf("Failed to parse kubeconfig: %v", err)
+	}
+
+	// deduce service name from the hostname
+	parsed, err := url.Parse(clientConfig.Host)
+	if err != nil {
+		t.Fatalf("Failed to parse kubeconfig's server %q: %v", clientConfig.Host, err)
+	}
+
+	hostname, portString, err := net.SplitHostPort(parsed.Host)
+	if err != nil {
+		t.Fatalf("Failed to parse kubeconfig's host %q: %v", parsed.Host, err)
+	}
+
+	parts := strings.Split(hostname, ".")
+	serviceName := parts[0]
+
+	// HACK/workaround: service name in URL is wrong
+	serviceName += "-kcp"
+
+	portNum, err := strconv.ParseInt(portString, 10, 32)
+	if err != nil {
+		t.Fatalf("Failed to parse kubeconfig's port %q: %v", portString, err)
+	}
+
+	// start a port forwarding
+	localPort := getPort()
+	SelfDestuctingPortForward(t, ctx, namespace, "svc/"+serviceName, int(portNum), localPort)
+
+	// patch the target server
+	parsed.Host = net.JoinHostPort("localhost", fmt.Sprintf("%d", localPort))
+	clientConfig.Host = parsed.String()
+
+	// create a client through the tunnel
+	sc := runtime.NewScheme()
+	if err := scheme.AddToScheme(sc); err != nil {
+		t.Fatal(err)
+	}
+	if err := corev1.AddToScheme(sc); err != nil {
+		t.Fatal(err)
+	}
+
+	kcpClient, err := ctrlruntimeclient.New(clientConfig, ctrlruntimeclient.Options{Scheme: sc})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return kcpClient
+}
+
+func DeployEtcd(t *testing.T, namespace string) string {
+	t.Helper()
+
+	t.Logf("Installing etcd into %s…", namespace)
+	args := []string{
+		"install",
+		"etcd",
+		"oci://registry-1.docker.io/bitnamicharts/etcd",
+		"--namespace", namespace,
+		"--version", "10.7.1", // latest version at the time of writing
+		"--set", "auth.rbac.enabled=false",
+		"--set", "auth.rbac.create=false",
+	}
+
+	if err := exec.Command("helm", args...).Run(); err != nil {
+		t.Fatalf("Failed to deploy etcd: %v", err)
+	}
+
+	t.Log("Waiting for etcd to get ready…")
+	args = []string{
+		"wait",
+		"pods",
+		"--namespace", namespace,
+		"--selector", "app.kubernetes.io/name=etcd",
+		"--for", "condition=Ready",
+		"--timeout", "3m",
+	}
+
+	if err := exec.Command("kubectl", args...).Run(); err != nil {
+		t.Fatalf("Failed to wait for etcd to become ready: %v", err)
+	}
+
+	return fmt.Sprintf("http://etcd.%s.svc.cluster.local:2379", namespace)
 }
