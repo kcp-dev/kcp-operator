@@ -5,6 +5,18 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - apps
+  resources:
+  - deployments
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - cert-manager.io
   resources:
   - certificates
@@ -18,12 +30,23 @@ rules:
   - update
   - watch
 - apiGroups:
+  - ""
+  resources:
+  - secrets
+  - services
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - operator.kcp.io
   resources:
   - cacheservers
   - frontproxies
-  - kcpinstances
-  - kubeconfigs
   - shards
   verbs:
   - create
@@ -38,8 +61,8 @@ rules:
   resources:
   - cacheservers/finalizers
   - frontproxies/finalizers
-  - kcpinstances/finalizers
   - kubeconfigs/finalizers
+  - rootshards/finalizers
   - shards/finalizers
   verbs:
   - update
@@ -48,10 +71,21 @@ rules:
   resources:
   - cacheservers/status
   - frontproxies/status
-  - kcpinstances/status
   - kubeconfigs/status
+  - rootshards/status
   - shards/status
   verbs:
   - get
   - patch
   - update
+- apiGroups:
+  - operator.kcp.io
+  resources:
+  - kubeconfigs
+  - rootshards
+  verbs:
+  - get
+  - list
+  - patch
+  - update
+  - watch

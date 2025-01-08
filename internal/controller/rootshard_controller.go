@@ -39,11 +39,13 @@ type RootShardReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-// +kubebuilder:rbac:groups=operator.kcp.io,resources=kcpinstances,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=operator.kcp.io,resources=kcpinstances/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=operator.kcp.io,resources=kcpinstances/finalizers,verbs=update
+// +kubebuilder:rbac:groups=operator.kcp.io,resources=rootshards,verbs=get;list;watch;update;patch
+// +kubebuilder:rbac:groups=operator.kcp.io,resources=rootshards/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=operator.kcp.io,resources=rootshards/finalizers,verbs=update
 // +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=cert-manager.io,resources=issuers,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=core,resources=services,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
