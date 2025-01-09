@@ -84,12 +84,28 @@ type OIDCConfiguration struct {
 
 // RootShardStatus defines the observed state of RootShard
 type RootShardStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	Phase RootShardPhase `json:"phase,omitempty"`
 }
+
+type RootShardPhase string
+
+const (
+	RootShardPhaseProvisioning RootShardPhase = "Provisioning"
+	RootShardPhaseRunning      RootShardPhase = "Running"
+	RootShardPhaseDeleting     RootShardPhase = "Deleting"
+)
+
+type RootShardConditionType string
+
+const (
+	RootShardConditionTypeAvailable RootShardConditionType = "Available"
+)
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:JSONPath=".spec.external.hostname",name="Hostname",type="string"
+// +kubebuilder:printcolumn:JSONPath=".status.phase",name="Phase",type="string"
+// +kubebuilder:printcolumn:JSONPath=".metadata.creationTimestamp",name="Age",type="date"
 
 // RootShard is the Schema for the kcpinstances API
 type RootShard struct {

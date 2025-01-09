@@ -22,7 +22,11 @@ import (
 
 	k8creconciling "k8c.io/reconciler/pkg/reconciling"
 
+	appsv1 "k8s.io/api/apps/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -65,6 +69,22 @@ func (r *RootShardReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, fmt.Errorf("failed to find %s/%s: %w", req.Namespace, req.Name, err)
 	}
 
+	if rootShard.DeletionTimestamp != nil {
+		rootShard.Status.Phase = operatorkcpiov1alpha1.RootShardPhaseDeleting
+		if err := r.Client.Status().Update(ctx, &rootShard); err != nil {
+			return ctrl.Result{}, err
+		}
+	}
+
+	if rootShard.Status.Phase == "" {
+		rootShard.Status.Phase = operatorkcpiov1alpha1.RootShardPhaseProvisioning
+		if err := r.Client.Status().Update(ctx, &rootShard); err != nil {
+			return ctrl.Result{}, err
+		}
+	}
+
+	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*metav1.NewControllerRef(&rootShard, operatorkcpiov1alpha1.GroupVersion.WithKind(rootShard.Kind)))
+
 	// Intermediate CAs that we need to generate a certificate and an issuer for.
 	intermediateCAs := []v1alpha1.CA{
 		v1alpha1.ServerCA,
@@ -91,24 +111,39 @@ func (r *RootShardReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		certReconcilers = append(certReconcilers, rootshard.RootCACertificateReconciler(&rootShard))
 	}
 
-	if err := reconciling.ReconcileCertificates(ctx, certReconcilers, req.Namespace, r.Client); err != nil {
+	if err := reconciling.ReconcileCertificates(ctx, certReconcilers, req.Namespace, r.Client, ownerRefWrapper); err != nil {
 		return ctrl.Result{}, err
 	}
 
-	if err := reconciling.ReconcileIssuers(ctx, issuerReconcilers, req.Namespace, r.Client); err != nil {
+	if err := reconciling.ReconcileIssuers(ctx, issuerReconcilers, req.Namespace, r.Client, ownerRefWrapper); err != nil {
 		return ctrl.Result{}, err
 	}
 
 	if err := k8creconciling.ReconcileDeployments(ctx, []k8creconciling.NamedDeploymentReconcilerFactory{
 		rootshard.DeploymentReconciler(&rootShard),
-	}, req.Namespace, r.Client); err != nil {
+	}, req.Namespace, r.Client, ownerRefWrapper); err != nil {
 		return ctrl.Result{}, err
 	}
 
 	if err := k8creconciling.ReconcileServices(ctx, []k8creconciling.NamedServiceReconcilerFactory{
 		rootshard.ServiceReconciler(&rootShard),
-	}, req.Namespace, r.Client); err != nil {
+	}, req.Namespace, r.Client, ownerRefWrapper); err != nil {
 		return ctrl.Result{}, err
+	}
+
+	// check for Deployment health and update the rootShard phase if necessary.
+	var dep appsv1.Deployment
+	err := r.Client.Get(ctx, types.NamespacedName{Namespace: req.Namespace, Name: fmt.Sprintf("%s-kcp", rootShard.Name)}, &dep)
+	if client.IgnoreNotFound(err) != nil {
+		return ctrl.Result{}, err
+	}
+	if err == nil {
+		if rootShard.Status.Phase == operatorkcpiov1alpha1.RootShardPhaseProvisioning && dep.Status.ReadyReplicas == ptr.Deref(dep.Spec.Replicas, 0) {
+			rootShard.Status.Phase = operatorkcpiov1alpha1.RootShardPhaseRunning
+			if err := r.Client.Status().Update(ctx, &rootShard); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
 	}
 
 	return ctrl.Result{}, nil
@@ -118,5 +153,6 @@ func (r *RootShardReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 func (r *RootShardReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&operatorkcpiov1alpha1.RootShard{}).
+		Owns(&appsv1.Deployment{}).
 		Complete(r)
 }
