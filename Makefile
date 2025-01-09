@@ -8,7 +8,7 @@ ENVTEST_K8S_VERSION = 1.31.0
 KUSTOMIZE_VERSION ?= v5.4.3
 CONTROLLER_TOOLS_VERSION ?= v0.16.1
 ENVTEST_VERSION ?= release-0.19
-GOLANGCI_LINT_VERSION ?= v1.59.1
+GOLANGCI_LINT_VERSION ?= v1.63.4
 
 # Image URL to use all building/pushing image targets
 IMG ?= ghcr.io/kcp-dev/kcp-operator
