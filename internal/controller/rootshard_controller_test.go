@@ -19,15 +19,14 @@ package controller
 import (
 	"context"
 
+	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	operatorkcpiov1alpha1 "github.com/kcp-dev/kcp-operator/api/v1alpha1"
 )
 
 var _ = Describe("RootShard Controller", func() {
@@ -40,24 +39,24 @@ var _ = Describe("RootShard Controller", func() {
 			Name:      resourceName,
 			Namespace: "default", // TODO(user):Modify as needed
 		}
-		kcpinstance := &operatorkcpiov1alpha1.RootShard{}
+		kcpinstance := &operatorv1alpha1.RootShard{}
 
 		BeforeEach(func() {
 			By("creating the custom resource for the Kind RootShard")
 			err := k8sClient.Get(ctx, typeNamespacedName, kcpinstance)
 			if err != nil && errors.IsNotFound(err) {
-				resource := &operatorkcpiov1alpha1.RootShard{
+				resource := &operatorv1alpha1.RootShard{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      resourceName,
 						Namespace: "default",
 					},
-					Spec: operatorkcpiov1alpha1.RootShardSpec{
-						External: operatorkcpiov1alpha1.ExternalConfig{
+					Spec: operatorv1alpha1.RootShardSpec{
+						External: operatorv1alpha1.ExternalConfig{
 							Hostname: "example.kcp.io",
 							Port:     6443,
 						},
-						CommonShardSpec: operatorkcpiov1alpha1.CommonShardSpec{
-							Etcd: operatorkcpiov1alpha1.EtcdConfig{
+						CommonShardSpec: operatorv1alpha1.CommonShardSpec{
+							Etcd: operatorv1alpha1.EtcdConfig{
 								Endpoints: []string{"https://localhost:2379"},
 							},
 						},
@@ -69,7 +68,7 @@ var _ = Describe("RootShard Controller", func() {
 
 		AfterEach(func() {
 			// TODO(user): Cleanup logic after each test, like removing the resource instance.
-			resource := &operatorkcpiov1alpha1.RootShard{}
+			resource := &operatorv1alpha1.RootShard{}
 			err := k8sClient.Get(ctx, typeNamespacedName, resource)
 			Expect(err).NotTo(HaveOccurred())
 

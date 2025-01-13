@@ -19,15 +19,14 @@ package controller
 import (
 	"context"
 
+	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	operatorkcpiov1alpha1 "github.com/kcp-dev/kcp-operator/api/v1alpha1"
 )
 
 var _ = Describe("FrontProxy Controller", func() {
@@ -40,13 +39,13 @@ var _ = Describe("FrontProxy Controller", func() {
 			Name:      resourceName,
 			Namespace: "default", // TODO(user):Modify as needed
 		}
-		frontproxy := &operatorkcpiov1alpha1.FrontProxy{}
+		frontproxy := &operatorv1alpha1.FrontProxy{}
 
 		BeforeEach(func() {
 			By("creating the custom resource for the Kind FrontProxy")
 			err := k8sClient.Get(ctx, typeNamespacedName, frontproxy)
 			if err != nil && errors.IsNotFound(err) {
-				resource := &operatorkcpiov1alpha1.FrontProxy{
+				resource := &operatorv1alpha1.FrontProxy{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      resourceName,
 						Namespace: "default",
@@ -59,7 +58,7 @@ var _ = Describe("FrontProxy Controller", func() {
 
 		AfterEach(func() {
 			// TODO(user): Cleanup logic after each test, like removing the resource instance.
-			resource := &operatorkcpiov1alpha1.FrontProxy{}
+			resource := &operatorv1alpha1.FrontProxy{}
 			err := k8sClient.Get(ctx, typeNamespacedName, resource)
 			Expect(err).NotTo(HaveOccurred())
 

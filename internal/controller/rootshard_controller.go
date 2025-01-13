@@ -20,8 +20,13 @@ import (
 	"context"
 	"fmt"
 
-	k8creconciling "k8c.io/reconciler/pkg/reconciling"
+	"github.com/kcp-dev/kcp-operator/internal/reconciling"
+	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/rootshard"
+	"github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
+	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 
+	k8creconciling "k8c.io/reconciler/pkg/reconciling"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apimeta "k8s.io/apimachinery/pkg/api/meta"
@@ -33,12 +38,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	"github.com/kcp-dev/kcp-operator/api/v1alpha1"
-	operatorkcpiov1alpha1 "github.com/kcp-dev/kcp-operator/api/v1alpha1"
-	"github.com/kcp-dev/kcp-operator/internal/reconciling"
-	"github.com/kcp-dev/kcp-operator/internal/resources"
-	"github.com/kcp-dev/kcp-operator/internal/resources/rootshard"
 )
 
 // RootShardReconciler reconciles a RootShard object
@@ -95,10 +94,10 @@ func (r *RootShardReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	return ctrl.Result{}, r.reconcile(ctx, &rootShard)
 }
 
-func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operatorkcpiov1alpha1.RootShard) error {
+func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operatorv1alpha1.RootShard) error {
 	var errs []error
 
-	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*metav1.NewControllerRef(rootShard, operatorkcpiov1alpha1.GroupVersion.WithKind("RootShard")))
+	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*metav1.NewControllerRef(rootShard, operatorv1alpha1.GroupVersion.WithKind("RootShard")))
 
 	// Intermediate CAs that we need to generate a certificate and an issuer for.
 	intermediateCAs := []v1alpha1.CA{
@@ -150,24 +149,24 @@ func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operator
 }
 
 // reconcileStatus sets both phase and conditions on the reconciled RootShard object.
-func (r *RootShardReconciler) reconcileStatus(ctx context.Context, oldRootShard *operatorkcpiov1alpha1.RootShard) error {
+func (r *RootShardReconciler) reconcileStatus(ctx context.Context, oldRootShard *operatorv1alpha1.RootShard) error {
 	rootShard := oldRootShard.DeepCopy()
 	var errs []error
 
 	if rootShard.Status.Phase == "" {
-		rootShard.Status.Phase = operatorkcpiov1alpha1.RootShardPhaseProvisioning
+		rootShard.Status.Phase = operatorv1alpha1.RootShardPhaseProvisioning
 	}
 
 	if rootShard.DeletionTimestamp != nil {
-		rootShard.Status.Phase = operatorkcpiov1alpha1.RootShardPhaseDeleting
+		rootShard.Status.Phase = operatorv1alpha1.RootShardPhaseDeleting
 	}
 
 	if err := r.setAvailableCondition(ctx, rootShard); err != nil {
 		errs = append(errs, err)
 	}
 
-	if cond := apimeta.FindStatusCondition(rootShard.Status.Conditions, string(operatorkcpiov1alpha1.RootShardConditionTypeAvailable)); cond.Status == metav1.ConditionTrue {
-		rootShard.Status.Phase = operatorkcpiov1alpha1.RootShardPhaseRunning
+	if cond := apimeta.FindStatusCondition(rootShard.Status.Conditions, string(operatorv1alpha1.RootShardConditionTypeAvailable)); cond.Status == metav1.ConditionTrue {
+		rootShard.Status.Phase = operatorv1alpha1.RootShardPhaseRunning
 	}
 
 	// only patch the status if there are actual changes.
@@ -180,7 +179,7 @@ func (r *RootShardReconciler) reconcileStatus(ctx context.Context, oldRootShard 
 	return kerrors.NewAggregate(errs)
 }
 
-func (r *RootShardReconciler) setAvailableCondition(ctx context.Context, rootShard *operatorkcpiov1alpha1.RootShard) error {
+func (r *RootShardReconciler) setAvailableCondition(ctx context.Context, rootShard *operatorv1alpha1.RootShard) error {
 
 	var dep appsv1.Deployment
 	depKey := types.NamespacedName{Namespace: rootShard.Namespace, Name: resources.GetRootShardDeploymentName(rootShard)}
@@ -189,17 +188,17 @@ func (r *RootShardReconciler) setAvailableCondition(ctx context.Context, rootSha
 	}
 
 	available := metav1.ConditionFalse
-	reason := operatorkcpiov1alpha1.RootShardConditionReasonDeploymentUnavailable
+	reason := operatorv1alpha1.RootShardConditionReasonDeploymentUnavailable
 	msg := fmt.Sprintf("Deployment %s", depKey)
 
 	if dep.Name != "" {
 		if dep.Status.UpdatedReplicas == dep.Status.ReadyReplicas && dep.Status.ReadyReplicas == ptr.Deref(dep.Spec.Replicas, 0) {
 			available = metav1.ConditionTrue
-			reason = operatorkcpiov1alpha1.RootShardConditionReasonReplicasUp
+			reason = operatorv1alpha1.RootShardConditionReasonReplicasUp
 			msg += " is fully up and running"
 		} else {
 			available = metav1.ConditionFalse
-			reason = operatorkcpiov1alpha1.RootShardConditionReasonReplicasUnavailable
+			reason = operatorv1alpha1.RootShardConditionReasonReplicasUnavailable
 			msg += " is not in desired replica state"
 		}
 	} else {
@@ -210,7 +209,7 @@ func (r *RootShardReconciler) setAvailableCondition(ctx context.Context, rootSha
 		rootShard.Status.Conditions = make([]metav1.Condition, 0)
 	}
 
-	cond := apimeta.FindStatusCondition(rootShard.Status.Conditions, string(operatorkcpiov1alpha1.RootShardConditionTypeAvailable))
+	cond := apimeta.FindStatusCondition(rootShard.Status.Conditions, string(operatorv1alpha1.RootShardConditionTypeAvailable))
 
 	if cond == nil || cond.ObservedGeneration != rootShard.Generation || cond.Status != available {
 		transitionTime := metav1.Now()
@@ -221,7 +220,7 @@ func (r *RootShardReconciler) setAvailableCondition(ctx context.Context, rootSha
 		}
 
 		apimeta.SetStatusCondition(&rootShard.Status.Conditions, metav1.Condition{
-			Type:               string(operatorkcpiov1alpha1.RootShardConditionTypeAvailable),
+			Type:               string(operatorv1alpha1.RootShardConditionTypeAvailable),
 			Status:             available,
 			ObservedGeneration: rootShard.Generation,
 			LastTransitionTime: transitionTime,

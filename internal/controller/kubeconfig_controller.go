@@ -22,21 +22,20 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/kcp-dev/kcp-operator/internal/reconciling"
+	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/kubeconfig"
+	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
+
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	certmanagermetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	k8creconciling "k8c.io/reconciler/pkg/reconciling"
-
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	operatorkcpiov1alpha1 "github.com/kcp-dev/kcp-operator/api/v1alpha1"
-	"github.com/kcp-dev/kcp-operator/internal/reconciling"
-	"github.com/kcp-dev/kcp-operator/internal/resources"
-	"github.com/kcp-dev/kcp-operator/internal/resources/kubeconfig"
 )
 
 // KubeconfigReconciler reconciles a Kubeconfig object
@@ -58,7 +57,7 @@ func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	logger := log.FromContext(ctx)
 	logger.Info("Reconciling Kubeconfig object")
 
-	var kc operatorkcpiov1alpha1.Kubeconfig
+	var kc operatorv1alpha1.Kubeconfig
 	if err := r.Client.Get(ctx, req.NamespacedName, &kc); err != nil {
 		return ctrl.Result{}, err
 	}
@@ -69,11 +68,11 @@ func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	switch {
 	case kc.Spec.Target.RootShardRef != nil:
-		var rootShard operatorkcpiov1alpha1.RootShard
+		var rootShard operatorv1alpha1.RootShard
 		if err := r.Client.Get(ctx, types.NamespacedName{Name: kc.Spec.Target.RootShardRef.Name, Namespace: req.Namespace}, &rootShard); err != nil {
 			return ctrl.Result{}, fmt.Errorf("referenced RootShard '%s' does not exist", kc.Spec.Target.RootShardRef.Name)
 		}
-		issuer = resources.GetRootShardCAName(&rootShard, operatorkcpiov1alpha1.ClientCA)
+		issuer = resources.GetRootShardCAName(&rootShard, operatorv1alpha1.ClientCA)
 		serverURL = resources.GetRootShardBaseURL(&rootShard)
 		serverName = rootShard.Name
 	default:
@@ -129,6 +128,6 @@ func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 // SetupWithManager sets up the controller with the Manager.
 func (r *KubeconfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&operatorkcpiov1alpha1.Kubeconfig{}).
+		For(&operatorv1alpha1.Kubeconfig{}).
 		Complete(r)
 }

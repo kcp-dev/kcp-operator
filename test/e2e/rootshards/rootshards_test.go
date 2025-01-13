@@ -23,17 +23,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-logr/logr"
+	kcpoperatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
+	"github.com/kcp-dev/kcp-operator/test/utils"
 
+	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	ctrlruntime "sigs.k8s.io/controller-runtime"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
-
-	kcpoperatorv1alpha1 "github.com/kcp-dev/kcp-operator/api/v1alpha1"
-	"github.com/kcp-dev/kcp-operator/test/utils"
 )
 
 func TestCreateRootShard(t *testing.T) {

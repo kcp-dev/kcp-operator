@@ -19,13 +19,13 @@ package rootshard
 import (
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 
-	"github.com/kcp-dev/kcp-operator/api/v1alpha1"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
+	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
-func RootCAIssuerReconciler(rootShard *v1alpha1.RootShard) reconciling.NamedIssuerReconcilerFactory {
-	name := resources.GetRootShardCAName(rootShard, v1alpha1.RootCA)
+func RootCAIssuerReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.NamedIssuerReconcilerFactory {
+	name := resources.GetRootShardCAName(rootShard, operatorv1alpha1.RootCA)
 
 	secretName := name
 	if rootShard.Spec.Certificates.CASecretRef != nil {
@@ -48,7 +48,7 @@ func RootCAIssuerReconciler(rootShard *v1alpha1.RootShard) reconciling.NamedIssu
 	}
 }
 
-func CAIssuerReconciler(rootShard *v1alpha1.RootShard, ca v1alpha1.CA) reconciling.NamedIssuerReconcilerFactory {
+func CAIssuerReconciler(rootShard *operatorv1alpha1.RootShard, ca operatorv1alpha1.CA) reconciling.NamedIssuerReconcilerFactory {
 	name := resources.GetRootShardCAName(rootShard, ca)
 
 	return func() (string, reconciling.IssuerReconciler) {

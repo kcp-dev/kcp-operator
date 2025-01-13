@@ -18,16 +18,15 @@ package rootshard
 
 import (
 	"k8c.io/reconciler/pkg/reconciling"
+	"github.com/kcp-dev/kcp-operator/internal/resources"
+	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
-
-	"github.com/kcp-dev/kcp-operator/api/v1alpha1"
-	"github.com/kcp-dev/kcp-operator/internal/resources"
 )
 
-func ServiceReconciler(rootShard *v1alpha1.RootShard) reconciling.NamedServiceReconcilerFactory {
+func ServiceReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.NamedServiceReconcilerFactory {
 	return func() (string, reconciling.ServiceReconciler) {
 		return resources.GetRootShardServiceName(rootShard), func(svc *corev1.Service) (*corev1.Service, error) {
 			labels := resources.GetRootShardResourceLabels(rootShard)
