@@ -591,7 +591,7 @@ func (in *RootShardConfig) DeepCopyInto(out *RootShardConfig) {
 	*out = *in
 	if in.Reference != nil {
 		in, out := &in.Reference, &out.Reference
-		*out = new(v1.ObjectReference)
+		*out = new(v1.LocalObjectReference)
 		**out = **in
 	}
 }

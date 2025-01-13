@@ -49,7 +49,7 @@ type ImageSpec struct {
 
 type RootShardConfig struct {
 	// Reference references a local RootShard object.
-	Reference *corev1.ObjectReference `json:"ref,omitempty"`
+	Reference *corev1.LocalObjectReference `json:"ref,omitempty"`
 }
 
 type EtcdConfig struct {

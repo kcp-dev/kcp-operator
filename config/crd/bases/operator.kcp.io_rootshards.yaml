@@ -14,7 +14,17 @@ spec:
     singular: rootshard
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .spec.external.hostname
+      name: Hostname
+      type: string
+    - jsonPath: .status.phase
+      name: Phase
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         description: RootShard is the Schema for the kcpinstances API
@@ -188,6 +198,9 @@ spec:
             type: object
           status:
             description: RootShardStatus defines the observed state of RootShard
+            properties:
+              phase:
+                type: string
             type: object
         type: object
     served: true
