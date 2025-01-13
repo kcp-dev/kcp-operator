@@ -88,7 +88,7 @@ func (r *RootShardReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		}
 	}
 
-	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*metav1.NewControllerRef(&rootShard, operatorkcpiov1alpha1.GroupVersion.WithKind(rootShard.Kind)))
+	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*metav1.NewControllerRef(&rootShard, operatorkcpiov1alpha1.GroupVersion.WithKind("RootShard")))
 
 	// Intermediate CAs that we need to generate a certificate and an issuer for.
 	intermediateCAs := []v1alpha1.CA{
