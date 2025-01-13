@@ -66,7 +66,12 @@ func (r *RootShardReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 	var rootShard v1alpha1.RootShard
 	if err := r.Client.Get(ctx, req.NamespacedName, &rootShard); err != nil {
-		return ctrl.Result{}, fmt.Errorf("failed to find %s/%s: %w", req.Namespace, req.Name, err)
+		if client.IgnoreNotFound(err) != nil {
+			return ctrl.Result{}, fmt.Errorf("failed to find %s/%s: %w", req.Namespace, req.Name, err)
+		}
+
+		// Object has apparently been deleted already.
+		return ctrl.Result{}, nil
 	}
 
 	if rootShard.DeletionTimestamp != nil {
