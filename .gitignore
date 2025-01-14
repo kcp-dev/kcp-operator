@@ -25,5 +25,5 @@ go.work.sum
 .env
 
 # Downloaded and built binaries
-bin/
-tools
+/_build/
+/_tools/

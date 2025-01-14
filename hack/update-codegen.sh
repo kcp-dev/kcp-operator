@@ -27,6 +27,17 @@ SDK_PKG="$MODULE"
 APIS_PKG="$MODULE/apis"
 
 set -x
+
+# generate reconciling helpers
+_tools/reconciler-gen --config hack/reconciling.yaml > internal/reconciling/zz_generated_reconcile.go
+
+# generate CRDs
+go run sigs.k8s.io/controller-tools/cmd/controller-gen \
+  rbac:roleName=manager-role crd webhook \
+  paths="./..." \
+  output:crd:artifacts:config=config/crd/bases
+
+# generate SDK
 rm -rf -- "$SDK_DIR/{applyconfiguration,clientset,informers,listers}"
 
 go run k8s.io/code-generator/cmd/applyconfiguration-gen \
@@ -54,7 +65,7 @@ go run github.com/kcp-dev/code-generator/v2 \
 # its output is identical to how gimps would sort the imports, but it also fixes
 # the misplaced go:build directives.
 for submodule in "applyconfiguration" "clientset" "informers" "listers"; do
-  go run github.com/openshift-eng/openshift-goimports \
+  _tools/openshift-goimports \
     --module "$MODULE/$submodule" \
     --path "$SDK_DIR/$submodule"
 done

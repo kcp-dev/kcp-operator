@@ -19,12 +19,13 @@ package kubeconfig
 import (
 	"fmt"
 
-	"github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
-
 	"k8c.io/reconciler/pkg/reconciling"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
+
+	"github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
 func KubeconfigSecretReconciler(kubeconfig *v1alpha1.Kubeconfig, certSecret *corev1.Secret, serverName, serverURL string) reconciling.NamedSecretReconcilerFactory {

@@ -20,8 +20,6 @@ package tools
 
 import (
 	_ "github.com/kcp-dev/code-generator/v2"
-	_ "github.com/openshift-eng/openshift-goimports"
-	_ "k8c.io/reconciler/cmd/reconciler-gen"
 
 	_ "k8s.io/code-generator/cmd/applyconfiguration-gen"
 	_ "k8s.io/code-generator/cmd/client-gen"

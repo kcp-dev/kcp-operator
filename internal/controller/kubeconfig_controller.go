@@ -22,20 +22,21 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/kcp-dev/kcp-operator/internal/reconciling"
-	"github.com/kcp-dev/kcp-operator/internal/resources"
-	"github.com/kcp-dev/kcp-operator/internal/resources/kubeconfig"
-	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
-
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	certmanagermetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	k8creconciling "k8c.io/reconciler/pkg/reconciling"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+
+	"github.com/kcp-dev/kcp-operator/internal/reconciling"
+	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/kubeconfig"
+	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
 // KubeconfigReconciler reconciles a Kubeconfig object

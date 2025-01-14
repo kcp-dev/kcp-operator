@@ -17,11 +17,11 @@ limitations under the License.
 package kubeconfig
 
 import (
-	"github.com/kcp-dev/kcp-operator/internal/reconciling"
-	"github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
-
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	certmanagermetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+
+	"github.com/kcp-dev/kcp-operator/internal/reconciling"
+	"github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
 func ClientCertificateReconciler(kubeConfig *v1alpha1.Kubeconfig, issuerName string) reconciling.NamedCertificateReconcilerFactory {

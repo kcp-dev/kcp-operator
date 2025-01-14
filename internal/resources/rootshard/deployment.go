@@ -20,15 +20,16 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kcp-dev/kcp-operator/internal/resources"
-	"github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
-
 	"k8c.io/reconciler/pkg/reconciling"
+
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
+
+	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
 const (

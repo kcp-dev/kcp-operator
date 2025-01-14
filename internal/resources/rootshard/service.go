@@ -24,6 +24,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
+
+	"github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
 func ServiceReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.NamedServiceReconcilerFactory {
