@@ -84,7 +84,8 @@ type OIDCConfiguration struct {
 
 // RootShardStatus defines the observed state of RootShard
 type RootShardStatus struct {
-	Phase RootShardPhase `json:"phase,omitempty"`
+	Phase      RootShardPhase     `json:"phase,omitempty"`
+	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 }
 
 type RootShardPhase string
@@ -99,6 +100,14 @@ type RootShardConditionType string
 
 const (
 	RootShardConditionTypeAvailable RootShardConditionType = "Available"
+)
+
+type RootShardConditionReason string
+
+const (
+	RootShardConditionReasonDeploymentUnavailable RootShardConditionReason = "DeploymentUnavailable"
+	RootShardConditionReasonReplicasUp            RootShardConditionReason = "ReplicasUp"
+	RootShardConditionReasonReplicasUnavailable   RootShardConditionReason = "ReplicasUnavailable"
 )
 
 // +kubebuilder:object:root=true
@@ -132,6 +141,10 @@ func (r *RootShard) GetShardBaseURL() string {
 	}
 
 	return fmt.Sprintf("https://%s-kcp.%s.svc.%s:6443", r.Name, r.Namespace, clusterDomain)
+}
+
+func (r *RootShard) GetDeploymentName() string {
+	return fmt.Sprintf("%s-kcp", r.Name)
 }
 
 type Certificate string

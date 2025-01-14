@@ -54,7 +54,7 @@ func DeploymentReconciler(rootShard *v1alpha1.RootShard) reconciling.NamedDeploy
 	args := getArgs(rootShard)
 
 	return func() (string, reconciling.DeploymentReconciler) {
-		return fmt.Sprintf("%s-kcp", rootShard.Name), func(dep *appsv1.Deployment) (*appsv1.Deployment, error) {
+		return rootShard.GetDeploymentName(), func(dep *appsv1.Deployment) (*appsv1.Deployment, error) {
 			dep.SetLabels(rootShard.GetResourceLabels())
 			dep.Spec.Selector = &v1.LabelSelector{
 				MatchLabels: rootShard.GetResourceLabels(),
