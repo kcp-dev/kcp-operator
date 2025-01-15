@@ -24,15 +24,16 @@ import (
 
 	operatorkcpiov1alpha1 "github.com/kcp-dev/kcp-operator/api/v1alpha1"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
+	"github.com/kcp-dev/kcp-operator/internal/resources"
 )
 
 // RootCACertificateReconciler creates the central CA used for the kcp setup around a specific RootShard. This shouldn't be called if the RootShard is configured to use a BYO CA certificate.
 func RootCACertificateReconciler(rootShard *operatorkcpiov1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
-	name := rootShard.GetCAName(operatorkcpiov1alpha1.RootCA)
+	name := resources.GetRootShardCAName(rootShard, operatorkcpiov1alpha1.RootCA)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
-			cert.SetLabels(rootShard.GetResourceLabels())
+			cert.SetLabels(resources.GetRootShardResourceLabels(rootShard))
 
 			if rootShard.Spec.Certificates.IssuerRef == nil {
 				return nil, fmt.Errorf("no issuer ref configured in RootShard '%s/%s'", rootShard.Namespace, rootShard.Name)
@@ -64,11 +65,11 @@ func RootCACertificateReconciler(rootShard *operatorkcpiov1alpha1.RootShard) rec
 }
 
 func CACertificateReconciler(rootShard *operatorkcpiov1alpha1.RootShard, ca operatorkcpiov1alpha1.CA) reconciling.NamedCertificateReconcilerFactory {
-	name := rootShard.GetCAName(ca)
+	name := resources.GetRootShardCAName(rootShard, ca)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
-			cert.SetLabels(rootShard.GetResourceLabels())
+			cert.SetLabels(resources.GetRootShardResourceLabels(rootShard))
 			cert.Spec = certmanagerv1.CertificateSpec{
 				IsCA:       true,
 				CommonName: name,
@@ -83,7 +84,7 @@ func CACertificateReconciler(rootShard *operatorkcpiov1alpha1.RootShard, ca oper
 				},
 
 				IssuerRef: certmanagermetav1.ObjectReference{
-					Name:  rootShard.GetCAName(operatorkcpiov1alpha1.RootCA),
+					Name:  resources.GetRootShardCAName(rootShard, operatorkcpiov1alpha1.RootCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},

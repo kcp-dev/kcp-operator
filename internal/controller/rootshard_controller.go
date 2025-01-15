@@ -23,6 +23,7 @@ import (
 	k8creconciling "k8c.io/reconciler/pkg/reconciling"
 
 	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -36,6 +37,7 @@ import (
 	"github.com/kcp-dev/kcp-operator/api/v1alpha1"
 	operatorkcpiov1alpha1 "github.com/kcp-dev/kcp-operator/api/v1alpha1"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
+	"github.com/kcp-dev/kcp-operator/internal/resources"
 	"github.com/kcp-dev/kcp-operator/internal/resources/rootshard"
 )
 
@@ -168,8 +170,11 @@ func (r *RootShardReconciler) reconcileStatus(ctx context.Context, oldRootShard 
 		rootShard.Status.Phase = operatorkcpiov1alpha1.RootShardPhaseRunning
 	}
 
-	if err := r.Client.Status().Patch(ctx, rootShard, client.MergeFrom(oldRootShard)); err != nil {
-		errs = append(errs, err)
+	// only patch the status if there are actual changes.
+	if !equality.Semantic.DeepEqual(oldRootShard.Status, rootShard.Status) {
+		if err := r.Client.Status().Patch(ctx, rootShard, client.MergeFrom(oldRootShard)); err != nil {
+			errs = append(errs, err)
+		}
 	}
 
 	return kerrors.NewAggregate(errs)
@@ -178,24 +183,27 @@ func (r *RootShardReconciler) reconcileStatus(ctx context.Context, oldRootShard 
 func (r *RootShardReconciler) setAvailableCondition(ctx context.Context, rootShard *operatorkcpiov1alpha1.RootShard) error {
 
 	var dep appsv1.Deployment
-	if err := r.Client.Get(ctx, types.NamespacedName{Namespace: rootShard.Namespace, Name: rootShard.GetDeploymentName()}, &dep); client.IgnoreNotFound(err) != nil {
+	depKey := types.NamespacedName{Namespace: rootShard.Namespace, Name: resources.GetRootShardDeploymentName(rootShard)}
+	if err := r.Client.Get(ctx, depKey, &dep); client.IgnoreNotFound(err) != nil {
 		return err
 	}
 
 	available := metav1.ConditionFalse
 	reason := operatorkcpiov1alpha1.RootShardConditionReasonDeploymentUnavailable
-	msg := fmt.Sprintf("Deployment %s/%s does not exist yet", rootShard.Namespace, rootShard.GetDeploymentName())
+	msg := fmt.Sprintf("Deployment %s", depKey)
+
 	if dep.Name != "" {
-		switch dep.Status.UpdatedReplicas == dep.Status.ReadyReplicas && dep.Status.ReadyReplicas == ptr.Deref(dep.Spec.Replicas, 0) {
-		case true:
+		if dep.Status.UpdatedReplicas == dep.Status.ReadyReplicas && dep.Status.ReadyReplicas == ptr.Deref(dep.Spec.Replicas, 0) {
 			available = metav1.ConditionTrue
 			reason = operatorkcpiov1alpha1.RootShardConditionReasonReplicasUp
-			msg = fmt.Sprintf("Deployment %s/%s is fully up and running", rootShard.Namespace, rootShard.GetDeploymentName())
-		case false:
+			msg += " is fully up and running"
+		} else {
 			available = metav1.ConditionFalse
 			reason = operatorkcpiov1alpha1.RootShardConditionReasonReplicasUnavailable
-			msg = fmt.Sprintf("Deployment %s/%s is not in desired replica state", rootShard.Namespace, rootShard.GetDeploymentName())
+			msg += " is not in desired replica state"
 		}
+	} else {
+		msg += " does not exist"
 	}
 
 	if rootShard.Status.Conditions == nil {
@@ -205,11 +213,18 @@ func (r *RootShardReconciler) setAvailableCondition(ctx context.Context, rootSha
 	cond := apimeta.FindStatusCondition(rootShard.Status.Conditions, string(operatorkcpiov1alpha1.RootShardConditionTypeAvailable))
 
 	if cond == nil || cond.ObservedGeneration != rootShard.Generation || cond.Status != available {
+		transitionTime := metav1.Now()
+		if cond != nil && cond.Status == available {
+			// We only need to set LastTransitionTime if we are actually toggling the status
+			// or if no transition time was set.
+			transitionTime = cond.LastTransitionTime
+		}
+
 		apimeta.SetStatusCondition(&rootShard.Status.Conditions, metav1.Condition{
 			Type:               string(operatorkcpiov1alpha1.RootShardConditionTypeAvailable),
 			Status:             available,
 			ObservedGeneration: rootShard.Generation,
-			LastTransitionTime: metav1.Now(),
+			LastTransitionTime: transitionTime,
 			Reason:             string(reason),
 			Message:            msg,
 		})

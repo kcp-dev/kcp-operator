@@ -27,6 +27,11 @@ import (
 const (
 	ImageRepository = "ghcr.io/kcp-dev/kcp"
 	ImageTag        = "v0.26.0"
+
+	appNameLabel      = "app.kubernetes.io/name"
+	appInstanceLabel  = "app.kubernetes.io/instance"
+	appManagedByLabel = "app.kubernetes.io/managed-by"
+	appComponentLabel = "app.kubernetes.io/component"
 )
 
 func GetImageSettings(imageSpec *v1alpha1.ImageSpec) (string, []corev1.LocalObjectReference) {
@@ -46,4 +51,41 @@ func GetImageSettings(imageSpec *v1alpha1.ImageSpec) (string, []corev1.LocalObje
 	}
 
 	return fmt.Sprintf("%s:%s", repository, tag), imagePullSecrets
+}
+
+func GetRootShardDeploymentName(r *v1alpha1.RootShard) string {
+	return fmt.Sprintf("%s-kcp", r.Name)
+}
+
+func GetRootShardServiceName(r *v1alpha1.RootShard) string {
+	return fmt.Sprintf("%s-kcp", r.Name)
+}
+
+func GetRootShardResourceLabels(r *v1alpha1.RootShard) map[string]string {
+	return map[string]string{
+		appNameLabel:      "kcp",
+		appInstanceLabel:  r.Name,
+		appManagedByLabel: "kcp-operator",
+		appComponentLabel: "rootshard",
+	}
+}
+
+func GetRootShardBaseURL(r *v1alpha1.RootShard) string {
+	clusterDomain := r.Spec.ClusterDomain
+	if clusterDomain == "" {
+		clusterDomain = "cluster.local"
+	}
+
+	return fmt.Sprintf("https://%s-kcp.%s.svc.%s:6443", r.Name, r.Namespace, clusterDomain)
+}
+
+func GetRootShardCertificateName(r *v1alpha1.RootShard, certName v1alpha1.Certificate) string {
+	return fmt.Sprintf("%s-%s", r.Name, certName)
+}
+
+func GetRootShardCAName(r *v1alpha1.RootShard, caName v1alpha1.CA) string {
+	if caName == v1alpha1.RootCA {
+		return fmt.Sprintf("%s-ca", r.Name)
+	}
+	return fmt.Sprintf("%s-%s-ca", r.Name, caName)
 }

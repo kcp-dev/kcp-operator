@@ -54,19 +54,20 @@ func DeploymentReconciler(rootShard *v1alpha1.RootShard) reconciling.NamedDeploy
 	args := getArgs(rootShard)
 
 	return func() (string, reconciling.DeploymentReconciler) {
-		return rootShard.GetDeploymentName(), func(dep *appsv1.Deployment) (*appsv1.Deployment, error) {
-			dep.SetLabels(rootShard.GetResourceLabels())
+		return resources.GetRootShardDeploymentName(rootShard), func(dep *appsv1.Deployment) (*appsv1.Deployment, error) {
+			labels := resources.GetRootShardResourceLabels(rootShard)
+			dep.SetLabels(labels)
 			dep.Spec.Selector = &v1.LabelSelector{
-				MatchLabels: rootShard.GetResourceLabels(),
+				MatchLabels: labels,
 			}
-			dep.Spec.Template.ObjectMeta.SetLabels(rootShard.GetResourceLabels())
+			dep.Spec.Template.ObjectMeta.SetLabels(labels)
 
 			volumes := []corev1.Volume{
 				{
 					Name: "kcp-ca",
 					VolumeSource: corev1.VolumeSource{
 						Secret: &corev1.SecretVolumeSource{
-							SecretName: rootShard.GetCAName(v1alpha1.RootCA),
+							SecretName: resources.GetRootShardCAName(rootShard, v1alpha1.RootCA),
 							Items: []corev1.KeyToPath{
 								{
 									Key:  "tls.crt",
@@ -122,7 +123,7 @@ func DeploymentReconciler(rootShard *v1alpha1.RootShard) reconciling.NamedDeploy
 						Name: fmt.Sprintf("%s-ca", ca),
 						VolumeSource: corev1.VolumeSource{
 							Secret: &corev1.SecretVolumeSource{
-								SecretName: rootShard.GetCAName(ca),
+								SecretName: resources.GetRootShardCAName(rootShard, ca),
 							},
 						},
 					})
@@ -141,7 +142,7 @@ func DeploymentReconciler(rootShard *v1alpha1.RootShard) reconciling.NamedDeploy
 					Name: string(cert),
 					VolumeSource: corev1.VolumeSource{
 						Secret: &corev1.SecretVolumeSource{
-							SecretName: rootShard.GetCertificateName(cert)}},
+							SecretName: resources.GetRootShardCertificateName(rootShard, cert)}},
 				})
 				container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
 					Name:      string(cert),
@@ -185,7 +186,7 @@ func getArgs(rootShard *v1alpha1.RootShard) []string {
 		fmt.Sprintf("--etcd-servers=%s", strings.Join(rootShard.Spec.Etcd.Endpoints, ",")),
 
 		// General shard configuration.
-		fmt.Sprintf("--shard-base-url=%s", rootShard.GetShardBaseURL()),
+		fmt.Sprintf("--shard-base-url=%s", resources.GetRootShardBaseURL(rootShard)),
 		fmt.Sprintf("--shard-external-url=https://%s:%d", rootShard.Spec.External.Hostname, rootShard.Spec.External.Port),
 		"--root-directory=''",
 	}

@@ -17,8 +17,6 @@ limitations under the License.
 package rootshard
 
 import (
-	"fmt"
-
 	"k8c.io/reconciler/pkg/reconciling"
 
 	corev1 "k8s.io/api/core/v1"
@@ -26,12 +24,14 @@ import (
 	"k8s.io/utils/ptr"
 
 	"github.com/kcp-dev/kcp-operator/api/v1alpha1"
+	"github.com/kcp-dev/kcp-operator/internal/resources"
 )
 
 func ServiceReconciler(rootShard *v1alpha1.RootShard) reconciling.NamedServiceReconcilerFactory {
 	return func() (string, reconciling.ServiceReconciler) {
-		return fmt.Sprintf("%s-kcp", rootShard.Name), func(svc *corev1.Service) (*corev1.Service, error) {
-			svc.SetLabels(rootShard.GetResourceLabels())
+		return resources.GetRootShardServiceName(rootShard), func(svc *corev1.Service) (*corev1.Service, error) {
+			labels := resources.GetRootShardResourceLabels(rootShard)
+			svc.SetLabels(labels)
 			svc.Spec.Type = corev1.ServiceTypeClusterIP
 			svc.Spec.Ports = []corev1.ServicePort{
 				{
@@ -49,7 +49,7 @@ func ServiceReconciler(rootShard *v1alpha1.RootShard) reconciling.NamedServiceRe
 					AppProtocol: ptr.To("https"),
 				},
 			}
-			svc.Spec.Selector = rootShard.GetResourceLabels()
+			svc.Spec.Selector = labels
 
 			return svc, nil
 		}

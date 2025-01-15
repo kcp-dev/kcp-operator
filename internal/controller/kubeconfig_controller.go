@@ -35,6 +35,7 @@ import (
 
 	operatorkcpiov1alpha1 "github.com/kcp-dev/kcp-operator/api/v1alpha1"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
+	"github.com/kcp-dev/kcp-operator/internal/resources"
 	"github.com/kcp-dev/kcp-operator/internal/resources/kubeconfig"
 )
 
@@ -72,8 +73,8 @@ func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		if err := r.Client.Get(ctx, types.NamespacedName{Name: kc.Spec.Target.RootShardRef.Name, Namespace: req.Namespace}, &rootShard); err != nil {
 			return ctrl.Result{}, fmt.Errorf("referenced RootShard '%s' does not exist", kc.Spec.Target.RootShardRef.Name)
 		}
-		issuer = rootShard.GetCAName(operatorkcpiov1alpha1.ClientCA)
-		serverURL = rootShard.GetShardBaseURL()
+		issuer = resources.GetRootShardCAName(&rootShard, operatorkcpiov1alpha1.ClientCA)
+		serverURL = resources.GetRootShardBaseURL(&rootShard)
 		serverName = rootShard.Name
 	default:
 		return ctrl.Result{}, fmt.Errorf("no valid target for kubeconfig found")
