@@ -9,7 +9,7 @@ KUBECTL_VERSION ?= v1.32.0
 KUSTOMIZE_VERSION ?= v5.4.3
 CONTROLLER_TOOLS_VERSION ?= v0.16.1
 ENVTEST_VERSION ?= release-0.19
-GOLANGCI_LINT_VERSION ?= v1.63.4
+GOLANGCI_LINT_VERSION ?= 1.63.4
 
 # Image URL to use all building/pushing image targets
 IMG ?= ghcr.io/kcp-dev/kcp-operator
@@ -172,7 +172,7 @@ $(ENVTEST):
 .PHONY: golangci-lint
 golangci-lint: $(GOLANGCI_LINT) ## Download golangci-lint locally if necessary.
 $(GOLANGCI_LINT):
-	@GO_MODULE=true hack/download-tool.sh github.com/golangci/golangci-lint/cmd/golangci-lint golangci-lint $(GOLANGCI_LINT_VERSION)
+	@hack/download-tool.sh https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_LINT_VERSION}/golangci-lint-${GOLANGCI_LINT_VERSION}-$(shell go env GOOS)-$(shell go env GOARCH).tar.gz golangci-lint $(GOLANGCI_LINT_VERSION)
 
 .PHONY: reconciler-gen
 reconciler-gen: $(RECONCILER_GEN) ## Download reconciler-gen locally if necessary.
