@@ -22,14 +22,15 @@ import (
 
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/api/v1alpha1"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
+	"github.com/kcp-dev/kcp-operator/internal/resources"
 )
 
 func ServerCertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
-	name := rootShard.GetCertificateName(operatorv1alpha1.ServerCertificate)
+	name := resources.GetRootShardCertificateName(rootShard, operatorv1alpha1.ServerCertificate)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
-			cert.SetLabels(rootShard.GetResourceLabels())
+			cert.SetLabels(resources.GetRootShardResourceLabels(rootShard))
 			cert.Spec = certmanagerv1.CertificateSpec{
 				SecretName:  name,
 				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
@@ -50,7 +51,7 @@ func ServerCertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconcil
 				},
 
 				IssuerRef: certmanagermetav1.ObjectReference{
-					Name:  rootShard.GetCAName(operatorv1alpha1.ServerCA),
+					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.ServerCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},
@@ -62,11 +63,11 @@ func ServerCertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconcil
 }
 
 func VirtualWorkspacesCertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
-	name := rootShard.GetCertificateName(operatorv1alpha1.VirtualWorkspacesCertificate)
+	name := resources.GetRootShardCertificateName(rootShard, operatorv1alpha1.VirtualWorkspacesCertificate)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
-			cert.SetLabels(rootShard.GetResourceLabels())
+			cert.SetLabels(resources.GetRootShardResourceLabels(rootShard))
 			cert.Spec = certmanagerv1.CertificateSpec{
 				SecretName:  name,
 				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
@@ -86,7 +87,7 @@ func VirtualWorkspacesCertificateReconciler(rootShard *operatorv1alpha1.RootShar
 				},
 
 				IssuerRef: certmanagermetav1.ObjectReference{
-					Name:  rootShard.GetCAName(operatorv1alpha1.ServerCA),
+					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.ServerCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},
@@ -98,11 +99,11 @@ func VirtualWorkspacesCertificateReconciler(rootShard *operatorv1alpha1.RootShar
 }
 
 func ServiceAccountCertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
-	name := rootShard.GetCertificateName(operatorv1alpha1.ServiceAccountCertificate)
+	name := resources.GetRootShardCertificateName(rootShard, operatorv1alpha1.ServiceAccountCertificate)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
-			cert.SetLabels(rootShard.GetResourceLabels())
+			cert.SetLabels(resources.GetRootShardResourceLabels(rootShard))
 			cert.Spec = certmanagerv1.CertificateSpec{
 				CommonName:  name,
 				SecretName:  name,
@@ -115,7 +116,7 @@ func ServiceAccountCertificateReconciler(rootShard *operatorv1alpha1.RootShard) 
 				},
 
 				IssuerRef: certmanagermetav1.ObjectReference{
-					Name:  rootShard.GetCAName(operatorv1alpha1.ServiceAccountCA),
+					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.ServiceAccountCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},

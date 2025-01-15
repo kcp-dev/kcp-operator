@@ -23,13 +23,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const (
-	appNameLabel      = "app.kubernetes.io/name"
-	appInstanceLabel  = "app.kubernetes.io/instance"
-	appManagedByLabel = "app.kubernetes.io/managed-by"
-	appComponentLabel = "app.kubernetes.io/component"
-)
-
 var (
 	DefaultCADuration          = metav1.Duration{Duration: time.Hour * 24 * 365 * 10}
 	DefaultCARenewal           = metav1.Duration{Duration: time.Hour * 24 * 30}

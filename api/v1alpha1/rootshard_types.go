@@ -17,8 +17,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"fmt"
-
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -85,6 +83,10 @@ type OIDCConfiguration struct {
 // RootShardStatus defines the observed state of RootShard
 type RootShardStatus struct {
 	Phase RootShardPhase `json:"phase,omitempty"`
+
+	// +listType=map
+	// +listMapKey=type
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 type RootShardPhase string
@@ -99,6 +101,14 @@ type RootShardConditionType string
 
 const (
 	RootShardConditionTypeAvailable RootShardConditionType = "Available"
+)
+
+type RootShardConditionReason string
+
+const (
+	RootShardConditionReasonDeploymentUnavailable RootShardConditionReason = "DeploymentUnavailable"
+	RootShardConditionReasonReplicasUp            RootShardConditionReason = "ReplicasUp"
+	RootShardConditionReasonReplicasUnavailable   RootShardConditionReason = "ReplicasUnavailable"
 )
 
 // +kubebuilder:object:root=true
@@ -116,24 +126,6 @@ type RootShard struct {
 	Status RootShardStatus `json:"status,omitempty"`
 }
 
-func (r *RootShard) GetResourceLabels() map[string]string {
-	return map[string]string{
-		appNameLabel:      "kcp",
-		appInstanceLabel:  r.Name,
-		appManagedByLabel: "kcp-operator",
-		appComponentLabel: "rootshard",
-	}
-}
-
-func (r *RootShard) GetShardBaseURL() string {
-	clusterDomain := r.Spec.ClusterDomain
-	if clusterDomain == "" {
-		clusterDomain = "cluster.local"
-	}
-
-	return fmt.Sprintf("https://%s-kcp.%s.svc.%s:6443", r.Name, r.Namespace, clusterDomain)
-}
-
 type Certificate string
 
 const (
@@ -141,10 +133,6 @@ const (
 	ServiceAccountCertificate    Certificate = "service-account"
 	VirtualWorkspacesCertificate Certificate = "virtual-workspaces"
 )
-
-func (r *RootShard) GetCertificateName(certName Certificate) string {
-	return fmt.Sprintf("%s-%s", r.Name, certName)
-}
 
 type CA string
 
@@ -155,13 +143,6 @@ const (
 	ClientCA              CA = "client"
 	RequestHeaderClientCA CA = "requestheader-client"
 )
-
-func (r *RootShard) GetCAName(caName CA) string {
-	if caName == RootCA {
-		return fmt.Sprintf("%s-ca", r.Name)
-	}
-	return fmt.Sprintf("%s-%s-ca", r.Name, caName)
-}
 
 // +kubebuilder:object:root=true
 

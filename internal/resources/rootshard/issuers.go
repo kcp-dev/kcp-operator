@@ -21,10 +21,11 @@ import (
 
 	"github.com/kcp-dev/kcp-operator/api/v1alpha1"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
+	"github.com/kcp-dev/kcp-operator/internal/resources"
 )
 
 func RootCAIssuerReconciler(rootShard *v1alpha1.RootShard) reconciling.NamedIssuerReconcilerFactory {
-	name := rootShard.GetCAName(v1alpha1.RootCA)
+	name := resources.GetRootShardCAName(rootShard, v1alpha1.RootCA)
 
 	secretName := name
 	if rootShard.Spec.Certificates.CASecretRef != nil {
@@ -33,7 +34,7 @@ func RootCAIssuerReconciler(rootShard *v1alpha1.RootShard) reconciling.NamedIssu
 
 	return func() (string, reconciling.IssuerReconciler) {
 		return name, func(issuer *certmanagerv1.Issuer) (*certmanagerv1.Issuer, error) {
-			issuer.SetLabels(rootShard.GetResourceLabels())
+			issuer.SetLabels(resources.GetRootShardResourceLabels(rootShard))
 			issuer.Spec = certmanagerv1.IssuerSpec{
 				IssuerConfig: certmanagerv1.IssuerConfig{
 					CA: &certmanagerv1.CAIssuer{
@@ -48,11 +49,11 @@ func RootCAIssuerReconciler(rootShard *v1alpha1.RootShard) reconciling.NamedIssu
 }
 
 func CAIssuerReconciler(rootShard *v1alpha1.RootShard, ca v1alpha1.CA) reconciling.NamedIssuerReconcilerFactory {
-	name := rootShard.GetCAName(ca)
+	name := resources.GetRootShardCAName(rootShard, ca)
 
 	return func() (string, reconciling.IssuerReconciler) {
 		return name, func(issuer *certmanagerv1.Issuer) (*certmanagerv1.Issuer, error) {
-			issuer.SetLabels(rootShard.GetResourceLabels())
+			issuer.SetLabels(resources.GetRootShardResourceLabels(rootShard))
 			issuer.Spec = certmanagerv1.IssuerSpec{
 				IssuerConfig: certmanagerv1.IssuerConfig{
 					CA: &certmanagerv1.CAIssuer{
