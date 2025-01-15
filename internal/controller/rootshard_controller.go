@@ -50,7 +50,7 @@ type RootShardReconciler struct {
 // SetupWithManager sets up the controller with the Manager.
 func (r *RootShardReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&operatorkcpiov1alpha1.RootShard{}).
+		For(&operatorv1alpha1.RootShard{}).
 		Owns(&appsv1.Deployment{}).
 		Complete(r)
 }
@@ -98,7 +98,7 @@ func (r *RootShardReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operatorv1alpha1.RootShard) error {
 	var errs []error
 
-	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*metav1.NewControllerRef(rootShard, operatorv1alpha1.GroupVersion.WithKind("RootShard")))
+	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*metav1.NewControllerRef(rootShard, operatorv1alpha1.SchemeGroupVersion.WithKind("RootShard")))
 
 	// Intermediate CAs that we need to generate a certificate and an issuer for.
 	intermediateCAs := []v1alpha1.CA{

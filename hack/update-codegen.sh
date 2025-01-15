@@ -61,11 +61,4 @@ go run github.com/kcp-dev/code-generator/v2 \
   "paths=./sdk/apis/..." \
   "output:dir=$SDK_DIR"
 
-# Use openshift's import fixer because gimps fails to parse some of the files;
-# its output is identical to how gimps would sort the imports, but it also fixes
-# the misplaced go:build directives.
-for submodule in "applyconfiguration" "clientset" "informers" "listers"; do
-  _tools/openshift-goimports \
-    --module "$MODULE/$submodule" \
-    --path "$SDK_DIR/$submodule"
-done
+make --no-print-directory imports

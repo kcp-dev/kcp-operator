@@ -83,7 +83,7 @@ modules: ## Run go mod tidy to ensure modules are up to date.
 	hack/update-go-modules.sh
 
 .PHONY: imports
-imports: $(OPENSHIFT_GOIMPORTS) ## Re-order Go import statements.
+imports: openshift-goimports ## Re-order Go import statements.
 	$(OPENSHIFT_GOIMPORTS) -m github.com/kcp-dev/kcp-operator
 
 .PHONY: verify
