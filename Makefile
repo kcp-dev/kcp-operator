@@ -14,7 +14,7 @@ GOLANGCI_LINT_VERSION ?= 1.63.4
 # Image URL to use all building/pushing image targets
 IMG ?= ghcr.io/kcp-dev/kcp-operator
 
-TOOLS_DIR=_tools
+TOOLS_DIR = $(shell pwd)/_tools
 
 # CONTAINER_TOOL defines the container tool to be used for building images.
 # Be aware that the target commands are only tested with Docker which is
