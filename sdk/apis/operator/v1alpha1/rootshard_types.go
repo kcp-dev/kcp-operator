@@ -111,6 +111,7 @@ const (
 	RootShardConditionReasonReplicasUnavailable   RootShardConditionReason = "ReplicasUnavailable"
 )
 
+// +genclient
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:JSONPath=".spec.external.hostname",name="Hostname",type="string"
