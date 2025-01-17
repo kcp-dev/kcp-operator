@@ -35,7 +35,7 @@ import (
 	ctrlruntime "sigs.k8s.io/controller-runtime"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
-	kcpoperatorv1alpha1 "github.com/kcp-dev/kcp-operator/api/v1alpha1"
+	kcpoperatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
 func GetSelfSignedIssuerRef() *kcpoperatorv1alpha1.ObjectReference {

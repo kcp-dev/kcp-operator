@@ -27,7 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	operatorkcpiov1alpha1 "github.com/kcp-dev/kcp-operator/api/v1alpha1"
+	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
 var _ = Describe("CacheServer Controller", func() {
@@ -40,19 +40,19 @@ var _ = Describe("CacheServer Controller", func() {
 			Name:      resourceName,
 			Namespace: "default",
 		}
-		cacheserver := &operatorkcpiov1alpha1.CacheServer{}
+		cacheserver := &operatorv1alpha1.CacheServer{}
 
 		BeforeEach(func() {
 			By("creating the custom resource for the Kind CacheServer")
 			err := k8sClient.Get(ctx, typeNamespacedName, cacheserver)
 			if err != nil && errors.IsNotFound(err) {
-				resource := &operatorkcpiov1alpha1.CacheServer{
+				resource := &operatorv1alpha1.CacheServer{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      resourceName,
 						Namespace: "default",
 					},
-					Spec: operatorkcpiov1alpha1.CacheServerSpec{
-						Etcd: operatorkcpiov1alpha1.EtcdConfig{
+					Spec: operatorv1alpha1.CacheServerSpec{
+						Etcd: operatorv1alpha1.EtcdConfig{
 							Endpoints: []string{"https://localhost:2379"},
 						},
 					},
@@ -64,7 +64,7 @@ var _ = Describe("CacheServer Controller", func() {
 
 		AfterEach(func() {
 			// TODO(user): Cleanup logic after each test, like removing the resource instance.
-			resource := &operatorkcpiov1alpha1.CacheServer{}
+			resource := &operatorv1alpha1.CacheServer{}
 			err := k8sClient.Get(ctx, typeNamespacedName, resource)
 			Expect(err).NotTo(HaveOccurred())
 

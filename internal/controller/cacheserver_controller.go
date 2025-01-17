@@ -24,7 +24,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	operatorkcpiov1alpha1 "github.com/kcp-dev/kcp-operator/api/v1alpha1"
+	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
 // CacheServerReconciler reconciles a CacheServer object
@@ -57,6 +57,6 @@ func (r *CacheServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 // SetupWithManager sets up the controller with the Manager.
 func (r *CacheServerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&operatorkcpiov1alpha1.CacheServer{}).
+		For(&operatorv1alpha1.CacheServer{}).
 		Complete(r)
 }

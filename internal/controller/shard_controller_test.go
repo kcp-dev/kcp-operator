@@ -27,7 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	operatorkcpiov1alpha1 "github.com/kcp-dev/kcp-operator/api/v1alpha1"
+	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
 var _ = Describe("Shard Controller", func() {
@@ -40,20 +40,20 @@ var _ = Describe("Shard Controller", func() {
 			Name:      resourceName,
 			Namespace: "default",
 		}
-		shard := &operatorkcpiov1alpha1.Shard{}
+		shard := &operatorv1alpha1.Shard{}
 
 		BeforeEach(func() {
 			By("creating the custom resource for the Kind Shard")
 			err := k8sClient.Get(ctx, typeNamespacedName, shard)
 			if err != nil && errors.IsNotFound(err) {
-				resource := &operatorkcpiov1alpha1.Shard{
+				resource := &operatorv1alpha1.Shard{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      resourceName,
 						Namespace: "default",
 					},
-					Spec: operatorkcpiov1alpha1.ShardSpec{
-						CommonShardSpec: operatorkcpiov1alpha1.CommonShardSpec{
-							Etcd: operatorkcpiov1alpha1.EtcdConfig{
+					Spec: operatorv1alpha1.ShardSpec{
+						CommonShardSpec: operatorv1alpha1.CommonShardSpec{
+							Etcd: operatorv1alpha1.EtcdConfig{
 								Endpoints: []string{"https://localhost:2379"},
 							},
 						},
@@ -65,7 +65,7 @@ var _ = Describe("Shard Controller", func() {
 
 		AfterEach(func() {
 			// TODO(user): Cleanup logic after each test, like removing the resource instance.
-			resource := &operatorkcpiov1alpha1.Shard{}
+			resource := &operatorv1alpha1.Shard{}
 			err := k8sClient.Get(ctx, typeNamespacedName, resource)
 			Expect(err).NotTo(HaveOccurred())
 

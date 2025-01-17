@@ -20,8 +20,8 @@ import (
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	certmanagermetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 
-	"github.com/kcp-dev/kcp-operator/api/v1alpha1"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
+	"github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
 func ClientCertificateReconciler(kubeConfig *v1alpha1.Kubeconfig, issuerName string) reconciling.NamedCertificateReconcilerFactory {

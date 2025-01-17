@@ -23,11 +23,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 
-	"github.com/kcp-dev/kcp-operator/api/v1alpha1"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
+	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
-func ServiceReconciler(rootShard *v1alpha1.RootShard) reconciling.NamedServiceReconcilerFactory {
+func ServiceReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.NamedServiceReconcilerFactory {
 	return func() (string, reconciling.ServiceReconciler) {
 		return resources.GetRootShardServiceName(rootShard), func(svc *corev1.Service) (*corev1.Service, error) {
 			labels := resources.GetRootShardResourceLabels(rootShard)

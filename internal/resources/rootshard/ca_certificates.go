@@ -22,14 +22,14 @@ import (
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	certmanagermetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 
-	operatorkcpiov1alpha1 "github.com/kcp-dev/kcp-operator/api/v1alpha1"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
+	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
 // RootCACertificateReconciler creates the central CA used for the kcp setup around a specific RootShard. This shouldn't be called if the RootShard is configured to use a BYO CA certificate.
-func RootCACertificateReconciler(rootShard *operatorkcpiov1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
-	name := resources.GetRootShardCAName(rootShard, operatorkcpiov1alpha1.RootCA)
+func RootCACertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
+	name := resources.GetRootShardCAName(rootShard, operatorv1alpha1.RootCA)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
@@ -44,8 +44,8 @@ func RootCACertificateReconciler(rootShard *operatorkcpiov1alpha1.RootShard) rec
 				CommonName: name,
 				SecretName: name,
 				// Create CA certificate for ten years.
-				Duration:    &operatorkcpiov1alpha1.DefaultCADuration,
-				RenewBefore: &operatorkcpiov1alpha1.DefaultCARenewal,
+				Duration:    &operatorv1alpha1.DefaultCADuration,
+				RenewBefore: &operatorv1alpha1.DefaultCARenewal,
 
 				PrivateKey: &certmanagerv1.CertificatePrivateKey{
 					Algorithm: certmanagerv1.RSAKeyAlgorithm,
@@ -64,7 +64,7 @@ func RootCACertificateReconciler(rootShard *operatorkcpiov1alpha1.RootShard) rec
 	}
 }
 
-func CACertificateReconciler(rootShard *operatorkcpiov1alpha1.RootShard, ca operatorkcpiov1alpha1.CA) reconciling.NamedCertificateReconcilerFactory {
+func CACertificateReconciler(rootShard *operatorv1alpha1.RootShard, ca operatorv1alpha1.CA) reconciling.NamedCertificateReconcilerFactory {
 	name := resources.GetRootShardCAName(rootShard, ca)
 
 	return func() (string, reconciling.CertificateReconciler) {
@@ -75,8 +75,8 @@ func CACertificateReconciler(rootShard *operatorkcpiov1alpha1.RootShard, ca oper
 				CommonName: name,
 				SecretName: name,
 				// Create CA certificate for ten years.
-				Duration:    &operatorkcpiov1alpha1.DefaultCADuration,
-				RenewBefore: &operatorkcpiov1alpha1.DefaultCARenewal,
+				Duration:    &operatorv1alpha1.DefaultCADuration,
+				RenewBefore: &operatorv1alpha1.DefaultCARenewal,
 
 				PrivateKey: &certmanagerv1.CertificatePrivateKey{
 					Algorithm: certmanagerv1.RSAKeyAlgorithm,
@@ -84,7 +84,7 @@ func CACertificateReconciler(rootShard *operatorkcpiov1alpha1.RootShard, ca oper
 				},
 
 				IssuerRef: certmanagermetav1.ObjectReference{
-					Name:  resources.GetRootShardCAName(rootShard, operatorkcpiov1alpha1.RootCA),
+					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.RootCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},

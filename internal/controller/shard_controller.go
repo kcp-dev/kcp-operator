@@ -24,7 +24,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	operatorkcpiov1alpha1 "github.com/kcp-dev/kcp-operator/api/v1alpha1"
+	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
 // ShardReconciler reconciles a Shard object
@@ -57,6 +57,6 @@ func (r *ShardReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 // SetupWithManager sets up the controller with the Manager.
 func (r *ShardReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&operatorkcpiov1alpha1.Shard{}).
+		For(&operatorv1alpha1.Shard{}).
 		Complete(r)
 }

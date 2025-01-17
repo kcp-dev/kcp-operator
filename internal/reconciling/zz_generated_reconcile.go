@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-	http://www.apache.org/licenses/LICENSE-2.0
+    http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package reconciling
 
 import (
@@ -25,11 +26,11 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
-	apiv1alpha1 "github.com/kcp-dev/kcp-operator/api/v1alpha1"
+	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
 // RootShardReconciler defines an interface to create/update RootShards.
-type RootShardReconciler = func(existing *apiv1alpha1.RootShard) (*apiv1alpha1.RootShard, error)
+type RootShardReconciler = func(existing *operatorv1alpha1.RootShard) (*operatorv1alpha1.RootShard, error)
 
 // NamedRootShardReconcilerFactory returns the name of the resource and the corresponding Reconciler function.
 type NamedRootShardReconcilerFactory = func() (name string, reconciler RootShardReconciler)
@@ -39,9 +40,9 @@ type NamedRootShardReconcilerFactory = func() (name string, reconciler RootShard
 func RootShardObjectWrapper(reconciler RootShardReconciler) reconciling.ObjectReconciler {
 	return func(existing ctrlruntimeclient.Object) (ctrlruntimeclient.Object, error) {
 		if existing != nil {
-			return reconciler(existing.(*apiv1alpha1.RootShard))
+			return reconciler(existing.(*operatorv1alpha1.RootShard))
 		}
-		return reconciler(&apiv1alpha1.RootShard{})
+		return reconciler(&operatorv1alpha1.RootShard{})
 	}
 }
 
@@ -57,7 +58,7 @@ func ReconcileRootShards(ctx context.Context, namedFactories []NamedRootShardRec
 			reconcileObject = objectModifier(reconcileObject)
 		}
 
-		if err := reconciling.EnsureNamedObject(ctx, types.NamespacedName{Namespace: namespace, Name: name}, reconcileObject, client, &apiv1alpha1.RootShard{}, false); err != nil {
+		if err := reconciling.EnsureNamedObject(ctx, types.NamespacedName{Namespace: namespace, Name: name}, reconcileObject, client, &operatorv1alpha1.RootShard{}, false); err != nil {
 			return fmt.Errorf("failed to ensure RootShard %s/%s: %w", namespace, name, err)
 		}
 	}
@@ -66,7 +67,7 @@ func ReconcileRootShards(ctx context.Context, namedFactories []NamedRootShardRec
 }
 
 // ShardReconciler defines an interface to create/update Shards.
-type ShardReconciler = func(existing *apiv1alpha1.Shard) (*apiv1alpha1.Shard, error)
+type ShardReconciler = func(existing *operatorv1alpha1.Shard) (*operatorv1alpha1.Shard, error)
 
 // NamedShardReconcilerFactory returns the name of the resource and the corresponding Reconciler function.
 type NamedShardReconcilerFactory = func() (name string, reconciler ShardReconciler)
@@ -76,9 +77,9 @@ type NamedShardReconcilerFactory = func() (name string, reconciler ShardReconcil
 func ShardObjectWrapper(reconciler ShardReconciler) reconciling.ObjectReconciler {
 	return func(existing ctrlruntimeclient.Object) (ctrlruntimeclient.Object, error) {
 		if existing != nil {
-			return reconciler(existing.(*apiv1alpha1.Shard))
+			return reconciler(existing.(*operatorv1alpha1.Shard))
 		}
-		return reconciler(&apiv1alpha1.Shard{})
+		return reconciler(&operatorv1alpha1.Shard{})
 	}
 }
 
@@ -94,7 +95,7 @@ func ReconcileShards(ctx context.Context, namedFactories []NamedShardReconcilerF
 			reconcileObject = objectModifier(reconcileObject)
 		}
 
-		if err := reconciling.EnsureNamedObject(ctx, types.NamespacedName{Namespace: namespace, Name: name}, reconcileObject, client, &apiv1alpha1.Shard{}, false); err != nil {
+		if err := reconciling.EnsureNamedObject(ctx, types.NamespacedName{Namespace: namespace, Name: name}, reconcileObject, client, &operatorv1alpha1.Shard{}, false); err != nil {
 			return fmt.Errorf("failed to ensure Shard %s/%s: %w", namespace, name, err)
 		}
 	}
@@ -103,7 +104,7 @@ func ReconcileShards(ctx context.Context, namedFactories []NamedShardReconcilerF
 }
 
 // CacheServerReconciler defines an interface to create/update CacheServers.
-type CacheServerReconciler = func(existing *apiv1alpha1.CacheServer) (*apiv1alpha1.CacheServer, error)
+type CacheServerReconciler = func(existing *operatorv1alpha1.CacheServer) (*operatorv1alpha1.CacheServer, error)
 
 // NamedCacheServerReconcilerFactory returns the name of the resource and the corresponding Reconciler function.
 type NamedCacheServerReconcilerFactory = func() (name string, reconciler CacheServerReconciler)
@@ -113,9 +114,9 @@ type NamedCacheServerReconcilerFactory = func() (name string, reconciler CacheSe
 func CacheServerObjectWrapper(reconciler CacheServerReconciler) reconciling.ObjectReconciler {
 	return func(existing ctrlruntimeclient.Object) (ctrlruntimeclient.Object, error) {
 		if existing != nil {
-			return reconciler(existing.(*apiv1alpha1.CacheServer))
+			return reconciler(existing.(*operatorv1alpha1.CacheServer))
 		}
-		return reconciler(&apiv1alpha1.CacheServer{})
+		return reconciler(&operatorv1alpha1.CacheServer{})
 	}
 }
 
@@ -131,7 +132,7 @@ func ReconcileCacheServers(ctx context.Context, namedFactories []NamedCacheServe
 			reconcileObject = objectModifier(reconcileObject)
 		}
 
-		if err := reconciling.EnsureNamedObject(ctx, types.NamespacedName{Namespace: namespace, Name: name}, reconcileObject, client, &apiv1alpha1.CacheServer{}, false); err != nil {
+		if err := reconciling.EnsureNamedObject(ctx, types.NamespacedName{Namespace: namespace, Name: name}, reconcileObject, client, &operatorv1alpha1.CacheServer{}, false); err != nil {
 			return fmt.Errorf("failed to ensure CacheServer %s/%s: %w", namespace, name, err)
 		}
 	}
@@ -140,7 +141,7 @@ func ReconcileCacheServers(ctx context.Context, namedFactories []NamedCacheServe
 }
 
 // FrontProxyReconciler defines an interface to create/update FrontProxys.
-type FrontProxyReconciler = func(existing *apiv1alpha1.FrontProxy) (*apiv1alpha1.FrontProxy, error)
+type FrontProxyReconciler = func(existing *operatorv1alpha1.FrontProxy) (*operatorv1alpha1.FrontProxy, error)
 
 // NamedFrontProxyReconcilerFactory returns the name of the resource and the corresponding Reconciler function.
 type NamedFrontProxyReconcilerFactory = func() (name string, reconciler FrontProxyReconciler)
@@ -150,9 +151,9 @@ type NamedFrontProxyReconcilerFactory = func() (name string, reconciler FrontPro
 func FrontProxyObjectWrapper(reconciler FrontProxyReconciler) reconciling.ObjectReconciler {
 	return func(existing ctrlruntimeclient.Object) (ctrlruntimeclient.Object, error) {
 		if existing != nil {
-			return reconciler(existing.(*apiv1alpha1.FrontProxy))
+			return reconciler(existing.(*operatorv1alpha1.FrontProxy))
 		}
-		return reconciler(&apiv1alpha1.FrontProxy{})
+		return reconciler(&operatorv1alpha1.FrontProxy{})
 	}
 }
 
@@ -168,7 +169,7 @@ func ReconcileFrontProxys(ctx context.Context, namedFactories []NamedFrontProxyR
 			reconcileObject = objectModifier(reconcileObject)
 		}
 
-		if err := reconciling.EnsureNamedObject(ctx, types.NamespacedName{Namespace: namespace, Name: name}, reconcileObject, client, &apiv1alpha1.FrontProxy{}, false); err != nil {
+		if err := reconciling.EnsureNamedObject(ctx, types.NamespacedName{Namespace: namespace, Name: name}, reconcileObject, client, &operatorv1alpha1.FrontProxy{}, false); err != nil {
 			return fmt.Errorf("failed to ensure FrontProxy %s/%s: %w", namespace, name, err)
 		}
 	}
@@ -177,7 +178,7 @@ func ReconcileFrontProxys(ctx context.Context, namedFactories []NamedFrontProxyR
 }
 
 // KubeconfigReconciler defines an interface to create/update Kubeconfigs.
-type KubeconfigReconciler = func(existing *apiv1alpha1.Kubeconfig) (*apiv1alpha1.Kubeconfig, error)
+type KubeconfigReconciler = func(existing *operatorv1alpha1.Kubeconfig) (*operatorv1alpha1.Kubeconfig, error)
 
 // NamedKubeconfigReconcilerFactory returns the name of the resource and the corresponding Reconciler function.
 type NamedKubeconfigReconcilerFactory = func() (name string, reconciler KubeconfigReconciler)
@@ -187,9 +188,9 @@ type NamedKubeconfigReconcilerFactory = func() (name string, reconciler Kubeconf
 func KubeconfigObjectWrapper(reconciler KubeconfigReconciler) reconciling.ObjectReconciler {
 	return func(existing ctrlruntimeclient.Object) (ctrlruntimeclient.Object, error) {
 		if existing != nil {
-			return reconciler(existing.(*apiv1alpha1.Kubeconfig))
+			return reconciler(existing.(*operatorv1alpha1.Kubeconfig))
 		}
-		return reconciler(&apiv1alpha1.Kubeconfig{})
+		return reconciler(&operatorv1alpha1.Kubeconfig{})
 	}
 }
 
@@ -205,7 +206,7 @@ func ReconcileKubeconfigs(ctx context.Context, namedFactories []NamedKubeconfigR
 			reconcileObject = objectModifier(reconcileObject)
 		}
 
-		if err := reconciling.EnsureNamedObject(ctx, types.NamespacedName{Namespace: namespace, Name: name}, reconcileObject, client, &apiv1alpha1.Kubeconfig{}, false); err != nil {
+		if err := reconciling.EnsureNamedObject(ctx, types.NamespacedName{Namespace: namespace, Name: name}, reconcileObject, client, &operatorv1alpha1.Kubeconfig{}, false); err != nil {
 			return fmt.Errorf("failed to ensure Kubeconfig %s/%s: %w", namespace, name, err)
 		}
 	}

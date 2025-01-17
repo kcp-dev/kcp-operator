@@ -19,11 +19,11 @@ package: reconciling
 boilerplate: hack/boilerplate.go.txt
 resourceTypes:
   # kcp-operator.kcp.io/v1alpha1
-  - { package: github.com/kcp-dev/kcp-operator/api/v1alpha1, resourceName: RootShard }
-  - { package: github.com/kcp-dev/kcp-operator/api/v1alpha1, resourceName: Shard }
-  - { package: github.com/kcp-dev/kcp-operator/api/v1alpha1, resourceName: CacheServer }
-  - { package: github.com/kcp-dev/kcp-operator/api/v1alpha1, resourceName: FrontProxy }
-  - { package: github.com/kcp-dev/kcp-operator/api/v1alpha1, resourceName: Kubeconfig }
+  - { package: github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1, resourceName: RootShard }
+  - { package: github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1, resourceName: Shard }
+  - { package: github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1, resourceName: CacheServer }
+  - { package: github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1, resourceName: FrontProxy }
+  - { package: github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1, resourceName: Kubeconfig }
   # cert-manager.io/v1
   - { package: github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1, resourceName: Certificate }
   - { package: github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1, resourceName: Issuer }

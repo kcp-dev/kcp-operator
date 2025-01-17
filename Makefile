@@ -1,42 +1,26 @@
 # OPENSHIFT_GIMPORTS_VER defines which version of openshift-goimports to use
 # for checking import statements.
 OPENSHIFT_GOIMPORTS_VER := c72f1dc2e3aacfa00aece3391d938c9bc734e791
-K8C_RECONCILER_GEN_VER := v0.5.0
+RECONCILER_GEN_VER := v0.5.0
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.31.0
 ## Tool Versions
+KUBECTL_VERSION ?= v1.32.0
 KUSTOMIZE_VERSION ?= v5.4.3
 CONTROLLER_TOOLS_VERSION ?= v0.16.1
 ENVTEST_VERSION ?= release-0.19
-GOLANGCI_LINT_VERSION ?= v1.63.4
+GOLANGCI_LINT_VERSION ?= 1.63.4
 
 # Image URL to use all building/pushing image targets
 IMG ?= ghcr.io/kcp-dev/kcp-operator
 
-GO_INSTALL = ./hack/go-install.sh
-TOOLS_DIR=hack/tools
-ROOT_DIR=$(abspath .)
-TOOLS_GOBIN_DIR := $(abspath $(TOOLS_DIR))
-
-# Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
-ifeq (,$(shell go env GOBIN))
-GOBIN=$(shell go env GOPATH)/bin
-else
-GOBIN=$(shell go env GOBIN)
-endif
+TOOLS_DIR = $(shell pwd)/_tools
 
 # CONTAINER_TOOL defines the container tool to be used for building images.
 # Be aware that the target commands are only tested with Docker which is
 # scaffolded by default. However, you might want to replace it to use other
 # tools. (i.e. podman)
 CONTAINER_TOOL ?= docker
-
-OPENSHIFT_GOIMPORTS_BIN := openshift-goimports
-OPENSHIFT_GOIMPORTS := $(TOOLS_DIR)/$(OPENSHIFT_GOIMPORTS_BIN)-$(OPENSHIFT_GOIMPORTS_VER)
-export OPENSHIFT_GOIMPORTS # so hack scripts can use it
-
-K8C_RECONCILER_GEN_BIN := reconciler-gen
-K8C_RECONCILER_GEN := $(TOOLS_DIR)/$(K8C_RECONCILER_GEN_BIN)-$(K8C_RECONCILER_GEN_VER)
 
 # Setting SHELL to bash allows bash commands to be executed by recipes.
 # Options are set to exit when a recipe line exits non-zero or a piped command fails.
@@ -61,18 +45,13 @@ all: build
 
 .PHONY: help
 help: ## Display this help.
-	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
+	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
 ##@ Development
 
-.PHONY: manifests
-manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
-	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
-
-.PHONY: generate
-generate: controller-gen k8c-reconciler-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
-	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."; \
-	$(K8C_RECONCILER_GEN) --config hack/reconciling.yaml > internal/reconciling/zz_generated_reconcile.go
+.PHONY: codegen
+codegen: reconciler-gen openshift-goimports ## Generate manifest, code and the SDK.
+	@hack/update-codegen.sh
 
 .PHONY: fmt
 fmt: ## Run go fmt against code.
@@ -83,8 +62,8 @@ vet: ## Run go vet against code.
 	go vet ./...
 
 .PHONY: test
-test: manifests generate fmt vet envtest ## Run tests.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test $$(go list ./... | grep -v /e2e) -coverprofile cover.out
+test: fmt vet envtest ## Run tests.
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(TOOLS_DIR) -p path)" go test $$(go list ./... | grep -v /e2e) -coverprofile cover.out
 
 # Utilize Kind or modify the e2e tests to load the image locally, enabling compatibility with other vendors.
 .PHONY: test-e2e  # Run the e2e tests against a Kind k8s instance that is spun up.
@@ -92,33 +71,37 @@ test-e2e:
 	go test ./test/e2e/ -v -ginkgo.v
 
 .PHONY: lint
-lint: golangci-lint ## Run golangci-lint linter
+lint: golangci-lint ## Run golangci-lint linter.
 	$(GOLANGCI_LINT) run
 
 .PHONY: lint-fix
-lint-fix: golangci-lint ## Run golangci-lint linter and perform fixes
+lint-fix: golangci-lint ## Run golangci-lint linter and perform fixes.
 	$(GOLANGCI_LINT) run --fix
 
 .PHONY: modules
-modules: ## Run go mod tidy to ensure modules are up to date
+modules: ## Run go mod tidy to ensure modules are up to date.
 	hack/update-go-modules.sh
 
 .PHONY: imports
-imports: $(OPENSHIFT_GOIMPORTS)
+imports: openshift-goimports ## Re-order Go import statements.
 	$(OPENSHIFT_GOIMPORTS) -m github.com/kcp-dev/kcp-operator
 
 .PHONY: verify
-verify: manifests generate fmt vet modules imports ## Run all codegen and formatting targets and check if files have changed
+verify: codegen fmt vet modules imports ## Run all codegen and formatting targets and check if files have changed.
 	if ! git diff --quiet --exit-code ; then echo "ERROR: Found unexpected changes to git repository"; git diff; exit 1; fi
 
 ##@ Build
 
+.PHONY: clean
+clean: ## Remove all built binaries.
+	rm -rf _build
+
 .PHONY: build
-build: manifests generate fmt vet ## Build manager binary.
-	go build -o bin/manager cmd/main.go
+build: ## Build manager binary.
+	go build -o _build/manager cmd/main.go
 
 .PHONY: run
-run: manifests generate fmt vet ## Run a controller from your host.
+run: fmt vet ## Run a controller from your host.
 	go run ./cmd/main.go
 
 # If you wish to build the manager image targeting other platforms you can use the --platform flag.
@@ -145,79 +128,58 @@ ifndef ignore-not-found
 endif
 
 .PHONY: install
-install: manifests kustomize ## Install CRDs into the K8s cluster specified in ~/.kube/config.
+install: kubectl kustomize ## Install CRDs into the K8s cluster specified in ~/.kube/config.
 	$(KUSTOMIZE) build config/crd | $(KUBECTL) apply -f -
 
 .PHONY: uninstall
-uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
+uninstall: kubectl kustomize ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
 	$(KUSTOMIZE) build config/crd | $(KUBECTL) delete --ignore-not-found=$(ignore-not-found) -f -
 
 .PHONY: deploy
-deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
+deploy: kubectl kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/default | $(KUBECTL) apply -f -
 
 .PHONY: undeploy
-undeploy: kustomize ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
+undeploy: kubectl kustomize ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
 	$(KUSTOMIZE) build config/default | $(KUBECTL) delete --ignore-not-found=$(ignore-not-found) -f -
 
 ##@ Dependencies
 
-## Location to install dependencies to
-LOCALBIN ?= $(shell pwd)/bin
-$(LOCALBIN):
-	mkdir -p $(LOCALBIN)
-
 ## Tool Binaries
-KUBECTL ?= kubectl
-KUSTOMIZE ?= $(LOCALBIN)/kustomize
-CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
-ENVTEST ?= $(LOCALBIN)/setup-envtest
-GOLANGCI_LINT = $(LOCALBIN)/golangci-lint
+KUBECTL ?= $(TOOLS_DIR)/kubectl
+KUSTOMIZE ?= $(TOOLS_DIR)/kustomize
+ENVTEST ?= $(TOOLS_DIR)/setup-envtest
+GOLANGCI_LINT = $(TOOLS_DIR)/golangci-lint
+RECONCILER_GEN := $(TOOLS_DIR)/reconciler-gen
+OPENSHIFT_GOIMPORTS := $(TOOLS_DIR)/openshift-goimports
 
+.PHONY: kubectl
+kubectl: $(KUBECTL) ## Download kubectl locally if necessary.
+$(KUBECTL):
+	@UNCOMPRESSED=true hack/download-tool.sh https://dl.k8s.io/$(KUBECTL_VERSION)/bin/$(shell go env GOOS)/$(shell go env GOARCH)/kubectl kubectl $(KUBECTL_VERSION) kubectl
 
 .PHONY: kustomize
 kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary.
-$(KUSTOMIZE): $(LOCALBIN)
-	$(call go-install-tool,$(KUSTOMIZE),sigs.k8s.io/kustomize/kustomize/v5,$(KUSTOMIZE_VERSION))
-
-.PHONY: controller-gen
-controller-gen: $(CONTROLLER_GEN) ## Download controller-gen locally if necessary.
-$(CONTROLLER_GEN): $(LOCALBIN)
-	$(call go-install-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen,$(CONTROLLER_TOOLS_VERSION))
+$(KUSTOMIZE):
+	@GO_MODULE=true hack/download-tool.sh sigs.k8s.io/kustomize/kustomize/v5 kustomize $(KUSTOMIZE_VERSION)
 
 .PHONY: envtest
 envtest: $(ENVTEST) ## Download setup-envtest locally if necessary.
-$(ENVTEST): $(LOCALBIN)
-	$(call go-install-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest,$(ENVTEST_VERSION))
+$(ENVTEST):
+	@GO_MODULE=true hack/download-tool.sh sigs.k8s.io/controller-runtime/tools/setup-envtest setup-envtest $(ENVTEST_VERSION)
 
 .PHONY: golangci-lint
 golangci-lint: $(GOLANGCI_LINT) ## Download golangci-lint locally if necessary.
-$(GOLANGCI_LINT): $(LOCALBIN)
-	$(call go-install-tool,$(GOLANGCI_LINT),github.com/golangci/golangci-lint/cmd/golangci-lint,$(GOLANGCI_LINT_VERSION))
+$(GOLANGCI_LINT):
+	@hack/download-tool.sh https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_LINT_VERSION}/golangci-lint-${GOLANGCI_LINT_VERSION}-$(shell go env GOOS)-$(shell go env GOARCH).tar.gz golangci-lint $(GOLANGCI_LINT_VERSION)
 
-.PHONY: k8c-reconciler-gen
-k8c-reconciler-gen: $(K8C_RECONCILER_GEN) ## Download reconciler-gen locally if necessary.
-$(K8C_RECONCILER_GEN):
-	GOBIN=$(TOOLS_GOBIN_DIR) $(GO_INSTALL) k8c.io/reconciler/cmd/reconciler-gen $(K8C_RECONCILER_GEN_BIN) $(K8C_RECONCILER_GEN_VER)
+.PHONY: reconciler-gen
+reconciler-gen: $(RECONCILER_GEN) ## Download reconciler-gen locally if necessary.
+$(RECONCILER_GEN):
+	@GO_MODULE=true hack/download-tool.sh k8c.io/reconciler/cmd/reconciler-gen reconciler-gen $(RECONCILER_GEN_VER)
 
 .PHONY: openshift-goimports
-openshift-goimports: $(OPENSHIFT_GOIMPORTS)
+openshift-goimports: $(OPENSHIFT_GOIMPORTS) ## Download openshift-goimports locally if necessary.
 $(OPENSHIFT_GOIMPORTS):
-	GOBIN=$(TOOLS_GOBIN_DIR) $(GO_INSTALL) github.com/openshift-eng/openshift-goimports $(OPENSHIFT_GOIMPORTS_BIN) $(OPENSHIFT_GOIMPORTS_VER)
-
-# go-install-tool will 'go install' any package with custom target and name of binary, if it doesn't exist
-# $1 - target path with name of binary
-# $2 - package url which can be installed
-# $3 - specific version of package
-define go-install-tool
-@[ -f "$(1)-$(3)" ] || { \
-set -e; \
-package=$(2)@$(3) ;\
-echo "Downloading $${package}" ;\
-rm -f $(1) || true ;\
-GOBIN=$(LOCALBIN) go install $${package} ;\
-mv $(1) $(1)-$(3) ;\
-} ;\
-ln -sf $(1)-$(3) $(1)
-endef
+	@GO_MODULE=true hack/download-tool.sh github.com/openshift-eng/openshift-goimports openshift-goimports $(OPENSHIFT_GOIMPORTS_VER)

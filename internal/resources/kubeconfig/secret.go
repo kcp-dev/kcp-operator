@@ -25,7 +25,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 
-	"github.com/kcp-dev/kcp-operator/api/v1alpha1"
+	"github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
 func KubeconfigSecretReconciler(kubeconfig *v1alpha1.Kubeconfig, certSecret *corev1.Secret, serverName, serverURL string) reconciling.NamedSecretReconcilerFactory {
