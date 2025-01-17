@@ -26,6 +26,10 @@ RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -a -o ma
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
 FROM gcr.io/distroless/static:nonroot
+LABEL org.opencontainers.image.source=https://github.com/kcp-dev/kcp-operator
+LABEL org.opencontainers.image.description="A Kubernetes operator to set up and manage kcp instances"
+LABEL org.opencontainers.image.licenses=Apache-2.0
+
 WORKDIR /
 COPY --from=builder /workspace/manager .
 USER 65532:65532
