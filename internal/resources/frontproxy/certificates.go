@@ -26,7 +26,15 @@ import (
 )
 
 func ServerCertificateReconciler(frontproxy *operatorv1alpha1.FrontProxy, rootshard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
-	name := resources.GetFrontproxyCertificateName(rootshard, frontproxy, operatorv1alpha1.ServerCertificate)
+	name := resources.GetFrontProxyCertificateName(rootshard, frontproxy, operatorv1alpha1.ServerCertificate)
+
+	dnsNames := []string{
+		rootshard.Spec.External.Hostname,
+	}
+
+	if frontproxy.Spec.ExternalHostname != "" {
+		dnsNames = append(dnsNames, frontproxy.Spec.ExternalHostname)
+	}
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
@@ -45,9 +53,7 @@ func ServerCertificateReconciler(frontproxy *operatorv1alpha1.FrontProxy, rootsh
 					certmanagerv1.UsageServerAuth,
 				},
 
-				DNSNames: []string{
-					frontproxy.Spec.ExternalHostname,
-				},
+				DNSNames: dnsNames,
 
 				IssuerRef: certmanagermetav1.ObjectReference{
 					Name:  resources.GetRootShardCAName(rootshard, operatorv1alpha1.ServerCA),
@@ -62,7 +68,7 @@ func ServerCertificateReconciler(frontproxy *operatorv1alpha1.FrontProxy, rootsh
 }
 
 func AdminKubeconfigReconciler(frontproxy *operatorv1alpha1.FrontProxy, rootshard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
-	name := resources.GetFrontproxyCertificateName(rootshard, frontproxy, operatorv1alpha1.AdminKubeconfigClientCertificate)
+	name := resources.GetFrontProxyCertificateName(rootshard, frontproxy, operatorv1alpha1.AdminKubeconfigClientCertificate)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
@@ -100,7 +106,7 @@ func AdminKubeconfigReconciler(frontproxy *operatorv1alpha1.FrontProxy, rootshar
 }
 
 func KubeconfigReconciler(frontproxy *operatorv1alpha1.FrontProxy, rootshard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
-	name := resources.GetFrontproxyCertificateName(rootshard, frontproxy, operatorv1alpha1.KubeconfigCertificate)
+	name := resources.GetFrontProxyCertificateName(rootshard, frontproxy, operatorv1alpha1.KubeconfigCertificate)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {

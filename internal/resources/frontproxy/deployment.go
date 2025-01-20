@@ -24,6 +24,8 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/utils/ptr"
 
 	"github.com/kcp-dev/kcp-operator/internal/resources"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
@@ -36,7 +38,7 @@ const (
 func DeploymentReconciler(frontproxy *operatorv1alpha1.FrontProxy, rootshard *operatorv1alpha1.RootShard) reconciling.NamedDeploymentReconcilerFactory {
 	image, _ := resources.GetImageSettings(frontproxy.Spec.Image)
 	args := getArgs(frontproxy)
-	name := fmt.Sprintf("%s-fp-kcp", frontproxy.Name)
+	name := resources.GetFrontProxyDeploymentName(frontproxy)
 
 	return func() (string, reconciling.DeploymentReconciler) {
 		return name, func(dep *appsv1.Deployment) (*appsv1.Deployment, error) {
@@ -54,6 +56,41 @@ func DeploymentReconciler(frontproxy *operatorv1alpha1.FrontProxy, rootshard *op
 				SecurityContext: &corev1.SecurityContext{
 					SeccompProfile: &corev1.SeccompProfile{
 						Type: corev1.SeccompProfileTypeRuntimeDefault,
+					},
+				},
+				Ports: []corev1.ContainerPort{
+					{
+						Name:          "https",
+						ContainerPort: 8443,
+						Protocol:      corev1.ProtocolTCP,
+					},
+				},
+				ReadinessProbe: &corev1.Probe{
+					FailureThreshold:    3,
+					InitialDelaySeconds: 45,
+					PeriodSeconds:       10,
+					SuccessThreshold:    1,
+					TimeoutSeconds:      10,
+					ProbeHandler: corev1.ProbeHandler{
+						HTTPGet: &corev1.HTTPGetAction{
+							Path:   "/livez",
+							Port:   intstr.FromString("https"),
+							Scheme: corev1.URISchemeHTTPS,
+						},
+					},
+				},
+				LivenessProbe: &corev1.Probe{
+					FailureThreshold:    3,
+					InitialDelaySeconds: 45,
+					PeriodSeconds:       10,
+					SuccessThreshold:    1,
+					TimeoutSeconds:      10,
+					ProbeHandler: corev1.ProbeHandler{
+						HTTPGet: &corev1.HTTPGetAction{
+							Path:   "/readyz",
+							Port:   intstr.FromString("https"),
+							Scheme: corev1.URISchemeHTTPS,
+						},
 					},
 				},
 			}
@@ -77,7 +114,7 @@ func DeploymentReconciler(frontproxy *operatorv1alpha1.FrontProxy, rootshard *op
 			})
 
 			// front-proxy kubeconfig client cert
-			kubeconfigClientCertName := resources.GetFrontproxyCertificateName(rootshard, frontproxy, operatorv1alpha1.KubeconfigCertificate)
+			kubeconfigClientCertName := resources.GetFrontProxyCertificateName(rootshard, frontproxy, operatorv1alpha1.KubeconfigCertificate)
 			volumes = append(volumes, corev1.Volume{
 				Name: kubeconfigClientCertName,
 				VolumeSource: corev1.VolumeSource{
@@ -123,7 +160,7 @@ func DeploymentReconciler(frontproxy *operatorv1alpha1.FrontProxy, rootshard *op
 			})
 
 			// front-proxy requestheader client cert
-			requestHeaderClientCertName := resources.GetFrontproxyCertificateName(rootshard, frontproxy, operatorv1alpha1.RequestHeaderClientCertificate)
+			requestHeaderClientCertName := resources.GetFrontProxyCertificateName(rootshard, frontproxy, operatorv1alpha1.RequestHeaderClientCertificate)
 			volumes = append(volumes, corev1.Volume{
 				Name: requestHeaderClientCertName,
 				VolumeSource: corev1.VolumeSource{
@@ -188,13 +225,16 @@ func DeploymentReconciler(frontproxy *operatorv1alpha1.FrontProxy, rootshard *op
 				MountPath: KcpBasepath + "/tls/ca",
 			})
 
+			container.VolumeMounts = volumeMounts
+
 			if frontproxy.Spec.Replicas != nil {
 				dep.Spec.Replicas = frontproxy.Spec.Replicas
+			} else if dep.Spec.Replicas == nil {
+				dep.Spec.Replicas = ptr.To[int32](2)
 			}
 
 			dep.Spec.Template.Spec.Volumes = volumes
-			container.VolumeMounts = volumeMounts
-			dep.Spec.Template.Spec.Containers = append(dep.Spec.Template.Spec.Containers, container)
+			dep.Spec.Template.Spec.Containers = []corev1.Container{container}
 
 			return dep, nil
 		}

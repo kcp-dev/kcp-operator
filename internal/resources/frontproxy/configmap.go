@@ -26,14 +26,14 @@ import (
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
-func ConfigmapReconciler(frontproxy *operatorv1alpha1.FrontProxy) reconciling.NamedConfigMapReconcilerFactory {
+func ConfigmapReconciler(frontproxy *operatorv1alpha1.FrontProxy, rootShard *operatorv1alpha1.RootShard) reconciling.NamedConfigMapReconcilerFactory {
 	name := resources.GetFrontProxyConfigName(frontproxy)
 
 	return func() (string, reconciling.ConfigMapReconciler) {
 		return name, func(cm *corev1.ConfigMap) (*corev1.ConfigMap, error) {
 			cm.SetLabels(resources.GetFrontProxyResourceLabels(frontproxy))
 
-			mappings := defaultPathMappings(name)
+			mappings := defaultPathMappings(rootShard)
 			mappings = append(mappings, frontproxy.Spec.AdditionalPathMappings...)
 			d, err := yaml.Marshal(mappings)
 			if err != nil {
@@ -49,18 +49,20 @@ func ConfigmapReconciler(frontproxy *operatorv1alpha1.FrontProxy) reconciling.Na
 }
 
 // defaultPathMappings sets up default paths for a front-proxy
-func defaultPathMappings(kcpFullname string) []operatorv1alpha1.PathMappingEntry {
+func defaultPathMappings(rootShard *operatorv1alpha1.RootShard) []operatorv1alpha1.PathMappingEntry {
+	url := resources.GetRootShardBaseURL(rootShard)
+
 	return []operatorv1alpha1.PathMappingEntry{
 		{
 			Path:            "/clusters/",
-			Backend:         "https://" + kcpFullname + ":6443",
+			Backend:         url,
 			BackendServerCA: "/etc/kcp/tls/ca/tls.crt",
 			ProxyClientCert: "/etc/kcp-front-proxy/requestheader-client/tls.crt",
 			ProxyClientKey:  "/etc/kcp-front-proxy/requestheader-client/tls.key",
 		},
 		{
 			Path:            "/services/",
-			Backend:         "https://" + kcpFullname + ":6443",
+			Backend:         url,
 			BackendServerCA: "/etc/kcp/tls/ca/tls.crt",
 			ProxyClientCert: "/etc/kcp-front-proxy/requestheader-client/tls.crt",
 			ProxyClientKey:  "/etc/kcp-front-proxy/requestheader-client/tls.key",

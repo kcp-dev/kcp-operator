@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -30,15 +31,22 @@ type FrontProxySpec struct {
 	Auth *AuthSpec `json:"auth,omitempty"`
 	// Optional: AdditionalPathMappings configures // TODO ?
 	AdditionalPathMappings []PathMappingEntry `json:"additionalPathMappings,omitempty"`
-	// Optional: Image defines the image to use. Defaults to the latest versioned image during the release of kcp-operator
+	// Optional: Image defines the image to use. Defaults to the latest versioned image during the release of kcp-operator.
 	Image *ImageSpec `json:"image,omitempty"`
-	// ExternalHostname under which the FrontProxy can be reached
-	ExternalHostname string `json:"externalHostname"`
+	// Optional: ExternalHostname under which the FrontProxy can be reached. If empty, the RootShard's external hostname will be used only.
+	ExternalHostname string `json:"externalHostname,omitempty"`
+
+	// Optional: Service configures the Kubernetes Service created for this front-proxy instance.
+	Service *ServiceSpec `json:"service,omitempty"`
 }
 
 type AuthSpec struct {
-	// Optional: OIDC configures OpenID Connect Authentication
+	// Optional: OIDC configures OpenID Connect Authentication.
 	OIDC *OIDCConfiguration `json:"oidc,omitempty"`
+}
+
+type ServiceSpec struct {
+	Type corev1.ServiceType `json:"type,omitempty"`
 }
 
 // FrontProxyStatus defines the observed state of FrontProxy

@@ -79,6 +79,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &operatorv1alpha1.RootShardSpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("RootShardStatus"):
 		return &operatorv1alpha1.RootShardStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ServiceSpec"):
+		return &operatorv1alpha1.ServiceSpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Shard"):
 		return &operatorv1alpha1.ShardApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ShardSpec"):

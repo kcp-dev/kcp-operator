@@ -21,7 +21,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
+	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
 const (
@@ -34,7 +34,7 @@ const (
 	appComponentLabel = "app.kubernetes.io/component"
 )
 
-func GetImageSettings(imageSpec *v1alpha1.ImageSpec) (string, []corev1.LocalObjectReference) {
+func GetImageSettings(imageSpec *operatorv1alpha1.ImageSpec) (string, []corev1.LocalObjectReference) {
 	repository := ImageRepository
 	if imageSpec != nil && imageSpec.Repository != "" {
 		repository = imageSpec.Repository
@@ -53,15 +53,15 @@ func GetImageSettings(imageSpec *v1alpha1.ImageSpec) (string, []corev1.LocalObje
 	return fmt.Sprintf("%s:%s", repository, tag), imagePullSecrets
 }
 
-func GetRootShardDeploymentName(r *v1alpha1.RootShard) string {
+func GetRootShardDeploymentName(r *operatorv1alpha1.RootShard) string {
 	return fmt.Sprintf("%s-kcp", r.Name)
 }
 
-func GetRootShardServiceName(r *v1alpha1.RootShard) string {
+func GetRootShardServiceName(r *operatorv1alpha1.RootShard) string {
 	return fmt.Sprintf("%s-kcp", r.Name)
 }
 
-func GetRootShardResourceLabels(r *v1alpha1.RootShard) map[string]string {
+func GetRootShardResourceLabels(r *operatorv1alpha1.RootShard) map[string]string {
 	return map[string]string{
 		appNameLabel:      "kcp",
 		appInstanceLabel:  r.Name,
@@ -70,7 +70,7 @@ func GetRootShardResourceLabels(r *v1alpha1.RootShard) map[string]string {
 	}
 }
 
-func GetRootShardBaseHost(r *v1alpha1.RootShard) string {
+func GetRootShardBaseHost(r *operatorv1alpha1.RootShard) string {
 	clusterDomain := r.Spec.ClusterDomain
 	if clusterDomain == "" {
 		clusterDomain = "cluster.local"
@@ -79,22 +79,22 @@ func GetRootShardBaseHost(r *v1alpha1.RootShard) string {
 	return fmt.Sprintf("%s-kcp.%s.svc.%s", r.Name, r.Namespace, clusterDomain)
 }
 
-func GetRootShardBaseURL(r *v1alpha1.RootShard) string {
+func GetRootShardBaseURL(r *operatorv1alpha1.RootShard) string {
 	return fmt.Sprintf("https://%s:6443", GetRootShardBaseHost(r))
 }
 
-func GetRootShardCertificateName(r *v1alpha1.RootShard, certName v1alpha1.Certificate) string {
+func GetRootShardCertificateName(r *operatorv1alpha1.RootShard, certName operatorv1alpha1.Certificate) string {
 	return fmt.Sprintf("%s-%s", r.Name, certName)
 }
 
-func GetRootShardCAName(r *v1alpha1.RootShard, caName v1alpha1.CA) string {
-	if caName == v1alpha1.RootCA {
+func GetRootShardCAName(r *operatorv1alpha1.RootShard, caName operatorv1alpha1.CA) string {
+	if caName == operatorv1alpha1.RootCA {
 		return fmt.Sprintf("%s-ca", r.Name)
 	}
 	return fmt.Sprintf("%s-%s-ca", r.Name, caName)
 }
 
-func GetFrontProxyResourceLabels(fp *v1alpha1.FrontProxy) map[string]string {
+func GetFrontProxyResourceLabels(fp *operatorv1alpha1.FrontProxy) map[string]string {
 	return map[string]string{
 		appNameLabel:      "kcp",
 		appInstanceLabel:  fp.Name,
@@ -103,18 +103,26 @@ func GetFrontProxyResourceLabels(fp *v1alpha1.FrontProxy) map[string]string {
 	}
 }
 
-func GetFrontproxyCertificateName(r *v1alpha1.RootShard, f *v1alpha1.FrontProxy, certName v1alpha1.Certificate) string {
+func GetFrontProxyDeploymentName(f *operatorv1alpha1.FrontProxy) string {
+	return fmt.Sprintf("%s-front-proxy", f.Name)
+}
+
+func GetFrontProxyCertificateName(r *operatorv1alpha1.RootShard, f *operatorv1alpha1.FrontProxy, certName operatorv1alpha1.Certificate) string {
 	return fmt.Sprintf("%s-%s-%s", r.Name, f.Name, certName)
 }
 
-func GetFrontProxyDynamicKubeconfigName(r *v1alpha1.RootShard, f *v1alpha1.FrontProxy) string {
+func GetFrontProxyDynamicKubeconfigName(r *operatorv1alpha1.RootShard, f *operatorv1alpha1.FrontProxy) string {
 	return fmt.Sprintf("%s-%s-dynamic-kubeconfig", r.Name, f.Name)
 }
 
-func GetFrontProxyRequestheaderName(r *v1alpha1.RootShard, f *v1alpha1.FrontProxy) string {
+func GetFrontProxyRequestheaderName(r *operatorv1alpha1.RootShard, f *operatorv1alpha1.FrontProxy) string {
 	return fmt.Sprintf("%s-%s-requestheader", r.Name, f.Name)
 }
 
-func GetFrontProxyConfigName(f *v1alpha1.FrontProxy) string {
+func GetFrontProxyConfigName(f *operatorv1alpha1.FrontProxy) string {
 	return fmt.Sprintf("%s-config", f.Name)
+}
+
+func GetFrontProxyServiceName(f *operatorv1alpha1.FrontProxy) string {
+	return fmt.Sprintf("%s-front-proxy", f.Name)
 }

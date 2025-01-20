@@ -76,13 +76,11 @@ func DynamicKubeconfigSecretReconciler(frontproxy *operatorv1alpha1.FrontProxy, 
 				return nil, err
 			}
 
-			sec := &corev1.Secret{
-				Data: map[string][]byte{
-					"kubeconfig": b,
-				},
+			obj.Data = map[string][]byte{
+				"kubeconfig": b,
 			}
 
-			return sec, nil
+			return obj, nil
 		}
 	}
 }

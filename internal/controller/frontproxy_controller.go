@@ -22,6 +22,9 @@ import (
 
 	k8creconciling "k8c.io/reconciler/pkg/reconciling"
 
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -39,19 +42,23 @@ type FrontProxyReconciler struct {
 	Scheme *runtime.Scheme
 }
 
+// SetupWithManager sets up the controller with the Manager.
+func (r *FrontProxyReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&operatorv1alpha1.FrontProxy{}).
+		Owns(&appsv1.Deployment{}).
+		Owns(&corev1.ConfigMap{}).
+		Owns(&corev1.Secret{}).
+		Complete(r)
+}
+
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=frontproxies,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=frontproxies/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=frontproxies/finalizers,verbs=update
+// +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=core,resources=services;configmaps;secrets,verbs=get;list;watch;create;update;patch;delete
 
-// Reconcile is part of the main kubernetes reconciliation loop which aims to
-// move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the FrontProxy object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
-//
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.19.0/pkg/reconcile
 func (r *FrontProxyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
@@ -60,6 +67,8 @@ func (r *FrontProxyReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	if err := r.Client.Get(ctx, req.NamespacedName, &frontProxy); err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to find %s/%s: %w", req.Namespace, req.Name, err)
 	}
+
+	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*metav1.NewControllerRef(&frontProxy, operatorv1alpha1.SchemeGroupVersion.WithKind("FrontProxy")))
 
 	ref := frontProxy.Spec.RootShard.Reference
 	rootShard := &operatorv1alpha1.RootShard{}
@@ -73,7 +82,7 @@ func (r *FrontProxyReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	configMapReconcilers := []k8creconciling.NamedConfigMapReconcilerFactory{
-		frontproxy.ConfigmapReconciler(&frontProxy),
+		frontproxy.ConfigmapReconciler(&frontProxy, rootShard),
 	}
 
 	secretReconcilers := []k8creconciling.NamedSecretReconcilerFactory{
@@ -91,28 +100,29 @@ func (r *FrontProxyReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		frontproxy.DeploymentReconciler(&frontProxy, rootShard),
 	}
 
-	if err := k8creconciling.ReconcileConfigMaps(ctx, configMapReconcilers, req.Namespace, r.Client); err != nil {
+	serviceReconcilers := []k8creconciling.NamedServiceReconcilerFactory{
+		frontproxy.ServiceReconciler(&frontProxy),
+	}
+
+	if err := k8creconciling.ReconcileConfigMaps(ctx, configMapReconcilers, req.Namespace, r.Client, ownerRefWrapper); err != nil {
 		return ctrl.Result{}, err
 	}
 
-	if err := k8creconciling.ReconcileSecrets(ctx, secretReconcilers, req.Namespace, r.Client); err != nil {
+	if err := k8creconciling.ReconcileSecrets(ctx, secretReconcilers, req.Namespace, r.Client, ownerRefWrapper); err != nil {
 		return ctrl.Result{}, err
 	}
 
-	if err := reconciling.ReconcileCertificates(ctx, certReconcilers, req.Namespace, r.Client); err != nil {
+	if err := reconciling.ReconcileCertificates(ctx, certReconcilers, req.Namespace, r.Client, ownerRefWrapper); err != nil {
 		return ctrl.Result{}, err
 	}
 
-	if err := k8creconciling.ReconcileDeployments(ctx, deploymentReconcilers, req.Namespace, r.Client); err != nil {
+	if err := k8creconciling.ReconcileDeployments(ctx, deploymentReconcilers, req.Namespace, r.Client, ownerRefWrapper); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	if err := k8creconciling.ReconcileServices(ctx, serviceReconcilers, req.Namespace, r.Client, ownerRefWrapper); err != nil {
 		return ctrl.Result{}, err
 	}
 
 	return ctrl.Result{}, nil
-}
-
-// SetupWithManager sets up the controller with the Manager.
-func (r *FrontProxyReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&operatorv1alpha1.FrontProxy{}).
-		Complete(r)
 }

@@ -68,7 +68,7 @@ spec:
                   and Authorization for this front-proxy instance.'
                 properties:
                   oidc:
-                    description: 'Optional: OIDC configures OpenID Connect Authentication'
+                    description: 'Optional: OIDC configures OpenID Connect Authentication.'
                     properties:
                       clientID:
                         description: ClientID is the OIDC client ID configured on
@@ -111,11 +111,13 @@ spec:
                     type: object
                 type: object
               externalHostname:
-                description: ExternalHostname under which the FrontProxy can be reached
+                description: 'Optional: ExternalHostname under which the FrontProxy
+                  can be reached. If empty, the RootShard''s external hostname will
+                  be used only.'
                 type: string
               image:
                 description: 'Optional: Image defines the image to use. Defaults to
-                  the latest versioned image during the release of kcp-operator'
+                  the latest versioned image during the release of kcp-operator.'
                 properties:
                   imagePullSecrets:
                     description: 'Optional: ImagePullSecrets is a list of secret references
@@ -171,8 +173,16 @@ spec:
                     type: object
                     x-kubernetes-map-type: atomic
                 type: object
+              service:
+                description: 'Optional: Service configures the Kubernetes Service
+                  created for this front-proxy instance.'
+                properties:
+                  type:
+                    description: Service Type string describes ingress methods for
+                      a service
+                    type: string
+                type: object
             required:
-            - externalHostname
             - rootShard
             type: object
           status:
