@@ -76,6 +76,21 @@ func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		issuer = resources.GetRootShardCAName(&rootShard, operatorv1alpha1.ClientCA)
 		serverURL = resources.GetRootShardBaseURL(&rootShard)
 		serverName = rootShard.Name
+	case kc.Spec.Target.FrontProxyRef != nil:
+		var (
+			frontProxy operatorv1alpha1.FrontProxy
+			rootShard  operatorv1alpha1.RootShard
+		)
+		if err := r.Client.Get(ctx, types.NamespacedName{Name: kc.Spec.Target.FrontProxyRef.Name, Namespace: req.Namespace}, &frontProxy); err != nil {
+			return ctrl.Result{}, fmt.Errorf("referenced FrontProxy '%s' does not exist", kc.Spec.Target.FrontProxyRef.Name)
+		}
+
+		if err := r.Client.Get(ctx, types.NamespacedName{Name: frontProxy.Spec.RootShard.Reference.Name, Namespace: req.Namespace}, &rootShard); err != nil {
+			return ctrl.Result{}, fmt.Errorf("referenced RootShard '%s' does not exist", frontProxy.Spec.RootShard.Reference.Name)
+		}
+		issuer = resources.GetRootShardCAName(&rootShard, operatorv1alpha1.FrontProxyClientCA)
+		serverURL = fmt.Sprintf("https://%s:8443", rootShard.Spec.External.Hostname)
+		serverName = rootShard.Spec.External.Hostname
 	default:
 		return ctrl.Result{}, fmt.Errorf("no valid target for kubeconfig found")
 	}

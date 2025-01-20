@@ -67,7 +67,7 @@ func DeploymentReconciler(frontproxy *operatorv1alpha1.FrontProxy, rootshard *op
 				},
 				ReadinessProbe: &corev1.Probe{
 					FailureThreshold:    3,
-					InitialDelaySeconds: 45,
+					InitialDelaySeconds: 15,
 					PeriodSeconds:       10,
 					SuccessThreshold:    1,
 					TimeoutSeconds:      10,
@@ -81,7 +81,7 @@ func DeploymentReconciler(frontproxy *operatorv1alpha1.FrontProxy, rootshard *op
 				},
 				LivenessProbe: &corev1.Probe{
 					FailureThreshold:    3,
-					InitialDelaySeconds: 45,
+					InitialDelaySeconds: 15,
 					PeriodSeconds:       10,
 					SuccessThreshold:    1,
 					TimeoutSeconds:      10,
@@ -193,8 +193,8 @@ func DeploymentReconciler(frontproxy *operatorv1alpha1.FrontProxy, rootshard *op
 				MountPath: FrontProxyBasepath + "/config",
 			})
 
-			// rootshard client ca
-			rsClientCAName := resources.GetRootShardCAName(rootshard, operatorv1alpha1.ClientCA)
+			// rootshard frontproxy client ca
+			rsClientCAName := resources.GetRootShardCAName(rootshard, operatorv1alpha1.FrontProxyClientCA)
 			volumes = append(volumes, corev1.Volume{
 				Name: rsClientCAName,
 				VolumeSource: corev1.VolumeSource{
@@ -252,6 +252,7 @@ func getArgs(frontproxy *operatorv1alpha1.FrontProxy) []string {
 		"--client-ca-file=/etc/kcp-front-proxy/client-ca/tls.crt",
 		"--mapping-file=/etc/kcp-front-proxy/config/path-mapping.yaml",
 		"--service-account-key-file=/etc/kcp/tls/service-account/tls.key",
+		"--authentication-drop-groups=system:kcp:logical-cluster-admin",
 	}
 
 	return args

@@ -174,7 +174,12 @@ func getArgs(rootShard *v1alpha1.RootShard) []string {
 		// CA configuration.
 		fmt.Sprintf("--root-ca-file=/etc/kcp/tls/ca/%s/ca.crt", v1alpha1.RootCA),
 		fmt.Sprintf("--client-ca-file=/etc/kcp/tls/ca/%s/tls.crt", v1alpha1.ClientCA),
+
+		// Requestheader configuration.
 		fmt.Sprintf("--requestheader-client-ca-file=/etc/kcp/tls/ca/%s/tls.crt", v1alpha1.RequestHeaderClientCA),
+		"--requestheader-username-headers=X-Remote-User",
+		"--requestheader-group-headers=X-Remote-Group",
+		"--requestheader-extra-headers-prefix=X-Remote-Extra-",
 
 		// Certificate flags (server, service account signing).
 		fmt.Sprintf("--tls-private-key-file=/etc/kcp/tls/%s/tls.key", v1alpha1.ServerCertificate),
@@ -189,6 +194,8 @@ func getArgs(rootShard *v1alpha1.RootShard) []string {
 		fmt.Sprintf("--shard-base-url=%s", resources.GetRootShardBaseURL(rootShard)),
 		fmt.Sprintf("--shard-external-url=https://%s:%d", rootShard.Spec.External.Hostname, rootShard.Spec.External.Port),
 		"--root-directory=''",
+		"--enable-leader-election=true",
+		"--logging-format=json",
 	}
 
 	if rootShard.Spec.Etcd.TLSConfig != nil {
