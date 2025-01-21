@@ -57,6 +57,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &operatorv1alpha1.FrontProxyApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("FrontProxySpec"):
 		return &operatorv1alpha1.FrontProxySpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("FrontProxyStatus"):
+		return &operatorv1alpha1.FrontProxyStatusApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ImageSpec"):
 		return &operatorv1alpha1.ImageSpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Kubeconfig"):

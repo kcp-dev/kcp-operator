@@ -51,13 +51,41 @@ type ServiceSpec struct {
 
 // FrontProxyStatus defines the observed state of FrontProxy
 type FrontProxyStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	Phase FrontProxyPhase `json:"phase,omitempty"`
+
+	// +listType=map
+	// +listMapKey=type
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
+
+type FrontProxyPhase string
+
+const (
+	FrontProxyPhaseProvisioning FrontProxyPhase = "Provisioning"
+	FrontProxyPhaseRunning      FrontProxyPhase = "Running"
+	FrontProxyPhaseDeleting     FrontProxyPhase = "Deleting"
+)
+
+type FrontProxyConditionType string
+
+const (
+	FrontProxyConditionTypeAvailable FrontProxyConditionType = "Available"
+)
+
+type FrontProxyConditionReason string
+
+const (
+	FrontProxyConditionReasonDeploymentUnavailable FrontProxyConditionReason = "DeploymentUnavailable"
+	FrontProxyConditionReasonReplicasUp            FrontProxyConditionReason = "ReplicasUp"
+	FrontProxyConditionReasonReplicasUnavailable   FrontProxyConditionReason = "ReplicasUnavailable"
+)
 
 // +genclient
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:JSONPath=".spec.rootShard.ref.name",name="RootShard",type="string"
+// +kubebuilder:printcolumn:JSONPath=".status.phase",name="Phase",type="string"
+// +kubebuilder:printcolumn:JSONPath=".metadata.creationTimestamp",name="Age",type="date"
 
 // FrontProxy is the Schema for the frontproxies API
 type FrontProxy struct {
