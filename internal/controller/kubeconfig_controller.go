@@ -89,7 +89,7 @@ func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 			return ctrl.Result{}, fmt.Errorf("referenced RootShard '%s' does not exist", frontProxy.Spec.RootShard.Reference.Name)
 		}
 		issuer = resources.GetRootShardCAName(&rootShard, operatorv1alpha1.FrontProxyClientCA)
-		serverURL = fmt.Sprintf("https://%s:8443", rootShard.Spec.External.Hostname)
+		serverURL = fmt.Sprintf("https://%s:6443", rootShard.Spec.External.Hostname)
 		serverName = rootShard.Spec.External.Hostname
 	default:
 		return ctrl.Result{}, fmt.Errorf("no valid target for kubeconfig found")

@@ -46,8 +46,8 @@ func ServiceReconciler(frontProxy *operatorv1alpha1.FrontProxy) reconciling.Name
 
 			port.Name = "https"
 			port.Protocol = corev1.ProtocolTCP
-			port.Port = 8443
-			port.TargetPort = intstr.FromInt32(8443)
+			port.Port = 6443
+			port.TargetPort = intstr.FromInt32(6443)
 			port.AppProtocol = ptr.To("https")
 
 			svc.Spec.Ports = []corev1.ServicePort{
