@@ -18,10 +18,12 @@ package controller
 
 import (
 	"context"
+	"fmt"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -41,17 +43,51 @@ var _ = Describe("FrontProxy Controller", func() {
 			Namespace: "default", // TODO(user):Modify as needed
 		}
 		frontproxy := &operatorv1alpha1.FrontProxy{}
+		rootShard := &operatorv1alpha1.RootShard{}
+		rootShardNamespacedName := types.NamespacedName{
+			Name:      fmt.Sprintf("rootshard-%s", resourceName),
+			Namespace: "default",
+		}
 
 		BeforeEach(func() {
-			By("creating the custom resource for the Kind FrontProxy")
-			err := k8sClient.Get(ctx, typeNamespacedName, frontproxy)
+			By("creating a RootShard object")
+			err := k8sClient.Get(ctx, rootShardNamespacedName, rootShard)
+			if err != nil && errors.IsNotFound(err) {
+				rootShard = &operatorv1alpha1.RootShard{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      fmt.Sprintf("rootshard-%s", resourceName),
+						Namespace: "default",
+					},
+					Spec: operatorv1alpha1.RootShardSpec{
+						External: operatorv1alpha1.ExternalConfig{
+							Hostname: "example.kcp.io",
+							Port:     6443,
+						},
+						CommonShardSpec: operatorv1alpha1.CommonShardSpec{
+							Etcd: operatorv1alpha1.EtcdConfig{
+								Endpoints: []string{"https://localhost:2379"},
+							},
+						},
+					},
+				}
+				Expect(k8sClient.Create(ctx, rootShard)).To(Succeed())
+			}
+
+			By("creating a FrontProxy object")
+			err = k8sClient.Get(ctx, typeNamespacedName, frontproxy)
 			if err != nil && errors.IsNotFound(err) {
 				resource := &operatorv1alpha1.FrontProxy{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      resourceName,
 						Namespace: "default",
 					},
-					// TODO(user): Specify other spec details if needed.
+					Spec: operatorv1alpha1.FrontProxySpec{
+						RootShard: operatorv1alpha1.RootShardConfig{
+							Reference: &v1.LocalObjectReference{
+								Name: rootShard.Name,
+							},
+						},
+					},
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 			}
@@ -65,6 +101,14 @@ var _ = Describe("FrontProxy Controller", func() {
 
 			By("Cleanup the specific resource instance FrontProxy")
 			Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
+
+			rootShardResource := &operatorv1alpha1.RootShard{}
+			err = k8sClient.Get(ctx, rootShardNamespacedName, rootShardResource)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Cleanup the specific resource instance RootShard")
+			Expect(k8sClient.Delete(ctx, rootShardResource)).To(Succeed())
+
 		})
 		It("should successfully reconcile the resource", func() {
 			By("Reconciling the created resource")
@@ -77,8 +121,6 @@ var _ = Describe("FrontProxy Controller", func() {
 				NamespacedName: typeNamespacedName,
 			})
 			Expect(err).NotTo(HaveOccurred())
-			// TODO(user): Add more specific assertions depending on your controller's reconciliation logic.
-			// Example: If you expect a certain status condition after reconciliation, verify it here.
 		})
 	})
 })

@@ -242,7 +242,6 @@ func DeploymentReconciler(frontproxy *operatorv1alpha1.FrontProxy, rootshard *op
 }
 
 func getArgs(frontproxy *operatorv1alpha1.FrontProxy) []string {
-
 	args := []string{
 		"--secure-port=6443",
 		"--root-kubeconfig=/etc/kcp-front-proxy/kubeconfig/kubeconfig",
@@ -252,7 +251,6 @@ func getArgs(frontproxy *operatorv1alpha1.FrontProxy) []string {
 		"--client-ca-file=/etc/kcp-front-proxy/client-ca/tls.crt",
 		"--mapping-file=/etc/kcp-front-proxy/config/path-mapping.yaml",
 		"--service-account-key-file=/etc/kcp/tls/service-account/tls.key",
-		//"--authentication-drop-groups=system:kcp:logical-cluster-admin",
 	}
 
 	return args
