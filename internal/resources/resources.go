@@ -70,13 +70,17 @@ func GetRootShardResourceLabels(r *v1alpha1.RootShard) map[string]string {
 	}
 }
 
-func GetRootShardBaseURL(r *v1alpha1.RootShard) string {
+func GetRootShardBaseHost(r *v1alpha1.RootShard) string {
 	clusterDomain := r.Spec.ClusterDomain
 	if clusterDomain == "" {
 		clusterDomain = "cluster.local"
 	}
 
-	return fmt.Sprintf("https://%s-kcp.%s.svc.%s:6443", r.Name, r.Namespace, clusterDomain)
+	return fmt.Sprintf("%s-kcp.%s.svc.%s", r.Name, r.Namespace, clusterDomain)
+}
+
+func GetRootShardBaseURL(r *v1alpha1.RootShard) string {
+	return fmt.Sprintf("https://%s:6443", GetRootShardBaseHost(r))
 }
 
 func GetRootShardCertificateName(r *v1alpha1.RootShard, certName v1alpha1.Certificate) string {
