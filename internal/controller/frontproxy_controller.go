@@ -71,7 +71,7 @@ func (r *FrontProxyReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 func (r *FrontProxyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, recErr error) {
 	logger := log.FromContext(ctx)
-	logger.Info("Reconciling FrontProxy object")
+	logger.V(4).Info("Reconciling")
 
 	var frontProxy operatorv1alpha1.FrontProxy
 	if err := r.Client.Get(ctx, req.NamespacedName, &frontProxy); err != nil {

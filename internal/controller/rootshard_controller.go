@@ -82,7 +82,7 @@ func (r *RootShardReconciler) SetupWithManager(mgr ctrl.Manager) error {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.19.0/pkg/reconcile
 func (r *RootShardReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, recErr error) {
 	logger := log.FromContext(ctx)
-	logger.Info("Reconciling RootShard object")
+	logger.V(4).Info("Reconciling")
 
 	var rootShard v1alpha1.RootShard
 	if err := r.Client.Get(ctx, req.NamespacedName, &rootShard); err != nil {
