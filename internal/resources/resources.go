@@ -32,6 +32,13 @@ const (
 	appInstanceLabel  = "app.kubernetes.io/instance"
 	appManagedByLabel = "app.kubernetes.io/managed-by"
 	appComponentLabel = "app.kubernetes.io/component"
+
+	// RootShardLabel is placed on Secrets created for Certificates so that the operator can determine
+	// the grandparent object of a Secret when reconciling.
+	RootShardLabel  = "operator.kcp.io/rootshard"
+	ShardLabel      = "operator.kcp.io/shard"
+	FrontProxyLabel = "operator.kcp.io/front-proxy"
+	KubeconfigLabel = "operator.kcp.io/kubeconfig"
 )
 
 func GetImageSettings(imageSpec *operatorv1alpha1.ImageSpec) (string, []corev1.LocalObjectReference) {

@@ -32,7 +32,12 @@ func ServerCertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconcil
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
 			cert.SetLabels(resources.GetRootShardResourceLabels(rootShard))
 			cert.Spec = certmanagerv1.CertificateSpec{
-				SecretName:  name,
+				SecretName: name,
+				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
+					Labels: map[string]string{
+						resources.RootShardLabel: rootShard.Name,
+					},
+				},
 				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
 				RenewBefore: &operatorv1alpha1.DefaultCertificateRenewal,
 
@@ -70,7 +75,12 @@ func VirtualWorkspacesCertificateReconciler(rootShard *operatorv1alpha1.RootShar
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
 			cert.SetLabels(resources.GetRootShardResourceLabels(rootShard))
 			cert.Spec = certmanagerv1.CertificateSpec{
-				SecretName:  name,
+				SecretName: name,
+				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
+					Labels: map[string]string{
+						resources.RootShardLabel: rootShard.Name,
+					},
+				},
 				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
 				RenewBefore: &operatorv1alpha1.DefaultCertificateRenewal,
 
@@ -106,8 +116,13 @@ func ServiceAccountCertificateReconciler(rootShard *operatorv1alpha1.RootShard) 
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
 			cert.SetLabels(resources.GetRootShardResourceLabels(rootShard))
 			cert.Spec = certmanagerv1.CertificateSpec{
-				CommonName:  name,
-				SecretName:  name,
+				CommonName: name,
+				SecretName: name,
+				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
+					Labels: map[string]string{
+						resources.RootShardLabel: rootShard.Name,
+					},
+				},
 				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
 				RenewBefore: &operatorv1alpha1.DefaultCertificateRenewal,
 

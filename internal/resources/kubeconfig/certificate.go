@@ -21,6 +21,7 @@ import (
 	certmanagermetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
+	"github.com/kcp-dev/kcp-operator/internal/resources"
 	"github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -30,7 +31,12 @@ func ClientCertificateReconciler(kubeConfig *v1alpha1.Kubeconfig, issuerName str
 			cert.SetLabels(kubeConfig.Labels)
 			cert.Spec = certmanagerv1.CertificateSpec{
 				SecretName: kubeConfig.GetCertificateName(),
-				Duration:   &kubeConfig.Spec.Validity,
+				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
+					Labels: map[string]string{
+						resources.KubeconfigLabel: kubeConfig.Name,
+					},
+				},
+				Duration: &kubeConfig.Spec.Validity,
 
 				PrivateKey: &certmanagerv1.CertificatePrivateKey{
 					Algorithm: certmanagerv1.RSAKeyAlgorithm,

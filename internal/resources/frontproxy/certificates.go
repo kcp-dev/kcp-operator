@@ -40,7 +40,13 @@ func ServerCertificateReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootSh
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
 			cert.SetLabels(resources.GetFrontProxyResourceLabels(frontProxy))
 			cert.Spec = certmanagerv1.CertificateSpec{
-				SecretName:  name,
+				SecretName: name,
+				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
+					Labels: map[string]string{
+						resources.RootShardLabel:  rootshard.Name,
+						resources.FrontProxyLabel: frontproxy.Name,
+					},
+				},
 				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
 				RenewBefore: &operatorv1alpha1.DefaultCertificateRenewal,
 
@@ -74,7 +80,13 @@ func AdminKubeconfigCertificateReconciler(frontProxy *operatorv1alpha1.FrontProx
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
 			cert.SetLabels(resources.GetFrontProxyResourceLabels(frontProxy))
 			cert.Spec = certmanagerv1.CertificateSpec{
-				SecretName:  name,
+				SecretName: name,
+				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
+					Labels: map[string]string{
+						resources.RootShardLabel:  rootshard.Name,
+						resources.FrontProxyLabel: frontproxy.Name,
+					},
+				},
 				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
 				RenewBefore: &operatorv1alpha1.DefaultCertificateRenewal,
 
@@ -112,7 +124,13 @@ func KubeconfigCertificateReconciler(frontProxy *operatorv1alpha1.FrontProxy, ro
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
 			cert.SetLabels(resources.GetFrontProxyResourceLabels(frontProxy))
 			cert.Spec = certmanagerv1.CertificateSpec{
-				SecretName:  name,
+				SecretName: name,
+				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
+					Labels: map[string]string{
+						resources.RootShardLabel:  rootshard.Name,
+						resources.FrontProxyLabel: frontproxy.Name,
+					},
+				},
 				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
 				RenewBefore: &operatorv1alpha1.DefaultCertificateRenewal,
 
@@ -150,7 +168,13 @@ func RequestHeaderCertificateReconciler(frontProxy *operatorv1alpha1.FrontProxy,
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
 			cert.SetLabels(resources.GetFrontProxyResourceLabels(frontProxy))
 			cert.Spec = certmanagerv1.CertificateSpec{
-				SecretName:  name,
+				SecretName: name,
+				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
+					Labels: map[string]string{
+						resources.RootShardLabel:  rootshard.Name,
+						resources.FrontProxyLabel: frontproxy.Name,
+					},
+				},
 				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
 				RenewBefore: &operatorv1alpha1.DefaultCertificateRenewal,
 
