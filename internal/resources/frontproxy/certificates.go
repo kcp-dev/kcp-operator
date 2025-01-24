@@ -43,8 +43,8 @@ func ServerCertificateReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootSh
 				SecretName: name,
 				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
 					Labels: map[string]string{
-						resources.RootShardLabel:  rootshard.Name,
-						resources.FrontProxyLabel: frontproxy.Name,
+						resources.RootShardLabel:  rootShard.Name,
+						resources.FrontProxyLabel: frontProxy.Name,
 					},
 				},
 				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
@@ -83,8 +83,8 @@ func AdminKubeconfigCertificateReconciler(frontProxy *operatorv1alpha1.FrontProx
 				SecretName: name,
 				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
 					Labels: map[string]string{
-						resources.RootShardLabel:  rootshard.Name,
-						resources.FrontProxyLabel: frontproxy.Name,
+						resources.RootShardLabel:  rootShard.Name,
+						resources.FrontProxyLabel: frontProxy.Name,
 					},
 				},
 				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
@@ -127,8 +127,8 @@ func KubeconfigCertificateReconciler(frontProxy *operatorv1alpha1.FrontProxy, ro
 				SecretName: name,
 				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
 					Labels: map[string]string{
-						resources.RootShardLabel:  rootshard.Name,
-						resources.FrontProxyLabel: frontproxy.Name,
+						resources.RootShardLabel:  rootShard.Name,
+						resources.FrontProxyLabel: frontProxy.Name,
 					},
 				},
 				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
@@ -171,8 +171,8 @@ func RequestHeaderCertificateReconciler(frontProxy *operatorv1alpha1.FrontProxy,
 				SecretName: name,
 				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
 					Labels: map[string]string{
-						resources.RootShardLabel:  rootshard.Name,
-						resources.FrontProxyLabel: frontproxy.Name,
+						resources.RootShardLabel:  rootShard.Name,
+						resources.FrontProxyLabel: frontProxy.Name,
 					},
 				},
 				Duration:    &operatorv1alpha1.DefaultCertificateDuration,

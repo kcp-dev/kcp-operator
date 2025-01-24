@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/kcp-dev/kcp-operator/internal/resources"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -41,12 +42,13 @@ var _ = Describe("RootShard Controller", func() {
 			Namespace: "default", // TODO(user):Modify as needed
 		}
 		kcpinstance := &operatorv1alpha1.RootShard{}
+		rootShard := &operatorv1alpha1.RootShard{}
 
 		BeforeEach(func() {
 			By("creating the custom resource for the Kind RootShard")
 			err := k8sClient.Get(ctx, typeNamespacedName, kcpinstance)
 			if err != nil && errors.IsNotFound(err) {
-				resource := &operatorv1alpha1.RootShard{
+				rootShard = &operatorv1alpha1.RootShard{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      resourceName,
 						Namespace: "default",
@@ -63,8 +65,15 @@ var _ = Describe("RootShard Controller", func() {
 						},
 					},
 				}
-				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
+				Expect(k8sClient.Create(ctx, rootShard)).To(Succeed())
 			}
+
+			ensureSecret(ctx, typeNamespacedName.Namespace, resources.GetRootShardCAName(rootShard, operatorv1alpha1.RootCA))
+			ensureSecret(ctx, typeNamespacedName.Namespace, resources.GetRootShardCAName(rootShard, operatorv1alpha1.ClientCA))
+			ensureSecret(ctx, typeNamespacedName.Namespace, resources.GetRootShardCAName(rootShard, operatorv1alpha1.ServiceAccountCA))
+			ensureSecret(ctx, typeNamespacedName.Namespace, resources.GetRootShardCAName(rootShard, operatorv1alpha1.RequestHeaderClientCA))
+			ensureSecret(ctx, typeNamespacedName.Namespace, resources.GetRootShardCertificateName(rootShard, operatorv1alpha1.ServerCertificate))
+			ensureSecret(ctx, typeNamespacedName.Namespace, resources.GetRootShardCertificateName(rootShard, operatorv1alpha1.ServiceAccountCertificate))
 		})
 
 		AfterEach(func() {

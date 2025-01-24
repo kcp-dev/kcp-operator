@@ -27,10 +27,44 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/kcp-dev/kcp-operator/internal/resources"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
+
+func ensureSecret(ctx context.Context, namespace string, name string) {
+	By("creating a Secret object")
+
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+	}
+
+	err := k8sClient.Get(ctx, client.ObjectKeyFromObject(secret), secret)
+	if err != nil && errors.IsNotFound(err) {
+		Expect(k8sClient.Create(ctx, secret)).To(Succeed())
+	}
+}
+
+func ensureConfigMap(ctx context.Context, namespace string, name string) {
+	By("creating a ConfigMap object")
+
+	cm := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+	}
+
+	err := k8sClient.Get(ctx, client.ObjectKeyFromObject(cm), cm)
+	if err != nil && errors.IsNotFound(err) {
+		Expect(k8sClient.Create(ctx, cm)).To(Succeed())
+	}
+}
 
 var _ = Describe("FrontProxy Controller", func() {
 	Context("When reconciling a resource", func() {
@@ -76,7 +110,7 @@ var _ = Describe("FrontProxy Controller", func() {
 			By("creating a FrontProxy object")
 			err = k8sClient.Get(ctx, typeNamespacedName, frontProxy)
 			if err != nil && errors.IsNotFound(err) {
-				resource := &operatorv1alpha1.FrontProxy{
+				frontProxy = &operatorv1alpha1.FrontProxy{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      typeNamespacedName.Name,
 						Namespace: typeNamespacedName.Namespace,
@@ -89,8 +123,17 @@ var _ = Describe("FrontProxy Controller", func() {
 						},
 					},
 				}
-				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
+				Expect(k8sClient.Create(ctx, frontProxy)).To(Succeed())
 			}
+
+			ensureSecret(ctx, typeNamespacedName.Namespace, resources.GetFrontProxyDynamicKubeconfigName(rootShard, frontProxy))
+			ensureSecret(ctx, typeNamespacedName.Namespace, resources.GetFrontProxyCertificateName(rootShard, frontProxy, operatorv1alpha1.KubeconfigCertificate))
+			ensureSecret(ctx, typeNamespacedName.Namespace, resources.GetRootShardCertificateName(rootShard, operatorv1alpha1.ServiceAccountCertificate))
+			ensureSecret(ctx, typeNamespacedName.Namespace, resources.GetRootShardCertificateName(rootShard, operatorv1alpha1.ServerCertificate))
+			ensureSecret(ctx, typeNamespacedName.Namespace, resources.GetFrontProxyCertificateName(rootShard, frontProxy, operatorv1alpha1.RequestHeaderClientCertificate))
+			ensureConfigMap(ctx, typeNamespacedName.Namespace, resources.GetFrontProxyConfigName(frontProxy))
+			ensureSecret(ctx, typeNamespacedName.Namespace, resources.GetRootShardCAName(rootShard, operatorv1alpha1.FrontProxyClientCA))
+			ensureSecret(ctx, typeNamespacedName.Namespace, resources.GetRootShardCAName(rootShard, operatorv1alpha1.RootCA))
 		})
 
 		AfterEach(func() {
