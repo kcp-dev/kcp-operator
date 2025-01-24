@@ -58,6 +58,7 @@ func (r *FrontProxyReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&corev1.Secret{}).
 		Owns(&corev1.Service{}).
 		Owns(&certmanagerv1.Certificate{}).
+		Watches(&corev1.Secret{}, newSecretGrandchildWatcher(resources.FrontProxyLabel)).
 		Complete(r)
 }
 
