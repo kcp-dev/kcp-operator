@@ -26,7 +26,7 @@ import (
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
-func ConfigmapReconciler(frontproxy *operatorv1alpha1.FrontProxy, rootShard *operatorv1alpha1.RootShard) reconciling.NamedConfigMapReconcilerFactory {
+func PathMappingConfigMapReconciler(frontproxy *operatorv1alpha1.FrontProxy, rootShard *operatorv1alpha1.RootShard) reconciling.NamedConfigMapReconcilerFactory {
 	name := resources.GetFrontProxyConfigName(frontproxy)
 
 	return func() (string, reconciling.ConfigMapReconciler) {

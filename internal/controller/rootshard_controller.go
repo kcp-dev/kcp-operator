@@ -106,20 +106,17 @@ func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operator
 		v1alpha1.RequestHeaderClientCA,
 		v1alpha1.ClientCA,
 		v1alpha1.ServiceAccountCA,
+		v1alpha1.FrontProxyClientCA,
 	}
 
 	issuerReconcilers := []reconciling.NamedIssuerReconcilerFactory{
 		rootshard.RootCAIssuerReconciler(rootShard),
-		rootshard.ClientCAIssuerReconciler(rootShard),
-		rootshard.FrontProxyClientCAIssuerReconciler(rootShard),
 	}
 
 	certReconcilers := []reconciling.NamedCertificateReconcilerFactory{
 		rootshard.ServerCertificateReconciler(rootShard),
 		rootshard.ServiceAccountCertificateReconciler(rootShard),
 		rootshard.VirtualWorkspacesCertificateReconciler(rootShard),
-		rootshard.ClientCACertificateReconciler(rootShard),
-		rootshard.FrontProxyClientCACertificateReconciler(rootShard),
 	}
 
 	for _, ca := range intermediateCAs {

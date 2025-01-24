@@ -23,7 +23,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -40,7 +40,7 @@ var _ = Describe("FrontProxy Controller", func() {
 
 		typeNamespacedName := types.NamespacedName{
 			Name:      resourceName,
-			Namespace: "default", // TODO(user):Modify as needed
+			Namespace: "default",
 		}
 		frontproxy := &operatorv1alpha1.FrontProxy{}
 		rootShard := &operatorv1alpha1.RootShard{}
@@ -55,8 +55,8 @@ var _ = Describe("FrontProxy Controller", func() {
 			if err != nil && errors.IsNotFound(err) {
 				rootShard = &operatorv1alpha1.RootShard{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      fmt.Sprintf("rootshard-%s", resourceName),
-						Namespace: "default",
+						Name:      rootShardNamespacedName.Name,
+						Namespace: rootShardNamespacedName.Namespace,
 					},
 					Spec: operatorv1alpha1.RootShardSpec{
 						External: operatorv1alpha1.ExternalConfig{
@@ -78,12 +78,12 @@ var _ = Describe("FrontProxy Controller", func() {
 			if err != nil && errors.IsNotFound(err) {
 				resource := &operatorv1alpha1.FrontProxy{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      resourceName,
-						Namespace: "default",
+						Name:      typeNamespacedName.Name,
+						Namespace: typeNamespacedName.Namespace,
 					},
 					Spec: operatorv1alpha1.FrontProxySpec{
 						RootShard: operatorv1alpha1.RootShardConfig{
-							Reference: &v1.LocalObjectReference{
+							Reference: &corev1.LocalObjectReference{
 								Name: rootShard.Name,
 							},
 						},

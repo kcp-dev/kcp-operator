@@ -115,7 +115,7 @@ func GetFrontProxyDynamicKubeconfigName(r *operatorv1alpha1.RootShard, f *operat
 	return fmt.Sprintf("%s-%s-dynamic-kubeconfig", r.Name, f.Name)
 }
 
-func GetFrontProxyRequestheaderName(r *operatorv1alpha1.RootShard, f *operatorv1alpha1.FrontProxy) string {
+func GetFrontProxyRequestHeaderName(r *operatorv1alpha1.RootShard, f *operatorv1alpha1.FrontProxy) string {
 	return fmt.Sprintf("%s-%s-requestheader", r.Name, f.Name)
 }
 

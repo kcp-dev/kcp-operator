@@ -67,7 +67,7 @@ func ServerCertificateReconciler(frontproxy *operatorv1alpha1.FrontProxy, rootsh
 	}
 }
 
-func AdminKubeconfigReconciler(frontproxy *operatorv1alpha1.FrontProxy, rootshard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
+func AdminKubeconfigCertificateReconciler(frontproxy *operatorv1alpha1.FrontProxy, rootshard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
 	name := resources.GetFrontProxyCertificateName(rootshard, frontproxy, operatorv1alpha1.AdminKubeconfigClientCertificate)
 
 	return func() (string, reconciling.CertificateReconciler) {
@@ -105,7 +105,7 @@ func AdminKubeconfigReconciler(frontproxy *operatorv1alpha1.FrontProxy, rootshar
 	}
 }
 
-func KubeconfigReconciler(frontproxy *operatorv1alpha1.FrontProxy, rootshard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
+func KubeconfigCertificateReconciler(frontproxy *operatorv1alpha1.FrontProxy, rootshard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
 	name := resources.GetFrontProxyCertificateName(rootshard, frontproxy, operatorv1alpha1.KubeconfigCertificate)
 
 	return func() (string, reconciling.CertificateReconciler) {
@@ -143,8 +143,8 @@ func KubeconfigReconciler(frontproxy *operatorv1alpha1.FrontProxy, rootshard *op
 	}
 }
 
-func RequestHeaderReconciler(frontproxy *operatorv1alpha1.FrontProxy, rootshard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
-	name := resources.GetFrontProxyRequestheaderName(rootshard, frontproxy)
+func RequestHeaderCertificateReconciler(frontproxy *operatorv1alpha1.FrontProxy, rootshard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
+	name := resources.GetFrontProxyRequestHeaderName(rootshard, frontproxy)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {

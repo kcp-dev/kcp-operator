@@ -34,7 +34,7 @@ kcp-operator will create the necessary resources to start a `Deployment` of a kc
 
 ### Certificate Management
 
-Since the operator supports multiple rootshards and frontproxies, its certificate structure differs from the helm chart slightly. The placeholders `$rootshard` and `$frontproxy` in the chart are used to denote the name of the corresponding operator resource.
+The placeholders `$rootshard` and `$frontproxy` in the chart are used to denote the name of the corresponding operator resource.
 
 ```mermaid
 graph TB

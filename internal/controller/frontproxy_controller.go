@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	k8creconciling "k8c.io/reconciler/pkg/reconciling"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -54,6 +55,8 @@ func (r *FrontProxyReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&appsv1.Deployment{}).
 		Owns(&corev1.ConfigMap{}).
 		Owns(&corev1.Secret{}).
+		Owns(&corev1.Service{}).
+		Owns(&certmanagerv1.Certificate{}).
 		Complete(r)
 }
 
@@ -71,7 +74,7 @@ func (r *FrontProxyReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	var frontProxy operatorv1alpha1.FrontProxy
 	if err := r.Client.Get(ctx, req.NamespacedName, &frontProxy); err != nil {
 		if client.IgnoreNotFound(err) != nil {
-			return ctrl.Result{}, fmt.Errorf("failed to find %s/%s: %w", req.Namespace, req.Name, err)
+			return ctrl.Result{}, fmt.Errorf("failed to get FrontProxy object: %w", err)
 		}
 
 		// Object has apparently been deleted already.
@@ -93,18 +96,17 @@ func (r *FrontProxyReconciler) reconcile(ctx context.Context, frontProxy *operat
 	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*metav1.NewControllerRef(frontProxy, operatorv1alpha1.SchemeGroupVersion.WithKind("FrontProxy")))
 
 	ref := frontProxy.Spec.RootShard.Reference
-	rootShard := &operatorv1alpha1.RootShard{}
-	switch {
-	case ref != nil:
-		if err := r.Client.Get(ctx, types.NamespacedName{Name: ref.Name, Namespace: frontProxy.Namespace}, rootShard); err != nil {
-			return fmt.Errorf("referenced RootShard '%s' could not be fetched", ref.Name)
-		}
-	default:
+	if ref == nil {
 		return fmt.Errorf("no valid RootShard in FrontProxy spec defined")
 	}
 
+	rootShard := &operatorv1alpha1.RootShard{}
+	if err := r.Client.Get(ctx, types.NamespacedName{Name: ref.Name, Namespace: frontProxy.Namespace}, rootShard); err != nil {
+		return fmt.Errorf("referenced RootShard '%s' could not be fetched", ref.Name)
+	}
+
 	configMapReconcilers := []k8creconciling.NamedConfigMapReconcilerFactory{
-		frontproxy.ConfigmapReconciler(frontProxy, rootShard),
+		frontproxy.PathMappingConfigMapReconciler(frontProxy, rootShard),
 	}
 
 	secretReconcilers := []k8creconciling.NamedSecretReconcilerFactory{
@@ -113,9 +115,9 @@ func (r *FrontProxyReconciler) reconcile(ctx context.Context, frontProxy *operat
 
 	certReconcilers := []reconciling.NamedCertificateReconcilerFactory{
 		frontproxy.ServerCertificateReconciler(frontProxy, rootShard),
-		frontproxy.KubeconfigReconciler(frontProxy, rootShard),
-		frontproxy.AdminKubeconfigReconciler(frontProxy, rootShard),
-		frontproxy.RequestHeaderReconciler(frontProxy, rootShard),
+		frontproxy.KubeconfigCertificateReconciler(frontProxy, rootShard),
+		frontproxy.AdminKubeconfigCertificateReconciler(frontProxy, rootShard),
+		frontproxy.RequestHeaderCertificateReconciler(frontProxy, rootShard),
 	}
 
 	deploymentReconcilers := []k8creconciling.NamedDeploymentReconcilerFactory{
