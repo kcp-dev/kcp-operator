@@ -18,6 +18,7 @@ package modifier
 
 import (
 	"context"
+	"crypto/sha1"
 	"fmt"
 
 	"k8c.io/reconciler/pkg/reconciling"
@@ -100,7 +101,7 @@ func getRelatedRevisionLabels(
 	labels := make(map[string]string)
 
 	loadSecret := func(name string, optional bool) error {
-		labelName := fmt.Sprintf("%s-secret-revision", name)
+		labelName := labelName(name, "secret")
 
 		// skip checking the same secret again
 		if _, ok := labels[labelName]; ok {
@@ -123,7 +124,7 @@ func getRelatedRevisionLabels(
 	}
 
 	loadConfigMap := func(name string, optional bool) error {
-		labelName := fmt.Sprintf("%s-configmap-revision", name)
+		labelName := labelName(name, "configmap")
 
 		// skip checking the same ConfigMap again
 		if _, ok := labels[labelName]; ok {
@@ -208,4 +209,10 @@ func configMapRevision(ctx context.Context, client ctrlruntimeclient.Client, key
 	err := client.Get(ctx, key, cm)
 
 	return cm.ResourceVersion, err
+}
+
+func labelName(objectName string, kind string) string {
+	hashedName := fmt.Sprintf("%x", sha1.Sum([]byte(objectName)))
+
+	return fmt.Sprintf("revision-%s-%s", kind, hashedName)
 }
