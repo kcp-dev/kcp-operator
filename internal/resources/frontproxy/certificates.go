@@ -25,20 +25,20 @@ import (
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
-func ServerCertificateReconciler(frontproxy *operatorv1alpha1.FrontProxy, rootshard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
-	name := resources.GetFrontProxyCertificateName(rootshard, frontproxy, operatorv1alpha1.ServerCertificate)
+func ServerCertificateReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
+	name := resources.GetFrontProxyCertificateName(rootShard, frontProxy, operatorv1alpha1.ServerCertificate)
 
 	dnsNames := []string{
-		rootshard.Spec.External.Hostname,
+		rootShard.Spec.External.Hostname,
 	}
 
-	if frontproxy.Spec.ExternalHostname != "" {
-		dnsNames = append(dnsNames, frontproxy.Spec.ExternalHostname)
+	if frontProxy.Spec.ExternalHostname != "" {
+		dnsNames = append(dnsNames, frontProxy.Spec.ExternalHostname)
 	}
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
-			cert.SetLabels(resources.GetFrontProxyResourceLabels(frontproxy))
+			cert.SetLabels(resources.GetFrontProxyResourceLabels(frontProxy))
 			cert.Spec = certmanagerv1.CertificateSpec{
 				SecretName:  name,
 				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
@@ -56,7 +56,7 @@ func ServerCertificateReconciler(frontproxy *operatorv1alpha1.FrontProxy, rootsh
 				DNSNames: dnsNames,
 
 				IssuerRef: certmanagermetav1.ObjectReference{
-					Name:  resources.GetRootShardCAName(rootshard, operatorv1alpha1.ServerCA),
+					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.ServerCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},
@@ -67,12 +67,12 @@ func ServerCertificateReconciler(frontproxy *operatorv1alpha1.FrontProxy, rootsh
 	}
 }
 
-func AdminKubeconfigCertificateReconciler(frontproxy *operatorv1alpha1.FrontProxy, rootshard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
-	name := resources.GetFrontProxyCertificateName(rootshard, frontproxy, operatorv1alpha1.AdminKubeconfigClientCertificate)
+func AdminKubeconfigCertificateReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
+	name := resources.GetFrontProxyCertificateName(rootShard, frontProxy, operatorv1alpha1.AdminKubeconfigClientCertificate)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
-			cert.SetLabels(resources.GetFrontProxyResourceLabels(frontproxy))
+			cert.SetLabels(resources.GetFrontProxyResourceLabels(frontProxy))
 			cert.Spec = certmanagerv1.CertificateSpec{
 				SecretName:  name,
 				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
@@ -94,7 +94,7 @@ func AdminKubeconfigCertificateReconciler(frontproxy *operatorv1alpha1.FrontProx
 				},
 
 				IssuerRef: certmanagermetav1.ObjectReference{
-					Name:  resources.GetRootShardCAName(rootshard, operatorv1alpha1.FrontProxyClientCA),
+					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.FrontProxyClientCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},
@@ -105,12 +105,12 @@ func AdminKubeconfigCertificateReconciler(frontproxy *operatorv1alpha1.FrontProx
 	}
 }
 
-func KubeconfigCertificateReconciler(frontproxy *operatorv1alpha1.FrontProxy, rootshard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
-	name := resources.GetFrontProxyCertificateName(rootshard, frontproxy, operatorv1alpha1.KubeconfigCertificate)
+func KubeconfigCertificateReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
+	name := resources.GetFrontProxyCertificateName(rootShard, frontProxy, operatorv1alpha1.KubeconfigCertificate)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
-			cert.SetLabels(resources.GetFrontProxyResourceLabels(frontproxy))
+			cert.SetLabels(resources.GetFrontProxyResourceLabels(frontProxy))
 			cert.Spec = certmanagerv1.CertificateSpec{
 				SecretName:  name,
 				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
@@ -132,7 +132,7 @@ func KubeconfigCertificateReconciler(frontproxy *operatorv1alpha1.FrontProxy, ro
 				},
 
 				IssuerRef: certmanagermetav1.ObjectReference{
-					Name:  resources.GetRootShardCAName(rootshard, operatorv1alpha1.ClientCA),
+					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.ClientCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},
@@ -143,12 +143,12 @@ func KubeconfigCertificateReconciler(frontproxy *operatorv1alpha1.FrontProxy, ro
 	}
 }
 
-func RequestHeaderCertificateReconciler(frontproxy *operatorv1alpha1.FrontProxy, rootshard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
-	name := resources.GetFrontProxyRequestHeaderName(rootshard, frontproxy)
+func RequestHeaderCertificateReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
+	name := resources.GetFrontProxyRequestHeaderName(rootShard, frontProxy)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
-			cert.SetLabels(resources.GetFrontProxyResourceLabels(frontproxy))
+			cert.SetLabels(resources.GetFrontProxyResourceLabels(frontProxy))
 			cert.Spec = certmanagerv1.CertificateSpec{
 				SecretName:  name,
 				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
@@ -168,7 +168,7 @@ func RequestHeaderCertificateReconciler(frontproxy *operatorv1alpha1.FrontProxy,
 				},
 
 				IssuerRef: certmanagermetav1.ObjectReference{
-					Name:  resources.GetRootShardCAName(rootshard, operatorv1alpha1.RequestHeaderClientCA),
+					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.RequestHeaderClientCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},

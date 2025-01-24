@@ -94,12 +94,12 @@ func GetRootShardCAName(r *operatorv1alpha1.RootShard, caName operatorv1alpha1.C
 	return fmt.Sprintf("%s-%s-ca", r.Name, caName)
 }
 
-func GetFrontProxyResourceLabels(fp *operatorv1alpha1.FrontProxy) map[string]string {
+func GetFrontProxyResourceLabels(f *operatorv1alpha1.FrontProxy) map[string]string {
 	return map[string]string{
 		appNameLabel:      "kcp",
-		appInstanceLabel:  fp.Name,
+		appInstanceLabel:  f.Name,
 		appManagedByLabel: "kcp-operator",
-		appComponentLabel: "frontproxy",
+		appComponentLabel: "front-proxy",
 	}
 }
 

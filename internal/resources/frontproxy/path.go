@@ -17,6 +17,6 @@ limitations under the License.
 package frontproxy
 
 const (
-	FrontProxyBasepath = "/etc/kcp-front-proxy"
-	KcpBasepath        = "/etc/kcp"
+	frontProxyBasepath = "/etc/kcp-front-proxy"
+	kcpBasepath        = "/etc/kcp"
 )

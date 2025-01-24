@@ -28,23 +28,23 @@ import (
 )
 
 const (
-	ClientCertPath        = FrontProxyBasepath + "/kubeconfig-client-cert"
-	ClientCertificatePath = ClientCertPath + "/tls.crt"
-	ClientKeyPath         = ClientCertPath + "/tls.key"
-	KubeconfigCAPath      = "/etc/kcp/tls/ca/tls.crt"
+	clientCertPath        = frontProxyBasepath + "/kubeconfig-client-cert"
+	clientCertificatePath = clientCertPath + "/tls.crt"
+	clientKeyPath         = clientCertPath + "/tls.key"
+	kubeconfigCAPath      = "/etc/kcp/tls/ca/tls.crt"
 )
 
-func DynamicKubeconfigSecretReconciler(frontproxy *operatorv1alpha1.FrontProxy, rootshard *operatorv1alpha1.RootShard) reconciling.NamedSecretReconcilerFactory {
+func DynamicKubeconfigSecretReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootshard *operatorv1alpha1.RootShard) reconciling.NamedSecretReconcilerFactory {
 	return func() (string, reconciling.SecretReconciler) {
-		return resources.GetFrontProxyDynamicKubeconfigName(rootshard, frontproxy), func(obj *corev1.Secret) (*corev1.Secret, error) {
-			obj.SetLabels(resources.GetFrontProxyResourceLabels(frontproxy))
+		return resources.GetFrontProxyDynamicKubeconfigName(rootshard, frontProxy), func(obj *corev1.Secret) (*corev1.Secret, error) {
+			obj.SetLabels(resources.GetFrontProxyResourceLabels(frontProxy))
 
 			kubeconfig := clientcmdv1.Config{
 				Clusters: []clientcmdv1.NamedCluster{
 					{
 						Name: "system:admin",
 						Cluster: clientcmdv1.Cluster{
-							CertificateAuthority: KubeconfigCAPath,
+							CertificateAuthority: kubeconfigCAPath,
 							Server:               resources.GetRootShardBaseURL(rootshard),
 						},
 					},
@@ -63,8 +63,8 @@ func DynamicKubeconfigSecretReconciler(frontproxy *operatorv1alpha1.FrontProxy, 
 					{
 						Name: "admin",
 						AuthInfo: clientcmdv1.AuthInfo{
-							ClientCertificate: ClientCertificatePath,
-							ClientKey:         ClientKeyPath,
+							ClientCertificate: clientCertificatePath,
+							ClientKey:         clientKeyPath,
 						},
 					},
 				},

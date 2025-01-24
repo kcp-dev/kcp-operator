@@ -43,7 +43,7 @@ graph TB
 
     C --> D(kcp-etcd-client-ca):::ca
     C --> E(kcp-etcd-peer-ca):::ca
-    C --> F($rootshard-fp-client-ca):::ca
+    C --> F($rootshard-front-proxy-client-ca):::ca
     C --> G($rootshard-server-ca):::ca
     C --> H($rootshard-requestheaer-client-ca):::ca
     C --> I($rootshard-client-ca):::ca
@@ -51,7 +51,7 @@ graph TB
 
     D --> K([kcp-etcd-client-issuer]):::issuer
     E --> L([kcp-etcd-peer-issuer]):::issuer
-    F --> M([$rootshard-fp-client-ca]):::issuer
+    F --> M([$rootshard-front-proxy-client-ca]):::issuer
     G --> N([$rootshard-server-ca]):::issuer
     H --> O([$rootshard-requestheader-client-ca]):::issuer
     I --> P([$rootshard-client-ca]):::issuer
