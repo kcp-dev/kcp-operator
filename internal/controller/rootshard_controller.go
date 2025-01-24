@@ -106,6 +106,7 @@ func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operator
 		v1alpha1.RequestHeaderClientCA,
 		v1alpha1.ClientCA,
 		v1alpha1.ServiceAccountCA,
+		v1alpha1.FrontProxyClientCA,
 	}
 
 	issuerReconcilers := []reconciling.NamedIssuerReconcilerFactory{

@@ -57,6 +57,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &operatorv1alpha1.FrontProxyApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("FrontProxySpec"):
 		return &operatorv1alpha1.FrontProxySpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("FrontProxyStatus"):
+		return &operatorv1alpha1.FrontProxyStatusApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ImageSpec"):
 		return &operatorv1alpha1.ImageSpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Kubeconfig"):
@@ -69,6 +71,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &operatorv1alpha1.ObjectReferenceApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("OIDCConfiguration"):
 		return &operatorv1alpha1.OIDCConfigurationApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("PathMappingEntry"):
+		return &operatorv1alpha1.PathMappingEntryApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("RootShard"):
 		return &operatorv1alpha1.RootShardApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("RootShardConfig"):
@@ -77,6 +81,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &operatorv1alpha1.RootShardSpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("RootShardStatus"):
 		return &operatorv1alpha1.RootShardStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ServiceSpec"):
+		return &operatorv1alpha1.ServiceSpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Shard"):
 		return &operatorv1alpha1.ShardApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ShardSpec"):

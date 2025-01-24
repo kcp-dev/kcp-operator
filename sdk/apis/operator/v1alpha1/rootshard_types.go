@@ -127,24 +127,6 @@ type RootShard struct {
 	Status RootShardStatus `json:"status,omitempty"`
 }
 
-type Certificate string
-
-const (
-	ServerCertificate            Certificate = "server"
-	ServiceAccountCertificate    Certificate = "service-account"
-	VirtualWorkspacesCertificate Certificate = "virtual-workspaces"
-)
-
-type CA string
-
-const (
-	RootCA                CA = "root"
-	ServerCA              CA = "server"
-	ServiceAccountCA      CA = "service-account"
-	ClientCA              CA = "client"
-	RequestHeaderClientCA CA = "requestheader-client"
-)
-
 // +kubebuilder:object:root=true
 
 // RootShardList contains a list of RootShard

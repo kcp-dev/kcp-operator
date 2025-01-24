@@ -69,3 +69,25 @@ type ObjectReference struct {
 	// +optional
 	Group string `json:"group,omitempty"`
 }
+
+type Certificate string
+
+const (
+	ServerCertificate                Certificate = "server"
+	ServiceAccountCertificate        Certificate = "service-account"
+	VirtualWorkspacesCertificate     Certificate = "virtual-workspaces"
+	RequestHeaderClientCertificate   Certificate = "requestheader"
+	KubeconfigCertificate            Certificate = "kubeconfig"
+	AdminKubeconfigClientCertificate Certificate = "admin-kubeconfig"
+)
+
+type CA string
+
+const (
+	RootCA                CA = "root"
+	ServerCA              CA = "server"
+	ServiceAccountCA      CA = "service-account"
+	ClientCA              CA = "client"
+	FrontProxyClientCA    CA = "fp-client"
+	RequestHeaderClientCA CA = "requestheader-client"
+)

@@ -21,9 +21,13 @@ package v1alpha1
 // FrontProxySpecApplyConfiguration represents a declarative configuration of the FrontProxySpec type for use
 // with apply.
 type FrontProxySpecApplyConfiguration struct {
-	RootShard *RootShardConfigApplyConfiguration `json:"rootShard,omitempty"`
-	Replicas  *int32                             `json:"replicas,omitempty"`
-	Auth      *AuthSpecApplyConfiguration        `json:"auth,omitempty"`
+	RootShard              *RootShardConfigApplyConfiguration   `json:"rootShard,omitempty"`
+	Replicas               *int32                               `json:"replicas,omitempty"`
+	Auth                   *AuthSpecApplyConfiguration          `json:"auth,omitempty"`
+	AdditionalPathMappings []PathMappingEntryApplyConfiguration `json:"additionalPathMappings,omitempty"`
+	Image                  *ImageSpecApplyConfiguration         `json:"image,omitempty"`
+	ExternalHostname       *string                              `json:"externalHostname,omitempty"`
+	Service                *ServiceSpecApplyConfiguration       `json:"service,omitempty"`
 }
 
 // FrontProxySpecApplyConfiguration constructs a declarative configuration of the FrontProxySpec type for use with
@@ -53,5 +57,42 @@ func (b *FrontProxySpecApplyConfiguration) WithReplicas(value int32) *FrontProxy
 // If called multiple times, the Auth field is set to the value of the last call.
 func (b *FrontProxySpecApplyConfiguration) WithAuth(value *AuthSpecApplyConfiguration) *FrontProxySpecApplyConfiguration {
 	b.Auth = value
+	return b
+}
+
+// WithAdditionalPathMappings adds the given value to the AdditionalPathMappings field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the AdditionalPathMappings field.
+func (b *FrontProxySpecApplyConfiguration) WithAdditionalPathMappings(values ...*PathMappingEntryApplyConfiguration) *FrontProxySpecApplyConfiguration {
+	for i := range values {
+		if values[i] == nil {
+			panic("nil value passed to WithAdditionalPathMappings")
+		}
+		b.AdditionalPathMappings = append(b.AdditionalPathMappings, *values[i])
+	}
+	return b
+}
+
+// WithImage sets the Image field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Image field is set to the value of the last call.
+func (b *FrontProxySpecApplyConfiguration) WithImage(value *ImageSpecApplyConfiguration) *FrontProxySpecApplyConfiguration {
+	b.Image = value
+	return b
+}
+
+// WithExternalHostname sets the ExternalHostname field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the ExternalHostname field is set to the value of the last call.
+func (b *FrontProxySpecApplyConfiguration) WithExternalHostname(value string) *FrontProxySpecApplyConfiguration {
+	b.ExternalHostname = &value
+	return b
+}
+
+// WithService sets the Service field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Service field is set to the value of the last call.
+func (b *FrontProxySpecApplyConfiguration) WithService(value *ServiceSpecApplyConfiguration) *FrontProxySpecApplyConfiguration {
+	b.Service = value
 	return b
 }

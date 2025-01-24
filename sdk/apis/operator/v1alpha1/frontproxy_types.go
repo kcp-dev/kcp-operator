@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -28,22 +29,63 @@ type FrontProxySpec struct {
 	Replicas *int32 `json:"replicas,omitempty"`
 	// Optional: Auth configures various aspects of Authentication and Authorization for this front-proxy instance.
 	Auth *AuthSpec `json:"auth,omitempty"`
+	// Optional: AdditionalPathMappings configures // TODO ?
+	AdditionalPathMappings []PathMappingEntry `json:"additionalPathMappings,omitempty"`
+	// Optional: Image defines the image to use. Defaults to the latest versioned image during the release of kcp-operator.
+	Image *ImageSpec `json:"image,omitempty"`
+	// Optional: ExternalHostname under which the FrontProxy can be reached. If empty, the RootShard's external hostname will be used only.
+	ExternalHostname string `json:"externalHostname,omitempty"`
+
+	// Optional: Service configures the Kubernetes Service created for this front-proxy instance.
+	Service *ServiceSpec `json:"service,omitempty"`
 }
 
 type AuthSpec struct {
-	// Optional: OIDC configures OpenID Connect Authentication
+	// Optional: OIDC configures OpenID Connect Authentication.
 	OIDC *OIDCConfiguration `json:"oidc,omitempty"`
+}
+
+type ServiceSpec struct {
+	Type corev1.ServiceType `json:"type,omitempty"`
 }
 
 // FrontProxyStatus defines the observed state of FrontProxy
 type FrontProxyStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	Phase FrontProxyPhase `json:"phase,omitempty"`
+
+	// +listType=map
+	// +listMapKey=type
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
+
+type FrontProxyPhase string
+
+const (
+	FrontProxyPhaseProvisioning FrontProxyPhase = "Provisioning"
+	FrontProxyPhaseRunning      FrontProxyPhase = "Running"
+	FrontProxyPhaseDeleting     FrontProxyPhase = "Deleting"
+)
+
+type FrontProxyConditionType string
+
+const (
+	FrontProxyConditionTypeAvailable FrontProxyConditionType = "Available"
+)
+
+type FrontProxyConditionReason string
+
+const (
+	FrontProxyConditionReasonDeploymentUnavailable FrontProxyConditionReason = "DeploymentUnavailable"
+	FrontProxyConditionReasonReplicasUp            FrontProxyConditionReason = "ReplicasUp"
+	FrontProxyConditionReasonReplicasUnavailable   FrontProxyConditionReason = "ReplicasUnavailable"
+)
 
 // +genclient
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:JSONPath=".spec.rootShard.ref.name",name="RootShard",type="string"
+// +kubebuilder:printcolumn:JSONPath=".status.phase",name="Phase",type="string"
+// +kubebuilder:printcolumn:JSONPath=".metadata.creationTimestamp",name="Age",type="date"
 
 // FrontProxy is the Schema for the frontproxies API
 type FrontProxy struct {
@@ -61,6 +103,16 @@ type FrontProxyList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []FrontProxy `json:"items"`
+}
+
+// TODO for now the PathMappingEntry is defined inline at kcp upstream (https://github.com/kcp-dev/kcp/blob/f81a97d0fba951e6ac6f94e8e0f5339f49a9dd92/cmd/sharded-test-server/frontproxy.go#L69),
+// so we have to copy the struct type
+type PathMappingEntry struct {
+	Path            string `json:"path"`
+	Backend         string `json:"backend"`
+	BackendServerCA string `json:"backend_server_ca"`
+	ProxyClientCert string `json:"proxy_client_cert"`
+	ProxyClientKey  string `json:"proxy_client_key"`
 }
 
 func init() {
