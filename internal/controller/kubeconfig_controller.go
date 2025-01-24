@@ -45,6 +45,15 @@ type KubeconfigReconciler struct {
 	Scheme *runtime.Scheme
 }
 
+// SetupWithManager sets up the controller with the Manager.
+func (r *KubeconfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&operatorv1alpha1.Kubeconfig{}).
+		Owns(&corev1.Secret{}).
+		Owns(&certmanagerv1.Certificate{}).
+		Complete(r)
+}
+
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=kubeconfigs,verbs=get;list;watch;update;patch
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=kubeconfigs/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=kubeconfigs/finalizers,verbs=update
@@ -139,11 +148,4 @@ func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	return ctrl.Result{}, nil
-}
-
-// SetupWithManager sets up the controller with the Manager.
-func (r *KubeconfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&operatorv1alpha1.Kubeconfig{}).
-		Complete(r)
 }
