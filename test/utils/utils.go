@@ -27,6 +27,8 @@ import (
 	"testing"
 	"time"
 
+	kcpcorev1alpha1 "github.com/kcp-dev/kcp/sdk/apis/core/v1alpha1"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -35,11 +37,11 @@ import (
 	ctrlruntime "sigs.k8s.io/controller-runtime"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
-	kcpoperatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
+	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
-func GetSelfSignedIssuerRef() *kcpoperatorv1alpha1.ObjectReference {
-	return &kcpoperatorv1alpha1.ObjectReference{
+func GetSelfSignedIssuerRef() *operatorv1alpha1.ObjectReference {
+	return &operatorv1alpha1.ObjectReference{
 		Group: "cert-manager.io",
 		Kind:  "ClusterIssuer",
 		Name:  "selfsigned",
@@ -56,7 +58,7 @@ func GetKubeClient(t *testing.T) ctrlruntimeclient.Client {
 	if err := corev1.AddToScheme(sc); err != nil {
 		t.Fatal(err)
 	}
-	if err := kcpoperatorv1alpha1.AddToScheme(sc); err != nil {
+	if err := operatorv1alpha1.AddToScheme(sc); err != nil {
 		t.Fatal(err)
 	}
 
@@ -147,7 +149,7 @@ func ConnectWithKubeconfig(
 	t.Helper()
 
 	// get kubeconfig
-	config := &kcpoperatorv1alpha1.Kubeconfig{}
+	config := &operatorv1alpha1.Kubeconfig{}
 	key := types.NamespacedName{Namespace: namespace, Name: kubeconfigName}
 	if err := client.Get(ctx, key, config); err != nil {
 		t.Fatal(err)
@@ -201,6 +203,9 @@ func ConnectWithKubeconfig(
 	if err := corev1.AddToScheme(sc); err != nil {
 		t.Fatal(err)
 	}
+	if err := kcpcorev1alpha1.AddToScheme(sc); err != nil {
+		t.Fatal(err)
+	}
 
 	kcpClient, err := ctrlruntimeclient.New(clientConfig, ctrlruntimeclient.Options{Scheme: sc})
 	if err != nil {
@@ -208,39 +213,4 @@ func ConnectWithKubeconfig(
 	}
 
 	return kcpClient
-}
-
-func DeployEtcd(t *testing.T, namespace string) string {
-	t.Helper()
-
-	t.Logf("Installing etcd into %s…", namespace)
-	args := []string{
-		"install",
-		"etcd",
-		"oci://registry-1.docker.io/bitnamicharts/etcd",
-		"--namespace", namespace,
-		"--version", "10.7.1", // latest version at the time of writing
-		"--set", "auth.rbac.enabled=false",
-		"--set", "auth.rbac.create=false",
-	}
-
-	if err := exec.Command("helm", args...).Run(); err != nil {
-		t.Fatalf("Failed to deploy etcd: %v", err)
-	}
-
-	t.Log("Waiting for etcd to get ready…")
-	args = []string{
-		"wait",
-		"pods",
-		"--namespace", namespace,
-		"--selector", "app.kubernetes.io/name=etcd",
-		"--for", "condition=Ready",
-		"--timeout", "3m",
-	}
-
-	if err := exec.Command("kubectl", args...).Run(); err != nil {
-		t.Fatalf("Failed to wait for etcd to become ready: %v", err)
-	}
-
-	return fmt.Sprintf("http://etcd.%s.svc.cluster.local:2379", namespace)
 }

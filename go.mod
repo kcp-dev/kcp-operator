@@ -10,6 +10,7 @@ require (
 	github.com/kcp-dev/apimachinery/v2 v2.0.1-0.20240817110845-a9eb9752bfeb
 	github.com/kcp-dev/client-go v0.0.0-20240912145314-f5949d81732a
 	github.com/kcp-dev/code-generator/v2 v2.3.1
+	github.com/kcp-dev/kcp/sdk v0.26.1
 	github.com/kcp-dev/logicalcluster/v3 v3.0.5
 	github.com/onsi/ginkgo/v2 v2.20.0
 	github.com/onsi/gomega v1.34.1
