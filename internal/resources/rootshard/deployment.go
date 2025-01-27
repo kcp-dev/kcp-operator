@@ -199,7 +199,7 @@ func getArgs(rootShard *operatorv1alpha1.RootShard) []string {
 		fmt.Sprintf("--shard-external-url=https://%s:%d", rootShard.Spec.External.Hostname, rootShard.Spec.External.Port),
 		fmt.Sprintf("--logical-cluster-admin-kubeconfig=%s/kubeconfig", getKubeconfigMountPath(operatorv1alpha1.LogicalClusterAdminCertificate)),
 		fmt.Sprintf("--external-logical-cluster-admin-kubeconfig=%s/kubeconfig", getKubeconfigMountPath(operatorv1alpha1.ExternalLogicalClusterAdminCertificate)),
-		"--root-directory=''",
+		"--root-directory=",
 		"--enable-leader-election=true",
 		"--logging-format=json",
 	}
