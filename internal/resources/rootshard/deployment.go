@@ -96,24 +96,16 @@ func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.Nam
 				)
 			}
 
-			for _, ca := range []v1alpha1.CA{
-				v1alpha1.ClientCA,
-				v1alpha1.ServiceAccountCA,
-				v1alpha1.RequestHeaderClientCA,
+			for _, cert := range []operatorv1alpha1.Certificate{
+				// requires server CA and the logical-cluster-admin cert to be mounted
+				operatorv1alpha1.LogicalClusterAdminCertificate,
+				// requires server CA and the external-logical-cluster-admin cert to be mounted
+				operatorv1alpha1.ExternalLogicalClusterAdminCertificate,
 			} {
-				volumes = append(volumes,
-					corev1.Volume{
-						Name: fmt.Sprintf("%s-ca", ca),
-						VolumeSource: corev1.VolumeSource{
-							Secret: &corev1.SecretVolumeSource{
-								SecretName: resources.GetRootShardCAName(rootShard, ca),
-							},
-						},
-					})
-				container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
-					Name:      fmt.Sprintf("%s-ca", ca),
-					ReadOnly:  true,
-					MountPath: fmt.Sprintf("/etc/kcp/tls/ca/%s", ca),
+				secretMounts = append(secretMounts, utils.SecretMount{
+					VolumeName: fmt.Sprintf("%s-kubeconfig", cert),
+					SecretName: kubeconfigSecret(rootShard, cert),
+					MountPath:  getKubeconfigMountPath(cert),
 				})
 			}
 
@@ -133,6 +125,8 @@ func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.Nam
 			for _, cert := range []operatorv1alpha1.Certificate{
 				operatorv1alpha1.ServerCertificate,
 				operatorv1alpha1.ServiceAccountCertificate,
+				operatorv1alpha1.LogicalClusterAdminCertificate,
+				operatorv1alpha1.ExternalLogicalClusterAdminCertificate,
 			} {
 				secretMounts = append(secretMounts, utils.SecretMount{
 					VolumeName: fmt.Sprintf("%s-cert", cert),
@@ -203,6 +197,8 @@ func getArgs(rootShard *operatorv1alpha1.RootShard) []string {
 		// General shard configuration.
 		fmt.Sprintf("--shard-base-url=%s", resources.GetRootShardBaseURL(rootShard)),
 		fmt.Sprintf("--shard-external-url=https://%s:%d", rootShard.Spec.External.Hostname, rootShard.Spec.External.Port),
+		fmt.Sprintf("--logical-cluster-admin-kubeconfig=%s/kubeconfig", getKubeconfigMountPath(operatorv1alpha1.LogicalClusterAdminCertificate)),
+		fmt.Sprintf("--external-logical-cluster-admin-kubeconfig=%s/kubeconfig", getKubeconfigMountPath(operatorv1alpha1.ExternalLogicalClusterAdminCertificate)),
 		"--root-directory=''",
 		"--enable-leader-election=true",
 		"--logging-format=json",

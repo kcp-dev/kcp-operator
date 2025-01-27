@@ -75,6 +75,8 @@ var _ = Describe("RootShard Controller", func() {
 			ensureSecret(ctx, typeNamespacedName.Namespace, resources.GetRootShardCAName(rootShard, operatorv1alpha1.RequestHeaderClientCA))
 			ensureSecret(ctx, typeNamespacedName.Namespace, resources.GetRootShardCertificateName(rootShard, operatorv1alpha1.ServerCertificate))
 			ensureSecret(ctx, typeNamespacedName.Namespace, resources.GetRootShardCertificateName(rootShard, operatorv1alpha1.ServiceAccountCertificate))
+			ensureSecret(ctx, typeNamespacedName.Namespace, resources.GetRootShardCertificateName(rootShard, operatorv1alpha1.LogicalClusterAdminCertificate))
+			ensureSecret(ctx, typeNamespacedName.Namespace, resources.GetRootShardCertificateName(rootShard, operatorv1alpha1.ExternalLogicalClusterAdminCertificate))
 		})
 
 		AfterEach(func() {

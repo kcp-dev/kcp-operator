@@ -114,6 +114,8 @@ func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operator
 		rootshard.ServerCertificateReconciler(rootShard),
 		rootshard.ServiceAccountCertificateReconciler(rootShard),
 		rootshard.VirtualWorkspacesCertificateReconciler(rootShard),
+		rootshard.LogicalClusterAdminCertificateReconciler(rootShard),
+		rootshard.ExternalLogicalClusterAdminCertificateReconciler(rootShard),
 	}
 
 	// Intermediate CAs that we need to generate a certificate and an issuer for.

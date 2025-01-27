@@ -142,3 +142,77 @@ func ServiceAccountCertificateReconciler(rootShard *operatorv1alpha1.RootShard) 
 		}
 	}
 }
+
+func LogicalClusterAdminCertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
+	name := resources.GetRootShardCertificateName(rootShard, operatorv1alpha1.LogicalClusterAdminCertificate)
+
+	return func() (string, reconciling.CertificateReconciler) {
+		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
+			cert.SetLabels(resources.GetRootShardResourceLabels(rootShard))
+			cert.Spec = certmanagerv1.CertificateSpec{
+				CommonName:  "logical-cluster-admin",
+				SecretName:  name,
+				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
+				RenewBefore: &operatorv1alpha1.DefaultCertificateRenewal,
+
+				PrivateKey: &certmanagerv1.CertificatePrivateKey{
+					Algorithm: certmanagerv1.RSAKeyAlgorithm,
+					Size:      4096,
+				},
+
+				Subject: &certmanagerv1.X509Subject{
+					Organizations: []string{"system:kcp:logical-cluster-admin"},
+				},
+
+				Usages: []certmanagerv1.KeyUsage{
+					certmanagerv1.UsageClientAuth,
+				},
+
+				IssuerRef: certmanagermetav1.ObjectReference{
+					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.ClientCA),
+					Kind:  "Issuer",
+					Group: "cert-manager.io",
+				},
+			}
+
+			return cert, nil
+		}
+	}
+}
+
+func ExternalLogicalClusterAdminCertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
+	name := resources.GetRootShardCertificateName(rootShard, operatorv1alpha1.ExternalLogicalClusterAdminCertificate)
+
+	return func() (string, reconciling.CertificateReconciler) {
+		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
+			cert.SetLabels(resources.GetRootShardResourceLabels(rootShard))
+			cert.Spec = certmanagerv1.CertificateSpec{
+				CommonName:  "external-logical-cluster-admin",
+				SecretName:  name,
+				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
+				RenewBefore: &operatorv1alpha1.DefaultCertificateRenewal,
+
+				PrivateKey: &certmanagerv1.CertificatePrivateKey{
+					Algorithm: certmanagerv1.RSAKeyAlgorithm,
+					Size:      4096,
+				},
+
+				Subject: &certmanagerv1.X509Subject{
+					Organizations: []string{"system:kcp:external-logical-cluster-admin"},
+				},
+
+				Usages: []certmanagerv1.KeyUsage{
+					certmanagerv1.UsageClientAuth,
+				},
+
+				IssuerRef: certmanagermetav1.ObjectReference{
+					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.FrontProxyClientCA),
+					Kind:  "Issuer",
+					Group: "cert-manager.io",
+				},
+			}
+
+			return cert, nil
+		}
+	}
+}
