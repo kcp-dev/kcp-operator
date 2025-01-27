@@ -31,7 +31,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
-	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -184,7 +183,6 @@ func (r *FrontProxyReconciler) reconcileStatus(ctx context.Context, oldFrontProx
 }
 
 func (r *FrontProxyReconciler) setAvailableCondition(ctx context.Context, frontProxy *operatorv1alpha1.FrontProxy) error {
-
 	var dep appsv1.Deployment
 	depKey := types.NamespacedName{Namespace: frontProxy.Namespace, Name: resources.GetFrontProxyDeploymentName(frontProxy)}
 	if err := r.Client.Get(ctx, depKey, &dep); client.IgnoreNotFound(err) != nil {
@@ -193,45 +191,25 @@ func (r *FrontProxyReconciler) setAvailableCondition(ctx context.Context, frontP
 
 	available := metav1.ConditionFalse
 	reason := operatorv1alpha1.FrontProxyConditionReasonDeploymentUnavailable
-	msg := fmt.Sprintf("Deployment %s", depKey)
+	msg := deploymentStatusString(dep, depKey)
 
 	if dep.Name != "" {
-		if dep.Status.UpdatedReplicas == dep.Status.ReadyReplicas && dep.Status.ReadyReplicas == ptr.Deref(dep.Spec.Replicas, 0) {
+		if deploymentReady(dep) {
 			available = metav1.ConditionTrue
 			reason = operatorv1alpha1.FrontProxyConditionReasonReplicasUp
-			msg += " is fully up and running"
 		} else {
 			available = metav1.ConditionFalse
 			reason = operatorv1alpha1.FrontProxyConditionReasonReplicasUnavailable
-			msg += " is not in desired replica state"
 		}
-	} else {
-		msg += " does not exist"
 	}
 
-	if frontProxy.Status.Conditions == nil {
-		frontProxy.Status.Conditions = make([]metav1.Condition, 0)
-	}
-
-	cond := apimeta.FindStatusCondition(frontProxy.Status.Conditions, string(operatorv1alpha1.FrontProxyConditionTypeAvailable))
-
-	if cond == nil || cond.ObservedGeneration != frontProxy.Generation || cond.Status != available {
-		transitionTime := metav1.Now()
-		if cond != nil && cond.Status == available {
-			// We only need to set LastTransitionTime if we are actually toggling the status
-			// or if no transition time was set.
-			transitionTime = cond.LastTransitionTime
-		}
-
-		apimeta.SetStatusCondition(&frontProxy.Status.Conditions, metav1.Condition{
-			Type:               string(operatorv1alpha1.FrontProxyConditionTypeAvailable),
-			Status:             available,
-			ObservedGeneration: frontProxy.Generation,
-			LastTransitionTime: transitionTime,
-			Reason:             string(reason),
-			Message:            msg,
-		})
-	}
+	frontProxy.Status.Conditions = updateCondition(frontProxy.Status.Conditions, metav1.Condition{
+		Type:               string(operatorv1alpha1.FrontProxyConditionTypeAvailable),
+		Status:             available,
+		ObservedGeneration: frontProxy.Generation,
+		Reason:             string(reason),
+		Message:            msg,
+	})
 
 	return nil
 }

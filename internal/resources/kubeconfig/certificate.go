@@ -22,10 +22,10 @@ import (
 
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
-	"github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
+	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
-func ClientCertificateReconciler(kubeConfig *v1alpha1.Kubeconfig, issuerName string) reconciling.NamedCertificateReconcilerFactory {
+func ClientCertificateReconciler(kubeConfig *operatorv1alpha1.Kubeconfig, issuerName string) reconciling.NamedCertificateReconcilerFactory {
 	return func() (string, reconciling.CertificateReconciler) {
 		return kubeConfig.GetCertificateName(), func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
 			cert.SetLabels(kubeConfig.Labels)

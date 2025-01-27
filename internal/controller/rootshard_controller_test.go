@@ -22,7 +22,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -47,7 +47,7 @@ var _ = Describe("RootShard Controller", func() {
 		BeforeEach(func() {
 			By("creating the custom resource for the Kind RootShard")
 			err := k8sClient.Get(ctx, typeNamespacedName, kcpinstance)
-			if err != nil && errors.IsNotFound(err) {
+			if err != nil && apierrors.IsNotFound(err) {
 				rootShard = &operatorv1alpha1.RootShard{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      resourceName,
@@ -70,6 +70,7 @@ var _ = Describe("RootShard Controller", func() {
 
 			ensureSecret(ctx, typeNamespacedName.Namespace, resources.GetRootShardCAName(rootShard, operatorv1alpha1.RootCA))
 			ensureSecret(ctx, typeNamespacedName.Namespace, resources.GetRootShardCAName(rootShard, operatorv1alpha1.ClientCA))
+			ensureSecret(ctx, typeNamespacedName.Namespace, resources.GetRootShardCAName(rootShard, operatorv1alpha1.ServerCA))
 			ensureSecret(ctx, typeNamespacedName.Namespace, resources.GetRootShardCAName(rootShard, operatorv1alpha1.ServiceAccountCA))
 			ensureSecret(ctx, typeNamespacedName.Namespace, resources.GetRootShardCAName(rootShard, operatorv1alpha1.RequestHeaderClientCA))
 			ensureSecret(ctx, typeNamespacedName.Namespace, resources.GetRootShardCertificateName(rootShard, operatorv1alpha1.ServerCertificate))

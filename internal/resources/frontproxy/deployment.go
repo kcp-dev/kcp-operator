@@ -23,7 +23,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 
@@ -35,7 +35,7 @@ func DeploymentReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootShard *op
 	return func() (string, reconciling.DeploymentReconciler) {
 		return resources.GetFrontProxyDeploymentName(frontProxy), func(dep *appsv1.Deployment) (*appsv1.Deployment, error) {
 			dep.SetLabels(resources.GetFrontProxyResourceLabels(frontProxy))
-			dep.Spec.Selector = &v1.LabelSelector{
+			dep.Spec.Selector = &metav1.LabelSelector{
 				MatchLabels: resources.GetFrontProxyResourceLabels(frontProxy),
 			}
 			dep.Spec.Template.ObjectMeta.SetLabels(resources.GetFrontProxyResourceLabels(frontProxy))

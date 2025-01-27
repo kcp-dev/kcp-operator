@@ -31,7 +31,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
-	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -40,7 +39,6 @@ import (
 	"github.com/kcp-dev/kcp-operator/internal/reconciling/modifier"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
 	"github.com/kcp-dev/kcp-operator/internal/resources/rootshard"
-	"github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -84,7 +82,7 @@ func (r *RootShardReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	logger := log.FromContext(ctx)
 	logger.V(4).Info("Reconciling")
 
-	var rootShard v1alpha1.RootShard
+	var rootShard operatorv1alpha1.RootShard
 	if err := r.Client.Get(ctx, req.NamespacedName, &rootShard); err != nil {
 		if client.IgnoreNotFound(err) != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to find %s/%s: %w", req.Namespace, req.Name, err)
@@ -108,15 +106,6 @@ func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operator
 
 	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*metav1.NewControllerRef(rootShard, operatorv1alpha1.SchemeGroupVersion.WithKind("RootShard")))
 
-	// Intermediate CAs that we need to generate a certificate and an issuer for.
-	intermediateCAs := []v1alpha1.CA{
-		v1alpha1.ServerCA,
-		v1alpha1.RequestHeaderClientCA,
-		v1alpha1.ClientCA,
-		v1alpha1.ServiceAccountCA,
-		v1alpha1.FrontProxyClientCA,
-	}
-
 	issuerReconcilers := []reconciling.NamedIssuerReconcilerFactory{
 		rootshard.RootCAIssuerReconciler(rootShard),
 	}
@@ -125,6 +114,15 @@ func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operator
 		rootshard.ServerCertificateReconciler(rootShard),
 		rootshard.ServiceAccountCertificateReconciler(rootShard),
 		rootshard.VirtualWorkspacesCertificateReconciler(rootShard),
+	}
+
+	// Intermediate CAs that we need to generate a certificate and an issuer for.
+	intermediateCAs := []operatorv1alpha1.CA{
+		operatorv1alpha1.ServerCA,
+		operatorv1alpha1.RequestHeaderClientCA,
+		operatorv1alpha1.ClientCA,
+		operatorv1alpha1.ServiceAccountCA,
+		operatorv1alpha1.FrontProxyClientCA,
 	}
 
 	for _, ca := range intermediateCAs {
@@ -140,6 +138,13 @@ func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operator
 	}
 
 	if err := reconciling.ReconcileIssuers(ctx, issuerReconcilers, rootShard.Namespace, r.Client, ownerRefWrapper); err != nil {
+		errs = append(errs, err)
+	}
+
+	if err := k8creconciling.ReconcileSecrets(ctx, []k8creconciling.NamedSecretReconcilerFactory{
+		rootshard.LogicalClusterAdminKubeconfigReconciler(rootShard),
+		rootshard.ExternalLogicalClusterAdminKubeconfigReconciler(rootShard),
+	}, rootShard.Namespace, r.Client, ownerRefWrapper); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -190,7 +195,6 @@ func (r *RootShardReconciler) reconcileStatus(ctx context.Context, oldRootShard 
 }
 
 func (r *RootShardReconciler) setAvailableCondition(ctx context.Context, rootShard *operatorv1alpha1.RootShard) error {
-
 	var dep appsv1.Deployment
 	depKey := types.NamespacedName{Namespace: rootShard.Namespace, Name: resources.GetRootShardDeploymentName(rootShard)}
 	if err := r.Client.Get(ctx, depKey, &dep); client.IgnoreNotFound(err) != nil {
@@ -199,45 +203,25 @@ func (r *RootShardReconciler) setAvailableCondition(ctx context.Context, rootSha
 
 	available := metav1.ConditionFalse
 	reason := operatorv1alpha1.RootShardConditionReasonDeploymentUnavailable
-	msg := fmt.Sprintf("Deployment %s", depKey)
+	msg := deploymentStatusString(dep, depKey)
 
 	if dep.Name != "" {
-		if dep.Status.UpdatedReplicas == dep.Status.ReadyReplicas && dep.Status.ReadyReplicas == ptr.Deref(dep.Spec.Replicas, 0) {
+		if deploymentReady(dep) {
 			available = metav1.ConditionTrue
 			reason = operatorv1alpha1.RootShardConditionReasonReplicasUp
-			msg += " is fully up and running"
 		} else {
 			available = metav1.ConditionFalse
 			reason = operatorv1alpha1.RootShardConditionReasonReplicasUnavailable
-			msg += " is not in desired replica state"
 		}
-	} else {
-		msg += " does not exist"
 	}
 
-	if rootShard.Status.Conditions == nil {
-		rootShard.Status.Conditions = make([]metav1.Condition, 0)
-	}
-
-	cond := apimeta.FindStatusCondition(rootShard.Status.Conditions, string(operatorv1alpha1.RootShardConditionTypeAvailable))
-
-	if cond == nil || cond.ObservedGeneration != rootShard.Generation || cond.Status != available {
-		transitionTime := metav1.Now()
-		if cond != nil && cond.Status == available {
-			// We only need to set LastTransitionTime if we are actually toggling the status
-			// or if no transition time was set.
-			transitionTime = cond.LastTransitionTime
-		}
-
-		apimeta.SetStatusCondition(&rootShard.Status.Conditions, metav1.Condition{
-			Type:               string(operatorv1alpha1.RootShardConditionTypeAvailable),
-			Status:             available,
-			ObservedGeneration: rootShard.Generation,
-			LastTransitionTime: transitionTime,
-			Reason:             string(reason),
-			Message:            msg,
-		})
-	}
+	rootShard.Status.Conditions = updateCondition(rootShard.Status.Conditions, metav1.Condition{
+		Type:               string(operatorv1alpha1.RootShardConditionTypeAvailable),
+		Status:             available,
+		ObservedGeneration: rootShard.Generation,
+		Reason:             string(reason),
+		Message:            msg,
+	})
 
 	return nil
 }

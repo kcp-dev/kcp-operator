@@ -25,11 +25,12 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 
 	"github.com/kcp-dev/kcp-operator/internal/resources"
-	"github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
+	"github.com/kcp-dev/kcp-operator/internal/resources/utils"
+	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
 const (
@@ -49,68 +50,50 @@ var (
 	}
 )
 
-func DeploymentReconciler(rootShard *v1alpha1.RootShard) reconciling.NamedDeploymentReconcilerFactory {
-	image, _ := resources.GetImageSettings(rootShard.Spec.Image)
-	args := getArgs(rootShard)
+func getCertificateMountPath(certName operatorv1alpha1.Certificate) string {
+	return fmt.Sprintf("/etc/kcp/tls/%s", certName)
+}
+
+func getCAMountPath(caName operatorv1alpha1.CA) string {
+	return fmt.Sprintf("/etc/kcp/tls/ca/%s", caName)
+}
+
+func getKubeconfigMountPath(certName operatorv1alpha1.Certificate) string {
+	return fmt.Sprintf("/etc/kcp/%s-kubeconfig", certName)
+}
+
+func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.NamedDeploymentReconcilerFactory {
 
 	return func() (string, reconciling.DeploymentReconciler) {
 		return resources.GetRootShardDeploymentName(rootShard), func(dep *appsv1.Deployment) (*appsv1.Deployment, error) {
 			labels := resources.GetRootShardResourceLabels(rootShard)
 			dep.SetLabels(labels)
-			dep.Spec.Selector = &v1.LabelSelector{
+			dep.Spec.Selector = &metav1.LabelSelector{
 				MatchLabels: labels,
 			}
 			dep.Spec.Template.ObjectMeta.SetLabels(labels)
 
-			volumes := []corev1.Volume{
-				{
-					Name: "kcp-ca",
-					VolumeSource: corev1.VolumeSource{
-						Secret: &corev1.SecretVolumeSource{
-							SecretName: resources.GetRootShardCAName(rootShard, v1alpha1.RootCA),
-							Items: []corev1.KeyToPath{
-								{
-									Key:  "tls.crt",
-									Path: "ca.crt",
-								},
-							},
-						},
-					},
-				},
-			}
+			secretMounts := []utils.SecretMount{{
+				VolumeName: "kcp-ca",
+				SecretName: resources.GetRootShardCAName(rootShard, operatorv1alpha1.RootCA),
+				MountPath:  getCAMountPath(operatorv1alpha1.RootCA),
+			}}
 
-			container := corev1.Container{
-				Name:    ServerContainerName,
-				Image:   image,
-				Command: []string{"/kcp", "start"},
-				Args:    args,
-				SecurityContext: &corev1.SecurityContext{
-					ReadOnlyRootFilesystem:   ptr.To(true),
-					AllowPrivilegeEscalation: ptr.To(false),
-				},
-				VolumeMounts: []corev1.VolumeMount{
-					{
-						Name:      "kcp-ca",
-						MountPath: "/etc/kcp/tls/ca/root",
-					},
-				},
-				Resources: defaultResourceRequirements,
-			}
+			image, _ := resources.GetImageSettings(rootShard.Spec.Image)
+			args := getArgs(rootShard)
 
 			if rootShard.Spec.Etcd.TLSConfig != nil {
-				volumes = append(volumes, corev1.Volume{
-					Name: "etcd-client-cert",
-					VolumeSource: corev1.VolumeSource{
-						Secret: &corev1.SecretVolumeSource{
-							SecretName: rootShard.Spec.Etcd.TLSConfig.SecretRef.Name,
-						},
-					},
+				secretMounts = append(secretMounts, utils.SecretMount{
+					VolumeName: "etcd-client-cert",
+					SecretName: rootShard.Spec.Etcd.TLSConfig.SecretRef.Name,
+					MountPath:  "/etc/etcd/tls",
 				})
-				container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
-					Name:      "etcd-client-cert",
-					ReadOnly:  true,
-					MountPath: "/etc/etcd/tls",
-				})
+
+				args = append(args,
+					"--etcd-certfile=/etc/etcd/tls/tls.crt",
+					"--etcd-keyfile=/etc/etcd/tls/tls.key",
+					"--etcd-cafile=/etc/etcd/tls/ca.crt",
+				)
 			}
 
 			for _, ca := range []v1alpha1.CA{
@@ -134,24 +117,51 @@ func DeploymentReconciler(rootShard *v1alpha1.RootShard) reconciling.NamedDeploy
 				})
 			}
 
-			for _, cert := range []v1alpha1.Certificate{
-				v1alpha1.ServerCertificate,
-				v1alpha1.ServiceAccountCertificate,
+			for _, ca := range []operatorv1alpha1.CA{
+				operatorv1alpha1.ClientCA,
+				operatorv1alpha1.ServerCA,
+				operatorv1alpha1.ServiceAccountCA,
+				operatorv1alpha1.RequestHeaderClientCA,
 			} {
-				volumes = append(volumes, corev1.Volume{
-					Name: string(cert),
-					VolumeSource: corev1.VolumeSource{
-						Secret: &corev1.SecretVolumeSource{
-							SecretName: resources.GetRootShardCertificateName(rootShard, cert)}},
-				})
-				container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
-					Name:      string(cert),
-					ReadOnly:  true,
-					MountPath: fmt.Sprintf("/etc/kcp/tls/%s", cert),
+				secretMounts = append(secretMounts, utils.SecretMount{
+					VolumeName: fmt.Sprintf("%s-ca", ca),
+					SecretName: resources.GetRootShardCAName(rootShard, ca),
+					MountPath:  getCAMountPath(ca),
 				})
 			}
 
-			dep.Spec.Template.Spec.Containers = []corev1.Container{container}
+			for _, cert := range []operatorv1alpha1.Certificate{
+				operatorv1alpha1.ServerCertificate,
+				operatorv1alpha1.ServiceAccountCertificate,
+			} {
+				secretMounts = append(secretMounts, utils.SecretMount{
+					VolumeName: fmt.Sprintf("%s-cert", cert),
+					SecretName: resources.GetRootShardCertificateName(rootShard, cert),
+					MountPath:  getCertificateMountPath(cert),
+				})
+			}
+
+			volumes := []corev1.Volume{}
+			volumeMounts := []corev1.VolumeMount{}
+
+			for _, sm := range secretMounts {
+				v, vm := sm.Build()
+				volumes = append(volumes, v)
+				volumeMounts = append(volumeMounts, vm)
+			}
+
+			dep.Spec.Template.Spec.Containers = []corev1.Container{{
+				Name:         ServerContainerName,
+				Image:        image,
+				Command:      []string{"/kcp", "start"},
+				Args:         args,
+				VolumeMounts: volumeMounts,
+				Resources:    defaultResourceRequirements,
+				SecurityContext: &corev1.SecurityContext{
+					ReadOnlyRootFilesystem:   ptr.To(true),
+					AllowPrivilegeEscalation: ptr.To(false),
+				},
+			}}
 			dep.Spec.Template.Spec.Volumes = volumes
 
 			// explicitly set the replicas if it is configured in the RootShard
@@ -169,23 +179,23 @@ func DeploymentReconciler(rootShard *v1alpha1.RootShard) reconciling.NamedDeploy
 	}
 }
 
-func getArgs(rootShard *v1alpha1.RootShard) []string {
+func getArgs(rootShard *operatorv1alpha1.RootShard) []string {
 	args := []string{
 		// CA configuration.
-		fmt.Sprintf("--root-ca-file=/etc/kcp/tls/ca/%s/ca.crt", v1alpha1.RootCA),
-		fmt.Sprintf("--client-ca-file=/etc/kcp/tls/ca/%s/tls.crt", v1alpha1.ClientCA),
+		fmt.Sprintf("--root-ca-file=%s/tls.crt", getCAMountPath(operatorv1alpha1.RootCA)),
+		fmt.Sprintf("--client-ca-file=%s/tls.crt", getCAMountPath(operatorv1alpha1.ClientCA)),
 
 		// Requestheader configuration.
-		fmt.Sprintf("--requestheader-client-ca-file=/etc/kcp/tls/ca/%s/tls.crt", v1alpha1.RequestHeaderClientCA),
+		fmt.Sprintf("--requestheader-client-ca-file=%s/tls.crt", getCAMountPath(operatorv1alpha1.RequestHeaderClientCA)),
 		"--requestheader-username-headers=X-Remote-User",
 		"--requestheader-group-headers=X-Remote-Group",
 		"--requestheader-extra-headers-prefix=X-Remote-Extra-",
 
 		// Certificate flags (server, service account signing).
-		fmt.Sprintf("--tls-private-key-file=/etc/kcp/tls/%s/tls.key", v1alpha1.ServerCertificate),
-		fmt.Sprintf("--tls-cert-file=/etc/kcp/tls/%s/tls.crt", v1alpha1.ServerCertificate),
-		fmt.Sprintf("--service-account-key-file=/etc/kcp/tls/%s/tls.crt", v1alpha1.ServiceAccountCertificate),
-		fmt.Sprintf("--service-account-private-key-file=/etc/kcp/tls/%s/tls.key", v1alpha1.ServiceAccountCertificate),
+		fmt.Sprintf("--tls-private-key-file=%s/tls.key", getCertificateMountPath(operatorv1alpha1.ServerCertificate)),
+		fmt.Sprintf("--tls-cert-file=%s/tls.crt", getCertificateMountPath(operatorv1alpha1.ServerCertificate)),
+		fmt.Sprintf("--service-account-key-file=%s/tls.crt", getCertificateMountPath(operatorv1alpha1.ServiceAccountCertificate)),
+		fmt.Sprintf("--service-account-private-key-file=%s/tls.key", getCertificateMountPath(operatorv1alpha1.ServiceAccountCertificate)),
 
 		// Etcd client configuration.
 		fmt.Sprintf("--etcd-servers=%s", strings.Join(rootShard.Spec.Etcd.Endpoints, ",")),
@@ -196,13 +206,6 @@ func getArgs(rootShard *v1alpha1.RootShard) []string {
 		"--root-directory=''",
 		"--enable-leader-election=true",
 		"--logging-format=json",
-	}
-
-	if rootShard.Spec.Etcd.TLSConfig != nil {
-		args = append(args, []string{" --etcd-certfile=/etc/etcd/tls/tls.crt",
-			"--etcd-keyfile=/etc/etcd/tls/tls.key",
-			"--etcd-cafile=/etc/etcd/tls/ca.crt",
-		}...)
 	}
 
 	return args
