@@ -76,7 +76,7 @@ presubmits:
               cpu: 2
 
   - name: pull-kcp-operator-test-e2e
-    always_run: false
+    always_run: true
     decorate: true
     clone_uri: "https://github.com/kcp-dev/kcp-operator"
     labels:
