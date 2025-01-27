@@ -26,15 +26,15 @@ import (
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
-func PathMappingConfigMapReconciler(frontproxy *operatorv1alpha1.FrontProxy, rootShard *operatorv1alpha1.RootShard) reconciling.NamedConfigMapReconcilerFactory {
-	name := resources.GetFrontProxyConfigName(frontproxy)
+func PathMappingConfigMapReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootShard *operatorv1alpha1.RootShard) reconciling.NamedConfigMapReconcilerFactory {
+	name := resources.GetFrontProxyConfigName(frontProxy)
 
 	return func() (string, reconciling.ConfigMapReconciler) {
 		return name, func(cm *corev1.ConfigMap) (*corev1.ConfigMap, error) {
-			cm.SetLabels(resources.GetFrontProxyResourceLabels(frontproxy))
+			cm.SetLabels(resources.GetFrontProxyResourceLabels(frontProxy))
 
 			mappings := defaultPathMappings(rootShard)
-			mappings = append(mappings, frontproxy.Spec.AdditionalPathMappings...)
+			mappings = append(mappings, frontProxy.Spec.AdditionalPathMappings...)
 			d, err := yaml.Marshal(mappings)
 			if err != nil {
 				return nil, err

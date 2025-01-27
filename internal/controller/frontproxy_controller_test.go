@@ -42,7 +42,7 @@ var _ = Describe("FrontProxy Controller", func() {
 			Name:      resourceName,
 			Namespace: "default",
 		}
-		frontproxy := &operatorv1alpha1.FrontProxy{}
+		frontProxy := &operatorv1alpha1.FrontProxy{}
 		rootShard := &operatorv1alpha1.RootShard{}
 		rootShardNamespacedName := types.NamespacedName{
 			Name:      fmt.Sprintf("rootshard-%s", resourceName),
@@ -74,7 +74,7 @@ var _ = Describe("FrontProxy Controller", func() {
 			}
 
 			By("creating a FrontProxy object")
-			err = k8sClient.Get(ctx, typeNamespacedName, frontproxy)
+			err = k8sClient.Get(ctx, typeNamespacedName, frontProxy)
 			if err != nil && errors.IsNotFound(err) {
 				resource := &operatorv1alpha1.FrontProxy{
 					ObjectMeta: metav1.ObjectMeta{

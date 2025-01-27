@@ -88,6 +88,6 @@ const (
 	ServerCA              CA = "server"
 	ServiceAccountCA      CA = "service-account"
 	ClientCA              CA = "client"
-	FrontProxyClientCA    CA = "fp-client"
+	FrontProxyClientCA    CA = "front-proxy-client"
 	RequestHeaderClientCA CA = "requestheader-client"
 )
