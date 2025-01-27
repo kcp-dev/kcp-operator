@@ -43,6 +43,11 @@ func RootCACertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconcil
 				IsCA:       true,
 				CommonName: name,
 				SecretName: name,
+				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
+					Labels: map[string]string{
+						resources.RootShardLabel: rootShard.Name,
+					},
+				},
 				// Create CA certificate for ten years.
 				Duration:    &operatorv1alpha1.DefaultCADuration,
 				RenewBefore: &operatorv1alpha1.DefaultCARenewal,
@@ -74,6 +79,11 @@ func CACertificateReconciler(rootShard *operatorv1alpha1.RootShard, ca operatorv
 				IsCA:       true,
 				CommonName: name,
 				SecretName: name,
+				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
+					Labels: map[string]string{
+						resources.RootShardLabel: rootShard.Name,
+					},
+				},
 				// Create CA certificate for ten years.
 				Duration:    &operatorv1alpha1.DefaultCADuration,
 				RenewBefore: &operatorv1alpha1.DefaultCARenewal,

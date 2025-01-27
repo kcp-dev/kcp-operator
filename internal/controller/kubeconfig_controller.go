@@ -20,13 +20,13 @@ import (
 	"context"
 	"fmt"
 	"net/url"
-	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	certmanagermetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	k8creconciling "k8c.io/reconciler/pkg/reconciling"
 
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -45,6 +45,16 @@ type KubeconfigReconciler struct {
 	Scheme *runtime.Scheme
 }
 
+// SetupWithManager sets up the controller with the Manager.
+func (r *KubeconfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&operatorv1alpha1.Kubeconfig{}).
+		Owns(&corev1.Secret{}).
+		Owns(&certmanagerv1.Certificate{}).
+		Watches(&corev1.Secret{}, newSecretGrandchildWatcher(resources.KubeconfigLabel)).
+		Complete(r)
+}
+
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=kubeconfigs,verbs=get;list;watch;update;patch
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=kubeconfigs/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=kubeconfigs/finalizers,verbs=update
@@ -56,7 +66,7 @@ type KubeconfigReconciler struct {
 // move the current state of the cluster closer to the desired state.
 func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
-	logger.Info("Reconciling Kubeconfig object")
+	logger.V(4).Info("Reconciling")
 
 	var kc operatorv1alpha1.Kubeconfig
 	if err := r.Client.Get(ctx, req.NamespacedName, &kc); err != nil {
@@ -105,8 +115,11 @@ func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	var certificate certmanagerv1.Certificate
 	if err := r.Client.Get(ctx, types.NamespacedName{Name: kc.GetCertificateName(), Namespace: req.Namespace}, &certificate); err != nil {
-		logger.V(6).Info("Certificate does not exist yet, trying later ...", "certificate", kc.GetCertificateName())
-		return ctrl.Result{RequeueAfter: time.Second * 5}, nil
+		if apierrors.IsNotFound(err) {
+			logger.V(4).Info("Certificate does not exist yet", "certificate", kc.GetCertificateName())
+			err = nil
+		}
+		return ctrl.Result{}, err
 	}
 
 	ok := false
@@ -118,8 +131,8 @@ func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	if !ok {
-		logger.Info("Certificate is not ready yet, trying later ...", "certificate", certificate.Name)
-		return ctrl.Result{RequeueAfter: time.Second * 5}, nil
+		logger.V(4).Info("Certificate is not ready yet", "certificate", certificate.Name)
+		return ctrl.Result{}, nil
 	}
 
 	var secret corev1.Secret
@@ -139,11 +152,4 @@ func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	return ctrl.Result{}, nil
-}
-
-// SetupWithManager sets up the controller with the Manager.
-func (r *KubeconfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&operatorv1alpha1.Kubeconfig{}).
-		Complete(r)
 }
