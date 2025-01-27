@@ -22,7 +22,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"k8s.io/apimachinery/pkg/api/errors"
+	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -43,9 +44,32 @@ var _ = Describe("Shard Controller", func() {
 		shard := &operatorv1alpha1.Shard{}
 
 		BeforeEach(func() {
+			By("creating the custom resource for the Kind RootShard")
+			err := k8sClient.Get(ctx, typeNamespacedName, &operatorv1alpha1.RootShard{})
+			if err != nil && apierrors.IsNotFound(err) {
+				resource := &operatorv1alpha1.RootShard{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-root-shard",
+						Namespace: "default",
+					},
+					Spec: operatorv1alpha1.RootShardSpec{
+						External: operatorv1alpha1.ExternalConfig{
+							Hostname: "example.kcp.io",
+							Port:     6443,
+						},
+						CommonShardSpec: operatorv1alpha1.CommonShardSpec{
+							Etcd: operatorv1alpha1.EtcdConfig{
+								Endpoints: []string{"https://localhost:2379"},
+							},
+						},
+					},
+				}
+				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
+			}
+
 			By("creating the custom resource for the Kind Shard")
-			err := k8sClient.Get(ctx, typeNamespacedName, shard)
-			if err != nil && errors.IsNotFound(err) {
+			err = k8sClient.Get(ctx, typeNamespacedName, shard)
+			if err != nil && apierrors.IsNotFound(err) {
 				resource := &operatorv1alpha1.Shard{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      resourceName,
@@ -55,6 +79,11 @@ var _ = Describe("Shard Controller", func() {
 						CommonShardSpec: operatorv1alpha1.CommonShardSpec{
 							Etcd: operatorv1alpha1.EtcdConfig{
 								Endpoints: []string{"https://localhost:2379"},
+							},
+						},
+						RootShard: operatorv1alpha1.RootShardConfig{
+							Reference: &corev1.LocalObjectReference{
+								Name: "my-root-shard",
 							},
 						},
 					},

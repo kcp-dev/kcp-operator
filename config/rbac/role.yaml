@@ -48,7 +48,6 @@ rules:
   resources:
   - cacheservers
   - frontproxies
-  - shards
   verbs:
   - create
   - delete
@@ -84,6 +83,7 @@ rules:
   resources:
   - kubeconfigs
   - rootshards
+  - shards
   verbs:
   - get
   - list
