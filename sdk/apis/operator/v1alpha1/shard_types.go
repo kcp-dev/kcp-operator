@@ -41,9 +41,34 @@ type CommonShardSpec struct {
 
 // ShardStatus defines the observed state of Shard
 type ShardStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	Phase ShardPhase `json:"phase,omitempty"`
+
+	// +listType=map
+	// +listMapKey=type
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
+
+type ShardPhase string
+
+const (
+	ShardPhaseProvisioning ShardPhase = "Provisioning"
+	ShardPhaseRunning      ShardPhase = "Running"
+	ShardPhaseDeleting     ShardPhase = "Deleting"
+)
+
+type ShardConditionType string
+
+const (
+	ShardConditionTypeAvailable ShardConditionType = "Available"
+)
+
+type ShardConditionReason string
+
+const (
+	ShardConditionReasonDeploymentUnavailable ShardConditionReason = "DeploymentUnavailable"
+	ShardConditionReasonReplicasUp            ShardConditionReason = "ReplicasUp"
+	ShardConditionReasonReplicasUnavailable   ShardConditionReason = "ReplicasUnavailable"
+)
 
 // +genclient
 // +kubebuilder:object:root=true
