@@ -6,21 +6,10 @@ issues:
   # don't skip warning about doc comments
   # don't exclude the default set of lint
   exclude-use-default: false
-  # restore some of the defaults
-  # (fill in the rest as needed)
-  exclude-rules:
-    - path: "api/*"
-      linters:
-        - lll
-    - path: "internal/*"
-      linters:
-        - dupl
-        - lll
 linters:
   disable-all: true
   enable:
     - copyloopvar
-    - dupl
     - errcheck
     - ginkgolinter
     - goconst
@@ -29,8 +18,8 @@ linters:
     - goimports
     - gosimple
     - govet
+    - importas
     - ineffassign
-    - lll
     - misspell
     - nakedret
     - prealloc
@@ -42,6 +31,27 @@ linters:
     - unused
 
 linters-settings:
+  max-same-issues: 0
+
   revive:
     rules:
       - name: comment-spacings
+      - name: duplicated-imports
+        severity: warning
+  importas:
+    no-unaliased: true
+    alias:
+      # kcp operator
+      - pkg: github.com/kcp-dev/kcp-operator/sdk/apis/(\w+)/(v[\w\d]+)
+        alias: $1$2
+      # Kubernetes
+      - pkg: k8s.io/api/(\w+)/(v[\w\d]+)
+        alias: $1$2
+      - pkg: k8s.io/apimachinery/pkg/apis/meta/v1
+        alias: metav1
+      - pkg: k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1
+        alias: apiextensionsv1
+      - pkg: k8s.io/apimachinery/pkg/api/errors
+        alias: apierrors
+      - pkg: k8s.io/apimachinery/pkg/util/errors
+        alias: kerrors

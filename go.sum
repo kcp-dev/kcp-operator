@@ -88,6 +88,8 @@ github.com/kcp-dev/client-go v0.0.0-20240912145314-f5949d81732a h1:O9SNM3MqMlwoE
 github.com/kcp-dev/client-go v0.0.0-20240912145314-f5949d81732a/go.mod h1:h5jC8rEbkyGUgV86+sgtMMcl950ooGzk+iLrQnbCR6o=
 github.com/kcp-dev/code-generator/v2 v2.3.1 h1:FnGGaDeO033d6wg1gBndhZzO/PZAmU0NKVCretEpQbQ=
 github.com/kcp-dev/code-generator/v2 v2.3.1/go.mod h1:uvIHtZzfv8qPzW9Hym+kL4aNpZaiTBONvPJkTWVVCBk=
+github.com/kcp-dev/kcp/sdk v0.26.1 h1:kzowAqlO6gfSmNFOXtcskg0tOhd8etG72XqvW06BUb0=
+github.com/kcp-dev/kcp/sdk v0.26.1/go.mod h1:XjabYVlKkpuRr1qATymS0gMTEjC6McuuwdoVGSar2fE=
 github.com/kcp-dev/logicalcluster/v3 v3.0.5 h1:JbYakokb+5Uinz09oTXomSUJVQsqfxEvU4RyHUYxHOU=
 github.com/kcp-dev/logicalcluster/v3 v3.0.5/go.mod h1:EWBUBxdr49fUB1cLMO4nOdBWmYifLbP1LfoL20KkXYY=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=

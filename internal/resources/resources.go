@@ -64,17 +64,33 @@ func GetRootShardDeploymentName(r *operatorv1alpha1.RootShard) string {
 	return fmt.Sprintf("%s-kcp", r.Name)
 }
 
+func GetShardDeploymentName(s *operatorv1alpha1.Shard) string {
+	return fmt.Sprintf("%s-shard-kcp", s.Name)
+}
+
 func GetRootShardServiceName(r *operatorv1alpha1.RootShard) string {
 	return fmt.Sprintf("%s-kcp", r.Name)
 }
 
-func GetRootShardResourceLabels(r *operatorv1alpha1.RootShard) map[string]string {
+func GetShardServiceName(s *operatorv1alpha1.Shard) string {
+	return fmt.Sprintf("%s-shard-kcp", s.Name)
+}
+
+func getResourceLabels(instance, component string) map[string]string {
 	return map[string]string{
-		appNameLabel:      "kcp",
-		appInstanceLabel:  r.Name,
 		appManagedByLabel: "kcp-operator",
-		appComponentLabel: "rootshard",
+		appNameLabel:      "kcp",
+		appInstanceLabel:  instance,
+		appComponentLabel: component,
 	}
+}
+
+func GetRootShardResourceLabels(r *operatorv1alpha1.RootShard) map[string]string {
+	return getResourceLabels(r.Name, "rootshard")
+}
+
+func GetShardResourceLabels(s *operatorv1alpha1.Shard) map[string]string {
+	return getResourceLabels(s.Name, "shard")
 }
 
 func GetRootShardBaseHost(r *operatorv1alpha1.RootShard) string {
@@ -90,8 +106,25 @@ func GetRootShardBaseURL(r *operatorv1alpha1.RootShard) string {
 	return fmt.Sprintf("https://%s:6443", GetRootShardBaseHost(r))
 }
 
+func GetShardBaseHost(s *operatorv1alpha1.Shard) string {
+	clusterDomain := s.Spec.ClusterDomain
+	if clusterDomain == "" {
+		clusterDomain = "cluster.local"
+	}
+
+	return fmt.Sprintf("%s-shard-kcp.%s.svc.%s", s.Name, s.Namespace, clusterDomain)
+}
+
+func GetShardBaseURL(s *operatorv1alpha1.Shard) string {
+	return fmt.Sprintf("https://%s:6443", GetShardBaseHost(s))
+}
+
 func GetRootShardCertificateName(r *operatorv1alpha1.RootShard, certName operatorv1alpha1.Certificate) string {
 	return fmt.Sprintf("%s-%s", r.Name, certName)
+}
+
+func GetShardCertificateName(s *operatorv1alpha1.Shard, certName operatorv1alpha1.Certificate) string {
+	return fmt.Sprintf("%s-%s", s.Name, certName)
 }
 
 func GetRootShardCAName(r *operatorv1alpha1.RootShard, caName operatorv1alpha1.CA) string {
@@ -102,12 +135,7 @@ func GetRootShardCAName(r *operatorv1alpha1.RootShard, caName operatorv1alpha1.C
 }
 
 func GetFrontProxyResourceLabels(f *operatorv1alpha1.FrontProxy) map[string]string {
-	return map[string]string{
-		appNameLabel:      "kcp",
-		appInstanceLabel:  f.Name,
-		appManagedByLabel: "kcp-operator",
-		appComponentLabel: "front-proxy",
-	}
+	return getResourceLabels(f.Name, "front-proxy")
 }
 
 func GetFrontProxyDeploymentName(f *operatorv1alpha1.FrontProxy) string {

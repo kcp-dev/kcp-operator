@@ -25,7 +25,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -49,7 +49,7 @@ var _ = Describe("Kubeconfig Controller", func() {
 		BeforeEach(func() {
 			By("creating a RootShard object")
 			err := k8sClient.Get(ctx, typeNamespacedName, rootShard)
-			if err != nil && errors.IsNotFound(err) {
+			if err != nil && apierrors.IsNotFound(err) {
 				resource := &operatorv1alpha1.RootShard{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      fmt.Sprintf("rootshard-%s", resourceName),
@@ -72,7 +72,7 @@ var _ = Describe("Kubeconfig Controller", func() {
 
 			By("creating a Kubeconfig object")
 			err = k8sClient.Get(ctx, typeNamespacedName, kubeconfig)
-			if err != nil && errors.IsNotFound(err) {
+			if err != nil && apierrors.IsNotFound(err) {
 				resource := &operatorv1alpha1.Kubeconfig{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      resourceName,

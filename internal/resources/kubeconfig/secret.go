@@ -25,10 +25,10 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 
-	"github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
+	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
-func KubeconfigSecretReconciler(kubeconfig *v1alpha1.Kubeconfig, certSecret *corev1.Secret, serverName, serverURL string) reconciling.NamedSecretReconcilerFactory {
+func KubeconfigSecretReconciler(kubeconfig *operatorv1alpha1.Kubeconfig, caSecret, certSecret *corev1.Secret, serverName, serverURL string) reconciling.NamedSecretReconcilerFactory {
 	return func() (string, reconciling.SecretReconciler) {
 		return kubeconfig.Spec.SecretRef.Name, func(secret *corev1.Secret) (*corev1.Secret, error) {
 			var config *clientcmdapi.Config
@@ -42,7 +42,7 @@ func KubeconfigSecretReconciler(kubeconfig *v1alpha1.Kubeconfig, certSecret *cor
 			config.Clusters = map[string]*clientcmdapi.Cluster{
 				serverName: {
 					Server:                   serverURL,
-					CertificateAuthorityData: certSecret.Data["ca.crt"],
+					CertificateAuthorityData: caSecret.Data["tls.crt"],
 				},
 			}
 

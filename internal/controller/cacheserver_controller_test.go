@@ -22,7 +22,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -45,7 +45,7 @@ var _ = Describe("CacheServer Controller", func() {
 		BeforeEach(func() {
 			By("creating the custom resource for the Kind CacheServer")
 			err := k8sClient.Get(ctx, typeNamespacedName, cacheserver)
-			if err != nil && errors.IsNotFound(err) {
+			if err != nil && apierrors.IsNotFound(err) {
 				resource := &operatorv1alpha1.CacheServer{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      resourceName,

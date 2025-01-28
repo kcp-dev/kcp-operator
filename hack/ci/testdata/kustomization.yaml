@@ -3,6 +3,5 @@ kind: Kustomization
 resources:
   - ../../../config/default
 images:
-  - name: controller
-    newName: ghcr.io/kcp-dev/kcp-operator
+  - name: ghcr.io/kcp-dev/kcp-operator
     newTag: local

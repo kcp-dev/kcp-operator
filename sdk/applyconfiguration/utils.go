@@ -87,6 +87,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &operatorv1alpha1.ShardApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ShardSpec"):
 		return &operatorv1alpha1.ShardSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ShardStatus"):
+		return &operatorv1alpha1.ShardStatusApplyConfiguration{}
 
 	}
 	return nil

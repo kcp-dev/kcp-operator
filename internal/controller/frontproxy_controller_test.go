@@ -24,7 +24,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -45,7 +45,7 @@ func ensureSecret(ctx context.Context, namespace string, name string) {
 	}
 
 	err := k8sClient.Get(ctx, client.ObjectKeyFromObject(secret), secret)
-	if err != nil && errors.IsNotFound(err) {
+	if err != nil && apierrors.IsNotFound(err) {
 		Expect(k8sClient.Create(ctx, secret)).To(Succeed())
 	}
 }
@@ -61,7 +61,7 @@ func ensureConfigMap(ctx context.Context, namespace string, name string) {
 	}
 
 	err := k8sClient.Get(ctx, client.ObjectKeyFromObject(cm), cm)
-	if err != nil && errors.IsNotFound(err) {
+	if err != nil && apierrors.IsNotFound(err) {
 		Expect(k8sClient.Create(ctx, cm)).To(Succeed())
 	}
 }
@@ -86,7 +86,7 @@ var _ = Describe("FrontProxy Controller", func() {
 		BeforeEach(func() {
 			By("creating a RootShard object")
 			err := k8sClient.Get(ctx, rootShardNamespacedName, rootShard)
-			if err != nil && errors.IsNotFound(err) {
+			if err != nil && apierrors.IsNotFound(err) {
 				rootShard = &operatorv1alpha1.RootShard{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      rootShardNamespacedName.Name,
@@ -109,7 +109,7 @@ var _ = Describe("FrontProxy Controller", func() {
 
 			By("creating a FrontProxy object")
 			err = k8sClient.Get(ctx, typeNamespacedName, frontProxy)
-			if err != nil && errors.IsNotFound(err) {
+			if err != nil && apierrors.IsNotFound(err) {
 				frontProxy = &operatorv1alpha1.FrontProxy{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      typeNamespacedName.Name,

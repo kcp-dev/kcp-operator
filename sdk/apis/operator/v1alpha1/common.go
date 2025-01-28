@@ -73,12 +73,18 @@ type ObjectReference struct {
 type Certificate string
 
 const (
-	ServerCertificate                Certificate = "server"
-	ServiceAccountCertificate        Certificate = "service-account"
-	VirtualWorkspacesCertificate     Certificate = "virtual-workspaces"
-	RequestHeaderClientCertificate   Certificate = "requestheader"
-	KubeconfigCertificate            Certificate = "kubeconfig"
-	AdminKubeconfigClientCertificate Certificate = "admin-kubeconfig"
+	// ServerCertificate is a generic server certificate for serving HTTPS.
+	ServerCertificate Certificate = "server"
+	// ClientCertificate is a generic client certificate.
+	ClientCertificate Certificate = "client"
+
+	ServiceAccountCertificate              Certificate = "service-account"
+	VirtualWorkspacesCertificate           Certificate = "virtual-workspaces"
+	RequestHeaderClientCertificate         Certificate = "requestheader"
+	KubeconfigCertificate                  Certificate = "kubeconfig"
+	AdminKubeconfigClientCertificate       Certificate = "admin-kubeconfig"
+	LogicalClusterAdminCertificate         Certificate = "logical-cluster-admin"
+	ExternalLogicalClusterAdminCertificate Certificate = "external-logical-cluster-admin"
 )
 
 type CA string

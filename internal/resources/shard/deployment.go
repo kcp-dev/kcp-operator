@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package rootshard
+package shard
 
 import (
 	"fmt"
@@ -62,11 +62,11 @@ func getKubeconfigMountPath(certName operatorv1alpha1.Certificate) string {
 	return fmt.Sprintf("/etc/kcp/%s-kubeconfig", certName)
 }
 
-func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.NamedDeploymentReconcilerFactory {
+func DeploymentReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShard) reconciling.NamedDeploymentReconcilerFactory {
 
 	return func() (string, reconciling.DeploymentReconciler) {
-		return resources.GetRootShardDeploymentName(rootShard), func(dep *appsv1.Deployment) (*appsv1.Deployment, error) {
-			labels := resources.GetRootShardResourceLabels(rootShard)
+		return resources.GetShardDeploymentName(shard), func(dep *appsv1.Deployment) (*appsv1.Deployment, error) {
+			labels := resources.GetShardResourceLabels(shard)
 			dep.SetLabels(labels)
 			dep.Spec.Selector = &metav1.LabelSelector{
 				MatchLabels: labels,
@@ -79,10 +79,10 @@ func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.Nam
 				MountPath:  getCAMountPath(operatorv1alpha1.RootCA),
 			}}
 
-			image, _ := resources.GetImageSettings(rootShard.Spec.Image)
-			args := getArgs(rootShard)
+			image, _ := resources.GetImageSettings(shard.Spec.Image)
+			args := getArgs(shard, rootShard)
 
-			if rootShard.Spec.Etcd.TLSConfig != nil {
+			if shard.Spec.Etcd.TLSConfig != nil {
 				secretMounts = append(secretMounts, utils.SecretMount{
 					VolumeName: "etcd-client-cert",
 					SecretName: rootShard.Spec.Etcd.TLSConfig.SecretRef.Name,
@@ -97,18 +97,17 @@ func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.Nam
 			}
 
 			for _, cert := range []operatorv1alpha1.Certificate{
-				// requires server CA and the logical-cluster-admin cert to be mounted
-				operatorv1alpha1.LogicalClusterAdminCertificate,
-				// requires server CA and the external-logical-cluster-admin cert to be mounted
-				operatorv1alpha1.ExternalLogicalClusterAdminCertificate,
+				// requires server CA and the shard client cert to be mounted
+				operatorv1alpha1.ClientCertificate,
 			} {
 				secretMounts = append(secretMounts, utils.SecretMount{
 					VolumeName: fmt.Sprintf("%s-kubeconfig", cert),
-					SecretName: kubeconfigSecret(rootShard, cert),
+					SecretName: kubeconfigSecret(shard, cert),
 					MountPath:  getKubeconfigMountPath(cert),
 				})
 			}
 
+			// All of these CAs are shared between rootshard and regular shards.
 			for _, ca := range []operatorv1alpha1.CA{
 				operatorv1alpha1.ClientCA,
 				operatorv1alpha1.ServerCA,
@@ -125,12 +124,11 @@ func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.Nam
 			for _, cert := range []operatorv1alpha1.Certificate{
 				operatorv1alpha1.ServerCertificate,
 				operatorv1alpha1.ServiceAccountCertificate,
-				operatorv1alpha1.LogicalClusterAdminCertificate,
-				operatorv1alpha1.ExternalLogicalClusterAdminCertificate,
+				operatorv1alpha1.ClientCertificate,
 			} {
 				secretMounts = append(secretMounts, utils.SecretMount{
 					VolumeName: fmt.Sprintf("%s-cert", cert),
-					SecretName: resources.GetRootShardCertificateName(rootShard, cert),
+					SecretName: resources.GetShardCertificateName(shard, cert),
 					MountPath:  getCertificateMountPath(cert),
 				})
 			}
@@ -162,8 +160,8 @@ func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.Nam
 			// object or if the existing Deployment object doesn't have replicas
 			// configured. This will allow a HPA to interact with the replica
 			// count.
-			if rootShard.Spec.Replicas != nil {
-				dep.Spec.Replicas = rootShard.Spec.Replicas
+			if shard.Spec.Replicas != nil {
+				dep.Spec.Replicas = shard.Spec.Replicas
 			} else if dep.Spec.Replicas == nil {
 				dep.Spec.Replicas = ptr.To[int32](2)
 			}
@@ -173,7 +171,7 @@ func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.Nam
 	}
 }
 
-func getArgs(rootShard *operatorv1alpha1.RootShard) []string {
+func getArgs(shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShard) []string {
 	args := []string{
 		// CA configuration.
 		fmt.Sprintf("--root-ca-file=%s/tls.crt", getCAMountPath(operatorv1alpha1.RootCA)),
@@ -190,15 +188,18 @@ func getArgs(rootShard *operatorv1alpha1.RootShard) []string {
 		fmt.Sprintf("--tls-cert-file=%s/tls.crt", getCertificateMountPath(operatorv1alpha1.ServerCertificate)),
 		fmt.Sprintf("--service-account-key-file=%s/tls.crt", getCertificateMountPath(operatorv1alpha1.ServiceAccountCertificate)),
 		fmt.Sprintf("--service-account-private-key-file=%s/tls.key", getCertificateMountPath(operatorv1alpha1.ServiceAccountCertificate)),
+		fmt.Sprintf("--shard-client-key-file=%s/tls.crt", getCertificateMountPath(operatorv1alpha1.ClientCertificate)),
+		fmt.Sprintf("--shard-client-cert-file=%s/tls.key", getCertificateMountPath(operatorv1alpha1.ClientCertificate)),
 
 		// Etcd client configuration.
-		fmt.Sprintf("--etcd-servers=%s", strings.Join(rootShard.Spec.Etcd.Endpoints, ",")),
+		fmt.Sprintf("--etcd-servers=%s", strings.Join(shard.Spec.Etcd.Endpoints, ",")),
 
 		// General shard configuration.
-		fmt.Sprintf("--shard-base-url=%s", resources.GetRootShardBaseURL(rootShard)),
+		fmt.Sprintf("--shard-name=%s", shard.Name),
+		fmt.Sprintf("--external-hostname=%s", resources.GetShardBaseHost(shard)),
 		fmt.Sprintf("--shard-external-url=https://%s:%d", rootShard.Spec.External.Hostname, rootShard.Spec.External.Port),
-		fmt.Sprintf("--logical-cluster-admin-kubeconfig=%s/kubeconfig", getKubeconfigMountPath(operatorv1alpha1.LogicalClusterAdminCertificate)),
-		fmt.Sprintf("--external-logical-cluster-admin-kubeconfig=%s/kubeconfig", getKubeconfigMountPath(operatorv1alpha1.ExternalLogicalClusterAdminCertificate)),
+		fmt.Sprintf("--root-shard-kubeconfig-file=%s/kubeconfig", getKubeconfigMountPath(operatorv1alpha1.ClientCertificate)),
+		fmt.Sprintf("--cache-kubeconfig=%s/kubeconfig", getKubeconfigMountPath(operatorv1alpha1.ClientCertificate)),
 		"--root-directory=",
 		"--enable-leader-election=true",
 		"--logging-format=json",

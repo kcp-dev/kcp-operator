@@ -48,7 +48,6 @@ func RootCACertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconcil
 						resources.RootShardLabel: rootShard.Name,
 					},
 				},
-				// Create CA certificate for ten years.
 				Duration:    &operatorv1alpha1.DefaultCADuration,
 				RenewBefore: &operatorv1alpha1.DefaultCARenewal,
 
@@ -84,7 +83,6 @@ func CACertificateReconciler(rootShard *operatorv1alpha1.RootShard, ca operatorv
 						resources.RootShardLabel: rootShard.Name,
 					},
 				},
-				// Create CA certificate for ten years.
 				Duration:    &operatorv1alpha1.DefaultCADuration,
 				RenewBefore: &operatorv1alpha1.DefaultCARenewal,
 
