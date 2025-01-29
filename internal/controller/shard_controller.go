@@ -18,7 +18,6 @@ package controller
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -32,9 +31,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
@@ -50,12 +52,32 @@ type ShardReconciler struct {
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *ShardReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	rootShardHandler := handler.TypedEnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []reconcile.Request {
+		rootShard := obj.(*operatorv1alpha1.RootShard)
+
+		var shards operatorv1alpha1.ShardList
+		if err := mgr.GetClient().List(ctx, &shards, &client.ListOptions{Namespace: rootShard.Namespace}); err != nil {
+			utilruntime.HandleError(err)
+			return nil
+		}
+
+		var requests []reconcile.Request
+		for _, shard := range shards.Items {
+			if ref := shard.Spec.RootShard.Reference; ref != nil && ref.Name == rootShard.Name {
+				requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&shard)})
+			}
+		}
+
+		return requests
+	})
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&operatorv1alpha1.Shard{}).
 		Owns(&appsv1.Deployment{}).
 		Owns(&corev1.Secret{}).
 		Owns(&corev1.Service{}).
 		Owns(&certmanagerv1.Certificate{}).
+		Watches(&operatorv1alpha1.RootShard{}, rootShardHandler).
 		Complete(r)
 }
 
@@ -79,31 +101,27 @@ func (r *ShardReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res 
 		return ctrl.Result{}, nil
 	}
 
-	defer func() {
-		if err := r.reconcileStatus(ctx, &s); err != nil {
-			recErr = kerrors.NewAggregate([]error{recErr, err})
-		}
-	}()
+	conditions, recErr := r.reconcile(ctx, &s)
 
-	var rootShard operatorv1alpha1.RootShard
-	if ref := s.Spec.RootShard.Reference; ref != nil {
-		rootShardRef := types.NamespacedName{
-			Namespace: s.Namespace,
-			Name:      ref.Name,
-		}
-
-		if err := r.Client.Get(ctx, rootShardRef, &rootShard); err != nil {
-			return ctrl.Result{}, fmt.Errorf("failed to get root shard: %w", err)
-		}
-	} else {
-		return ctrl.Result{}, errors.New("no RootShard reference specified in Shard spec")
+	if err := r.reconcileStatus(ctx, &s, conditions); err != nil {
+		recErr = kerrors.NewAggregate([]error{recErr, err})
 	}
 
-	return ctrl.Result{}, r.reconcile(ctx, &s, &rootShard)
+	return ctrl.Result{}, recErr
 }
 
-func (r *ShardReconciler) reconcile(ctx context.Context, s *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShard) error {
-	var errs []error
+func (r *ShardReconciler) reconcile(ctx context.Context, s *operatorv1alpha1.Shard) ([]metav1.Condition, error) {
+	var (
+		errs       []error
+		conditions []metav1.Condition
+	)
+
+	cond, rootShard := fetchRootShard(ctx, r.Client, s.Namespace, s.Spec.RootShard.Reference)
+	conditions = append(conditions, cond)
+
+	if rootShard == nil {
+		return conditions, nil
+	}
 
 	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*metav1.NewControllerRef(s, operatorv1alpha1.SchemeGroupVersion.WithKind("Shard")))
 
@@ -136,28 +154,37 @@ func (r *ShardReconciler) reconcile(ctx context.Context, s *operatorv1alpha1.Sha
 		errs = append(errs, err)
 	}
 
-	return kerrors.NewAggregate(errs)
+	return conditions, kerrors.NewAggregate(errs)
 }
 
 // reconcileStatus sets both phase and conditions on the reconciled Shard object.
-func (r *ShardReconciler) reconcileStatus(ctx context.Context, oldShard *operatorv1alpha1.Shard) error {
+func (r *ShardReconciler) reconcileStatus(ctx context.Context, oldShard *operatorv1alpha1.Shard, conditions []metav1.Condition) error {
 	newShard := oldShard.DeepCopy()
 	var errs []error
 
-	if newShard.Status.Phase == "" {
-		newShard.Status.Phase = operatorv1alpha1.ShardPhaseProvisioning
-	}
-
-	if newShard.DeletionTimestamp != nil {
-		newShard.Status.Phase = operatorv1alpha1.ShardPhaseDeleting
-	}
-
-	if err := r.setAvailableCondition(ctx, newShard); err != nil {
+	depKey := types.NamespacedName{Namespace: newShard.Namespace, Name: resources.GetShardDeploymentName(newShard)}
+	cond, err := getDeploymentAvailableCondition(ctx, r.Client, depKey)
+	if err != nil {
 		errs = append(errs, err)
+	} else {
+		conditions = append(conditions, cond)
 	}
 
-	if cond := apimeta.FindStatusCondition(newShard.Status.Conditions, string(operatorv1alpha1.ShardConditionTypeAvailable)); cond.Status == metav1.ConditionTrue {
+	for _, condition := range conditions {
+		condition.ObservedGeneration = newShard.Generation
+		newShard.Status.Conditions = updateCondition(newShard.Status.Conditions, condition)
+	}
+
+	availableCond := apimeta.FindStatusCondition(newShard.Status.Conditions, string(operatorv1alpha1.ConditionTypeAvailable))
+	switch {
+	case availableCond.Status == metav1.ConditionTrue:
 		newShard.Status.Phase = operatorv1alpha1.ShardPhaseRunning
+
+	case newShard.DeletionTimestamp != nil:
+		newShard.Status.Phase = operatorv1alpha1.ShardPhaseDeleting
+
+	case newShard.Status.Phase == "":
+		newShard.Status.Phase = operatorv1alpha1.ShardPhaseProvisioning
 	}
 
 	// only patch the status if there are actual changes.
@@ -168,36 +195,4 @@ func (r *ShardReconciler) reconcileStatus(ctx context.Context, oldShard *operato
 	}
 
 	return kerrors.NewAggregate(errs)
-}
-
-func (r *ShardReconciler) setAvailableCondition(ctx context.Context, s *operatorv1alpha1.Shard) error {
-	var dep appsv1.Deployment
-	depKey := types.NamespacedName{Namespace: s.Namespace, Name: resources.GetShardDeploymentName(s)}
-	if err := r.Client.Get(ctx, depKey, &dep); client.IgnoreNotFound(err) != nil {
-		return err
-	}
-
-	available := metav1.ConditionFalse
-	reason := operatorv1alpha1.ShardConditionReasonDeploymentUnavailable
-	msg := deploymentStatusString(dep, depKey)
-
-	if dep.Name != "" {
-		if deploymentReady(dep) {
-			available = metav1.ConditionTrue
-			reason = operatorv1alpha1.ShardConditionReasonReplicasUp
-		} else {
-			available = metav1.ConditionFalse
-			reason = operatorv1alpha1.ShardConditionReasonReplicasUnavailable
-		}
-	}
-
-	s.Status.Conditions = updateCondition(s.Status.Conditions, metav1.Condition{
-		Type:               string(operatorv1alpha1.ShardConditionTypeAvailable),
-		Status:             available,
-		ObservedGeneration: s.Generation,
-		Reason:             string(reason),
-		Message:            msg,
-	})
-
-	return nil
 }

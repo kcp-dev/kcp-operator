@@ -17,33 +17,54 @@ limitations under the License.
 package controller
 
 import (
+	"context"
 	"fmt"
 
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
 func deploymentReady(dep appsv1.Deployment) bool {
 	return dep.Status.UpdatedReplicas == dep.Status.ReadyReplicas && dep.Status.ReadyReplicas == ptr.Deref(dep.Spec.Replicas, 0)
 }
 
-func deploymentStatusString(dep appsv1.Deployment, key types.NamespacedName) string {
+func getDeploymentAvailableCondition(ctx context.Context, c client.Client, key types.NamespacedName) (metav1.Condition, error) {
+	var dep appsv1.Deployment
+	if err := c.Get(ctx, key, &dep); client.IgnoreNotFound(err) != nil {
+		return metav1.Condition{}, err
+	}
+
+	available := metav1.ConditionFalse
+	reason := operatorv1alpha1.ConditionReasonDeploymentUnavailable
 	msg := fmt.Sprintf("Deployment %s", key)
 
 	if dep.Name != "" {
 		if deploymentReady(dep) {
-			msg += " is fully up and running"
+			available = metav1.ConditionTrue
+			reason = operatorv1alpha1.ConditionReasonReplicasUp
+			msg += " is fully up and running."
 		} else {
-			msg += " is not in desired replica state"
+			available = metav1.ConditionFalse
+			reason = operatorv1alpha1.ConditionReasonReplicasUnavailable
+			msg += " is not in desired replica state."
 		}
 	} else {
-		msg += " does not exist"
+		msg += " does not exist."
 	}
 
-	return msg
+	return metav1.Condition{
+		Type:    string(operatorv1alpha1.ConditionTypeAvailable),
+		Status:  available,
+		Reason:  string(reason),
+		Message: msg,
+	}, nil
 }
 
 func updateCondition(conditions []metav1.Condition, newCondition metav1.Condition) []metav1.Condition {
@@ -67,4 +88,32 @@ func updateCondition(conditions []metav1.Condition, newCondition metav1.Conditio
 	}
 
 	return conditions
+}
+
+func fetchRootShard(ctx context.Context, c client.Client, namespace string, ref *corev1.LocalObjectReference) (metav1.Condition, *operatorv1alpha1.RootShard) {
+	if ref == nil {
+		return metav1.Condition{
+			Type:    string(operatorv1alpha1.ConditionTypeRootShard),
+			Status:  metav1.ConditionFalse,
+			Reason:  string(operatorv1alpha1.ConditionReasonRootShardRefInvalid),
+			Message: "No valid RootShard defined in spec.",
+		}, nil
+	}
+
+	rootShard := &operatorv1alpha1.RootShard{}
+	if err := c.Get(ctx, types.NamespacedName{Name: ref.Name, Namespace: namespace}, rootShard); err != nil {
+		return metav1.Condition{
+			Type:    string(operatorv1alpha1.ConditionTypeRootShard),
+			Status:  metav1.ConditionFalse,
+			Reason:  string(operatorv1alpha1.ConditionReasonRootShardRefInvalid),
+			Message: fmt.Sprintf("Failed to retrieve RootShard: %v.", err),
+		}, nil
+	}
+
+	return metav1.Condition{
+		Type:    string(operatorv1alpha1.ConditionTypeRootShard),
+		Status:  metav1.ConditionTrue,
+		Reason:  string(operatorv1alpha1.ConditionReasonRootShardRefValid),
+		Message: "RootShard reference is valid.",
+	}, rootShard
 }

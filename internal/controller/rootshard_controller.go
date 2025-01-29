@@ -90,17 +90,20 @@ func (r *RootShardReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, nil
 	}
 
-	defer func() {
-		if err := r.reconcileStatus(ctx, &rootShard); err != nil {
-			recErr = kerrors.NewAggregate([]error{recErr, err})
-		}
-	}()
+	conditions, recErr := r.reconcile(ctx, &rootShard)
 
-	return ctrl.Result{}, r.reconcile(ctx, &rootShard)
+	if err := r.reconcileStatus(ctx, &rootShard, conditions); err != nil {
+		recErr = kerrors.NewAggregate([]error{recErr, err})
+	}
+
+	return ctrl.Result{}, recErr
 }
 
-func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operatorv1alpha1.RootShard) error {
-	var errs []error
+func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operatorv1alpha1.RootShard) ([]metav1.Condition, error) {
+	var (
+		errs       []error
+		conditions []metav1.Condition
+	)
 
 	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*metav1.NewControllerRef(rootShard, operatorv1alpha1.SchemeGroupVersion.WithKind("RootShard")))
 
@@ -160,28 +163,37 @@ func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operator
 		errs = append(errs, err)
 	}
 
-	return kerrors.NewAggregate(errs)
+	return conditions, kerrors.NewAggregate(errs)
 }
 
 // reconcileStatus sets both phase and conditions on the reconciled RootShard object.
-func (r *RootShardReconciler) reconcileStatus(ctx context.Context, oldRootShard *operatorv1alpha1.RootShard) error {
+func (r *RootShardReconciler) reconcileStatus(ctx context.Context, oldRootShard *operatorv1alpha1.RootShard, conditions []metav1.Condition) error {
 	rootShard := oldRootShard.DeepCopy()
 	var errs []error
 
-	if rootShard.Status.Phase == "" {
-		rootShard.Status.Phase = operatorv1alpha1.RootShardPhaseProvisioning
-	}
-
-	if rootShard.DeletionTimestamp != nil {
-		rootShard.Status.Phase = operatorv1alpha1.RootShardPhaseDeleting
-	}
-
-	if err := r.setAvailableCondition(ctx, rootShard); err != nil {
+	depKey := types.NamespacedName{Namespace: rootShard.Namespace, Name: resources.GetRootShardDeploymentName(rootShard)}
+	cond, err := getDeploymentAvailableCondition(ctx, r.Client, depKey)
+	if err != nil {
 		errs = append(errs, err)
+	} else {
+		conditions = append(conditions, cond)
 	}
 
-	if cond := apimeta.FindStatusCondition(rootShard.Status.Conditions, string(operatorv1alpha1.RootShardConditionTypeAvailable)); cond.Status == metav1.ConditionTrue {
+	for _, condition := range conditions {
+		condition.ObservedGeneration = rootShard.Generation
+		rootShard.Status.Conditions = updateCondition(rootShard.Status.Conditions, condition)
+	}
+
+	availableCond := apimeta.FindStatusCondition(rootShard.Status.Conditions, string(operatorv1alpha1.ConditionTypeAvailable))
+	switch {
+	case availableCond.Status == metav1.ConditionTrue:
 		rootShard.Status.Phase = operatorv1alpha1.RootShardPhaseRunning
+
+	case rootShard.DeletionTimestamp != nil:
+		rootShard.Status.Phase = operatorv1alpha1.RootShardPhaseDeleting
+
+	case rootShard.Status.Phase == "":
+		rootShard.Status.Phase = operatorv1alpha1.RootShardPhaseProvisioning
 	}
 
 	// only patch the status if there are actual changes.
@@ -192,36 +204,4 @@ func (r *RootShardReconciler) reconcileStatus(ctx context.Context, oldRootShard 
 	}
 
 	return kerrors.NewAggregate(errs)
-}
-
-func (r *RootShardReconciler) setAvailableCondition(ctx context.Context, rootShard *operatorv1alpha1.RootShard) error {
-	var dep appsv1.Deployment
-	depKey := types.NamespacedName{Namespace: rootShard.Namespace, Name: resources.GetRootShardDeploymentName(rootShard)}
-	if err := r.Client.Get(ctx, depKey, &dep); client.IgnoreNotFound(err) != nil {
-		return err
-	}
-
-	available := metav1.ConditionFalse
-	reason := operatorv1alpha1.RootShardConditionReasonDeploymentUnavailable
-	msg := deploymentStatusString(dep, depKey)
-
-	if dep.Name != "" {
-		if deploymentReady(dep) {
-			available = metav1.ConditionTrue
-			reason = operatorv1alpha1.RootShardConditionReasonReplicasUp
-		} else {
-			available = metav1.ConditionFalse
-			reason = operatorv1alpha1.RootShardConditionReasonReplicasUnavailable
-		}
-	}
-
-	rootShard.Status.Conditions = updateCondition(rootShard.Status.Conditions, metav1.Condition{
-		Type:               string(operatorv1alpha1.RootShardConditionTypeAvailable),
-		Status:             available,
-		ObservedGeneration: rootShard.Generation,
-		Reason:             string(reason),
-		Message:            msg,
-	})
-
-	return nil
 }
