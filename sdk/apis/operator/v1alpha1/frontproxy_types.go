@@ -66,20 +66,6 @@ const (
 	FrontProxyPhaseDeleting     FrontProxyPhase = "Deleting"
 )
 
-type FrontProxyConditionType string
-
-const (
-	FrontProxyConditionTypeAvailable FrontProxyConditionType = "Available"
-)
-
-type FrontProxyConditionReason string
-
-const (
-	FrontProxyConditionReasonDeploymentUnavailable FrontProxyConditionReason = "DeploymentUnavailable"
-	FrontProxyConditionReasonReplicasUp            FrontProxyConditionReason = "ReplicasUp"
-	FrontProxyConditionReasonReplicasUnavailable   FrontProxyConditionReason = "ReplicasUnavailable"
-)
-
 // +genclient
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status

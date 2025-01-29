@@ -56,20 +56,6 @@ const (
 	ShardPhaseDeleting     ShardPhase = "Deleting"
 )
 
-type ShardConditionType string
-
-const (
-	ShardConditionTypeAvailable ShardConditionType = "Available"
-)
-
-type ShardConditionReason string
-
-const (
-	ShardConditionReasonDeploymentUnavailable ShardConditionReason = "DeploymentUnavailable"
-	ShardConditionReasonReplicasUp            ShardConditionReason = "ReplicasUp"
-	ShardConditionReasonReplicasUnavailable   ShardConditionReason = "ReplicasUnavailable"
-)
-
 // +genclient
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status

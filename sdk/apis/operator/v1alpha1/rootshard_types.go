@@ -107,20 +107,6 @@ const (
 	RootShardPhaseDeleting     RootShardPhase = "Deleting"
 )
 
-type RootShardConditionType string
-
-const (
-	RootShardConditionTypeAvailable RootShardConditionType = "Available"
-)
-
-type RootShardConditionReason string
-
-const (
-	RootShardConditionReasonDeploymentUnavailable RootShardConditionReason = "DeploymentUnavailable"
-	RootShardConditionReasonReplicasUp            RootShardConditionReason = "ReplicasUp"
-	RootShardConditionReasonReplicasUnavailable   RootShardConditionReason = "ReplicasUnavailable"
-)
-
 // +genclient
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
