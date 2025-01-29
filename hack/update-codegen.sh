@@ -33,7 +33,7 @@ _tools/reconciler-gen --config hack/reconciling.yaml > internal/reconciling/zz_g
 
 # generate CRDs
 go run sigs.k8s.io/controller-tools/cmd/controller-gen \
-  rbac:roleName=manager-role crd webhook \
+  rbac:roleName=manager-role crd webhook object \
   paths="./..." \
   output:crd:artifacts:config=config/crd/bases
 
