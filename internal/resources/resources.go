@@ -33,8 +33,8 @@ const (
 	appManagedByLabel = "app.kubernetes.io/managed-by"
 	appComponentLabel = "app.kubernetes.io/component"
 
-	// RootShardLabel is placed on Secrets created for Certificates so that the operator can determine
-	// the grandparent object of a Secret when reconciling.
+	// RootShardLabel is placed on Secrets created for Certificates so that
+	// the Secrets can be more easily mapped to their RootShards.
 	RootShardLabel  = "operator.kcp.io/rootshard"
 	ShardLabel      = "operator.kcp.io/shard"
 	FrontProxyLabel = "operator.kcp.io/front-proxy"

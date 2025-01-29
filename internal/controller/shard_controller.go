@@ -21,9 +21,11 @@ import (
 	"errors"
 	"fmt"
 
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	k8creconciling "k8c.io/reconciler/pkg/reconciling"
 
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -51,6 +53,9 @@ func (r *ShardReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&operatorv1alpha1.Shard{}).
 		Owns(&appsv1.Deployment{}).
+		Owns(&corev1.Secret{}).
+		Owns(&corev1.Service{}).
+		Owns(&certmanagerv1.Certificate{}).
 		Complete(r)
 }
 
@@ -59,7 +64,7 @@ func (r *ShardReconciler) SetupWithManager(mgr ctrl.Manager) error {
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=shards/finalizers,verbs=update
 // +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=core,resources=services,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=core,resources=secrets;services,verbs=get;list;watch;create;update;patch;delete
 
 func (r *ShardReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, recErr error) {
 	logger := log.FromContext(ctx)

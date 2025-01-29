@@ -36,7 +36,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
-	"github.com/kcp-dev/kcp-operator/internal/reconciling/modifier"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
 	"github.com/kcp-dev/kcp-operator/internal/resources/frontproxy"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
@@ -57,7 +56,6 @@ func (r *FrontProxyReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&corev1.Secret{}).
 		Owns(&corev1.Service{}).
 		Owns(&certmanagerv1.Certificate{}).
-		Watches(&corev1.Secret{}, newSecretGrandchildWatcher(resources.FrontProxyLabel)).
 		Complete(r)
 }
 
@@ -141,7 +139,7 @@ func (r *FrontProxyReconciler) reconcile(ctx context.Context, frontProxy *operat
 		errs = append(errs, err)
 	}
 
-	if err := k8creconciling.ReconcileDeployments(ctx, deploymentReconcilers, frontProxy.Namespace, r.Client, ownerRefWrapper, modifier.RelatedRevisionsLabels(ctx, r.Client)); err != nil {
+	if err := k8creconciling.ReconcileDeployments(ctx, deploymentReconcilers, frontProxy.Namespace, r.Client, ownerRefWrapper); err != nil {
 		errs = append(errs, err)
 	}
 

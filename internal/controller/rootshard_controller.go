@@ -36,7 +36,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
-	"github.com/kcp-dev/kcp-operator/internal/reconciling/modifier"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
 	"github.com/kcp-dev/kcp-operator/internal/resources/rootshard"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
@@ -55,8 +54,8 @@ func (r *RootShardReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&appsv1.Deployment{}).
 		Owns(&corev1.ConfigMap{}).
 		Owns(&corev1.Service{}).
+		Owns(&corev1.Secret{}).
 		Owns(&certmanagerv1.Certificate{}).
-		Watches(&corev1.Secret{}, newSecretGrandchildWatcher(resources.RootShardLabel)).
 		Complete(r)
 }
 
@@ -66,8 +65,7 @@ func (r *RootShardReconciler) SetupWithManager(mgr ctrl.Manager) error {
 // +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=cert-manager.io,resources=issuers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=core,resources=services,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=core,resources=secrets,verbs=list;watch
+// +kubebuilder:rbac:groups=core,resources=services;secrets,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -152,7 +150,7 @@ func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operator
 
 	if err := k8creconciling.ReconcileDeployments(ctx, []k8creconciling.NamedDeploymentReconcilerFactory{
 		rootshard.DeploymentReconciler(rootShard),
-	}, rootShard.Namespace, r.Client, ownerRefWrapper, modifier.RelatedRevisionsLabels(ctx, r.Client)); err != nil {
+	}, rootShard.Namespace, r.Client, ownerRefWrapper); err != nil {
 		errs = append(errs, err)
 	}
 
