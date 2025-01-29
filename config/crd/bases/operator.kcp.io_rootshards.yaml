@@ -66,11 +66,16 @@ spec:
                     type: object
                 type: object
               certificates:
+                description: |-
+                  Certificates configures how the operator should create the kcp root CA, from which it will
+                  then create all other sub CAs and leaf certificates.
                 properties:
                   caSecretRef:
                     description: |-
-                      LocalObjectReference contains enough information to let you locate the
-                      referenced object inside the same namespace.
+                      CASecretRef can be used as an alternative to the IssuerRef: This field allows to configure
+                      a pre-existing CA certificate that should be used as sign kcp certificates.
+                      This Secret must contain both the certificate and the private key so that new sub certificates
+                      can be signed and created from this CA. This field is mutually exclusive with issuerRef.
                     properties:
                       name:
                         default: ""
@@ -84,8 +89,9 @@ spec:
                     type: object
                     x-kubernetes-map-type: atomic
                   issuerRef:
-                    description: ObjectReference is a reference to an object with
-                      a given name, kind and group.
+                    description: |-
+                      IssuerRef points to a pre-existing cert-manager Issuer or ClusterIssuer that shall be used
+                      to acquire new certificates. This field is mutually exclusive with caSecretRef.
                     properties:
                       group:
                         description: Group of the object being referred to.

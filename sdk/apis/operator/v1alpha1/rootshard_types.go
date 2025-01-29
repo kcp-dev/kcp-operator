@@ -30,6 +30,8 @@ type RootShardSpec struct {
 	// Cache configures the cache server (with a Kubernetes-like API) used by a sharded kcp instance.
 	Cache CacheConfig `json:"cache"`
 
+	// Certificates configures how the operator should create the kcp root CA, from which it will
+	// then create all other sub CAs and leaf certificates.
 	Certificates Certificates `json:"certificates"`
 }
 
@@ -40,8 +42,16 @@ type ExternalConfig struct {
 	Port     uint32 `json:"port"`
 }
 
+// Certificates configures how certificates for kcp should be created.
 type Certificates struct {
-	IssuerRef   *ObjectReference             `json:"issuerRef,omitempty"`
+	// IssuerRef points to a pre-existing cert-manager Issuer or ClusterIssuer that shall be used
+	// to acquire new certificates. This field is mutually exclusive with caSecretRef.
+	IssuerRef *ObjectReference `json:"issuerRef,omitempty"`
+
+	// CASecretRef can be used as an alternative to the IssuerRef: This field allows to configure
+	// a pre-existing CA certificate that should be used as sign kcp certificates.
+	// This Secret must contain both the certificate and the private key so that new sub certificates
+	// can be signed and created from this CA. This field is mutually exclusive with issuerRef.
 	CASecretRef *corev1.LocalObjectReference `json:"caSecretRef,omitempty"`
 }
 
