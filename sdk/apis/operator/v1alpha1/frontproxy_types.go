@@ -38,6 +38,16 @@ type FrontProxySpec struct {
 
 	// Optional: Service configures the Kubernetes Service created for this front-proxy instance.
 	Service *ServiceSpec `json:"service,omitempty"`
+
+	// Optional: Configure how various certificates are acquired.
+	Certificates *FrontProxyCertificatesSpec `json:"certificates,omitempty"`
+}
+
+type FrontProxyCertificatesSpec struct {
+	// Optional: By default the front-proxy will use the root CA of the RootShard to provision its own
+	// server certificate, but when exposing the front-proxy to a wider audience, it can be of use to
+	// use a more well-known CA (like Let's Encrypt) to provision the certificate for the front-proxy.
+	Server *Certificates `json:"server,omitempty"`
 }
 
 type AuthSpec struct {

@@ -22,6 +22,7 @@ import (
 
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/utils"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -54,11 +55,7 @@ func RootCACertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconcil
 					Size:      4096,
 				},
 
-				IssuerRef: certmanagermetav1.ObjectReference{
-					Name:  rootShard.Spec.Certificates.IssuerRef.Name,
-					Kind:  rootShard.Spec.Certificates.IssuerRef.Kind,
-					Group: rootShard.Spec.Certificates.IssuerRef.Group,
-				},
+				IssuerRef: utils.ToCertManagerRef(*rootShard.Spec.Certificates.IssuerRef),
 			}
 
 			return cert, nil

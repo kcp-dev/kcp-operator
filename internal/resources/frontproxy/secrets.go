@@ -34,9 +34,9 @@ const (
 	kubeconfigCAPath      = "/etc/kcp/tls/ca/tls.crt"
 )
 
-func DynamicKubeconfigSecretReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootshard *operatorv1alpha1.RootShard) reconciling.NamedSecretReconcilerFactory {
+func DynamicKubeconfigSecretReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootShard *operatorv1alpha1.RootShard) reconciling.NamedSecretReconcilerFactory {
 	return func() (string, reconciling.SecretReconciler) {
-		return resources.GetFrontProxyDynamicKubeconfigName(rootshard, frontProxy), func(obj *corev1.Secret) (*corev1.Secret, error) {
+		return resources.GetFrontProxyDynamicKubeconfigName(rootShard, frontProxy), func(obj *corev1.Secret) (*corev1.Secret, error) {
 			obj.SetLabels(resources.GetFrontProxyResourceLabels(frontProxy))
 
 			kubeconfig := clientcmdv1.Config{
@@ -45,7 +45,7 @@ func DynamicKubeconfigSecretReconciler(frontProxy *operatorv1alpha1.FrontProxy, 
 						Name: "system:admin",
 						Cluster: clientcmdv1.Cluster{
 							CertificateAuthority: kubeconfigCAPath,
-							Server:               resources.GetRootShardBaseURL(rootshard),
+							Server:               resources.GetRootShardBaseURL(rootShard),
 						},
 					},
 				},

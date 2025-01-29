@@ -22,6 +22,7 @@ import (
 
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/utils"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -34,6 +35,18 @@ func ServerCertificateReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootSh
 
 	if frontProxy.Spec.ExternalHostname != "" {
 		dnsNames = append(dnsNames, frontProxy.Spec.ExternalHostname)
+	}
+
+	issuerRef := certmanagermetav1.ObjectReference{
+		Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.ServerCA),
+		Kind:  "Issuer",
+		Group: "cert-manager.io",
+	}
+
+	if certs := frontProxy.Spec.Certificates; certs != nil {
+		if server := certs.Server; server != nil && server.IssuerRef != nil {
+			issuerRef = utils.ToCertManagerRef(*server.IssuerRef)
+		}
 	}
 
 	return func() (string, reconciling.CertificateReconciler) {
@@ -61,11 +74,7 @@ func ServerCertificateReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootSh
 
 				DNSNames: dnsNames,
 
-				IssuerRef: certmanagermetav1.ObjectReference{
-					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.ServerCA),
-					Kind:  "Issuer",
-					Group: "cert-manager.io",
-				},
+				IssuerRef: issuerRef,
 			}
 
 			return cert, nil
