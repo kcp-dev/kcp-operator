@@ -65,6 +65,14 @@ func (b *RootShardSpecApplyConfiguration) WithReplicas(value int32) *RootShardSp
 	return b
 }
 
+// WithAudit sets the Audit field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Audit field is set to the value of the last call.
+func (b *RootShardSpecApplyConfiguration) WithAudit(value *AuditSpecApplyConfiguration) *RootShardSpecApplyConfiguration {
+	b.Audit = value
+	return b
+}
+
 // WithExternal sets the External field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the External field is set to the value of the last call.

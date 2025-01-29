@@ -49,6 +49,77 @@ spec:
           spec:
             description: RootShardSpec defines the desired state of RootShard.
             properties:
+              audit:
+                properties:
+                  webhook:
+                    properties:
+                      batchBufferSize:
+                        description: The size of the buffer to store events before
+                          batching and writing. Only used in batch mode.
+                        type: integer
+                      batchMaxSize:
+                        description: The maximum size of a batch. Only used in batch
+                          mode.
+                        type: integer
+                      batchMaxWait:
+                        description: |-
+                          The amount of time to wait before force writing the batch that hadn't reached the max size.
+                          Only used in batch mode.
+                        type: string
+                      batchThrottleBurst:
+                        description: |-
+                          Maximum number of requests sent at the same moment if ThrottleQPS was not utilized before.
+                          Only used in batch mode.
+                        type: integer
+                      batchThrottleEnable:
+                        description: Whether batching throttling is enabled. Only
+                          used in batch mode.
+                        type: boolean
+                      batchThrottleQPS:
+                        description: |-
+                          Maximum average number of batches per second. Only used in batch mode.
+                          This value is a floating point number, stored as a string (e.g. "3.1").
+                        type: string
+                      configSecretName:
+                        description: |-
+                          Name of a Kubernetes Secret that contains a kubeconfig formatted file that defines the
+                          audit webhook configuration.
+                        type: string
+                      initialBackoff:
+                        description: The amount of time to wait before retrying the
+                          first failed request.
+                        type: string
+                      mode:
+                        description: |-
+                          Strategy for sending audit events. Blocking indicates sending events should block server
+                          responses. Batch causes the backend to buffer and write events asynchronously.
+                        enum:
+                        - ""
+                        - batch
+                        - blocking
+                        - blocking-strict
+                        type: string
+                      truncateEnabled:
+                        description: Whether event and batch truncating is enabled.
+                        type: boolean
+                      truncateMaxBatchSize:
+                        description: |-
+                          Maximum size of the batch sent to the underlying backend. Actual serialized size can be
+                          several hundreds of bytes greater. If a batch exceeds this limit, it is split into several
+                          batches of smaller size.
+                        type: integer
+                      truncateMaxEventSize:
+                        description: |-
+                          Maximum size of the audit event sent to the underlying backend. If the size of an event
+                          is greater than this number, first request and response are removed, and if this doesn't
+                          reduce the size enough, event is discarded.
+                        type: integer
+                      version:
+                        description: API group and version used for serializing audit
+                          events written to webhook.
+                        type: string
+                    type: object
+                type: object
               cache:
                 description: Cache configures the cache server (with a Kubernetes-like
                   API) used by a sharded kcp instance.

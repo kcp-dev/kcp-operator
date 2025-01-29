@@ -37,6 +37,61 @@ type CommonShardSpec struct {
 
 	// Replicas configures how many instances of this shard run in parallel. Defaults to 2 if not set.
 	Replicas *int32 `json:"replicas,omitempty"`
+
+	Audit *AuditSpec `json:"audit,omitempty"`
+}
+
+type AuditSpec struct {
+	Webhook *AuditWebhookSpec `json:"webhook,omitempty"`
+}
+
+// +kubebuilder:validation:Enum="";batch;blocking;blocking-strict
+
+type AuditWebhookMode string
+
+const (
+	AuditWebhookBatchMode          AuditWebhookMode = "batch"
+	AuditWebhookBlockingMode       AuditWebhookMode = "blocking"
+	AuditWebhookBlockingStrictMode AuditWebhookMode = "blocking-strict"
+)
+
+type AuditWebhookSpec struct {
+	// The size of the buffer to store events before batching and writing. Only used in batch mode.
+	BatchBufferSize int `json:"batchBufferSize,omitempty"`
+	// The maximum size of a batch. Only used in batch mode.
+	BatchMaxSize int `json:"batchMaxSize,omitempty"`
+	// The amount of time to wait before force writing the batch that hadn't reached the max size.
+	// Only used in batch mode.
+	BatchMaxWait *metav1.Duration `json:"batchMaxWait,omitempty"`
+	// Maximum number of requests sent at the same moment if ThrottleQPS was not utilized before.
+	// Only used in batch mode.
+	BatchThrottleBurst int `json:"batchThrottleBurst,omitempty"`
+	// Whether batching throttling is enabled. Only used in batch mode.
+	BatchThrottleEnable bool `json:"batchThrottleEnable,omitempty"`
+	// Maximum average number of batches per second. Only used in batch mode.
+	// This value is a floating point number, stored as a string (e.g. "3.1").
+	BatchThrottleQPS string `json:"batchThrottleQPS,omitempty"`
+
+	// Name of a Kubernetes Secret that contains a kubeconfig formatted file that defines the
+	// audit webhook configuration.
+	ConfigSecretName string `json:"configSecretName,omitempty"`
+	// The amount of time to wait before retrying the first failed request.
+	InitialBackoff *metav1.Duration `json:"initialBackoff,omitempty"`
+	// Strategy for sending audit events. Blocking indicates sending events should block server
+	// responses. Batch causes the backend to buffer and write events asynchronously.
+	Mode AuditWebhookMode `json:"mode,omitempty"`
+	// Whether event and batch truncating is enabled.
+	TruncateEnabled bool `json:"truncateEnabled,omitempty"`
+	// Maximum size of the batch sent to the underlying backend. Actual serialized size can be
+	// several hundreds of bytes greater. If a batch exceeds this limit, it is split into several
+	// batches of smaller size.
+	TruncateMaxBatchSize int `json:"truncateMaxBatchSize,omitempty"`
+	// Maximum size of the audit event sent to the underlying backend. If the size of an event
+	// is greater than this number, first request and response are removed, and if this doesn't
+	// reduce the size enough, event is discarded.
+	TruncateMaxEventSize int `json:"truncateMaxEventSize,omitempty"`
+	// API group and version used for serializing audit events written to webhook.
+	Version string `json:"version,omitempty"`
 }
 
 // ShardStatus defines the observed state of Shard

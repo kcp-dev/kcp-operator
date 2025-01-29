@@ -63,7 +63,6 @@ func getKubeconfigMountPath(certName operatorv1alpha1.Certificate) string {
 }
 
 func DeploymentReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShard) reconciling.NamedDeploymentReconcilerFactory {
-
 	return func() (string, reconciling.DeploymentReconciler) {
 		return resources.GetShardDeploymentName(shard), func(dep *appsv1.Deployment) (*appsv1.Deployment, error) {
 			labels := resources.GetShardResourceLabels(shard)
@@ -164,6 +163,11 @@ func DeploymentReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1al
 				dep.Spec.Replicas = shard.Spec.Replicas
 			} else if dep.Spec.Replicas == nil {
 				dep.Spec.Replicas = ptr.To[int32](2)
+			}
+
+			dep, err := utils.ApplyAuditConfiguration(dep, shard.Spec.Audit)
+			if err != nil {
+				return nil, fmt.Errorf("failed to apply audit configuration: %w", err)
 			}
 
 			return dep, nil
