@@ -73,6 +73,9 @@ const (
 // +genclient
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:JSONPath=".spec.rootShard.ref.name",name="RootShard",type="string"
+// +kubebuilder:printcolumn:JSONPath=".status.phase",name="Phase",type="string"
+// +kubebuilder:printcolumn:JSONPath=".metadata.creationTimestamp",name="Age",type="date"
 
 // Shard is the Schema for the shards API
 type Shard struct {
