@@ -52,7 +52,6 @@ func (r *KubeconfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&operatorv1alpha1.Kubeconfig{}).
 		Owns(&corev1.Secret{}).
 		Owns(&certmanagerv1.Certificate{}).
-		Watches(&corev1.Secret{}, newSecretGrandchildWatcher(resources.KubeconfigLabel)).
 		Complete(r)
 }
 
