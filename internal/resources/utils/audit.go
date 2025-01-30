@@ -26,7 +26,7 @@ import (
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
-func ApplyAuditConfiguration(deployment *appsv1.Deployment, config *operatorv1alpha1.AuditSpec) (*appsv1.Deployment, error) {
+func applyAuditConfiguration(deployment *appsv1.Deployment, config *operatorv1alpha1.AuditSpec) (*appsv1.Deployment, error) {
 	if len(deployment.Spec.Template.Spec.Containers) == 0 {
 		return deployment, errors.New("Deployment does not contain any containers")
 	}

@@ -73,6 +73,14 @@ func (b *RootShardSpecApplyConfiguration) WithAudit(value *AuditSpecApplyConfigu
 	return b
 }
 
+// WithAuthorization sets the Authorization field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Authorization field is set to the value of the last call.
+func (b *RootShardSpecApplyConfiguration) WithAuthorization(value *AuthorizationSpecApplyConfiguration) *RootShardSpecApplyConfiguration {
+	b.Authorization = value
+	return b
+}
+
 // WithExternal sets the External field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the External field is set to the value of the last call.

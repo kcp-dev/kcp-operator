@@ -165,9 +165,9 @@ func DeploymentReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1al
 				dep.Spec.Replicas = ptr.To[int32](2)
 			}
 
-			dep, err := utils.ApplyAuditConfiguration(dep, shard.Spec.Audit)
+			dep, err := utils.ApplyCommonShardConfig(dep, &shard.Spec.CommonShardSpec)
 			if err != nil {
-				return nil, fmt.Errorf("failed to apply audit configuration: %w", err)
+				return nil, fmt.Errorf("failed to shard configuration: %w", err)
 			}
 
 			return dep, nil

@@ -38,7 +38,8 @@ type CommonShardSpec struct {
 	// Replicas configures how many instances of this shard run in parallel. Defaults to 2 if not set.
 	Replicas *int32 `json:"replicas,omitempty"`
 
-	Audit *AuditSpec `json:"audit,omitempty"`
+	Audit         *AuditSpec         `json:"audit,omitempty"`
+	Authorization *AuthorizationSpec `json:"authorization,omitempty"`
 }
 
 type AuditSpec struct {
@@ -91,6 +92,25 @@ type AuditWebhookSpec struct {
 	// reduce the size enough, event is discarded.
 	TruncateMaxEventSize int `json:"truncateMaxEventSize,omitempty"`
 	// API group and version used for serializing audit events written to webhook.
+	Version string `json:"version,omitempty"`
+}
+
+type AuthorizationSpec struct {
+	Webhook *AuthorizationWebhookSpec `json:"webhook,omitempty"`
+}
+
+type AuthorizationWebhookSpec struct {
+	// A list of HTTP paths to skip during authorization, i.e. these are authorized without contacting the 'core' kubernetes server.
+	// If specified, completely overwrites the default of [/healthz,/readyz,/livez].
+	AllowPaths []string `json:"allowPaths,omitempty"`
+	// The duration to cache 'authorized' responses from the webhook authorizer.
+	CacheAuthorizedTTL *metav1.Duration `json:"cacheAuthorizedTTL,omitempty"`
+	// The duration to cache 'unauthorized' responses from the webhook authorizer.
+	CacheUnauthorizedTTL *metav1.Duration `json:"cacheUnauthorizedTTL,omitempty"`
+	// Name of a Kubernetes Secret that contains a kubeconfig formatted file that defines the
+	// authorization webhook configuration.
+	ConfigSecretName string `json:"configSecretName,omitempty"`
+	// The API version of the authorization.k8s.io SubjectAccessReview to send to and expect from the webhook.
 	Version string `json:"version,omitempty"`
 }
 
