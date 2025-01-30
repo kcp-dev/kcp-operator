@@ -99,6 +99,7 @@ func (r *RootShardReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	return ctrl.Result{}, recErr
 }
 
+//nolint:unparam // Keep the controller working the same as all the others, even though currently it does always return nil conditions.
 func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operatorv1alpha1.RootShard) ([]metav1.Condition, error) {
 	var (
 		errs       []error
