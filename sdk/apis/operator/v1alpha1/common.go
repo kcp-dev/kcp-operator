@@ -97,3 +97,26 @@ const (
 	FrontProxyClientCA    CA = "front-proxy-client"
 	RequestHeaderClientCA CA = "requestheader-client"
 )
+
+type ConditionType string
+
+const (
+	ConditionTypeAvailable ConditionType = "Available"
+	ConditionTypeRootShard ConditionType = "RootShard"
+)
+
+type ConditionReason string
+
+const (
+	// reasons for ConditionTypeAvailable
+
+	ConditionReasonDeploymentUnavailable ConditionReason = "DeploymentUnavailable"
+	ConditionReasonReplicasUp            ConditionReason = "ReplicasUp"
+	ConditionReasonReplicasUnavailable   ConditionReason = "ReplicasUnavailable"
+
+	// reasons for ConditionTypeRootShard
+
+	ConditionReasonRootShardRefInvalid  ConditionReason = "InvalidReference"
+	ConditionReasonRootShardRefNotFound ConditionReason = "RootShardNotFound"
+	ConditionReasonRootShardRefValid    ConditionReason = "Valid"
+)

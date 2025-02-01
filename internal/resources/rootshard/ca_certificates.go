@@ -17,8 +17,6 @@ limitations under the License.
 package rootshard
 
 import (
-	"fmt"
-
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	certmanagermetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 
@@ -31,13 +29,13 @@ import (
 func RootCACertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
 	name := resources.GetRootShardCAName(rootShard, operatorv1alpha1.RootCA)
 
+	if rootShard.Spec.Certificates.IssuerRef == nil {
+		panic("RootCACertificateReconciler must not be called if not issuerRef is specified.")
+	}
+
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
 			cert.SetLabels(resources.GetRootShardResourceLabels(rootShard))
-
-			if rootShard.Spec.Certificates.IssuerRef == nil {
-				return nil, fmt.Errorf("no issuer ref configured in RootShard '%s/%s'", rootShard.Namespace, rootShard.Name)
-			}
 
 			cert.Spec = certmanagerv1.CertificateSpec{
 				IsCA:       true,

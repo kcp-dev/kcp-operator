@@ -31,9 +31,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
@@ -49,6 +52,25 @@ type FrontProxyReconciler struct {
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *FrontProxyReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	rootShardHandler := handler.TypedEnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []reconcile.Request {
+		rootShard := obj.(*operatorv1alpha1.RootShard)
+
+		var fpList operatorv1alpha1.FrontProxyList
+		if err := mgr.GetClient().List(ctx, &fpList, &client.ListOptions{Namespace: rootShard.Namespace}); err != nil {
+			utilruntime.HandleError(err)
+			return nil
+		}
+
+		var requests []reconcile.Request
+		for _, frontProxy := range fpList.Items {
+			if ref := frontProxy.Spec.RootShard.Reference; ref != nil && ref.Name == rootShard.Name {
+				requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&frontProxy)})
+			}
+		}
+
+		return requests
+	})
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&operatorv1alpha1.FrontProxy{}).
 		Owns(&appsv1.Deployment{}).
@@ -56,6 +78,7 @@ func (r *FrontProxyReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&corev1.Secret{}).
 		Owns(&corev1.Service{}).
 		Owns(&certmanagerv1.Certificate{}).
+		Watches(&operatorv1alpha1.RootShard{}, rootShardHandler).
 		Complete(r)
 }
 
@@ -80,29 +103,29 @@ func (r *FrontProxyReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, nil
 	}
 
-	defer func() {
-		if err := r.reconcileStatus(ctx, &frontProxy); err != nil {
-			recErr = kerrors.NewAggregate([]error{recErr, err})
-		}
-	}()
+	conditions, recErr := r.reconcile(ctx, &frontProxy)
 
-	return ctrl.Result{}, r.reconcile(ctx, &frontProxy)
+	if err := r.reconcileStatus(ctx, &frontProxy, conditions); err != nil {
+		recErr = kerrors.NewAggregate([]error{recErr, err})
+	}
+
+	return ctrl.Result{}, recErr
 }
 
-func (r *FrontProxyReconciler) reconcile(ctx context.Context, frontProxy *operatorv1alpha1.FrontProxy) error {
-	var errs []error
+func (r *FrontProxyReconciler) reconcile(ctx context.Context, frontProxy *operatorv1alpha1.FrontProxy) ([]metav1.Condition, error) {
+	var (
+		errs       []error
+		conditions []metav1.Condition
+	)
+
+	cond, rootShard := fetchRootShard(ctx, r.Client, frontProxy.Namespace, frontProxy.Spec.RootShard.Reference)
+	conditions = append(conditions, cond)
+
+	if rootShard == nil {
+		return conditions, nil
+	}
 
 	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*metav1.NewControllerRef(frontProxy, operatorv1alpha1.SchemeGroupVersion.WithKind("FrontProxy")))
-
-	ref := frontProxy.Spec.RootShard.Reference
-	if ref == nil {
-		return fmt.Errorf("no valid RootShard in FrontProxy spec defined")
-	}
-
-	rootShard := &operatorv1alpha1.RootShard{}
-	if err := r.Client.Get(ctx, types.NamespacedName{Name: ref.Name, Namespace: frontProxy.Namespace}, rootShard); err != nil {
-		return fmt.Errorf("referenced RootShard '%s' could not be fetched", ref.Name)
-	}
 
 	configMapReconcilers := []k8creconciling.NamedConfigMapReconcilerFactory{
 		frontproxy.PathMappingConfigMapReconciler(frontProxy, rootShard),
@@ -147,27 +170,36 @@ func (r *FrontProxyReconciler) reconcile(ctx context.Context, frontProxy *operat
 		errs = append(errs, err)
 	}
 
-	return kerrors.NewAggregate(errs)
+	return conditions, kerrors.NewAggregate(errs)
 }
 
-func (r *FrontProxyReconciler) reconcileStatus(ctx context.Context, oldFrontProxy *operatorv1alpha1.FrontProxy) error {
+func (r *FrontProxyReconciler) reconcileStatus(ctx context.Context, oldFrontProxy *operatorv1alpha1.FrontProxy, conditions []metav1.Condition) error {
 	frontProxy := oldFrontProxy.DeepCopy()
 	var errs []error
 
-	if frontProxy.Status.Phase == "" {
-		frontProxy.Status.Phase = operatorv1alpha1.FrontProxyPhaseProvisioning
-	}
-
-	if frontProxy.DeletionTimestamp != nil {
-		frontProxy.Status.Phase = operatorv1alpha1.FrontProxyPhaseDeleting
-	}
-
-	if err := r.setAvailableCondition(ctx, frontProxy); err != nil {
+	depKey := types.NamespacedName{Namespace: frontProxy.Namespace, Name: resources.GetFrontProxyDeploymentName(frontProxy)}
+	cond, err := getDeploymentAvailableCondition(ctx, r.Client, depKey)
+	if err != nil {
 		errs = append(errs, err)
+	} else {
+		conditions = append(conditions, cond)
 	}
 
-	if cond := apimeta.FindStatusCondition(frontProxy.Status.Conditions, string(operatorv1alpha1.RootShardConditionTypeAvailable)); cond.Status == metav1.ConditionTrue {
+	for _, condition := range conditions {
+		condition.ObservedGeneration = frontProxy.Generation
+		frontProxy.Status.Conditions = updateCondition(frontProxy.Status.Conditions, condition)
+	}
+
+	availableCond := apimeta.FindStatusCondition(frontProxy.Status.Conditions, string(operatorv1alpha1.ConditionTypeAvailable))
+	switch {
+	case availableCond.Status == metav1.ConditionTrue:
 		frontProxy.Status.Phase = operatorv1alpha1.FrontProxyPhaseRunning
+
+	case frontProxy.DeletionTimestamp != nil:
+		frontProxy.Status.Phase = operatorv1alpha1.FrontProxyPhaseDeleting
+
+	case frontProxy.Status.Phase == "":
+		frontProxy.Status.Phase = operatorv1alpha1.FrontProxyPhaseProvisioning
 	}
 
 	// only patch the status if there are actual changes.
@@ -178,36 +210,4 @@ func (r *FrontProxyReconciler) reconcileStatus(ctx context.Context, oldFrontProx
 	}
 
 	return kerrors.NewAggregate(errs)
-}
-
-func (r *FrontProxyReconciler) setAvailableCondition(ctx context.Context, frontProxy *operatorv1alpha1.FrontProxy) error {
-	var dep appsv1.Deployment
-	depKey := types.NamespacedName{Namespace: frontProxy.Namespace, Name: resources.GetFrontProxyDeploymentName(frontProxy)}
-	if err := r.Client.Get(ctx, depKey, &dep); client.IgnoreNotFound(err) != nil {
-		return err
-	}
-
-	available := metav1.ConditionFalse
-	reason := operatorv1alpha1.FrontProxyConditionReasonDeploymentUnavailable
-	msg := deploymentStatusString(dep, depKey)
-
-	if dep.Name != "" {
-		if deploymentReady(dep) {
-			available = metav1.ConditionTrue
-			reason = operatorv1alpha1.FrontProxyConditionReasonReplicasUp
-		} else {
-			available = metav1.ConditionFalse
-			reason = operatorv1alpha1.FrontProxyConditionReasonReplicasUnavailable
-		}
-	}
-
-	frontProxy.Status.Conditions = updateCondition(frontProxy.Status.Conditions, metav1.Condition{
-		Type:               string(operatorv1alpha1.FrontProxyConditionTypeAvailable),
-		Status:             available,
-		ObservedGeneration: frontProxy.Generation,
-		Reason:             string(reason),
-		Message:            msg,
-	})
-
-	return nil
 }

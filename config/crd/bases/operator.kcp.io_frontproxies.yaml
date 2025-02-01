@@ -18,6 +18,9 @@ spec:
     - jsonPath: .spec.rootShard.ref.name
       name: RootShard
       type: string
+    - jsonPath: .spec.externalHostname
+      name: ExternalHostname
+      type: string
     - jsonPath: .status.phase
       name: Phase
       type: string
