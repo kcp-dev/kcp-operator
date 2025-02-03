@@ -33,6 +33,10 @@ import (
 func ForKind(kind schema.GroupVersionKind) interface{} {
 	switch kind {
 	// Group=operator.kcp.io, Version=v1alpha1
+	case v1alpha1.SchemeGroupVersion.WithKind("AuditSpec"):
+		return &operatorv1alpha1.AuditSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("AuditWebhookSpec"):
+		return &operatorv1alpha1.AuditWebhookSpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AuthSpec"):
 		return &operatorv1alpha1.AuthSpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("CacheConfig"):

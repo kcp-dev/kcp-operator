@@ -25,6 +25,7 @@ type CommonShardSpecApplyConfiguration struct {
 	Etcd          *EtcdConfigApplyConfiguration `json:"etcd,omitempty"`
 	Image         *ImageSpecApplyConfiguration  `json:"image,omitempty"`
 	Replicas      *int32                        `json:"replicas,omitempty"`
+	Audit         *AuditSpecApplyConfiguration  `json:"audit,omitempty"`
 }
 
 // CommonShardSpecApplyConfiguration constructs a declarative configuration of the CommonShardSpec type for use with
@@ -62,5 +63,13 @@ func (b *CommonShardSpecApplyConfiguration) WithImage(value *ImageSpecApplyConfi
 // If called multiple times, the Replicas field is set to the value of the last call.
 func (b *CommonShardSpecApplyConfiguration) WithReplicas(value int32) *CommonShardSpecApplyConfiguration {
 	b.Replicas = &value
+	return b
+}
+
+// WithAudit sets the Audit field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Audit field is set to the value of the last call.
+func (b *CommonShardSpecApplyConfiguration) WithAudit(value *AuditSpecApplyConfiguration) *CommonShardSpecApplyConfiguration {
+	b.Audit = value
 	return b
 }

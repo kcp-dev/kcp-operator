@@ -168,6 +168,11 @@ func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.Nam
 				dep.Spec.Replicas = ptr.To[int32](2)
 			}
 
+			dep, err := utils.ApplyAuditConfiguration(dep, rootShard.Spec.Audit)
+			if err != nil {
+				return nil, fmt.Errorf("failed to apply audit configuration: %w", err)
+			}
+
 			return dep, nil
 		}
 	}
