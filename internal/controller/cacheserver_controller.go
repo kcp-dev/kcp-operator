@@ -21,7 +21,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
@@ -29,7 +29,7 @@ import (
 
 // CacheServerReconciler reconciles a CacheServer object
 type CacheServerReconciler struct {
-	client.Client
+	ctrlruntimeclient.Client
 	Scheme *runtime.Scheme
 }
 

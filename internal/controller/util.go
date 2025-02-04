@@ -26,7 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
@@ -35,9 +35,9 @@ func deploymentReady(dep appsv1.Deployment) bool {
 	return dep.Status.UpdatedReplicas == dep.Status.ReadyReplicas && dep.Status.ReadyReplicas == ptr.Deref(dep.Spec.Replicas, 0)
 }
 
-func getDeploymentAvailableCondition(ctx context.Context, c client.Client, key types.NamespacedName) (metav1.Condition, error) {
+func getDeploymentAvailableCondition(ctx context.Context, client ctrlruntimeclient.Client, key types.NamespacedName) (metav1.Condition, error) {
 	var dep appsv1.Deployment
-	if err := c.Get(ctx, key, &dep); client.IgnoreNotFound(err) != nil {
+	if err := client.Get(ctx, key, &dep); ctrlruntimeclient.IgnoreNotFound(err) != nil {
 		return metav1.Condition{}, err
 	}
 
@@ -90,7 +90,7 @@ func updateCondition(conditions []metav1.Condition, newCondition metav1.Conditio
 	return conditions
 }
 
-func fetchRootShard(ctx context.Context, c client.Client, namespace string, ref *corev1.LocalObjectReference) (metav1.Condition, *operatorv1alpha1.RootShard) {
+func fetchRootShard(ctx context.Context, client ctrlruntimeclient.Client, namespace string, ref *corev1.LocalObjectReference) (metav1.Condition, *operatorv1alpha1.RootShard) {
 	if ref == nil {
 		return metav1.Condition{
 			Type:    string(operatorv1alpha1.ConditionTypeRootShard),
@@ -101,7 +101,7 @@ func fetchRootShard(ctx context.Context, c client.Client, namespace string, ref 
 	}
 
 	rootShard := &operatorv1alpha1.RootShard{}
-	if err := c.Get(ctx, types.NamespacedName{Name: ref.Name, Namespace: namespace}, rootShard); err != nil {
+	if err := client.Get(ctx, types.NamespacedName{Name: ref.Name, Namespace: namespace}, rootShard); err != nil {
 		return metav1.Condition{
 			Type:    string(operatorv1alpha1.ConditionTypeRootShard),
 			Status:  metav1.ConditionFalse,

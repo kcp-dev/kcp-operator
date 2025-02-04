@@ -33,7 +33,7 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -46,17 +46,17 @@ import (
 
 // ShardReconciler reconciles a Shard object
 type ShardReconciler struct {
-	client.Client
+	ctrlruntimeclient.Client
 	Scheme *runtime.Scheme
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *ShardReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	rootShardHandler := handler.TypedEnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []reconcile.Request {
+	rootShardHandler := handler.TypedEnqueueRequestsFromMapFunc(func(ctx context.Context, obj ctrlruntimeclient.Object) []reconcile.Request {
 		rootShard := obj.(*operatorv1alpha1.RootShard)
 
 		var shards operatorv1alpha1.ShardList
-		if err := mgr.GetClient().List(ctx, &shards, &client.ListOptions{Namespace: rootShard.Namespace}); err != nil {
+		if err := mgr.GetClient().List(ctx, &shards, &ctrlruntimeclient.ListOptions{Namespace: rootShard.Namespace}); err != nil {
 			utilruntime.HandleError(err)
 			return nil
 		}
@@ -64,7 +64,7 @@ func (r *ShardReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		var requests []reconcile.Request
 		for _, shard := range shards.Items {
 			if ref := shard.Spec.RootShard.Reference; ref != nil && ref.Name == rootShard.Name {
-				requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&shard)})
+				requests = append(requests, reconcile.Request{NamespacedName: ctrlruntimeclient.ObjectKeyFromObject(&shard)})
 			}
 		}
 
@@ -94,7 +94,7 @@ func (r *ShardReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res 
 
 	var s operatorv1alpha1.Shard
 	if err := r.Client.Get(ctx, req.NamespacedName, &s); err != nil {
-		if client.IgnoreNotFound(err) != nil {
+		if ctrlruntimeclient.IgnoreNotFound(err) != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to get shard: %w", err)
 		}
 
@@ -189,7 +189,7 @@ func (r *ShardReconciler) reconcileStatus(ctx context.Context, oldShard *operato
 
 	// only patch the status if there are actual changes.
 	if !equality.Semantic.DeepEqual(oldShard.Status, newShard.Status) {
-		if err := r.Client.Status().Patch(ctx, newShard, client.MergeFrom(oldShard)); err != nil {
+		if err := r.Client.Status().Patch(ctx, newShard, ctrlruntimeclient.MergeFrom(oldShard)); err != nil {
 			errs = append(errs, err)
 		}
 	}
