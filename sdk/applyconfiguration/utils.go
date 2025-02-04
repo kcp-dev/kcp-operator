@@ -37,6 +37,10 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &operatorv1alpha1.AuditSpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AuditWebhookSpec"):
 		return &operatorv1alpha1.AuditWebhookSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("AuthorizationSpec"):
+		return &operatorv1alpha1.AuthorizationSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("AuthorizationWebhookSpec"):
+		return &operatorv1alpha1.AuthorizationWebhookSpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AuthSpec"):
 		return &operatorv1alpha1.AuthSpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("CacheConfig"):

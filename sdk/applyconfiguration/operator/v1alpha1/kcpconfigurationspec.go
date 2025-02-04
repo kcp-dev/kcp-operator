@@ -21,7 +21,8 @@ package v1alpha1
 // KcpConfigurationSpecApplyConfiguration represents a declarative configuration of the KcpConfigurationSpec type for use
 // with apply.
 type KcpConfigurationSpecApplyConfiguration struct {
-	Audit *AuditSpecApplyConfiguration `json:"audit,omitempty"`
+	Audit         *AuditSpecApplyConfiguration         `json:"audit,omitempty"`
+	Authorization *AuthorizationSpecApplyConfiguration `json:"authorization,omitempty"`
 }
 
 // KcpConfigurationSpecApplyConfiguration constructs a declarative configuration of the KcpConfigurationSpec type for use with
@@ -35,5 +36,13 @@ func KcpConfigurationSpec() *KcpConfigurationSpecApplyConfiguration {
 // If called multiple times, the Audit field is set to the value of the last call.
 func (b *KcpConfigurationSpecApplyConfiguration) WithAudit(value *AuditSpecApplyConfiguration) *KcpConfigurationSpecApplyConfiguration {
 	b.Audit = value
+	return b
+}
+
+// WithAuthorization sets the Authorization field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Authorization field is set to the value of the last call.
+func (b *KcpConfigurationSpecApplyConfiguration) WithAuthorization(value *AuthorizationSpecApplyConfiguration) *KcpConfigurationSpecApplyConfiguration {
+	b.Authorization = value
 	return b
 }
