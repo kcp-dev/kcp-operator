@@ -33,7 +33,7 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -46,17 +46,17 @@ import (
 
 // FrontProxyReconciler reconciles a FrontProxy object
 type FrontProxyReconciler struct {
-	client.Client
+	ctrlruntimeclient.Client
 	Scheme *runtime.Scheme
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *FrontProxyReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	rootShardHandler := handler.TypedEnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []reconcile.Request {
+	rootShardHandler := handler.TypedEnqueueRequestsFromMapFunc(func(ctx context.Context, obj ctrlruntimeclient.Object) []reconcile.Request {
 		rootShard := obj.(*operatorv1alpha1.RootShard)
 
 		var fpList operatorv1alpha1.FrontProxyList
-		if err := mgr.GetClient().List(ctx, &fpList, &client.ListOptions{Namespace: rootShard.Namespace}); err != nil {
+		if err := mgr.GetClient().List(ctx, &fpList, &ctrlruntimeclient.ListOptions{Namespace: rootShard.Namespace}); err != nil {
 			utilruntime.HandleError(err)
 			return nil
 		}
@@ -64,7 +64,7 @@ func (r *FrontProxyReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		var requests []reconcile.Request
 		for _, frontProxy := range fpList.Items {
 			if ref := frontProxy.Spec.RootShard.Reference; ref != nil && ref.Name == rootShard.Name {
-				requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&frontProxy)})
+				requests = append(requests, reconcile.Request{NamespacedName: ctrlruntimeclient.ObjectKeyFromObject(&frontProxy)})
 			}
 		}
 
@@ -95,7 +95,7 @@ func (r *FrontProxyReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	var frontProxy operatorv1alpha1.FrontProxy
 	if err := r.Client.Get(ctx, req.NamespacedName, &frontProxy); err != nil {
-		if client.IgnoreNotFound(err) != nil {
+		if ctrlruntimeclient.IgnoreNotFound(err) != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to get FrontProxy object: %w", err)
 		}
 
@@ -204,7 +204,7 @@ func (r *FrontProxyReconciler) reconcileStatus(ctx context.Context, oldFrontProx
 
 	// only patch the status if there are actual changes.
 	if !equality.Semantic.DeepEqual(oldFrontProxy.Status, frontProxy.Status) {
-		if err := r.Client.Status().Patch(ctx, frontProxy, client.MergeFrom(oldFrontProxy)); err != nil {
+		if err := r.Client.Status().Patch(ctx, frontProxy, ctrlruntimeclient.MergeFrom(oldFrontProxy)); err != nil {
 			errs = append(errs, err)
 		}
 	}

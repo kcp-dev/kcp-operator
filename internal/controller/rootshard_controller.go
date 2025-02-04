@@ -32,7 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
@@ -43,7 +43,7 @@ import (
 
 // RootShardReconciler reconciles a RootShard object
 type RootShardReconciler struct {
-	client.Client
+	ctrlruntimeclient.Client
 	Scheme *runtime.Scheme
 }
 
@@ -82,7 +82,7 @@ func (r *RootShardReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 	var rootShard operatorv1alpha1.RootShard
 	if err := r.Client.Get(ctx, req.NamespacedName, &rootShard); err != nil {
-		if client.IgnoreNotFound(err) != nil {
+		if ctrlruntimeclient.IgnoreNotFound(err) != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to find %s/%s: %w", req.Namespace, req.Name, err)
 		}
 
@@ -199,7 +199,7 @@ func (r *RootShardReconciler) reconcileStatus(ctx context.Context, oldRootShard 
 
 	// only patch the status if there are actual changes.
 	if !equality.Semantic.DeepEqual(oldRootShard.Status, rootShard.Status) {
-		if err := r.Client.Status().Patch(ctx, rootShard, client.MergeFrom(oldRootShard)); err != nil {
+		if err := r.Client.Status().Patch(ctx, rootShard, ctrlruntimeclient.MergeFrom(oldRootShard)); err != nil {
 			errs = append(errs, err)
 		}
 	}

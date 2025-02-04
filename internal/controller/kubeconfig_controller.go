@@ -31,7 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
@@ -42,7 +42,7 @@ import (
 
 // KubeconfigReconciler reconciles a Kubeconfig object
 type KubeconfigReconciler struct {
-	client.Client
+	ctrlruntimeclient.Client
 	Scheme *runtime.Scheme
 }
 

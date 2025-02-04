@@ -3,9 +3,12 @@ run:
   allow-parallel-runners: true
 
 issues:
+  max-same-issues: 0
+
   # don't skip warning about doc comments
   # don't exclude the default set of lint
   exclude-use-default: false
+
 linters:
   disable-all: true
   enable:
@@ -31,8 +34,6 @@ linters:
     - unused
 
 linters-settings:
-  max-same-issues: 0
-
   revive:
     rules:
       - name: comment-spacings
@@ -55,3 +56,6 @@ linters-settings:
         alias: apierrors
       - pkg: k8s.io/apimachinery/pkg/util/errors
         alias: kerrors
+      # Controller Runtime (otherwise this will usually lead to shadowing a local "client" variable)
+      - pkg: sigs.k8s.io/controller-runtime/pkg/client
+        alias: ctrlruntimeclient
