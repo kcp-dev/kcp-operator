@@ -17,7 +17,6 @@ limitations under the License.
 package utils
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
@@ -27,16 +26,12 @@ import (
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
-func applyAuthorizationConfiguration(deployment *appsv1.Deployment, config *operatorv1alpha1.AuthorizationSpec) (*appsv1.Deployment, error) {
-	if len(deployment.Spec.Template.Spec.Containers) == 0 {
-		return deployment, errors.New("Deployment does not contain any containers")
-	}
-
+func applyAuthorizationConfiguration(deployment *appsv1.Deployment, config *operatorv1alpha1.AuthorizationSpec) *appsv1.Deployment {
 	if config == nil || config.Webhook == nil {
-		return deployment, nil
+		return deployment
 	}
 
-	return applyAuthorizationWebhookConfiguration(deployment, *config.Webhook), nil
+	return applyAuthorizationWebhookConfiguration(deployment, *config.Webhook)
 }
 
 func applyAuthorizationWebhookConfiguration(deployment *appsv1.Deployment, config operatorv1alpha1.AuthorizationWebhookSpec) *appsv1.Deployment {
