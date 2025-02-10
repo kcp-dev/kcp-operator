@@ -77,7 +77,7 @@ func GetKubeClient(t *testing.T) ctrlruntimeclient.Client {
 	return c
 }
 
-func CreateSelfDestructingNamespace(t *testing.T, ctx context.Context, client ctrlruntimeclient.Client, name string) {
+func CreateNamespace(t *testing.T, ctx context.Context, client ctrlruntimeclient.Client, name string, selfDestructing bool) {
 	t.Helper()
 
 	ns := corev1.Namespace{}
@@ -88,12 +88,14 @@ func CreateSelfDestructingNamespace(t *testing.T, ctx context.Context, client ct
 		t.Fatal(err)
 	}
 
-	t.Cleanup(func() {
-		t.Logf("Deleting namespace %s…", name)
-		if err := client.Delete(ctx, &ns); err != nil {
-			t.Fatal(err)
-		}
-	})
+	if selfDestructing {
+		t.Cleanup(func() {
+			t.Logf("Deleting namespace %s…", name)
+			if err := client.Delete(ctx, &ns); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
 }
 
 func SelfDestuctingPortForward(

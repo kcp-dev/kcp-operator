@@ -45,7 +45,7 @@ func TestCreateFrontProxy(t *testing.T) {
 	ctx := context.Background()
 	namespace := "create-frontproxy"
 
-	utils.CreateSelfDestructingNamespace(t, ctx, client, namespace)
+	utils.CreateNamespace(t, ctx, client, namespace, true)
 
 	// deploy rootshard
 	rootShard := utils.DeployRootShard(ctx, t, client, namespace)

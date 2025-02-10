@@ -44,7 +44,7 @@ func TestCreateShard(t *testing.T) {
 
 	// create namspace
 	namespace := "create-shard"
-	utils.CreateSelfDestructingNamespace(t, ctx, client, namespace)
+	utils.CreateNamespace(t, ctx, client, namespace, true)
 
 	// deploy a root shard incl. etcd
 	rootShard := utils.DeployRootShard(ctx, t, client, namespace)
