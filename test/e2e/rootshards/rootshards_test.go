@@ -41,7 +41,7 @@ func TestCreateRootShard(t *testing.T) {
 	ctx := context.Background()
 	namespace := "create-rootshard"
 
-	utils.CreateNamespace(t, ctx, client, namespace, true)
+	utils.CreateSelfDestructingNamespace(t, ctx, client, namespace)
 	rootShard := utils.DeployRootShard(ctx, t, client, namespace)
 
 	configSecretName := "kubeconfig"
