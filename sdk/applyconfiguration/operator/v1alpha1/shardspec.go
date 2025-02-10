@@ -71,6 +71,14 @@ func (b *ShardSpecApplyConfiguration) WithAudit(value *AuditSpecApplyConfigurati
 	return b
 }
 
+// WithAuthorization sets the Authorization field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Authorization field is set to the value of the last call.
+func (b *ShardSpecApplyConfiguration) WithAuthorization(value *AuthorizationSpecApplyConfiguration) *ShardSpecApplyConfiguration {
+	b.Authorization = value
+	return b
+}
+
 // WithRootShard sets the RootShard field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the RootShard field is set to the value of the last call.

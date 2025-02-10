@@ -120,6 +120,36 @@ spec:
                         type: string
                     type: object
                 type: object
+              authorization:
+                properties:
+                  webhook:
+                    properties:
+                      allowPaths:
+                        description: |-
+                          A list of HTTP paths to skip during authorization, i.e. these are authorized without contacting the 'core' kubernetes server.
+                          If specified, completely overwrites the default of [/healthz,/readyz,/livez].
+                        items:
+                          type: string
+                        type: array
+                      cacheAuthorizedTTL:
+                        description: The duration to cache 'authorized' responses
+                          from the webhook authorizer.
+                        type: string
+                      cacheUnauthorizedTTL:
+                        description: The duration to cache 'unauthorized' responses
+                          from the webhook authorizer.
+                        type: string
+                      configSecretName:
+                        description: |-
+                          Name of a Kubernetes Secret that contains a kubeconfig formatted file that defines the
+                          authorization webhook configuration.
+                        type: string
+                      version:
+                        description: The API version of the authorization.k8s.io SubjectAccessReview
+                          to send to and expect from the webhook.
+                        type: string
+                    type: object
+                type: object
               clusterDomain:
                 type: string
               etcd:

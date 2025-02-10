@@ -21,11 +21,12 @@ package v1alpha1
 // CommonShardSpecApplyConfiguration represents a declarative configuration of the CommonShardSpec type for use
 // with apply.
 type CommonShardSpecApplyConfiguration struct {
-	ClusterDomain *string                       `json:"clusterDomain,omitempty"`
-	Etcd          *EtcdConfigApplyConfiguration `json:"etcd,omitempty"`
-	Image         *ImageSpecApplyConfiguration  `json:"image,omitempty"`
-	Replicas      *int32                        `json:"replicas,omitempty"`
-	Audit         *AuditSpecApplyConfiguration  `json:"audit,omitempty"`
+	ClusterDomain *string                              `json:"clusterDomain,omitempty"`
+	Etcd          *EtcdConfigApplyConfiguration        `json:"etcd,omitempty"`
+	Image         *ImageSpecApplyConfiguration         `json:"image,omitempty"`
+	Replicas      *int32                               `json:"replicas,omitempty"`
+	Audit         *AuditSpecApplyConfiguration         `json:"audit,omitempty"`
+	Authorization *AuthorizationSpecApplyConfiguration `json:"authorization,omitempty"`
 }
 
 // CommonShardSpecApplyConfiguration constructs a declarative configuration of the CommonShardSpec type for use with
@@ -71,5 +72,13 @@ func (b *CommonShardSpecApplyConfiguration) WithReplicas(value int32) *CommonSha
 // If called multiple times, the Audit field is set to the value of the last call.
 func (b *CommonShardSpecApplyConfiguration) WithAudit(value *AuditSpecApplyConfiguration) *CommonShardSpecApplyConfiguration {
 	b.Audit = value
+	return b
+}
+
+// WithAuthorization sets the Authorization field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Authorization field is set to the value of the last call.
+func (b *CommonShardSpecApplyConfiguration) WithAuthorization(value *AuthorizationSpecApplyConfiguration) *CommonShardSpecApplyConfiguration {
+	b.Authorization = value
 	return b
 }

@@ -18,7 +18,6 @@ package rootshard
 
 import (
 	"fmt"
-	"strings"
 
 	"k8c.io/reconciler/pkg/reconciling"
 
@@ -79,22 +78,7 @@ func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.Nam
 				MountPath:  getCAMountPath(operatorv1alpha1.RootCA),
 			}}
 
-			image, _ := resources.GetImageSettings(rootShard.Spec.Image)
 			args := getArgs(rootShard)
-
-			if rootShard.Spec.Etcd.TLSConfig != nil {
-				secretMounts = append(secretMounts, utils.SecretMount{
-					VolumeName: "etcd-client-cert",
-					SecretName: rootShard.Spec.Etcd.TLSConfig.SecretRef.Name,
-					MountPath:  "/etc/etcd/tls",
-				})
-
-				args = append(args,
-					"--etcd-certfile=/etc/etcd/tls/tls.crt",
-					"--etcd-keyfile=/etc/etcd/tls/tls.key",
-					"--etcd-cafile=/etc/etcd/tls/ca.crt",
-				)
-			}
 
 			for _, cert := range []operatorv1alpha1.Certificate{
 				// requires server CA and the logical-cluster-admin cert to be mounted
@@ -146,7 +130,6 @@ func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.Nam
 
 			dep.Spec.Template.Spec.Containers = []corev1.Container{{
 				Name:         ServerContainerName,
-				Image:        image,
 				Command:      []string{"/kcp", "start"},
 				Args:         args,
 				VolumeMounts: volumeMounts,
@@ -158,19 +141,9 @@ func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.Nam
 			}}
 			dep.Spec.Template.Spec.Volumes = volumes
 
-			// explicitly set the replicas if it is configured in the RootShard
-			// object or if the existing Deployment object doesn't have replicas
-			// configured. This will allow a HPA to interact with the replica
-			// count.
-			if rootShard.Spec.Replicas != nil {
-				dep.Spec.Replicas = rootShard.Spec.Replicas
-			} else if dep.Spec.Replicas == nil {
-				dep.Spec.Replicas = ptr.To[int32](2)
-			}
-
-			dep, err := utils.ApplyAuditConfiguration(dep, rootShard.Spec.Audit)
+			dep, err := utils.ApplyCommonShardConfig(dep, &rootShard.Spec.CommonShardSpec)
 			if err != nil {
-				return nil, fmt.Errorf("failed to apply audit configuration: %w", err)
+				return nil, fmt.Errorf("failed to shard configuration: %w", err)
 			}
 
 			return dep, nil
@@ -195,9 +168,6 @@ func getArgs(rootShard *operatorv1alpha1.RootShard) []string {
 		fmt.Sprintf("--tls-cert-file=%s/tls.crt", getCertificateMountPath(operatorv1alpha1.ServerCertificate)),
 		fmt.Sprintf("--service-account-key-file=%s/tls.crt", getCertificateMountPath(operatorv1alpha1.ServiceAccountCertificate)),
 		fmt.Sprintf("--service-account-private-key-file=%s/tls.key", getCertificateMountPath(operatorv1alpha1.ServiceAccountCertificate)),
-
-		// Etcd client configuration.
-		fmt.Sprintf("--etcd-servers=%s", strings.Join(rootShard.Spec.Etcd.Endpoints, ",")),
 
 		// General shard configuration.
 		fmt.Sprintf("--shard-base-url=%s", resources.GetRootShardBaseURL(rootShard)),
