@@ -21,7 +21,9 @@ package v1alpha1
 // AuthSpecApplyConfiguration represents a declarative configuration of the AuthSpec type for use
 // with apply.
 type AuthSpecApplyConfiguration struct {
-	OIDC *OIDCConfigurationApplyConfiguration `json:"oidc,omitempty"`
+	OIDC         *OIDCConfigurationApplyConfiguration `json:"oidc,omitempty"`
+	DropGroups   []string                             `json:"dropGroups,omitempty"`
+	PassOnGroups []string                             `json:"passOnGroups,omitempty"`
 }
 
 // AuthSpecApplyConfiguration constructs a declarative configuration of the AuthSpec type for use with
@@ -35,5 +37,25 @@ func AuthSpec() *AuthSpecApplyConfiguration {
 // If called multiple times, the OIDC field is set to the value of the last call.
 func (b *AuthSpecApplyConfiguration) WithOIDC(value *OIDCConfigurationApplyConfiguration) *AuthSpecApplyConfiguration {
 	b.OIDC = value
+	return b
+}
+
+// WithDropGroups adds the given value to the DropGroups field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the DropGroups field.
+func (b *AuthSpecApplyConfiguration) WithDropGroups(values ...string) *AuthSpecApplyConfiguration {
+	for i := range values {
+		b.DropGroups = append(b.DropGroups, values[i])
+	}
+	return b
+}
+
+// WithPassOnGroups adds the given value to the PassOnGroups field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the PassOnGroups field.
+func (b *AuthSpecApplyConfiguration) WithPassOnGroups(values ...string) *AuthSpecApplyConfiguration {
+	for i := range values {
+		b.PassOnGroups = append(b.PassOnGroups, values[i])
+	}
 	return b
 }

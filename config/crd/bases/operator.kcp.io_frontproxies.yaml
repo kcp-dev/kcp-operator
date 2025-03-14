@@ -80,6 +80,12 @@ spec:
                 description: 'Optional: Auth configures various aspects of Authentication
                   and Authorization for this front-proxy instance.'
                 properties:
+                  dropGroups:
+                    description: 'Optional: DropGroups configures groups to be dropped
+                      before forwarding requests to Shards'
+                    items:
+                      type: string
+                    type: array
                   oidc:
                     description: 'Optional: OIDC configures OpenID Connect Authentication.'
                     properties:
@@ -122,6 +128,12 @@ spec:
                     - enabled
                     - issuerURL
                     type: object
+                  passOnGroups:
+                    description: 'Optional: PassOnGroups configures groups to be passed
+                      on before forwarding requests to Shards'
+                    items:
+                      type: string
+                    type: array
                 type: object
               externalHostname:
                 description: 'Optional: ExternalHostname under which the FrontProxy

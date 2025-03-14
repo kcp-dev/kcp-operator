@@ -43,6 +43,12 @@ type FrontProxySpec struct {
 type AuthSpec struct {
 	// Optional: OIDC configures OpenID Connect Authentication.
 	OIDC *OIDCConfiguration `json:"oidc,omitempty"`
+
+	// Optional: DropGroups configures groups to be dropped before forwarding requests to Shards
+	DropGroups []string `json:"dropGroups,omitempty"`
+
+	// Optional: PassOnGroups configures groups to be passed on before forwarding requests to Shards
+	PassOnGroups []string `json:"passOnGroups,omitempty"`
 }
 
 type ServiceSpec struct {
