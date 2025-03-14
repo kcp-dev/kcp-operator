@@ -72,6 +72,7 @@ func TestCreateFrontProxy(t *testing.T) {
 		},
 		Groups: []string{"system:masters"},
 	}
+
 	t.Log("Creating kubeconfig for FrontProxy…")
 	if err := client.Create(ctx, &fpConfig); err != nil {
 		t.Fatal(err)

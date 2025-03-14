@@ -169,6 +169,11 @@ func DeployFrontProxy(ctx context.Context, t *testing.T, client ctrlruntimeclien
 				Name: rootShardName,
 			},
 		},
+		ExternalHostname: fmt.Sprintf("%s.%s.svc.cluster.local", frontProxy.Name, frontProxy.Namespace),
+		Auth: &operatorv1alpha1.AuthSpec{
+			// we need to remove the default system:masters group in order to do our testing
+			DropGroups: []string{""},
+		},
 	}
 
 	for _, patch := range patches {
