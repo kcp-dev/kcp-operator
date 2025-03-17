@@ -18,6 +18,7 @@ package frontproxy
 
 import (
 	"fmt"
+	"strings"
 
 	"k8c.io/reconciler/pkg/reconciling"
 
@@ -41,7 +42,7 @@ func DeploymentReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootShard *op
 			dep.Spec.Template.ObjectMeta.SetLabels(resources.GetFrontProxyResourceLabels(frontProxy))
 
 			image, _ := resources.GetImageSettings(frontProxy.Spec.Image)
-			args := getArgs()
+			args := getArgs(&frontProxy.Spec)
 
 			container := corev1.Container{
 				Name:    "kcp-front-proxy",
@@ -236,16 +237,28 @@ func DeploymentReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootShard *op
 	}
 }
 
-func getArgs() []string {
-	args := []string{
-		"--secure-port=6443",
-		"--root-kubeconfig=/etc/kcp-front-proxy/kubeconfig/kubeconfig",
-		"--shards-kubeconfig=/etc/kcp-front-proxy/kubeconfig/kubeconfig",
-		"--tls-private-key-file=/etc/kcp-front-proxy/tls/tls.key",
-		"--tls-cert-file=/etc/kcp-front-proxy/tls/tls.crt",
-		"--client-ca-file=/etc/kcp-front-proxy/client-ca/tls.crt",
-		"--mapping-file=/etc/kcp-front-proxy/config/path-mapping.yaml",
-		"--service-account-key-file=/etc/kcp/tls/service-account/tls.key",
+var defaultArgs = []string{
+	"--secure-port=6443",
+	"--root-kubeconfig=/etc/kcp-front-proxy/kubeconfig/kubeconfig",
+	"--shards-kubeconfig=/etc/kcp-front-proxy/kubeconfig/kubeconfig",
+	"--tls-private-key-file=/etc/kcp-front-proxy/tls/tls.key",
+	"--tls-cert-file=/etc/kcp-front-proxy/tls/tls.crt",
+	"--client-ca-file=/etc/kcp-front-proxy/client-ca/tls.crt",
+	"--mapping-file=/etc/kcp-front-proxy/config/path-mapping.yaml",
+	"--service-account-key-file=/etc/kcp/tls/service-account/tls.key",
+}
+
+func getArgs(fps *operatorv1alpha1.FrontProxySpec) []string {
+	args := defaultArgs
+
+	if fps.Auth != nil {
+		if fps.Auth.DropGroups != nil {
+			args = append(args, fmt.Sprintf("--authentication-drop-groups=%q", strings.Join(fps.Auth.DropGroups, ",")))
+		}
+
+		if fps.Auth.PassOnGroups != nil {
+			args = append(args, fmt.Sprintf("--authentication-pass-on-groups=%q", strings.Join(fps.Auth.PassOnGroups, ",")))
+		}
 	}
 
 	return args
