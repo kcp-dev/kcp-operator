@@ -155,3 +155,44 @@ func DeployRootShard(ctx context.Context, t *testing.T, client ctrlruntimeclient
 
 	return rootShard
 }
+
+func DeployFrontProxy(ctx context.Context, t *testing.T, client ctrlruntimeclient.Client, namespace string, rootShardName string, patches ...func(*operatorv1alpha1.FrontProxy)) operatorv1alpha1.FrontProxy {
+	t.Helper()
+
+	frontProxy := operatorv1alpha1.FrontProxy{}
+	frontProxy.Name = "front-proxy"
+	frontProxy.Namespace = namespace
+
+	frontProxy.Spec = operatorv1alpha1.FrontProxySpec{
+		RootShard: operatorv1alpha1.RootShardConfig{
+			Reference: &corev1.LocalObjectReference{
+				Name: rootShardName,
+			},
+		},
+		ExternalHostname: fmt.Sprintf("%s.%s.svc.cluster.local", frontProxy.Name, frontProxy.Namespace),
+		Auth: &operatorv1alpha1.AuthSpec{
+			// we need to remove the default system:masters group in order to do our testing
+			DropGroups: []string{""},
+		},
+	}
+
+	for _, patch := range patches {
+		patch(&frontProxy)
+	}
+
+	t.Logf("Creating FrontProxy %s…", frontProxy.Name)
+	if err := client.Create(ctx, &frontProxy); err != nil {
+		t.Fatal(err)
+	}
+
+	opts := []ctrlruntimeclient.ListOption{
+		ctrlruntimeclient.InNamespace(frontProxy.Namespace),
+		ctrlruntimeclient.MatchingLabels{
+			"app.kubernetes.io/component": "front-proxy",
+			"app.kubernetes.io/instance":  frontProxy.Name,
+		},
+	}
+	WaitForPods(t, ctx, client, opts...)
+
+	return frontProxy
+}
