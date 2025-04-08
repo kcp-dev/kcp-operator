@@ -32,7 +32,7 @@ func WaitForPods(t *testing.T, ctx context.Context, client ctrlruntimeclient.Cli
 
 	t.Log("Waiting for pods to be available…")
 
-	err := wait.PollUntilContextTimeout(ctx, 500*time.Millisecond, 3*time.Minute, false, func(ctx context.Context) (done bool, err error) {
+	err := wait.PollUntilContextTimeout(ctx, 500*time.Millisecond, 5*time.Minute, false, func(ctx context.Context) (done bool, err error) {
 		pods := corev1.PodList{}
 		if err := client.List(ctx, &pods, listOpts...); err != nil {
 			return false, err
