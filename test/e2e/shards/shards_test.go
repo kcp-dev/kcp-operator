@@ -47,7 +47,7 @@ func TestCreateShard(t *testing.T) {
 	utils.CreateSelfDestructingNamespace(t, ctx, client, namespace)
 
 	// deploy a root shard incl. etcd
-	rootShard := utils.DeployRootShard(ctx, t, client, namespace)
+	rootShard := utils.DeployRootShard(ctx, t, client, namespace, "example.localhost")
 
 	// deploy a 2nd shard incl. etcd
 	shardName := "aadvark"

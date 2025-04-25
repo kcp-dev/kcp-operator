@@ -16,10 +16,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package rootshards
+package frontproxies
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -34,26 +35,35 @@ import (
 	"github.com/kcp-dev/kcp-operator/test/utils"
 )
 
-func TestCreateRootShard(t *testing.T) {
+func TestCreateFrontProxy(t *testing.T) {
+	fmt.Println()
+
 	ctrlruntime.SetLogger(logr.Discard())
 
 	client := utils.GetKubeClient(t)
 	ctx := context.Background()
-	namespace := "create-rootshard"
+	namespace := "create-frontproxy"
 
 	utils.CreateSelfDestructingNamespace(t, ctx, client, namespace)
-	rootShard := utils.DeployRootShard(ctx, t, client, namespace, "example.localhost")
 
-	configSecretName := "kubeconfig"
+	externalHostname := "front-proxy-front-proxy.svc.cluster.local"
 
-	rsConfig := operatorv1alpha1.Kubeconfig{}
-	rsConfig.Name = "test"
-	rsConfig.Namespace = namespace
+	// deploy rootshard
+	rootShard := utils.DeployRootShard(ctx, t, client, namespace, externalHostname)
 
-	rsConfig.Spec = operatorv1alpha1.KubeconfigSpec{
+	// deploy front-proxy
+	frontProxy := utils.DeployFrontProxy(ctx, t, client, namespace, rootShard.Name, externalHostname)
+
+	// create front-proxy kubeconfig
+	configSecretName := "kubeconfig-front-proxy-e2e"
+
+	fpConfig := operatorv1alpha1.Kubeconfig{}
+	fpConfig.Name = "front-proxy"
+	fpConfig.Namespace = namespace
+	fpConfig.Spec = operatorv1alpha1.KubeconfigSpec{
 		Target: operatorv1alpha1.KubeconfigTarget{
-			RootShardRef: &corev1.LocalObjectReference{
-				Name: rootShard.Name,
+			FrontProxyRef: &corev1.LocalObjectReference{
+				Name: frontProxy.Name,
 			},
 		},
 		Username: "e2e",
@@ -64,15 +74,15 @@ func TestCreateRootShard(t *testing.T) {
 		Groups: []string{"system:masters"},
 	}
 
-	t.Log("Creating kubeconfig for RootShard…")
-	if err := client.Create(ctx, &rsConfig); err != nil {
+	t.Log("Creating kubeconfig for FrontProxy…")
+	if err := client.Create(ctx, &fpConfig); err != nil {
 		t.Fatal(err)
 	}
-	utils.WaitForObject(t, ctx, client, &corev1.Secret{}, types.NamespacedName{Namespace: rsConfig.Namespace, Name: rsConfig.Spec.SecretRef.Name})
+	utils.WaitForObject(t, ctx, client, &corev1.Secret{}, types.NamespacedName{Namespace: fpConfig.Namespace, Name: fpConfig.Spec.SecretRef.Name})
 
-	t.Log("Connecting to RootShard…")
-	kcpClient := utils.ConnectWithKubeconfig(t, ctx, client, namespace, rsConfig.Name)
-
+	// verify that we can use frontproxy kubeconfig to access rootshard workspaces
+	t.Log("Connecting to FrontProxy…")
+	kcpClient := utils.ConnectWithKubeconfig(t, ctx, client, namespace, fpConfig.Name)
 	// proof of life: list something every logicalcluster in kcp has
 	t.Log("Should be able to list Secrets.")
 	secrets := &corev1.SecretList{}
