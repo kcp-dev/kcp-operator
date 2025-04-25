@@ -106,7 +106,7 @@ func DeployShard(ctx context.Context, t *testing.T, client ctrlruntimeclient.Cli
 	return shard
 }
 
-func DeployRootShard(ctx context.Context, t *testing.T, client ctrlruntimeclient.Client, namespace string, patches ...func(*operatorv1alpha1.RootShard)) operatorv1alpha1.RootShard {
+func DeployRootShard(ctx context.Context, t *testing.T, client ctrlruntimeclient.Client, namespace string, externalHostname string, patches ...func(*operatorv1alpha1.RootShard)) operatorv1alpha1.RootShard {
 	t.Helper()
 
 	etcd := DeployEtcd(t, "etcd-r00t", namespace)
@@ -117,7 +117,7 @@ func DeployRootShard(ctx context.Context, t *testing.T, client ctrlruntimeclient
 
 	rootShard.Spec = operatorv1alpha1.RootShardSpec{
 		External: operatorv1alpha1.ExternalConfig{
-			Hostname: "example.localhost",
+			Hostname: externalHostname,
 			Port:     6443,
 		},
 		Cache: operatorv1alpha1.CacheConfig{
@@ -156,7 +156,7 @@ func DeployRootShard(ctx context.Context, t *testing.T, client ctrlruntimeclient
 	return rootShard
 }
 
-func DeployFrontProxy(ctx context.Context, t *testing.T, client ctrlruntimeclient.Client, namespace string, rootShardName string, patches ...func(*operatorv1alpha1.FrontProxy)) operatorv1alpha1.FrontProxy {
+func DeployFrontProxy(ctx context.Context, t *testing.T, client ctrlruntimeclient.Client, namespace string, rootShardName string, externalHostname string, patches ...func(*operatorv1alpha1.FrontProxy)) operatorv1alpha1.FrontProxy {
 	t.Helper()
 
 	frontProxy := operatorv1alpha1.FrontProxy{}
@@ -169,7 +169,7 @@ func DeployFrontProxy(ctx context.Context, t *testing.T, client ctrlruntimeclien
 				Name: rootShardName,
 			},
 		},
-		ExternalHostname: fmt.Sprintf("%s.%s.svc.cluster.local", frontProxy.Name, frontProxy.Namespace),
+		ExternalHostname: externalHostname,
 		Auth: &operatorv1alpha1.AuthSpec{
 			// we need to remove the default system:masters group in order to do our testing
 			DropGroups: []string{""},

@@ -46,11 +46,13 @@ func TestCreateFrontProxy(t *testing.T) {
 
 	utils.CreateSelfDestructingNamespace(t, ctx, client, namespace)
 
+	externalHostname := "front-proxy-front-proxy.svc.cluster.local"
+
 	// deploy rootshard
-	rootShard := utils.DeployRootShard(ctx, t, client, namespace)
+	rootShard := utils.DeployRootShard(ctx, t, client, namespace, externalHostname)
 
 	// deploy front-proxy
-	frontProxy := utils.DeployFrontProxy(ctx, t, client, namespace, rootShard.Name)
+	frontProxy := utils.DeployFrontProxy(ctx, t, client, namespace, rootShard.Name, externalHostname)
 
 	// create front-proxy kubeconfig
 	configSecretName := "kubeconfig-front-proxy-e2e"
