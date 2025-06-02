@@ -1,6 +1,6 @@
 module github.com/kcp-dev/kcp-operator
 
-go 1.22.0
+go 1.23.0
 
 require (
 	github.com/cert-manager/cert-manager v1.16.2
@@ -8,19 +8,19 @@ require (
 	github.com/go-logr/zapr v1.3.0
 	github.com/go-test/deep v1.1.0
 	github.com/google/go-cmp v0.6.0
-	github.com/kcp-dev/apimachinery/v2 v2.0.1-0.20240817110845-a9eb9752bfeb
-	github.com/kcp-dev/client-go v0.0.0-20240912145314-f5949d81732a
+	github.com/kcp-dev/apimachinery/v2 v2.0.1-0.20250223115924-431177b024f3
+	github.com/kcp-dev/client-go v0.0.0-20250223133118-3dea338dc267
 	github.com/kcp-dev/code-generator/v2 v2.3.1
-	github.com/kcp-dev/kcp/sdk v0.26.1
+	github.com/kcp-dev/kcp/sdk v0.27.1
 	github.com/kcp-dev/logicalcluster/v3 v3.0.5
 	github.com/onsi/ginkgo/v2 v2.20.0
 	github.com/onsi/gomega v1.34.1
 	go.uber.org/zap v1.27.0
 	k8c.io/reconciler v0.5.0
-	k8s.io/api v0.31.1
-	k8s.io/apimachinery v0.31.1
-	k8s.io/client-go v0.31.1
-	k8s.io/code-generator v0.31.1
+	k8s.io/api v0.31.6
+	k8s.io/apimachinery v0.31.6
+	k8s.io/client-go v0.31.6
+	k8s.io/code-generator v0.31.6
 	k8s.io/utils v0.0.0-20240921022957-49e7df575cb6
 	sigs.k8s.io/controller-runtime v0.19.0
 	sigs.k8s.io/controller-tools v0.16.1
@@ -90,12 +90,12 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20240823005443-9b4947da3948 // indirect
 	golang.org/x/mod v0.20.0 // indirect
-	golang.org/x/net v0.33.0 // indirect
+	golang.org/x/net v0.36.0 // indirect
 	golang.org/x/oauth2 v0.23.0 // indirect
-	golang.org/x/sync v0.10.0 // indirect
-	golang.org/x/sys v0.28.0 // indirect
-	golang.org/x/term v0.27.0 // indirect
-	golang.org/x/text v0.21.0 // indirect
+	golang.org/x/sync v0.11.0 // indirect
+	golang.org/x/sys v0.30.0 // indirect
+	golang.org/x/term v0.29.0 // indirect
+	golang.org/x/text v0.22.0 // indirect
 	golang.org/x/time v0.6.0 // indirect
 	golang.org/x/tools v0.24.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
@@ -107,9 +107,9 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/apiextensions-apiserver v0.31.1 // indirect
-	k8s.io/apiserver v0.31.1 // indirect
-	k8s.io/component-base v0.31.1 // indirect
+	k8s.io/apiextensions-apiserver v0.31.6 // indirect
+	k8s.io/apiserver v0.31.6 // indirect
+	k8s.io/component-base v0.31.6 // indirect
 	k8s.io/gengo/v2 v2.0.0-20240826214909-a7b603a56eb7 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20240903163716-9e1beecbcb38 // indirect
