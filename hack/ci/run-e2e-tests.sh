@@ -20,7 +20,7 @@ set -euo pipefail
 export IMAGE_TAG=local
 
 echo "Building container images…"
-ARCHITECTURES=amd64 DRY_RUN=yes ./hack/ci/build-image.sh
+ARCHITECTURES=arm64 DRY_RUN=yes ./hack/ci/build-image.sh
 
 # start docker so we can run kind
 start-docker.sh
