@@ -19,6 +19,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	v1 "k8s.io/api/core/v1"
+
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -66,6 +68,14 @@ func (b *RootShardSpecApplyConfiguration) WithImage(value *ImageSpecApplyConfigu
 // If called multiple times, the Replicas field is set to the value of the last call.
 func (b *RootShardSpecApplyConfiguration) WithReplicas(value int32) *RootShardSpecApplyConfiguration {
 	b.Replicas = &value
+	return b
+}
+
+// WithResources sets the Resources field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Resources field is set to the value of the last call.
+func (b *RootShardSpecApplyConfiguration) WithResources(value v1.ResourceRequirements) *RootShardSpecApplyConfiguration {
+	b.Resources = &value
 	return b
 }
 

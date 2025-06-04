@@ -74,6 +74,10 @@ func applyPodSpecTemplate(spec *corev1.PodSpec, tpl *operatorv1alpha1.PodSpecTem
 }
 
 func ApplyResources(container corev1.Container, resources *corev1.ResourceRequirements) corev1.Container {
+	if resources == nil {
+		return container
+	}
+
 	maps.Copy(container.Resources.Limits, resources.Limits)
 	maps.Copy(container.Resources.Requests, resources.Requests)
 

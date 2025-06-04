@@ -19,6 +19,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	v1 "k8s.io/api/core/v1"
+
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -29,6 +31,7 @@ type CommonShardSpecApplyConfiguration struct {
 	Etcd                 *EtcdConfigApplyConfiguration            `json:"etcd,omitempty"`
 	Image                *ImageSpecApplyConfiguration             `json:"image,omitempty"`
 	Replicas             *int32                                   `json:"replicas,omitempty"`
+	Resources            *v1.ResourceRequirements                 `json:"resources,omitempty"`
 	Audit                *AuditSpecApplyConfiguration             `json:"audit,omitempty"`
 	Authorization        *AuthorizationSpecApplyConfiguration     `json:"authorization,omitempty"`
 	CertificateTemplates *operatorv1alpha1.CertificateTemplateMap `json:"certificateTemplates,omitempty"`
@@ -71,6 +74,14 @@ func (b *CommonShardSpecApplyConfiguration) WithImage(value *ImageSpecApplyConfi
 // If called multiple times, the Replicas field is set to the value of the last call.
 func (b *CommonShardSpecApplyConfiguration) WithReplicas(value int32) *CommonShardSpecApplyConfiguration {
 	b.Replicas = &value
+	return b
+}
+
+// WithResources sets the Resources field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Resources field is set to the value of the last call.
+func (b *CommonShardSpecApplyConfiguration) WithResources(value v1.ResourceRequirements) *CommonShardSpecApplyConfiguration {
+	b.Resources = &value
 	return b
 }
 

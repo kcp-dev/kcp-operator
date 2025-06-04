@@ -458,6 +458,11 @@ func (in *CommonShardSpec) DeepCopyInto(out *CommonShardSpec) {
 		*out = new(int32)
 		**out = **in
 	}
+	if in.Resources != nil {
+		in, out := &in.Resources, &out.Resources
+		*out = new(v1.ResourceRequirements)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.Audit != nil {
 		in, out := &in.Audit, &out.Audit
 		*out = new(AuditSpec)
@@ -709,6 +714,11 @@ func (in *FrontProxySpec) DeepCopyInto(out *FrontProxySpec) {
 		in, out := &in.Replicas, &out.Replicas
 		*out = new(int32)
 		**out = **in
+	}
+	if in.Resources != nil {
+		in, out := &in.Resources, &out.Resources
+		*out = new(v1.ResourceRequirements)
+		(*in).DeepCopyInto(*out)
 	}
 	if in.Auth != nil {
 		in, out := &in.Auth, &out.Auth

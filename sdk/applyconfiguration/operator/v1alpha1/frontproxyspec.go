@@ -19,6 +19,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	v1 "k8s.io/api/core/v1"
+
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -27,6 +29,7 @@ import (
 type FrontProxySpecApplyConfiguration struct {
 	RootShard              *RootShardConfigApplyConfiguration       `json:"rootShard,omitempty"`
 	Replicas               *int32                                   `json:"replicas,omitempty"`
+	Resources              *v1.ResourceRequirements                 `json:"resources,omitempty"`
 	Auth                   *AuthSpecApplyConfiguration              `json:"auth,omitempty"`
 	AdditionalPathMappings []PathMappingEntryApplyConfiguration     `json:"additionalPathMappings,omitempty"`
 	Image                  *ImageSpecApplyConfiguration             `json:"image,omitempty"`
@@ -55,6 +58,14 @@ func (b *FrontProxySpecApplyConfiguration) WithRootShard(value *RootShardConfigA
 // If called multiple times, the Replicas field is set to the value of the last call.
 func (b *FrontProxySpecApplyConfiguration) WithReplicas(value int32) *FrontProxySpecApplyConfiguration {
 	b.Replicas = &value
+	return b
+}
+
+// WithResources sets the Resources field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Resources field is set to the value of the last call.
+func (b *FrontProxySpecApplyConfiguration) WithResources(value v1.ResourceRequirements) *FrontProxySpecApplyConfiguration {
+	b.Resources = &value
 	return b
 }
 
