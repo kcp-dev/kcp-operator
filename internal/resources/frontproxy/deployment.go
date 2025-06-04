@@ -39,7 +39,7 @@ func DeploymentReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootShard *op
 			dep.Spec.Selector = &metav1.LabelSelector{
 				MatchLabels: resources.GetFrontProxyResourceLabels(frontProxy),
 			}
-			dep.Spec.Template.ObjectMeta.SetLabels(resources.GetFrontProxyResourceLabels(frontProxy))
+			dep.Spec.Template.SetLabels(resources.GetFrontProxyResourceLabels(frontProxy))
 
 			image, _ := resources.GetImageSettings(frontProxy.Spec.Image)
 			args := getArgs(&frontProxy.Spec)

@@ -69,7 +69,7 @@ func DeploymentReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1al
 			dep.Spec.Selector = &metav1.LabelSelector{
 				MatchLabels: labels,
 			}
-			dep.Spec.Template.ObjectMeta.SetLabels(labels)
+			dep.Spec.Template.SetLabels(labels)
 
 			secretMounts := []utils.SecretMount{{
 				VolumeName: "kcp-ca",

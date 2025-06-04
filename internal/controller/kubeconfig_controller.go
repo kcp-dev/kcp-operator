@@ -69,7 +69,7 @@ func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	logger.V(4).Info("Reconciling")
 
 	var kc operatorv1alpha1.Kubeconfig
-	if err := r.Client.Get(ctx, req.NamespacedName, &kc); err != nil {
+	if err := r.Get(ctx, req.NamespacedName, &kc); err != nil {
 		return ctrl.Result{}, err
 	}
 
@@ -80,7 +80,7 @@ func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	switch {
 	case kc.Spec.Target.RootShardRef != nil:
 		var rootShard operatorv1alpha1.RootShard
-		if err := r.Client.Get(ctx, types.NamespacedName{Name: kc.Spec.Target.RootShardRef.Name, Namespace: req.Namespace}, &rootShard); err != nil {
+		if err := r.Get(ctx, types.NamespacedName{Name: kc.Spec.Target.RootShardRef.Name, Namespace: req.Namespace}, &rootShard); err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to get RootShard: %w", err)
 		}
 
@@ -91,7 +91,7 @@ func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	case kc.Spec.Target.ShardRef != nil:
 		var shard operatorv1alpha1.Shard
-		if err := r.Client.Get(ctx, types.NamespacedName{Name: kc.Spec.Target.ShardRef.Name, Namespace: req.Namespace}, &shard); err != nil {
+		if err := r.Get(ctx, types.NamespacedName{Name: kc.Spec.Target.ShardRef.Name, Namespace: req.Namespace}, &shard); err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to get Shard: %w", err)
 		}
 
@@ -100,7 +100,7 @@ func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 			return ctrl.Result{}, errors.New("the Shard does not reference a (valid) RootShard")
 		}
 		var rootShard operatorv1alpha1.RootShard
-		if err := r.Client.Get(ctx, types.NamespacedName{Name: ref.Name, Namespace: req.Namespace}, &rootShard); err != nil {
+		if err := r.Get(ctx, types.NamespacedName{Name: ref.Name, Namespace: req.Namespace}, &rootShard); err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to get RootShard: %w", err)
 		}
 
@@ -112,7 +112,7 @@ func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	case kc.Spec.Target.FrontProxyRef != nil:
 		var frontProxy operatorv1alpha1.FrontProxy
-		if err := r.Client.Get(ctx, types.NamespacedName{Name: kc.Spec.Target.FrontProxyRef.Name, Namespace: req.Namespace}, &frontProxy); err != nil {
+		if err := r.Get(ctx, types.NamespacedName{Name: kc.Spec.Target.FrontProxyRef.Name, Namespace: req.Namespace}, &frontProxy); err != nil {
 			return ctrl.Result{}, fmt.Errorf("referenced FrontProxy '%s' does not exist", kc.Spec.Target.FrontProxyRef.Name)
 		}
 
@@ -121,7 +121,7 @@ func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 			return ctrl.Result{}, errors.New("the FrontProxy does not reference a (valid) RootShard")
 		}
 		var rootShard operatorv1alpha1.RootShard
-		if err := r.Client.Get(ctx, types.NamespacedName{Name: frontProxy.Spec.RootShard.Reference.Name, Namespace: req.Namespace}, &rootShard); err != nil {
+		if err := r.Get(ctx, types.NamespacedName{Name: frontProxy.Spec.RootShard.Reference.Name, Namespace: req.Namespace}, &rootShard); err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to get RootShard: %w", err)
 		}
 
@@ -174,7 +174,7 @@ func (r *KubeconfigReconciler) getCertificateSecret(ctx context.Context, name, n
 	logger := log.FromContext(ctx).WithValues("certificate", name)
 
 	certificate := &certmanagerv1.Certificate{}
-	if err := r.Client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, certificate); err != nil {
+	if err := r.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, certificate); err != nil {
 		// Because of how the reconciling framework works, this should never happen.
 		logger.V(6).Info("Certificate does not exist yet, trying later ...")
 		return nil, nil
@@ -194,7 +194,7 @@ func (r *KubeconfigReconciler) getCertificateSecret(ctx context.Context, name, n
 	}
 
 	secret := &corev1.Secret{}
-	if err := r.Client.Get(ctx, types.NamespacedName{Name: certificate.Spec.SecretName, Namespace: certificate.Namespace}, secret); err != nil {
+	if err := r.Get(ctx, types.NamespacedName{Name: certificate.Spec.SecretName, Namespace: certificate.Namespace}, secret); err != nil {
 		return nil, err
 	}
 
