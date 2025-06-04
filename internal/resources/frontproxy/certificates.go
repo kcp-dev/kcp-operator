@@ -22,11 +22,15 @@ import (
 
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/utils"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
 func ServerCertificateReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
-	name := resources.GetFrontProxyCertificateName(rootShard, frontProxy, operatorv1alpha1.ServerCertificate)
+	const certKind = operatorv1alpha1.ServerCertificate
+
+	name := resources.GetFrontProxyCertificateName(rootShard, frontProxy, certKind)
+	template := frontProxy.Spec.CertificateTemplates.CertificateTemplate(certKind)
 
 	dnsNames := []string{
 		rootShard.Spec.External.Hostname,
@@ -68,13 +72,16 @@ func ServerCertificateReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootSh
 				},
 			}
 
-			return cert, nil
+			return utils.ApplyCertificateTemplate(cert, &template), nil
 		}
 	}
 }
 
 func AdminKubeconfigCertificateReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
-	name := resources.GetFrontProxyCertificateName(rootShard, frontProxy, operatorv1alpha1.AdminKubeconfigClientCertificate)
+	const certKind = operatorv1alpha1.AdminKubeconfigClientCertificate
+
+	name := resources.GetFrontProxyCertificateName(rootShard, frontProxy, certKind)
+	template := frontProxy.Spec.CertificateTemplates.CertificateTemplate(certKind)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
@@ -112,13 +119,16 @@ func AdminKubeconfigCertificateReconciler(frontProxy *operatorv1alpha1.FrontProx
 				},
 			}
 
-			return cert, nil
+			return utils.ApplyCertificateTemplate(cert, &template), nil
 		}
 	}
 }
 
 func KubeconfigCertificateReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
-	name := resources.GetFrontProxyCertificateName(rootShard, frontProxy, operatorv1alpha1.KubeconfigCertificate)
+	const certKind = operatorv1alpha1.KubeconfigCertificate
+
+	name := resources.GetFrontProxyCertificateName(rootShard, frontProxy, certKind)
+	template := frontProxy.Spec.CertificateTemplates.CertificateTemplate(certKind)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
@@ -156,13 +166,16 @@ func KubeconfigCertificateReconciler(frontProxy *operatorv1alpha1.FrontProxy, ro
 				},
 			}
 
-			return cert, nil
+			return utils.ApplyCertificateTemplate(cert, &template), nil
 		}
 	}
 }
 
 func RequestHeaderCertificateReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
+	const certKind = operatorv1alpha1.RequestHeaderClientCertificate
+
 	name := resources.GetFrontProxyRequestHeaderName(rootShard, frontProxy)
+	template := frontProxy.Spec.CertificateTemplates.CertificateTemplate(certKind)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
@@ -198,7 +211,7 @@ func RequestHeaderCertificateReconciler(frontProxy *operatorv1alpha1.FrontProxy,
 				},
 			}
 
-			return cert, nil
+			return utils.ApplyCertificateTemplate(cert, &template), nil
 		}
 	}
 }

@@ -22,6 +22,7 @@ import (
 
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/utils"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -59,7 +60,7 @@ func ClientCertificateReconciler(kubeConfig *operatorv1alpha1.Kubeconfig, issuer
 				},
 			}
 
-			return cert, nil
+			return utils.ApplyCertificateTemplate(cert, kubeConfig.Spec.CertificateTemplate), nil
 		}
 	}
 }

@@ -27,6 +27,8 @@ type FrontProxySpec struct {
 	RootShard RootShardConfig `json:"rootShard"`
 	// Optional: Replicas configures the replica count for the front-proxy Deployment.
 	Replicas *int32 `json:"replicas,omitempty"`
+	// Resources overrides the default resource requests and limits.
+	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
 	// Optional: Auth configures various aspects of Authentication and Authorization for this front-proxy instance.
 	Auth *AuthSpec `json:"auth,omitempty"`
 	// Optional: AdditionalPathMappings configures // TODO ?
@@ -36,8 +38,15 @@ type FrontProxySpec struct {
 	// Optional: ExternalHostname under which the FrontProxy can be reached. If empty, the RootShard's external hostname will be used only.
 	ExternalHostname string `json:"externalHostname,omitempty"`
 
-	// Optional: Service configures the Kubernetes Service created for this front-proxy instance.
-	Service *ServiceSpec `json:"service,omitempty"`
+	// Optional: ServiceTemplate configures the Kubernetes Service created for this front-proxy instance.
+	ServiceTemplate *ServiceTemplate `json:"serviceTemplate,omitempty"`
+
+	// Optional: DeploymentTemplate configures the Kubernetes Deployment created for this shard.
+	DeploymentTemplate *DeploymentTemplate `json:"deploymentTemplate,omitempty"`
+
+	// CertificateTemplates allows to customize the properties on the generated
+	// certificates for this root shard.
+	CertificateTemplates CertificateTemplateMap `json:"certificateTemplates,omitempty"`
 }
 
 type AuthSpec struct {
@@ -49,10 +58,6 @@ type AuthSpec struct {
 
 	// Optional: PassOnGroups configures groups to be passed on before forwarding requests to Shards
 	PassOnGroups []string `json:"passOnGroups,omitempty"`
-}
-
-type ServiceSpec struct {
-	Type corev1.ServiceType `json:"type,omitempty"`
 }
 
 // FrontProxyStatus defines the observed state of FrontProxy

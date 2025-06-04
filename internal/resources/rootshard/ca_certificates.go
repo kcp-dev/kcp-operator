@@ -22,12 +22,14 @@ import (
 
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/utils"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
 // RootCACertificateReconciler creates the central CA used for the kcp setup around a specific RootShard. This shouldn't be called if the RootShard is configured to use a BYO CA certificate.
 func RootCACertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
 	name := resources.GetRootShardCAName(rootShard, operatorv1alpha1.RootCA)
+	template := rootShard.Spec.CertificateTemplates.CATemplate(operatorv1alpha1.RootCA)
 
 	if rootShard.Spec.Certificates.IssuerRef == nil {
 		panic("RootCACertificateReconciler must not be called if not issuerRef is specified.")
@@ -61,13 +63,14 @@ func RootCACertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconcil
 				},
 			}
 
-			return cert, nil
+			return utils.ApplyCertificateTemplate(cert, &template), nil
 		}
 	}
 }
 
 func CACertificateReconciler(rootShard *operatorv1alpha1.RootShard, ca operatorv1alpha1.CA) reconciling.NamedCertificateReconcilerFactory {
 	name := resources.GetRootShardCAName(rootShard, ca)
+	template := rootShard.Spec.CertificateTemplates.CATemplate(ca)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
@@ -96,7 +99,7 @@ func CACertificateReconciler(rootShard *operatorv1alpha1.RootShard, ca operatorv
 				},
 			}
 
-			return cert, nil
+			return utils.ApplyCertificateTemplate(cert, &template), nil
 		}
 	}
 }

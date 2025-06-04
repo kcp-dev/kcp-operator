@@ -17,7 +17,6 @@ limitations under the License.
 package utils
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
@@ -29,11 +28,15 @@ import (
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
-func ApplyCommonShardConfig(deployment *appsv1.Deployment, spec *operatorv1alpha1.CommonShardSpec) (*appsv1.Deployment, error) {
+func ApplyCommonShardConfig(deployment *appsv1.Deployment, spec *operatorv1alpha1.CommonShardSpec) *appsv1.Deployment {
 	if len(deployment.Spec.Template.Spec.Containers) == 0 {
-		//nolint:staticcheck // allow capital letter in error message
-		return deployment, errors.New("Deployment does not contain any containers")
+		panic("Deployment does not contain any containers.")
 	}
+
+	container := deployment.Spec.Template.Spec.Containers[0]
+
+	// override default resource requirements
+	container = ApplyResources(container, spec.Resources)
 
 	// explicitly set the replicas if it is configured in the RootShard
 	// object or if the existing Deployment object doesn't have replicas
@@ -47,13 +50,15 @@ func ApplyCommonShardConfig(deployment *appsv1.Deployment, spec *operatorv1alpha
 
 	// set container image
 	image, _ := resources.GetImageSettings(spec.Image)
-	deployment.Spec.Template.Spec.Containers[0].Image = image
+	container.Image = image
+
+	deployment.Spec.Template.Spec.Containers[0] = container
 
 	deployment = applyEtcdConfiguration(deployment, spec.Etcd)
 	deployment = applyAuditConfiguration(deployment, spec.Audit)
 	deployment = applyAuthorizationConfiguration(deployment, spec.Authorization)
 
-	return deployment, nil
+	return deployment
 }
 
 func applyEtcdConfiguration(deployment *appsv1.Deployment, config operatorv1alpha1.EtcdConfig) *appsv1.Deployment {

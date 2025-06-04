@@ -38,6 +38,10 @@ type KubeconfigSpec struct {
 
 	// SecretRef defines the v1.Secret object that the resulting kubeconfig should be written to.
 	SecretRef corev1.LocalObjectReference `json:"secretRef"`
+
+	// CertificateTemplate allows to customize the properties on the generated
+	// certificate for this kubeconfig.
+	CertificateTemplate *CertificateTemplate `json:"certificateTemplate,omitempty"`
 }
 
 type KubeconfigTarget struct {
