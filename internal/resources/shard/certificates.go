@@ -32,7 +32,7 @@ func ServerCertificateReconciler(shard *operatorv1alpha1.Shard, rootShard *opera
 	const certKind = operatorv1alpha1.ServerCertificate
 
 	name := resources.GetShardCertificateName(shard, certKind)
-	template := rootShard.Spec.CertificateTemplates.CertificateTemplate(certKind)
+	template := shard.Spec.CertificateTemplates.CertificateTemplate(certKind)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
@@ -72,7 +72,7 @@ func VirtualWorkspacesCertificateReconciler(shard *operatorv1alpha1.Shard, rootS
 	const certKind = operatorv1alpha1.VirtualWorkspacesCertificate
 
 	name := resources.GetShardCertificateName(shard, certKind)
-	template := rootShard.Spec.CertificateTemplates.CertificateTemplate(certKind)
+	template := shard.Spec.CertificateTemplates.CertificateTemplate(certKind)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
@@ -111,7 +111,7 @@ func ServiceAccountCertificateReconciler(shard *operatorv1alpha1.Shard, rootShar
 	const certKind = operatorv1alpha1.ServiceAccountCertificate
 
 	name := resources.GetShardCertificateName(shard, certKind)
-	template := rootShard.Spec.CertificateTemplates.CertificateTemplate(certKind)
+	template := shard.Spec.CertificateTemplates.CertificateTemplate(certKind)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
@@ -143,7 +143,7 @@ func RootShardClientCertificateReconciler(shard *operatorv1alpha1.Shard, rootSha
 	const certKind = operatorv1alpha1.ClientCertificate
 
 	name := resources.GetShardCertificateName(shard, certKind)
-	template := rootShard.Spec.CertificateTemplates.CertificateTemplate(certKind)
+	template := shard.Spec.CertificateTemplates.CertificateTemplate(certKind)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
