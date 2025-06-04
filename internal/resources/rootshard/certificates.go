@@ -22,11 +22,15 @@ import (
 
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/utils"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
 func ServerCertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
-	name := resources.GetRootShardCertificateName(rootShard, operatorv1alpha1.ServerCertificate)
+	const certKind = operatorv1alpha1.ServerCertificate
+
+	name := resources.GetRootShardCertificateName(rootShard, certKind)
+	template := rootShard.Spec.CertificateTemplates.CertificateTemplate(certKind)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
@@ -63,13 +67,16 @@ func ServerCertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconcil
 				},
 			}
 
-			return cert, nil
+			return utils.ApplyCertificateTemplate(cert, &template), nil
 		}
 	}
 }
 
 func VirtualWorkspacesCertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
-	name := resources.GetRootShardCertificateName(rootShard, operatorv1alpha1.VirtualWorkspacesCertificate)
+	const certKind = operatorv1alpha1.VirtualWorkspacesCertificate
+
+	name := resources.GetRootShardCertificateName(rootShard, certKind)
+	template := rootShard.Spec.CertificateTemplates.CertificateTemplate(certKind)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
@@ -104,13 +111,16 @@ func VirtualWorkspacesCertificateReconciler(rootShard *operatorv1alpha1.RootShar
 				},
 			}
 
-			return cert, nil
+			return utils.ApplyCertificateTemplate(cert, &template), nil
 		}
 	}
 }
 
 func ServiceAccountCertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
-	name := resources.GetRootShardCertificateName(rootShard, operatorv1alpha1.ServiceAccountCertificate)
+	const certKind = operatorv1alpha1.ServiceAccountCertificate
+
+	name := resources.GetRootShardCertificateName(rootShard, certKind)
+	template := rootShard.Spec.CertificateTemplates.CertificateTemplate(certKind)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
@@ -138,13 +148,16 @@ func ServiceAccountCertificateReconciler(rootShard *operatorv1alpha1.RootShard) 
 				},
 			}
 
-			return cert, nil
+			return utils.ApplyCertificateTemplate(cert, &template), nil
 		}
 	}
 }
 
 func LogicalClusterAdminCertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
-	name := resources.GetRootShardCertificateName(rootShard, operatorv1alpha1.LogicalClusterAdminCertificate)
+	const certKind = operatorv1alpha1.LogicalClusterAdminCertificate
+
+	name := resources.GetRootShardCertificateName(rootShard, certKind)
+	template := rootShard.Spec.CertificateTemplates.CertificateTemplate(certKind)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
@@ -175,13 +188,16 @@ func LogicalClusterAdminCertificateReconciler(rootShard *operatorv1alpha1.RootSh
 				},
 			}
 
-			return cert, nil
+			return utils.ApplyCertificateTemplate(cert, &template), nil
 		}
 	}
 }
 
 func ExternalLogicalClusterAdminCertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
-	name := resources.GetRootShardCertificateName(rootShard, operatorv1alpha1.ExternalLogicalClusterAdminCertificate)
+	const certKind = operatorv1alpha1.ExternalLogicalClusterAdminCertificate
+
+	name := resources.GetRootShardCertificateName(rootShard, certKind)
+	template := rootShard.Spec.CertificateTemplates.CertificateTemplate(certKind)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
@@ -212,7 +228,7 @@ func ExternalLogicalClusterAdminCertificateReconciler(rootShard *operatorv1alpha
 				},
 			}
 
-			return cert, nil
+			return utils.ApplyCertificateTemplate(cert, &template), nil
 		}
 	}
 }

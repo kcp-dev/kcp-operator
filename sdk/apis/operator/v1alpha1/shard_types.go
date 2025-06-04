@@ -40,6 +40,10 @@ type CommonShardSpec struct {
 
 	Audit         *AuditSpec         `json:"audit,omitempty"`
 	Authorization *AuthorizationSpec `json:"authorization,omitempty"`
+
+	// CertificateTemplates allows to customize the properties on the generated
+	// certificates for this root shard.
+	CertificateTemplates CertificateTemplateMap `json:"certificateTemplates,omitempty"`
 }
 
 type AuditSpec struct {

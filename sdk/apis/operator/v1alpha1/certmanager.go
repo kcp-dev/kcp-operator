@@ -17,7 +17,7 @@ limitations under the License.
 package v1alpha1
 
 // The types in this file are copied directly from cert-manager/v1 to avoid a
-// costly dependency on the cert-manager Go module.
+// costly dependency on the cert-manager Go module from the operator's SDK.
 
 // Denotes how private keys should be generated or sourced when a Certificate
 // is being issued.

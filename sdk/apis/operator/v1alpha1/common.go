@@ -98,6 +98,16 @@ const (
 	RequestHeaderClientCA CA = "requestheader-client"
 )
 
+type CertificateTemplateMap map[string]CertificateTemplate
+
+func (m CertificateTemplateMap) CertificateTemplate(cert Certificate) CertificateTemplate {
+	return m[string(cert)]
+}
+
+func (m CertificateTemplateMap) CATemplate(ca CA) CertificateTemplate {
+	return m[string(ca)+"-ca"]
+}
+
 type CertificateTemplate struct {
 	Metadata *CertificateMetadataTemplate `json:"metadata,omitempty"`
 	Spec     *CertificateSpecTemplate     `json:"spec,omitempty"`
