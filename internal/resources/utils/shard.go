@@ -31,6 +31,7 @@ import (
 
 func ApplyCommonShardConfig(deployment *appsv1.Deployment, spec *operatorv1alpha1.CommonShardSpec) (*appsv1.Deployment, error) {
 	if len(deployment.Spec.Template.Spec.Containers) == 0 {
+		//nolint:staticcheck // allow capital letter in error message
 		return deployment, errors.New("Deployment does not contain any containers")
 	}
 

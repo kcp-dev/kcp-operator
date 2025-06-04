@@ -93,7 +93,7 @@ func (r *ShardReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res 
 	logger.V(4).Info("Reconciling Shard object")
 
 	var s operatorv1alpha1.Shard
-	if err := r.Client.Get(ctx, req.NamespacedName, &s); err != nil {
+	if err := r.Get(ctx, req.NamespacedName, &s); err != nil {
 		if ctrlruntimeclient.IgnoreNotFound(err) != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to get shard: %w", err)
 		}
