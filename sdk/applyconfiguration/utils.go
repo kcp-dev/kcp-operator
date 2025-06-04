@@ -49,8 +49,18 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &operatorv1alpha1.CacheServerApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("CacheServerSpec"):
 		return &operatorv1alpha1.CacheServerSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("CertificateMetadataTemplate"):
+		return &operatorv1alpha1.CertificateMetadataTemplateApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("CertificatePrivateKeyTemplate"):
+		return &operatorv1alpha1.CertificatePrivateKeyTemplateApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Certificates"):
 		return &operatorv1alpha1.CertificatesApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("CertificateSecretTemplate"):
+		return &operatorv1alpha1.CertificateSecretTemplateApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("CertificateSpecTemplate"):
+		return &operatorv1alpha1.CertificateSpecTemplateApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("CertificateTemplate"):
+		return &operatorv1alpha1.CertificateTemplateApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("CommonShardSpec"):
 		return &operatorv1alpha1.CommonShardSpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("EmbeddedCacheConfiguration"):
@@ -89,14 +99,20 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &operatorv1alpha1.RootShardSpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("RootShardStatus"):
 		return &operatorv1alpha1.RootShardStatusApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("ServiceSpec"):
-		return &operatorv1alpha1.ServiceSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ServiceMetadataTemplate"):
+		return &operatorv1alpha1.ServiceMetadataTemplateApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ServiceSpecTemplate"):
+		return &operatorv1alpha1.ServiceSpecTemplateApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ServiceTemplate"):
+		return &operatorv1alpha1.ServiceTemplateApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Shard"):
 		return &operatorv1alpha1.ShardApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ShardSpec"):
 		return &operatorv1alpha1.ShardSpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ShardStatus"):
 		return &operatorv1alpha1.ShardStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("X509Subject"):
+		return &operatorv1alpha1.X509SubjectApplyConfiguration{}
 
 	}
 	return nil

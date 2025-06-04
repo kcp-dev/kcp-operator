@@ -18,6 +18,10 @@ limitations under the License.
 
 package v1alpha1
 
+import (
+	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
+)
+
 // ShardSpecApplyConfiguration represents a declarative configuration of the ShardSpec type for use
 // with apply.
 type ShardSpecApplyConfiguration struct {
@@ -76,6 +80,22 @@ func (b *ShardSpecApplyConfiguration) WithAudit(value *AuditSpecApplyConfigurati
 // If called multiple times, the Authorization field is set to the value of the last call.
 func (b *ShardSpecApplyConfiguration) WithAuthorization(value *AuthorizationSpecApplyConfiguration) *ShardSpecApplyConfiguration {
 	b.Authorization = value
+	return b
+}
+
+// WithCertificateTemplates sets the CertificateTemplates field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the CertificateTemplates field is set to the value of the last call.
+func (b *ShardSpecApplyConfiguration) WithCertificateTemplates(value operatorv1alpha1.CertificateTemplateMap) *ShardSpecApplyConfiguration {
+	b.CertificateTemplates = &value
+	return b
+}
+
+// WithServiceTemplate sets the ServiceTemplate field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the ServiceTemplate field is set to the value of the last call.
+func (b *ShardSpecApplyConfiguration) WithServiceTemplate(value *ServiceTemplateApplyConfiguration) *ShardSpecApplyConfiguration {
+	b.ServiceTemplate = value
 	return b
 }
 

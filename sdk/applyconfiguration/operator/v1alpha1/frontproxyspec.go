@@ -18,16 +18,21 @@ limitations under the License.
 
 package v1alpha1
 
+import (
+	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
+)
+
 // FrontProxySpecApplyConfiguration represents a declarative configuration of the FrontProxySpec type for use
 // with apply.
 type FrontProxySpecApplyConfiguration struct {
-	RootShard              *RootShardConfigApplyConfiguration   `json:"rootShard,omitempty"`
-	Replicas               *int32                               `json:"replicas,omitempty"`
-	Auth                   *AuthSpecApplyConfiguration          `json:"auth,omitempty"`
-	AdditionalPathMappings []PathMappingEntryApplyConfiguration `json:"additionalPathMappings,omitempty"`
-	Image                  *ImageSpecApplyConfiguration         `json:"image,omitempty"`
-	ExternalHostname       *string                              `json:"externalHostname,omitempty"`
-	Service                *ServiceSpecApplyConfiguration       `json:"service,omitempty"`
+	RootShard              *RootShardConfigApplyConfiguration       `json:"rootShard,omitempty"`
+	Replicas               *int32                                   `json:"replicas,omitempty"`
+	Auth                   *AuthSpecApplyConfiguration              `json:"auth,omitempty"`
+	AdditionalPathMappings []PathMappingEntryApplyConfiguration     `json:"additionalPathMappings,omitempty"`
+	Image                  *ImageSpecApplyConfiguration             `json:"image,omitempty"`
+	ExternalHostname       *string                                  `json:"externalHostname,omitempty"`
+	ServiceTemplate        *ServiceTemplateApplyConfiguration       `json:"serviceTemplate,omitempty"`
+	CertificateTemplates   *operatorv1alpha1.CertificateTemplateMap `json:"certificateTemplates,omitempty"`
 }
 
 // FrontProxySpecApplyConfiguration constructs a declarative configuration of the FrontProxySpec type for use with
@@ -89,10 +94,18 @@ func (b *FrontProxySpecApplyConfiguration) WithExternalHostname(value string) *F
 	return b
 }
 
-// WithService sets the Service field in the declarative configuration to the given value
+// WithServiceTemplate sets the ServiceTemplate field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Service field is set to the value of the last call.
-func (b *FrontProxySpecApplyConfiguration) WithService(value *ServiceSpecApplyConfiguration) *FrontProxySpecApplyConfiguration {
-	b.Service = value
+// If called multiple times, the ServiceTemplate field is set to the value of the last call.
+func (b *FrontProxySpecApplyConfiguration) WithServiceTemplate(value *ServiceTemplateApplyConfiguration) *FrontProxySpecApplyConfiguration {
+	b.ServiceTemplate = value
+	return b
+}
+
+// WithCertificateTemplates sets the CertificateTemplates field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the CertificateTemplates field is set to the value of the last call.
+func (b *FrontProxySpecApplyConfiguration) WithCertificateTemplates(value operatorv1alpha1.CertificateTemplateMap) *FrontProxySpecApplyConfiguration {
+	b.CertificateTemplates = &value
 	return b
 }
