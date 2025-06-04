@@ -156,30 +156,42 @@ OPENSHIFT_GOIMPORTS := $(TOOLS_DIR)/openshift-goimports
 
 .PHONY: kubectl
 kubectl: $(KUBECTL) ## Download kubectl locally if necessary.
+
+.PHONY: $(KUBECTL)
 $(KUBECTL):
 	@UNCOMPRESSED=true hack/download-tool.sh https://dl.k8s.io/$(KUBECTL_VERSION)/bin/$(shell go env GOOS)/$(shell go env GOARCH)/kubectl kubectl $(KUBECTL_VERSION) kubectl
 
 .PHONY: kustomize
 kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary.
+
+.PHONY: $(KUSTOMIZE)
 $(KUSTOMIZE):
 	@GO_MODULE=true hack/download-tool.sh sigs.k8s.io/kustomize/kustomize/v5 kustomize $(KUSTOMIZE_VERSION)
 
 .PHONY: envtest
 envtest: $(ENVTEST) ## Download setup-envtest locally if necessary.
+
+.PHONY: $(ENVTEST)
 $(ENVTEST):
 	@GO_MODULE=true hack/download-tool.sh sigs.k8s.io/controller-runtime/tools/setup-envtest setup-envtest $(ENVTEST_VERSION)
 
 .PHONY: golangci-lint
 golangci-lint: $(GOLANGCI_LINT) ## Download golangci-lint locally if necessary.
+
+.PHONY: $(GOLANGCI_LINT)
 $(GOLANGCI_LINT):
 	@hack/download-tool.sh https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_LINT_VERSION}/golangci-lint-${GOLANGCI_LINT_VERSION}-$(shell go env GOOS)-$(shell go env GOARCH).tar.gz golangci-lint $(GOLANGCI_LINT_VERSION)
 
 .PHONY: reconciler-gen
 reconciler-gen: $(RECONCILER_GEN) ## Download reconciler-gen locally if necessary.
+
+.PHONY: $(RECONCILER_GEN)
 $(RECONCILER_GEN):
 	@GO_MODULE=true hack/download-tool.sh k8c.io/reconciler/cmd/reconciler-gen reconciler-gen $(RECONCILER_GEN_VER)
 
 .PHONY: openshift-goimports
 openshift-goimports: $(OPENSHIFT_GOIMPORTS) ## Download openshift-goimports locally if necessary.
+
+.PHONY: $(OPENSHIFT_GOIMPORTS)
 $(OPENSHIFT_GOIMPORTS):
 	@GO_MODULE=true hack/download-tool.sh github.com/openshift-eng/openshift-goimports openshift-goimports $(OPENSHIFT_GOIMPORTS_VER)
