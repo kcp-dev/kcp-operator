@@ -32,6 +32,7 @@ type FrontProxySpecApplyConfiguration struct {
 	Image                  *ImageSpecApplyConfiguration             `json:"image,omitempty"`
 	ExternalHostname       *string                                  `json:"externalHostname,omitempty"`
 	ServiceTemplate        *ServiceTemplateApplyConfiguration       `json:"serviceTemplate,omitempty"`
+	DeploymentTemplate     *DeploymentTemplateApplyConfiguration    `json:"deploymentTemplate,omitempty"`
 	CertificateTemplates   *operatorv1alpha1.CertificateTemplateMap `json:"certificateTemplates,omitempty"`
 }
 
@@ -99,6 +100,14 @@ func (b *FrontProxySpecApplyConfiguration) WithExternalHostname(value string) *F
 // If called multiple times, the ServiceTemplate field is set to the value of the last call.
 func (b *FrontProxySpecApplyConfiguration) WithServiceTemplate(value *ServiceTemplateApplyConfiguration) *FrontProxySpecApplyConfiguration {
 	b.ServiceTemplate = value
+	return b
+}
+
+// WithDeploymentTemplate sets the DeploymentTemplate field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the DeploymentTemplate field is set to the value of the last call.
+func (b *FrontProxySpecApplyConfiguration) WithDeploymentTemplate(value *DeploymentTemplateApplyConfiguration) *FrontProxySpecApplyConfiguration {
+	b.DeploymentTemplate = value
 	return b
 }
 

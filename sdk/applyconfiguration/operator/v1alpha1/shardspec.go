@@ -99,6 +99,14 @@ func (b *ShardSpecApplyConfiguration) WithServiceTemplate(value *ServiceTemplate
 	return b
 }
 
+// WithDeploymentTemplate sets the DeploymentTemplate field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the DeploymentTemplate field is set to the value of the last call.
+func (b *ShardSpecApplyConfiguration) WithDeploymentTemplate(value *DeploymentTemplateApplyConfiguration) *ShardSpecApplyConfiguration {
+	b.DeploymentTemplate = value
+	return b
+}
+
 // WithRootShard sets the RootShard field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the RootShard field is set to the value of the last call.
