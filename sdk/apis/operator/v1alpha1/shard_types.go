@@ -44,6 +44,9 @@ type CommonShardSpec struct {
 	// CertificateTemplates allows to customize the properties on the generated
 	// certificates for this root shard.
 	CertificateTemplates CertificateTemplateMap `json:"certificateTemplates,omitempty"`
+
+	// Optional: ServiceTemplate configures the Kubernetes Service created for this shard.
+	ServiceTemplate *ServiceTemplate `json:"serviceTemplate,omitempty"`
 }
 
 type AuditSpec struct {

@@ -24,6 +24,7 @@ import (
 	"k8s.io/utils/ptr"
 
 	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/utils"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -51,7 +52,7 @@ func ServiceReconciler(shard *operatorv1alpha1.Shard) reconciling.NamedServiceRe
 			}
 			svc.Spec.Selector = labels
 
-			return svc, nil
+			return utils.ApplyServiceTemplate(svc, shard.Spec.ServiceTemplate), nil
 		}
 	}
 }

@@ -257,3 +257,24 @@ const (
 	ConditionReasonRootShardRefNotFound ConditionReason = "RootShardNotFound"
 	ConditionReasonRootShardRefValid    ConditionReason = "Valid"
 )
+
+type ServiceTemplate struct {
+	Metadata *ServiceMetadataTemplate `json:"metadata,omitempty"`
+	Spec     *ServiceSpecTemplate     `json:"spec,omitempty"`
+}
+
+// ServiceMetadataTemplate defines the default labels and annotations
+// to be copied to the Kubernetes Service resource.
+type ServiceMetadataTemplate struct {
+	// Annotations is a key value map to be copied to the target Kubernetes Service.
+	// +optional
+	Annotations map[string]string `json:"annotations,omitempty"`
+
+	// Labels is a key value map to be copied to the target Kubernetes Service.
+	// +optional
+	Labels map[string]string `json:"labels,omitempty"`
+}
+
+type ServiceSpecTemplate struct {
+	Type corev1.ServiceType `json:"type,omitempty"`
+}

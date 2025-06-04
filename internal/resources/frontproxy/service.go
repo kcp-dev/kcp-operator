@@ -24,20 +24,16 @@ import (
 	"k8s.io/utils/ptr"
 
 	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/utils"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
 func ServiceReconciler(frontProxy *operatorv1alpha1.FrontProxy) reconciling.NamedServiceReconcilerFactory {
 	return func() (string, reconciling.ServiceReconciler) {
-		serviceType := corev1.ServiceTypeClusterIP
-		if frontProxy.Spec.Service != nil && frontProxy.Spec.Service.Type != "" {
-			serviceType = frontProxy.Spec.Service.Type
-		}
-
 		return resources.GetFrontProxyServiceName(frontProxy), func(svc *corev1.Service) (*corev1.Service, error) {
 			labels := resources.GetFrontProxyResourceLabels(frontProxy)
 			svc.SetLabels(labels)
-			svc.Spec.Type = serviceType
+			svc.Spec.Type = corev1.ServiceTypeClusterIP
 
 			var port corev1.ServicePort
 			if len(svc.Spec.Ports) == 1 {
@@ -55,7 +51,7 @@ func ServiceReconciler(frontProxy *operatorv1alpha1.FrontProxy) reconciling.Name
 			}
 			svc.Spec.Selector = labels
 
-			return svc, nil
+			return utils.ApplyServiceTemplate(svc, frontProxy.Spec.ServiceTemplate), nil
 		}
 	}
 }
