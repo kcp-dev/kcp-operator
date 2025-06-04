@@ -17,6 +17,8 @@ limitations under the License.
 package utils
 
 import (
+	"maps"
+
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 
@@ -69,4 +71,11 @@ func applyPodSpecTemplate(spec *corev1.PodSpec, tpl *operatorv1alpha1.PodSpecTem
 	spec.Tolerations = tpl.Tolerations
 	spec.HostAliases = tpl.HostAliases
 	spec.ImagePullSecrets = tpl.ImagePullSecrets
+}
+
+func ApplyResources(container corev1.Container, resources *corev1.ResourceRequirements) corev1.Container {
+	maps.Copy(container.Resources.Limits, resources.Limits)
+	maps.Copy(container.Resources.Requests, resources.Requests)
+
+	return container
 }

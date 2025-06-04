@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -26,6 +27,8 @@ type FrontProxySpec struct {
 	RootShard RootShardConfig `json:"rootShard"`
 	// Optional: Replicas configures the replica count for the front-proxy Deployment.
 	Replicas *int32 `json:"replicas,omitempty"`
+	// Resources overrides the default resource requests and limits.
+	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
 	// Optional: Auth configures various aspects of Authentication and Authorization for this front-proxy instance.
 	Auth *AuthSpec `json:"auth,omitempty"`
 	// Optional: AdditionalPathMappings configures // TODO ?

@@ -231,9 +231,13 @@ func DeploymentReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootShard *op
 			}
 
 			dep.Spec.Template.Spec.Volumes = volumes
-			dep.Spec.Template.Spec.Containers = []corev1.Container{container}
+			dep.Spec.Template.Spec.Containers = []corev1.Container{
+				utils.ApplyResources(container, frontProxy.Spec.Resources),
+			}
 
-			return utils.ApplyDeploymentTemplate(dep, frontProxy.Spec.DeploymentTemplate), nil
+			dep = utils.ApplyDeploymentTemplate(dep, frontProxy.Spec.DeploymentTemplate)
+
+			return dep, nil
 		}
 	}
 }
