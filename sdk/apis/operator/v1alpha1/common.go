@@ -124,6 +124,12 @@ type CertificateMetadataTemplate struct {
 }
 
 type CertificateSpecTemplate struct {
+	// Requested set of X509 certificate subject attributes.
+	// More info: https://datatracker.ietf.org/doc/html/rfc5280#section-4.1.2.6
+	//
+	// +optional
+	Subject *X509Subject `json:"subject,omitempty"`
+
 	// Requested DNS subject alternative names. The values given here will be merged into the
 	// DNS names determined automatically by the kcp-operator.
 	//

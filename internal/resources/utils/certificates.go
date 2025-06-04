@@ -41,6 +41,10 @@ func addNewKeys(existing, toAdd map[string]string) map[string]string {
 	return result
 }
 
+func mergeSlices(a, b []string) []string {
+	return sets.List(sets.New(a...).Insert(b...))
+}
+
 func ApplyCertificateTemplate(cert *certmanagerv1.Certificate, tpl *operatorv1alpha1.CertificateTemplate) *certmanagerv1.Certificate {
 	if tpl == nil {
 		return cert
@@ -51,50 +55,92 @@ func ApplyCertificateTemplate(cert *certmanagerv1.Certificate, tpl *operatorv1al
 		cert.Labels = addNewKeys(cert.Labels, metadata.Labels)
 	}
 
-	if spec := tpl.Spec; spec != nil {
-		cert.Spec.DNSNames = sets.List(sets.New(cert.Spec.DNSNames...).Insert(spec.DNSNames...))
-		cert.Spec.IPAddresses = sets.List(sets.New(cert.Spec.IPAddresses...).Insert(spec.IPAddresses...))
-
-		if spec.Duration != nil {
-			cert.Spec.Duration = spec.Duration.DeepCopy()
-		}
-
-		if spec.RenewBefore != nil {
-			cert.Spec.RenewBefore = spec.RenewBefore.DeepCopy()
-		}
-
-		if secretTpl := spec.SecretTemplate; secretTpl != nil {
-			if cert.Spec.SecretTemplate == nil {
-				cert.Spec.SecretTemplate = &certmanagerv1.CertificateSecretTemplate{}
-			}
-
-			cert.Spec.SecretTemplate.Annotations = addNewKeys(cert.Spec.SecretTemplate.Annotations, secretTpl.Annotations)
-			cert.Spec.SecretTemplate.Labels = addNewKeys(cert.Spec.SecretTemplate.Labels, secretTpl.Labels)
-		}
-
-		if pk := spec.PrivateKey; pk != nil {
-			// This should never happen.
-			if cert.Spec.PrivateKey == nil {
-				cert.Spec.PrivateKey = &certmanagerv1.CertificatePrivateKey{}
-			}
-
-			if pk.Algorithm != "" {
-				cert.Spec.PrivateKey.Algorithm = certmanagerv1.PrivateKeyAlgorithm(pk.Algorithm)
-			}
-
-			if pk.Encoding != "" {
-				cert.Spec.PrivateKey.Encoding = certmanagerv1.PrivateKeyEncoding(pk.Encoding)
-			}
-
-			if pk.RotationPolicy != "" {
-				cert.Spec.PrivateKey.RotationPolicy = certmanagerv1.PrivateKeyRotationPolicy(pk.RotationPolicy)
-			}
-
-			if pk.Size > 0 {
-				cert.Spec.PrivateKey.Size = pk.Size
-			}
-		}
-	}
+	applyCertificateSpecTemplate(cert, tpl.Spec)
 
 	return cert
+}
+
+func applyCertificateSpecTemplate(cert *certmanagerv1.Certificate, tpl *operatorv1alpha1.CertificateSpecTemplate) *certmanagerv1.Certificate {
+	if tpl == nil {
+		return cert
+	}
+
+	cert.Spec.DNSNames = mergeSlices(cert.Spec.DNSNames, tpl.DNSNames)
+	cert.Spec.IPAddresses = mergeSlices(cert.Spec.IPAddresses, tpl.IPAddresses)
+
+	if tpl.Duration != nil {
+		cert.Spec.Duration = tpl.Duration.DeepCopy()
+	}
+
+	if tpl.RenewBefore != nil {
+		cert.Spec.RenewBefore = tpl.RenewBefore.DeepCopy()
+	}
+
+	if secretTpl := tpl.SecretTemplate; secretTpl != nil {
+		if cert.Spec.SecretTemplate == nil {
+			cert.Spec.SecretTemplate = &certmanagerv1.CertificateSecretTemplate{}
+		}
+
+		cert.Spec.SecretTemplate.Annotations = addNewKeys(cert.Spec.SecretTemplate.Annotations, secretTpl.Annotations)
+		cert.Spec.SecretTemplate.Labels = addNewKeys(cert.Spec.SecretTemplate.Labels, secretTpl.Labels)
+	}
+
+	cert.Spec.PrivateKey = applyCertificatePrivateKeyTemplate(cert.Spec.PrivateKey, tpl.PrivateKey)
+	cert.Spec.Subject = applyCertificateSubjectTemplate(cert.Spec.Subject, tpl.Subject)
+
+	return cert
+}
+
+func applyCertificatePrivateKeyTemplate(pk *certmanagerv1.CertificatePrivateKey, tpl *operatorv1alpha1.CertificatePrivateKeyTemplate) *certmanagerv1.CertificatePrivateKey {
+	if tpl == nil {
+		return pk
+	}
+
+	// This should never happen.
+	if pk == nil {
+		pk = &certmanagerv1.CertificatePrivateKey{}
+	}
+
+	if tpl.Algorithm != "" {
+		pk.Algorithm = certmanagerv1.PrivateKeyAlgorithm(tpl.Algorithm)
+	}
+
+	if tpl.Encoding != "" {
+		pk.Encoding = certmanagerv1.PrivateKeyEncoding(tpl.Encoding)
+	}
+
+	if tpl.RotationPolicy != "" {
+		pk.RotationPolicy = certmanagerv1.PrivateKeyRotationPolicy(tpl.RotationPolicy)
+	}
+
+	if tpl.Size > 0 {
+		pk.Size = tpl.Size
+	}
+
+	return pk
+}
+
+func applyCertificateSubjectTemplate(subj *certmanagerv1.X509Subject, tpl *operatorv1alpha1.X509Subject) *certmanagerv1.X509Subject {
+	if tpl == nil {
+		return subj
+	}
+
+	// This should never happen.
+	if subj == nil {
+		subj = &certmanagerv1.X509Subject{}
+	}
+
+	subj.Organizations = mergeSlices(subj.Organizations, tpl.Organizations)
+	subj.Countries = mergeSlices(subj.Countries, tpl.Countries)
+	subj.OrganizationalUnits = mergeSlices(subj.OrganizationalUnits, tpl.OrganizationalUnits)
+	subj.Localities = mergeSlices(subj.Localities, tpl.Localities)
+	subj.Provinces = mergeSlices(subj.Provinces, tpl.Provinces)
+	subj.StreetAddresses = mergeSlices(subj.StreetAddresses, tpl.StreetAddresses)
+	subj.PostalCodes = mergeSlices(subj.PostalCodes, tpl.PostalCodes)
+
+	if tpl.SerialNumber != "" {
+		subj.SerialNumber = tpl.SerialNumber
+	}
+
+	return subj
 }

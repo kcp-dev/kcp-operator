@@ -68,3 +68,31 @@ const (
 	// Ed25519 private key algorithm.
 	Ed25519KeyAlgorithm PrivateKeyAlgorithm = "Ed25519"
 )
+
+// X509Subject Full X509 name specification
+type X509Subject struct {
+	// Organizations to be used on the Certificate.
+	// +optional
+	Organizations []string `json:"organizations,omitempty"`
+	// Countries to be used on the Certificate.
+	// +optional
+	Countries []string `json:"countries,omitempty"`
+	// Organizational Units to be used on the Certificate.
+	// +optional
+	OrganizationalUnits []string `json:"organizationalUnits,omitempty"`
+	// Cities to be used on the Certificate.
+	// +optional
+	Localities []string `json:"localities,omitempty"`
+	// State/Provinces to be used on the Certificate.
+	// +optional
+	Provinces []string `json:"provinces,omitempty"`
+	// Street addresses to be used on the Certificate.
+	// +optional
+	StreetAddresses []string `json:"streetAddresses,omitempty"`
+	// Postal codes to be used on the Certificate.
+	// +optional
+	PostalCodes []string `json:"postalCodes,omitempty"`
+	// Serial number to be used on the Certificate.
+	// +optional
+	SerialNumber string `json:"serialNumber,omitempty"`
+}
