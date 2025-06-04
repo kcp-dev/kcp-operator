@@ -47,6 +47,9 @@ type CommonShardSpec struct {
 
 	// Optional: ServiceTemplate configures the Kubernetes Service created for this shard.
 	ServiceTemplate *ServiceTemplate `json:"serviceTemplate,omitempty"`
+
+	// Optional: DeploymentTemplate configures the Kubernetes Deployment created for this shard.
+	DeploymentTemplate *DeploymentTemplate `json:"deploymentTemplate,omitempty"`
 }
 
 type AuditSpec struct {

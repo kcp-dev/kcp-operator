@@ -284,3 +284,75 @@ type ServiceMetadataTemplate struct {
 type ServiceSpecTemplate struct {
 	Type corev1.ServiceType `json:"type,omitempty"`
 }
+
+type DeploymentTemplate struct {
+	Metadata *DeploymentMetadataTemplate `json:"metadata,omitempty"`
+	Spec     *DeploymentSpecTemplate     `json:"spec,omitempty"`
+}
+
+type DeploymentMetadataTemplate struct {
+	// Annotations is a key value map to be copied to the target Deployment.
+	// +optional
+	Annotations map[string]string `json:"annotations,omitempty"`
+
+	// Labels is a key value map to be copied to the target Deployment.
+	// +optional
+	Labels map[string]string `json:"labels,omitempty"`
+}
+
+type DeploymentSpecTemplate struct {
+	// Template describes the pods that will be created.
+	Template *PodTemplateSpec `json:"template,omitempty"`
+}
+
+type PodTemplateSpec struct {
+	Metadata *PodMetadataTemplate `json:"metadata,omitempty"`
+	Spec     *PodSpecTemplate     `json:"spec,omitempty"`
+}
+
+type PodMetadataTemplate struct {
+	// Annotations is a key value map to be copied to the Pod.
+	// +optional
+	Annotations map[string]string `json:"annotations,omitempty"`
+
+	// Labels is a key value map to be copied to the Pod.
+	// +optional
+	Labels map[string]string `json:"labels,omitempty"`
+}
+
+type PodSpecTemplate struct {
+	// NodeSelector is a selector which must be true for the pod to fit on a node.
+	// Selector which must match a node's labels for the pod to be scheduled on that node.
+	// More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
+	// +optional
+	// +mapType=atomic
+	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
+
+	// If specified, the pod's scheduling constraints
+	// +optional
+	Affinity *corev1.Affinity `json:"affinity,omitempty"`
+
+	// If specified, the pod's tolerations.
+	// +optional
+	// +listType=atomic
+	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
+
+	// HostAliases is an optional list of hosts and IPs that will be injected into the pod's hosts
+	// file if specified.
+	// +optional
+	// +patchMergeKey=ip
+	// +patchStrategy=merge
+	// +listType=map
+	// +listMapKey=ip
+	HostAliases []corev1.HostAlias `json:"hostAliases,omitempty"`
+
+	// ImagePullSecrets is an optional list of references to secrets in the same namespace to use for pulling any of the images used by this PodSpec.
+	// If specified, these secrets will be passed to individual puller implementations for them to use.
+	// More info: https://kubernetes.io/docs/concepts/containers/images#specifying-imagepullsecrets-on-a-pod
+	// +optional
+	// +patchMergeKey=name
+	// +patchStrategy=merge
+	// +listType=map
+	// +listMapKey=name
+	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
+}

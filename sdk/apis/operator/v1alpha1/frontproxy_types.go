@@ -38,6 +38,9 @@ type FrontProxySpec struct {
 	// Optional: ServiceTemplate configures the Kubernetes Service created for this front-proxy instance.
 	ServiceTemplate *ServiceTemplate `json:"serviceTemplate,omitempty"`
 
+	// Optional: DeploymentTemplate configures the Kubernetes Deployment created for this shard.
+	DeploymentTemplate *DeploymentTemplate `json:"deploymentTemplate,omitempty"`
+
 	// CertificateTemplates allows to customize the properties on the generated
 	// certificates for this root shard.
 	CertificateTemplates CertificateTemplateMap `json:"certificateTemplates,omitempty"`

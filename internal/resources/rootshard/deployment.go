@@ -146,7 +146,7 @@ func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.Nam
 				return nil, fmt.Errorf("failed to shard configuration: %w", err)
 			}
 
-			return dep, nil
+			return utils.ApplyDeploymentTemplate(dep, rootShard.Spec.DeploymentTemplate), nil
 		}
 	}
 }

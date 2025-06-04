@@ -143,7 +143,7 @@ func DeploymentReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1al
 				return nil, fmt.Errorf("failed to shard configuration: %w", err)
 			}
 
-			return dep, nil
+			return utils.ApplyDeploymentTemplate(dep, shard.Spec.DeploymentTemplate), nil
 		}
 	}
 }
