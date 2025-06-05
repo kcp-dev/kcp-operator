@@ -1,0 +1,10 @@
+FROM docker.io/golang:1.24
+
+RUN git clone --depth 1 https://github.com/kcp-dev/kcp /apps/kcp
+WORKDIR /apps/kcp
+
+RUN go build -v ./...
+
+ENV NO_GORUN=1
+
+CMD [ "bash", "-c", "go test -parallel 1 ./test/e2e/... -args --kcp-kubeconfig $KUBECONFIG" ]
