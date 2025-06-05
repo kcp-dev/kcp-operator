@@ -71,7 +71,7 @@ func KubeconfigSecretReconciler(
 		}
 
 		addCluster("default", defaultURL)
-		addCluster("shard-base", serverURL)
+		addCluster("base", serverURL)
 		config.CurrentContext = "default"
 
 	case kubeconfig.Spec.Target.ShardRef != nil:
@@ -80,9 +80,13 @@ func KubeconfigSecretReconciler(
 		}
 
 		serverURL := resources.GetShardBaseURL(shard)
+		defaultURL, err := url.JoinPath(serverURL, "clusters", "root")
+		if err != nil {
+			return nil, err
+		}
 
-		addCluster("default", serverURL)
-		addCluster("shard-base", serverURL)
+		addCluster("default", defaultURL)
+		addCluster("base", serverURL)
 		config.CurrentContext = "default"
 
 	case kubeconfig.Spec.Target.FrontProxyRef != nil:

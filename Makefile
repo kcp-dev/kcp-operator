@@ -10,6 +10,7 @@ KUSTOMIZE_VERSION ?= v5.4.3
 CONTROLLER_TOOLS_VERSION ?= v0.16.1
 ENVTEST_VERSION ?= release-0.19
 GOLANGCI_LINT_VERSION ?= 2.1.6
+PROTOKOL_VERSION ?= 0.7.2
 
 # Image URL to use all building/pushing image targets
 IMG ?= ghcr.io/kcp-dev/kcp-operator
@@ -151,6 +152,7 @@ KUBECTL ?= $(TOOLS_DIR)/kubectl
 KUSTOMIZE ?= $(TOOLS_DIR)/kustomize
 ENVTEST ?= $(TOOLS_DIR)/setup-envtest
 GOLANGCI_LINT = $(TOOLS_DIR)/golangci-lint
+PROTOKOL = $(TOOLS_DIR)/protokol
 RECONCILER_GEN := $(TOOLS_DIR)/reconciler-gen
 OPENSHIFT_GOIMPORTS := $(TOOLS_DIR)/openshift-goimports
 
@@ -181,6 +183,13 @@ golangci-lint: $(GOLANGCI_LINT) ## Download golangci-lint locally if necessary.
 .PHONY: $(GOLANGCI_LINT)
 $(GOLANGCI_LINT):
 	@hack/download-tool.sh https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_LINT_VERSION}/golangci-lint-${GOLANGCI_LINT_VERSION}-$(shell go env GOOS)-$(shell go env GOARCH).tar.gz golangci-lint $(GOLANGCI_LINT_VERSION)
+
+.PHONY: protokol
+protokol: $(PROTOKOL) ## Download protokol locally if necessary.
+
+.PHONY: $(PROTOKOL)
+$(PROTOKOL):
+	@hack/download-tool.sh https://codeberg.org/xrstf/protokol/releases/download/v${PROTOKOL_VERSION}/protokol_${PROTOKOL_VERSION}_$(shell go env GOOS)_$(shell go env GOARCH).tar.gz protokol $(PROTOKOL_VERSION)
 
 .PHONY: reconciler-gen
 reconciler-gen: $(RECONCILER_GEN) ## Download reconciler-gen locally if necessary.

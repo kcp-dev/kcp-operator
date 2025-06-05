@@ -43,6 +43,10 @@ echo "Creating kind cluster $KIND_CLUSTER_NAME…"
 kind create cluster --name "$KIND_CLUSTER_NAME"
 chmod 600 "$KUBECONFIG"
 
+# store logs as artifacts
+make protokol
+_tools/protokol --output "$ARTIFACTS/logs" --namespace 'kcp-*' >/dev/null 2>&1 &
+
 # load the operator image into the kind cluster
 image="ghcr.io/kcp-dev/kcp-operator:$IMAGE_TAG"
 archive=operator.tar

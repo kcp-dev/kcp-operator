@@ -143,6 +143,9 @@ func TestKcpTestSuite(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:    namespace,
 			GenerateName: "kcp-e2e-",
+			Labels: map[string]string{
+				"test": "kcp-e2e",
+			},
 		},
 		Spec: corev1.PodSpec{
 			RestartPolicy: corev1.RestartPolicyNever,

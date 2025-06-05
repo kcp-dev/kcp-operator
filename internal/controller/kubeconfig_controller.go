@@ -72,9 +72,10 @@ func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, err
 	}
 
+	rootShard := &operatorv1alpha1.RootShard{}
+	shard := &operatorv1alpha1.Shard{}
+
 	var (
-		rootShard        *operatorv1alpha1.RootShard
-		shard            *operatorv1alpha1.Shard
 		clientCertIssuer string
 		serverCA         string
 	)
