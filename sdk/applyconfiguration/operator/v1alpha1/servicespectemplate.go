@@ -25,7 +25,8 @@ import (
 // ServiceSpecTemplateApplyConfiguration represents a declarative configuration of the ServiceSpecTemplate type for use
 // with apply.
 type ServiceSpecTemplateApplyConfiguration struct {
-	Type *v1.ServiceType `json:"type,omitempty"`
+	Type      *v1.ServiceType `json:"type,omitempty"`
+	ClusterIP *string         `json:"clusterIP,omitempty"`
 }
 
 // ServiceSpecTemplateApplyConfiguration constructs a declarative configuration of the ServiceSpecTemplate type for use with
@@ -39,5 +40,13 @@ func ServiceSpecTemplate() *ServiceSpecTemplateApplyConfiguration {
 // If called multiple times, the Type field is set to the value of the last call.
 func (b *ServiceSpecTemplateApplyConfiguration) WithType(value v1.ServiceType) *ServiceSpecTemplateApplyConfiguration {
 	b.Type = &value
+	return b
+}
+
+// WithClusterIP sets the ClusterIP field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the ClusterIP field is set to the value of the last call.
+func (b *ServiceSpecTemplateApplyConfiguration) WithClusterIP(value string) *ServiceSpecTemplateApplyConfiguration {
+	b.ClusterIP = &value
 	return b
 }

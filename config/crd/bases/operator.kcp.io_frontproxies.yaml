@@ -1565,6 +1565,8 @@ spec:
                     type: object
                   spec:
                     properties:
+                      clusterIP:
+                        type: string
                       type:
                         description: Service Type string describes ingress methods
                           for a service
