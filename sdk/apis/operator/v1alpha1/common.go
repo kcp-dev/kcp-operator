@@ -282,7 +282,8 @@ type ServiceMetadataTemplate struct {
 }
 
 type ServiceSpecTemplate struct {
-	Type corev1.ServiceType `json:"type,omitempty"`
+	Type      corev1.ServiceType `json:"type,omitempty"`
+	ClusterIP string             `json:"clusterIP,omitempty"`
 }
 
 type DeploymentTemplate struct {

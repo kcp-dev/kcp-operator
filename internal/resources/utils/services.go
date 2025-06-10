@@ -36,6 +36,10 @@ func ApplyServiceTemplate(svc *corev1.Service, tpl *operatorv1alpha1.ServiceTemp
 		if spec.Type != "" {
 			svc.Spec.Type = spec.Type
 		}
+
+		if spec.ClusterIP != "" {
+			svc.Spec.ClusterIP = spec.ClusterIP
+		}
 	}
 
 	return svc
