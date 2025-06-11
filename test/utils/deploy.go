@@ -132,6 +132,13 @@ func DeployRootShard(ctx context.Context, t *testing.T, client ctrlruntimeclient
 			Etcd: operatorv1alpha1.EtcdConfig{
 				Endpoints: []string{etcd},
 			},
+			CertificateTemplates: operatorv1alpha1.CertificateTemplateMap{
+				string(operatorv1alpha1.ServerCertificate): operatorv1alpha1.CertificateTemplate{
+					Spec: &operatorv1alpha1.CertificateSpecTemplate{
+						DNSNames: []string{"localhost"},
+					},
+				},
+			},
 		},
 	}
 
@@ -169,10 +176,16 @@ func DeployFrontProxy(ctx context.Context, t *testing.T, client ctrlruntimeclien
 				Name: rootShardName,
 			},
 		},
-		ExternalHostname: externalHostname,
 		Auth: &operatorv1alpha1.AuthSpec{
 			// we need to remove the default system:masters group in order to do our testing
 			DropGroups: []string{""},
+		},
+		CertificateTemplates: operatorv1alpha1.CertificateTemplateMap{
+			string(operatorv1alpha1.ServerCertificate): operatorv1alpha1.CertificateTemplate{
+				Spec: &operatorv1alpha1.CertificateSpecTemplate{
+					DNSNames: []string{"localhost"},
+				},
+			},
 		},
 	}
 
