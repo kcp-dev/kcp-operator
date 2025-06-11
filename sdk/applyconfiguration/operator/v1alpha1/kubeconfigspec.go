@@ -26,11 +26,12 @@ import (
 // KubeconfigSpecApplyConfiguration represents a declarative configuration of the KubeconfigSpec type for use
 // with apply.
 type KubeconfigSpecApplyConfiguration struct {
-	Target    *KubeconfigTargetApplyConfiguration `json:"target,omitempty"`
-	Username  *string                             `json:"username,omitempty"`
-	Groups    []string                            `json:"groups,omitempty"`
-	Validity  *v1.Duration                        `json:"validity,omitempty"`
-	SecretRef *corev1.LocalObjectReference        `json:"secretRef,omitempty"`
+	Target              *KubeconfigTargetApplyConfiguration    `json:"target,omitempty"`
+	Username            *string                                `json:"username,omitempty"`
+	Groups              []string                               `json:"groups,omitempty"`
+	Validity            *v1.Duration                           `json:"validity,omitempty"`
+	SecretRef           *corev1.LocalObjectReference           `json:"secretRef,omitempty"`
+	CertificateTemplate *CertificateTemplateApplyConfiguration `json:"certificateTemplate,omitempty"`
 }
 
 // KubeconfigSpecApplyConfiguration constructs a declarative configuration of the KubeconfigSpec type for use with
@@ -78,5 +79,13 @@ func (b *KubeconfigSpecApplyConfiguration) WithValidity(value v1.Duration) *Kube
 // If called multiple times, the SecretRef field is set to the value of the last call.
 func (b *KubeconfigSpecApplyConfiguration) WithSecretRef(value corev1.LocalObjectReference) *KubeconfigSpecApplyConfiguration {
 	b.SecretRef = &value
+	return b
+}
+
+// WithCertificateTemplate sets the CertificateTemplate field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the CertificateTemplate field is set to the value of the last call.
+func (b *KubeconfigSpecApplyConfiguration) WithCertificateTemplate(value *CertificateTemplateApplyConfiguration) *KubeconfigSpecApplyConfiguration {
+	b.CertificateTemplate = value
 	return b
 }

@@ -18,15 +18,25 @@ limitations under the License.
 
 package v1alpha1
 
+import (
+	v1 "k8s.io/api/core/v1"
+
+	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
+)
+
 // CommonShardSpecApplyConfiguration represents a declarative configuration of the CommonShardSpec type for use
 // with apply.
 type CommonShardSpecApplyConfiguration struct {
-	ClusterDomain *string                              `json:"clusterDomain,omitempty"`
-	Etcd          *EtcdConfigApplyConfiguration        `json:"etcd,omitempty"`
-	Image         *ImageSpecApplyConfiguration         `json:"image,omitempty"`
-	Replicas      *int32                               `json:"replicas,omitempty"`
-	Audit         *AuditSpecApplyConfiguration         `json:"audit,omitempty"`
-	Authorization *AuthorizationSpecApplyConfiguration `json:"authorization,omitempty"`
+	ClusterDomain        *string                                  `json:"clusterDomain,omitempty"`
+	Etcd                 *EtcdConfigApplyConfiguration            `json:"etcd,omitempty"`
+	Image                *ImageSpecApplyConfiguration             `json:"image,omitempty"`
+	Replicas             *int32                                   `json:"replicas,omitempty"`
+	Resources            *v1.ResourceRequirements                 `json:"resources,omitempty"`
+	Audit                *AuditSpecApplyConfiguration             `json:"audit,omitempty"`
+	Authorization        *AuthorizationSpecApplyConfiguration     `json:"authorization,omitempty"`
+	CertificateTemplates *operatorv1alpha1.CertificateTemplateMap `json:"certificateTemplates,omitempty"`
+	ServiceTemplate      *ServiceTemplateApplyConfiguration       `json:"serviceTemplate,omitempty"`
+	DeploymentTemplate   *DeploymentTemplateApplyConfiguration    `json:"deploymentTemplate,omitempty"`
 }
 
 // CommonShardSpecApplyConfiguration constructs a declarative configuration of the CommonShardSpec type for use with
@@ -67,6 +77,14 @@ func (b *CommonShardSpecApplyConfiguration) WithReplicas(value int32) *CommonSha
 	return b
 }
 
+// WithResources sets the Resources field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Resources field is set to the value of the last call.
+func (b *CommonShardSpecApplyConfiguration) WithResources(value v1.ResourceRequirements) *CommonShardSpecApplyConfiguration {
+	b.Resources = &value
+	return b
+}
+
 // WithAudit sets the Audit field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Audit field is set to the value of the last call.
@@ -80,5 +98,29 @@ func (b *CommonShardSpecApplyConfiguration) WithAudit(value *AuditSpecApplyConfi
 // If called multiple times, the Authorization field is set to the value of the last call.
 func (b *CommonShardSpecApplyConfiguration) WithAuthorization(value *AuthorizationSpecApplyConfiguration) *CommonShardSpecApplyConfiguration {
 	b.Authorization = value
+	return b
+}
+
+// WithCertificateTemplates sets the CertificateTemplates field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the CertificateTemplates field is set to the value of the last call.
+func (b *CommonShardSpecApplyConfiguration) WithCertificateTemplates(value operatorv1alpha1.CertificateTemplateMap) *CommonShardSpecApplyConfiguration {
+	b.CertificateTemplates = &value
+	return b
+}
+
+// WithServiceTemplate sets the ServiceTemplate field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the ServiceTemplate field is set to the value of the last call.
+func (b *CommonShardSpecApplyConfiguration) WithServiceTemplate(value *ServiceTemplateApplyConfiguration) *CommonShardSpecApplyConfiguration {
+	b.ServiceTemplate = value
+	return b
+}
+
+// WithDeploymentTemplate sets the DeploymentTemplate field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the DeploymentTemplate field is set to the value of the last call.
+func (b *CommonShardSpecApplyConfiguration) WithDeploymentTemplate(value *DeploymentTemplateApplyConfiguration) *CommonShardSpecApplyConfiguration {
+	b.DeploymentTemplate = value
 	return b
 }

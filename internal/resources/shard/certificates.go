@@ -24,11 +24,15 @@ import (
 
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/utils"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
 func ServerCertificateReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
-	name := resources.GetShardCertificateName(shard, operatorv1alpha1.ServerCertificate)
+	const certKind = operatorv1alpha1.ServerCertificate
+
+	name := resources.GetShardCertificateName(shard, certKind)
+	template := shard.Spec.CertificateTemplates.CertificateTemplate(certKind)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
@@ -59,13 +63,16 @@ func ServerCertificateReconciler(shard *operatorv1alpha1.Shard, rootShard *opera
 				},
 			}
 
-			return cert, nil
+			return utils.ApplyCertificateTemplate(cert, &template), nil
 		}
 	}
 }
 
 func VirtualWorkspacesCertificateReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
-	name := resources.GetShardCertificateName(shard, operatorv1alpha1.VirtualWorkspacesCertificate)
+	const certKind = operatorv1alpha1.VirtualWorkspacesCertificate
+
+	name := resources.GetShardCertificateName(shard, certKind)
+	template := shard.Spec.CertificateTemplates.CertificateTemplate(certKind)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
@@ -95,13 +102,16 @@ func VirtualWorkspacesCertificateReconciler(shard *operatorv1alpha1.Shard, rootS
 				},
 			}
 
-			return cert, nil
+			return utils.ApplyCertificateTemplate(cert, &template), nil
 		}
 	}
 }
 
 func ServiceAccountCertificateReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
-	name := resources.GetShardCertificateName(shard, operatorv1alpha1.ServiceAccountCertificate)
+	const certKind = operatorv1alpha1.ServiceAccountCertificate
+
+	name := resources.GetShardCertificateName(shard, certKind)
+	template := shard.Spec.CertificateTemplates.CertificateTemplate(certKind)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
@@ -124,13 +134,16 @@ func ServiceAccountCertificateReconciler(shard *operatorv1alpha1.Shard, rootShar
 				},
 			}
 
-			return cert, nil
+			return utils.ApplyCertificateTemplate(cert, &template), nil
 		}
 	}
 }
 
 func RootShardClientCertificateReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
-	name := resources.GetShardCertificateName(shard, operatorv1alpha1.ClientCertificate)
+	const certKind = operatorv1alpha1.ClientCertificate
+
+	name := resources.GetShardCertificateName(shard, certKind)
+	template := shard.Spec.CertificateTemplates.CertificateTemplate(certKind)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
@@ -161,7 +174,7 @@ func RootShardClientCertificateReconciler(shard *operatorv1alpha1.Shard, rootSha
 				},
 			}
 
-			return cert, nil
+			return utils.ApplyCertificateTemplate(cert, &template), nil
 		}
 	}
 }

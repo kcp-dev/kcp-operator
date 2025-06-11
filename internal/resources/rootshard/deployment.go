@@ -141,10 +141,8 @@ func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.Nam
 			}}
 			dep.Spec.Template.Spec.Volumes = volumes
 
-			dep, err := utils.ApplyCommonShardConfig(dep, &rootShard.Spec.CommonShardSpec)
-			if err != nil {
-				return nil, fmt.Errorf("failed to shard configuration: %w", err)
-			}
+			dep = utils.ApplyCommonShardConfig(dep, &rootShard.Spec.CommonShardSpec)
+			dep = utils.ApplyDeploymentTemplate(dep, rootShard.Spec.DeploymentTemplate)
 
 			return dep, nil
 		}

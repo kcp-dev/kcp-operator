@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -38,8 +39,21 @@ type CommonShardSpec struct {
 	// Replicas configures how many instances of this shard run in parallel. Defaults to 2 if not set.
 	Replicas *int32 `json:"replicas,omitempty"`
 
+	// Resources overrides the default resource requests and limits.
+	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
+
 	Audit         *AuditSpec         `json:"audit,omitempty"`
 	Authorization *AuthorizationSpec `json:"authorization,omitempty"`
+
+	// CertificateTemplates allows to customize the properties on the generated
+	// certificates for this root shard.
+	CertificateTemplates CertificateTemplateMap `json:"certificateTemplates,omitempty"`
+
+	// Optional: ServiceTemplate configures the Kubernetes Service created for this shard.
+	ServiceTemplate *ServiceTemplate `json:"serviceTemplate,omitempty"`
+
+	// Optional: DeploymentTemplate configures the Kubernetes Deployment created for this shard.
+	DeploymentTemplate *DeploymentTemplate `json:"deploymentTemplate,omitempty"`
 }
 
 type AuditSpec struct {

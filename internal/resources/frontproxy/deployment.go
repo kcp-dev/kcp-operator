@@ -29,6 +29,7 @@ import (
 	"k8s.io/utils/ptr"
 
 	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/utils"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -230,7 +231,11 @@ func DeploymentReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootShard *op
 			}
 
 			dep.Spec.Template.Spec.Volumes = volumes
-			dep.Spec.Template.Spec.Containers = []corev1.Container{container}
+			dep.Spec.Template.Spec.Containers = []corev1.Container{
+				utils.ApplyResources(container, frontProxy.Spec.Resources),
+			}
+
+			dep = utils.ApplyDeploymentTemplate(dep, frontProxy.Spec.DeploymentTemplate)
 
 			return dep, nil
 		}
