@@ -143,15 +143,15 @@ func DeploymentReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootShard *op
 
 			// front-proxy server cert
 			volumes = append(volumes, corev1.Volume{
-				Name: resources.GetRootShardCertificateName(rootShard, operatorv1alpha1.ServerCertificate),
+				Name: resources.GetFrontProxyCertificateName(rootShard, frontProxy, operatorv1alpha1.ServerCertificate),
 				VolumeSource: corev1.VolumeSource{
 					Secret: &corev1.SecretVolumeSource{
-						SecretName: resources.GetRootShardCertificateName(rootShard, operatorv1alpha1.ServerCertificate),
+						SecretName: resources.GetFrontProxyCertificateName(rootShard, frontProxy, operatorv1alpha1.ServerCertificate),
 					},
 				},
 			})
 			volumeMounts = append(volumeMounts, corev1.VolumeMount{
-				Name:      resources.GetRootShardCertificateName(rootShard, operatorv1alpha1.ServerCertificate),
+				Name:      resources.GetFrontProxyCertificateName(rootShard, frontProxy, operatorv1alpha1.ServerCertificate),
 				ReadOnly:  true,
 				MountPath: frontProxyBasepath + "/tls",
 			})

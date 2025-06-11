@@ -55,7 +55,6 @@ func ServerCertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconcil
 				},
 
 				DNSNames: []string{
-					"localhost",
 					resources.GetRootShardBaseHost(rootShard),
 					rootShard.Spec.External.Hostname,
 				},
