@@ -112,7 +112,3 @@ type PathMappingEntry struct {
 	ProxyClientCert string `json:"proxy_client_cert"`
 	ProxyClientKey  string `json:"proxy_client_key"`
 }
-
-func init() {
-	SchemeBuilder.Register(&FrontProxy{}, &FrontProxyList{})
-}

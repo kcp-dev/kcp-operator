@@ -131,7 +131,3 @@ type RootShardList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []RootShard `json:"items"`
 }
-
-func init() {
-	SchemeBuilder.Register(&RootShard{}, &RootShardList{})
-}

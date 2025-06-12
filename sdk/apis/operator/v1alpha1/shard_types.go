@@ -169,7 +169,3 @@ type ShardList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Shard `json:"items"`
 }
-
-func init() {
-	SchemeBuilder.Register(&Shard{}, &ShardList{})
-}
