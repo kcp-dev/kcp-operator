@@ -93,3 +93,26 @@ presubmits:
           # docker-in-docker needs privileged mode
           securityContext:
             privileged: true
+
+  - name: pull-kcp-operator-test-e2e-canary
+    always_run: true
+    decorate: true
+    optional: true
+    clone_uri: "https://github.com/kcp-dev/kcp-operator"
+    labels:
+      preset-goproxy: "true"
+    spec:
+      containers:
+        - image: ghcr.io/kcp-dev/infra/build:1.23.7-2
+          command:
+            - hack/ci/run-e2e-tests.sh
+          env:
+            - name: KCP_TAG
+              value: main
+          resources:
+            requests:
+              memory: 4Gi
+              cpu: 2
+          # docker-in-docker needs privileged mode
+          securityContext:
+            privileged: true

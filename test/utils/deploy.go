@@ -19,6 +19,7 @@ package utils
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"testing"
 
@@ -63,6 +64,20 @@ func DeployEtcd(t *testing.T, name, namespace string) string {
 	return fmt.Sprintf("http://%s.%s.svc.cluster.local:2379", name, namespace)
 }
 
+func getKcpTag() string {
+	return os.Getenv("KCP_TAG")
+}
+
+func applyShardEnv(spec operatorv1alpha1.CommonShardSpec) operatorv1alpha1.CommonShardSpec {
+	if tag := getKcpTag(); tag != "" {
+		spec.Image = &operatorv1alpha1.ImageSpec{
+			Tag: tag,
+		}
+	}
+
+	return spec
+}
+
 func DeployShard(ctx context.Context, t *testing.T, client ctrlruntimeclient.Client, namespace, name, rootShard string, patches ...func(*operatorv1alpha1.Shard)) operatorv1alpha1.Shard {
 	t.Helper()
 
@@ -78,11 +93,11 @@ func DeployShard(ctx context.Context, t *testing.T, client ctrlruntimeclient.Cli
 				Name: rootShard,
 			},
 		},
-		CommonShardSpec: operatorv1alpha1.CommonShardSpec{
+		CommonShardSpec: applyShardEnv(operatorv1alpha1.CommonShardSpec{
 			Etcd: operatorv1alpha1.EtcdConfig{
 				Endpoints: []string{etcd},
 			},
-		},
+		}),
 	}
 
 	for _, patch := range patches {
@@ -128,7 +143,7 @@ func DeployRootShard(ctx context.Context, t *testing.T, client ctrlruntimeclient
 		Certificates: operatorv1alpha1.Certificates{
 			IssuerRef: GetSelfSignedIssuerRef(),
 		},
-		CommonShardSpec: operatorv1alpha1.CommonShardSpec{
+		CommonShardSpec: applyShardEnv(operatorv1alpha1.CommonShardSpec{
 			Etcd: operatorv1alpha1.EtcdConfig{
 				Endpoints: []string{etcd},
 			},
@@ -139,7 +154,7 @@ func DeployRootShard(ctx context.Context, t *testing.T, client ctrlruntimeclient
 					},
 				},
 			},
-		},
+		}),
 	}
 
 	for _, patch := range patches {
@@ -187,6 +202,12 @@ func DeployFrontProxy(ctx context.Context, t *testing.T, client ctrlruntimeclien
 				},
 			},
 		},
+	}
+
+	if tag := getKcpTag(); tag != "" {
+		frontProxy.Spec.Image = &operatorv1alpha1.ImageSpec{
+			Tag: tag,
+		}
 	}
 
 	for _, patch := range patches {
