@@ -74,10 +74,12 @@ test-e2e:
 .PHONY: lint
 lint: golangci-lint ## Run golangci-lint linter.
 	$(GOLANGCI_LINT) run --timeout 10m
+	cd sdk && $(GOLANGCI_LINT) --config ../.golangci.yml run --timeout 10m
 
 .PHONY: lint-fix
 lint-fix: golangci-lint ## Run golangci-lint linter and perform fixes.
 	$(GOLANGCI_LINT) run --timeout 10m --fix
+	cd sdk && $(GOLANGCI_LINT) --config ../.golangci.yml run --timeout 10m --fix
 
 .PHONY: modules
 modules: ## Run go mod tidy to ensure modules are up to date.
