@@ -42,24 +42,23 @@ func TestCreateFrontProxy(t *testing.T) {
 
 	client := utils.GetKubeClient(t)
 	ctx := context.Background()
-	namespace := "create-frontproxy"
 
-	utils.CreateSelfDestructingNamespace(t, ctx, client, namespace)
+	namespace := utils.CreateSelfDestructingNamespace(t, ctx, client, "create-frontproxy")
 
 	externalHostname := "front-proxy-front-proxy.svc.cluster.local"
 
 	// deploy rootshard
-	rootShard := utils.DeployRootShard(ctx, t, client, namespace, externalHostname)
+	rootShard := utils.DeployRootShard(ctx, t, client, namespace.Name, externalHostname)
 
 	// deploy front-proxy
-	frontProxy := utils.DeployFrontProxy(ctx, t, client, namespace, rootShard.Name, externalHostname)
+	frontProxy := utils.DeployFrontProxy(ctx, t, client, namespace.Name, rootShard.Name, externalHostname)
 
 	// create front-proxy kubeconfig
 	configSecretName := "kubeconfig-front-proxy-e2e"
 
 	fpConfig := operatorv1alpha1.Kubeconfig{}
 	fpConfig.Name = "front-proxy"
-	fpConfig.Namespace = namespace
+	fpConfig.Namespace = namespace.Name
 	fpConfig.Spec = operatorv1alpha1.KubeconfigSpec{
 		Target: operatorv1alpha1.KubeconfigTarget{
 			FrontProxyRef: &corev1.LocalObjectReference{
@@ -82,7 +81,7 @@ func TestCreateFrontProxy(t *testing.T) {
 
 	// verify that we can use frontproxy kubeconfig to access rootshard workspaces
 	t.Log("Connecting to FrontProxy…")
-	kcpClient := utils.ConnectWithKubeconfig(t, ctx, client, namespace, fpConfig.Name)
+	kcpClient := utils.ConnectWithKubeconfig(t, ctx, client, namespace.Name, fpConfig.Name)
 	// proof of life: list something every logicalcluster in kcp has
 	t.Log("Should be able to list Secrets.")
 	secrets := &corev1.SecretList{}
