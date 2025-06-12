@@ -43,22 +43,21 @@ func TestCreateShard(t *testing.T) {
 	ctx := context.Background()
 
 	// create namspace
-	namespace := "create-shard"
-	utils.CreateSelfDestructingNamespace(t, ctx, client, namespace)
+	namespace := utils.CreateSelfDestructingNamespace(t, ctx, client, "create-shard")
 
 	// deploy a root shard incl. etcd
-	rootShard := utils.DeployRootShard(ctx, t, client, namespace, "example.localhost")
+	rootShard := utils.DeployRootShard(ctx, t, client, namespace.Name, "example.localhost")
 
 	// deploy a 2nd shard incl. etcd
 	shardName := "aadvark"
-	utils.DeployShard(ctx, t, client, namespace, shardName, rootShard.Name)
+	utils.DeployShard(ctx, t, client, namespace.Name, shardName, rootShard.Name)
 
 	// create a kubeconfig to access the root shard
 	configSecretName := fmt.Sprintf("%s-shard-kubeconfig", rootShard.Name)
 
 	rsConfig := operatorv1alpha1.Kubeconfig{}
 	rsConfig.Name = configSecretName
-	rsConfig.Namespace = namespace
+	rsConfig.Namespace = namespace.Name
 
 	rsConfig.Spec = operatorv1alpha1.KubeconfigSpec{
 		Target: operatorv1alpha1.KubeconfigTarget{
@@ -81,7 +80,7 @@ func TestCreateShard(t *testing.T) {
 	utils.WaitForObject(t, ctx, client, &corev1.Secret{}, types.NamespacedName{Namespace: rsConfig.Namespace, Name: rsConfig.Spec.SecretRef.Name})
 
 	t.Log("Connecting to RootShard…")
-	rootShardClient := utils.ConnectWithKubeconfig(t, ctx, client, namespace, rsConfig.Name)
+	rootShardClient := utils.ConnectWithKubeconfig(t, ctx, client, namespace.Name, rsConfig.Name)
 
 	// wait until the 2nd shard has registered itself successfully at the root shard
 	shardKey := types.NamespacedName{Name: shardName}
@@ -93,7 +92,7 @@ func TestCreateShard(t *testing.T) {
 
 	shardConfig := operatorv1alpha1.Kubeconfig{}
 	shardConfig.Name = configSecretName
-	shardConfig.Namespace = namespace
+	shardConfig.Namespace = namespace.Name
 
 	shardConfig.Spec = operatorv1alpha1.KubeconfigSpec{
 		Target: operatorv1alpha1.KubeconfigTarget{
@@ -116,7 +115,7 @@ func TestCreateShard(t *testing.T) {
 	utils.WaitForObject(t, ctx, client, &corev1.Secret{}, types.NamespacedName{Namespace: shardConfig.Namespace, Name: shardConfig.Spec.SecretRef.Name})
 
 	t.Log("Connecting to Shard…")
-	kcpClient := utils.ConnectWithKubeconfig(t, ctx, client, namespace, shardConfig.Name)
+	kcpClient := utils.ConnectWithKubeconfig(t, ctx, client, namespace.Name, shardConfig.Name)
 
 	// proof of life: list something every logicalcluster in kcp has
 	t.Log("Should be able to list Secrets.")

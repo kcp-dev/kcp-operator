@@ -39,16 +39,15 @@ func TestCreateRootShard(t *testing.T) {
 
 	client := utils.GetKubeClient(t)
 	ctx := context.Background()
-	namespace := "create-rootshard"
 
-	utils.CreateSelfDestructingNamespace(t, ctx, client, namespace)
-	rootShard := utils.DeployRootShard(ctx, t, client, namespace, "example.localhost")
+	namespace := utils.CreateSelfDestructingNamespace(t, ctx, client, "create-rootshard")
+	rootShard := utils.DeployRootShard(ctx, t, client, namespace.Name, "example.localhost")
 
 	configSecretName := "kubeconfig"
 
 	rsConfig := operatorv1alpha1.Kubeconfig{}
 	rsConfig.Name = "test"
-	rsConfig.Namespace = namespace
+	rsConfig.Namespace = namespace.Name
 
 	rsConfig.Spec = operatorv1alpha1.KubeconfigSpec{
 		Target: operatorv1alpha1.KubeconfigTarget{
@@ -71,7 +70,7 @@ func TestCreateRootShard(t *testing.T) {
 	utils.WaitForObject(t, ctx, client, &corev1.Secret{}, types.NamespacedName{Namespace: rsConfig.Namespace, Name: rsConfig.Spec.SecretRef.Name})
 
 	t.Log("Connecting to RootShard…")
-	kcpClient := utils.ConnectWithKubeconfig(t, ctx, client, namespace, rsConfig.Name)
+	kcpClient := utils.ConnectWithKubeconfig(t, ctx, client, namespace.Name, rsConfig.Name)
 
 	// proof of life: list something every logicalcluster in kcp has
 	t.Log("Should be able to list Secrets.")

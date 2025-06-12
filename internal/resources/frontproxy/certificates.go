@@ -34,6 +34,7 @@ func ServerCertificateReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootSh
 
 	dnsNames := []string{
 		rootShard.Spec.External.Hostname,
+		resources.GetFrontProxyServiceName(frontProxy),
 	}
 
 	if frontProxy.Spec.ExternalHostname != "" {
