@@ -18,6 +18,7 @@ package rootshard
 
 import (
 	"fmt"
+	"strings"
 
 	"k8c.io/reconciler/pkg/reconciling"
 
@@ -172,6 +173,7 @@ func getArgs(rootShard *operatorv1alpha1.RootShard) []string {
 		fmt.Sprintf("--shard-external-url=https://%s:%d", rootShard.Spec.External.Hostname, rootShard.Spec.External.Port),
 		fmt.Sprintf("--logical-cluster-admin-kubeconfig=%s/kubeconfig", getKubeconfigMountPath(operatorv1alpha1.LogicalClusterAdminCertificate)),
 		fmt.Sprintf("--external-logical-cluster-admin-kubeconfig=%s/kubeconfig", getKubeconfigMountPath(operatorv1alpha1.ExternalLogicalClusterAdminCertificate)),
+		fmt.Sprintf("--batteries-included=%s", strings.Join(utils.GetRootShardBatteries(rootShard), ",")),
 		"--root-directory=",
 		"--enable-leader-election=true",
 		"--logging-format=json",

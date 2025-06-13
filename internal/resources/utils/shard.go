@@ -28,6 +28,18 @@ import (
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
+func getCommonShardBatteries() []string {
+	return []string{"workspace-types"}
+}
+
+func GetShardBatteries(shard *operatorv1alpha1.Shard) []string {
+	return getCommonShardBatteries()
+}
+
+func GetRootShardBatteries(rootShard *operatorv1alpha1.RootShard) []string {
+	return getCommonShardBatteries()
+}
+
 func ApplyCommonShardConfig(deployment *appsv1.Deployment, spec *operatorv1alpha1.CommonShardSpec) *appsv1.Deployment {
 	if len(deployment.Spec.Template.Spec.Containers) == 0 {
 		panic("Deployment does not contain any containers.")
