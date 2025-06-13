@@ -18,6 +18,7 @@ package shard
 
 import (
 	"fmt"
+	"strings"
 
 	"k8c.io/reconciler/pkg/reconciling"
 
@@ -172,6 +173,7 @@ func getArgs(shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShar
 		fmt.Sprintf("--shard-external-url=https://%s:%d", rootShard.Spec.External.Hostname, rootShard.Spec.External.Port),
 		fmt.Sprintf("--root-shard-kubeconfig-file=%s/kubeconfig", getKubeconfigMountPath(operatorv1alpha1.ClientCertificate)),
 		fmt.Sprintf("--cache-kubeconfig=%s/kubeconfig", getKubeconfigMountPath(operatorv1alpha1.ClientCertificate)),
+		fmt.Sprintf("--batteries-included=%s", strings.Join(utils.GetShardBatteries(shard), ",")),
 		"--root-directory=",
 		"--enable-leader-election=true",
 		"--logging-format=json",
