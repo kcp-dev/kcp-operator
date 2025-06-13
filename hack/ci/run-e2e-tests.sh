@@ -16,6 +16,33 @@
 
 set -euo pipefail
 
+# For periodics especially it's important that we output what versions exactly
+# we're testing against.
+if [ -n "${KCP_TAG:-}" ]; then
+  # resolve what looks like branch names
+  if [[ "$KCP_TAG" == main ]] || [[ "$KCP_TAG" =~ ^release- ]]; then
+    echo "Resolving kcp $KCP_TAG …"
+
+    tmpdir="$(mktemp -d)"
+    here="$(pwd)"
+
+    cd "$tmpdir"
+    git clone --quiet --depth 1 --branch "$KCP_TAG" --single-branch https://github.com/kcp-dev/kcp .
+    KCP_TAG="$(git rev-parse HEAD)"
+    cd "$here"
+    rm -rf "$tmpdir"
+
+    # kcp's containers are tagged with the first 8 characters of the Git hash
+    KCP_TAG="${KCP_TAG:0:8}"
+  fi
+
+  echo "kcp image tag.......: $KCP_TAG"
+fi
+
+if [ -z "${PULL_BASE_REF:-}" ]; then
+  echo "kcp-operator version: $(git rev-parse HEAD)"
+fi
+
 # build the image(s)
 export IMAGE_TAG=local
 
