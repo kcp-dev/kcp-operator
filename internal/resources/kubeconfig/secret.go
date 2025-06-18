@@ -47,13 +47,15 @@ func KubeconfigSecretReconciler(
 		},
 	}
 
-	addCluster := func(name, url string) {
-		config.Clusters[name] = &clientcmdapi.Cluster{
+	addCluster := func(clusterName, url string) {
+		config.Clusters[clusterName] = &clientcmdapi.Cluster{
 			Server:                   url,
 			CertificateAuthorityData: caSecret.Data["tls.crt"],
 		}
-		config.Contexts[name] = &clientcmdapi.Context{
-			Cluster:  name,
+	}
+	addContext := func(contextName, clusterName string) {
+		config.Contexts[contextName] = &clientcmdapi.Context{
+			Cluster:  clusterName,
 			AuthInfo: kubeconfig.Spec.Username,
 		}
 	}
@@ -71,7 +73,10 @@ func KubeconfigSecretReconciler(
 		}
 
 		addCluster("default", defaultURL)
+		addContext("default", "default")
 		addCluster("base", serverURL)
+		addContext("base", "base")
+		addContext("shard-base", "base")
 		config.CurrentContext = "default"
 
 	case kubeconfig.Spec.Target.ShardRef != nil:
@@ -86,7 +91,10 @@ func KubeconfigSecretReconciler(
 		}
 
 		addCluster("default", defaultURL)
+		addContext("default", "default")
 		addCluster("base", serverURL)
+		addContext("base", "base")
+		addContext("shard-base", "base")
 		config.CurrentContext = "default"
 
 	case kubeconfig.Spec.Target.FrontProxyRef != nil:
@@ -100,7 +108,10 @@ func KubeconfigSecretReconciler(
 			return nil, err
 		}
 
+		addCluster("base", serverURL)
 		addCluster("default", defaultURL)
+		addContext("default", "default")
+		addContext("base", "base")
 		config.CurrentContext = "default"
 
 	default:

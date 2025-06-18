@@ -27,6 +27,7 @@ import (
 	k8creconciling "k8c.io/reconciler/pkg/reconciling"
 
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -69,6 +70,10 @@ func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	var kc operatorv1alpha1.Kubeconfig
 	if err := r.Get(ctx, req.NamespacedName, &kc); err != nil {
+		// object has been deleted.
+		if apierrors.IsNotFound(err) {
+			return ctrl.Result{}, nil
+		}
 		return ctrl.Result{}, err
 	}
 
