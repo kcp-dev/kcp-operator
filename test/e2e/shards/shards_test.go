@@ -42,7 +42,7 @@ func TestCreateShard(t *testing.T) {
 	client := utils.GetKubeClient(t)
 	ctx := context.Background()
 
-	// create namspace
+	// create namespace
 	namespace := utils.CreateSelfDestructingNamespace(t, ctx, client, "create-shard")
 
 	// deploy a root shard incl. etcd
