@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/url"
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -28,6 +27,7 @@ import (
 	k8creconciling "k8c.io/reconciler/pkg/reconciling"
 
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -70,28 +70,32 @@ func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	var kc operatorv1alpha1.Kubeconfig
 	if err := r.Get(ctx, req.NamespacedName, &kc); err != nil {
+		// object has been deleted.
+		if apierrors.IsNotFound(err) {
+			return ctrl.Result{}, nil
+		}
 		return ctrl.Result{}, err
 	}
 
+	rootShard := &operatorv1alpha1.RootShard{}
+	shard := &operatorv1alpha1.Shard{}
+
 	var (
-		clientCertIssuer, serverCA, serverURL, serverName string
+		clientCertIssuer string
+		serverCA         string
 	)
 
 	switch {
 	case kc.Spec.Target.RootShardRef != nil:
-		var rootShard operatorv1alpha1.RootShard
-		if err := r.Get(ctx, types.NamespacedName{Name: kc.Spec.Target.RootShardRef.Name, Namespace: req.Namespace}, &rootShard); err != nil {
+		if err := r.Get(ctx, types.NamespacedName{Name: kc.Spec.Target.RootShardRef.Name, Namespace: req.Namespace}, rootShard); err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to get RootShard: %w", err)
 		}
 
-		clientCertIssuer = resources.GetRootShardCAName(&rootShard, operatorv1alpha1.ClientCA)
-		serverCA = resources.GetRootShardCAName(&rootShard, operatorv1alpha1.ServerCA)
-		serverURL = resources.GetRootShardBaseURL(&rootShard)
-		serverName = rootShard.Name
+		clientCertIssuer = resources.GetRootShardCAName(rootShard, operatorv1alpha1.ClientCA)
+		serverCA = resources.GetRootShardCAName(rootShard, operatorv1alpha1.ServerCA)
 
 	case kc.Spec.Target.ShardRef != nil:
-		var shard operatorv1alpha1.Shard
-		if err := r.Get(ctx, types.NamespacedName{Name: kc.Spec.Target.ShardRef.Name, Namespace: req.Namespace}, &shard); err != nil {
+		if err := r.Get(ctx, types.NamespacedName{Name: kc.Spec.Target.ShardRef.Name, Namespace: req.Namespace}, shard); err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to get Shard: %w", err)
 		}
 
@@ -99,16 +103,13 @@ func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		if ref == nil || ref.Name == "" {
 			return ctrl.Result{}, errors.New("the Shard does not reference a (valid) RootShard")
 		}
-		var rootShard operatorv1alpha1.RootShard
-		if err := r.Get(ctx, types.NamespacedName{Name: ref.Name, Namespace: req.Namespace}, &rootShard); err != nil {
+		if err := r.Get(ctx, types.NamespacedName{Name: ref.Name, Namespace: req.Namespace}, rootShard); err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to get RootShard: %w", err)
 		}
 
 		// The client CA is shared among all shards and owned by the root shard.
-		clientCertIssuer = resources.GetRootShardCAName(&rootShard, operatorv1alpha1.ClientCA)
-		serverCA = resources.GetRootShardCAName(&rootShard, operatorv1alpha1.ServerCA)
-		serverURL = resources.GetShardBaseURL(&shard)
-		serverName = shard.Name
+		clientCertIssuer = resources.GetRootShardCAName(rootShard, operatorv1alpha1.ClientCA)
+		serverCA = resources.GetRootShardCAName(rootShard, operatorv1alpha1.ServerCA)
 
 	case kc.Spec.Target.FrontProxyRef != nil:
 		var frontProxy operatorv1alpha1.FrontProxy
@@ -120,15 +121,12 @@ func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		if ref == nil || ref.Name == "" {
 			return ctrl.Result{}, errors.New("the FrontProxy does not reference a (valid) RootShard")
 		}
-		var rootShard operatorv1alpha1.RootShard
-		if err := r.Get(ctx, types.NamespacedName{Name: frontProxy.Spec.RootShard.Reference.Name, Namespace: req.Namespace}, &rootShard); err != nil {
+		if err := r.Get(ctx, types.NamespacedName{Name: frontProxy.Spec.RootShard.Reference.Name, Namespace: req.Namespace}, rootShard); err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to get RootShard: %w", err)
 		}
 
-		clientCertIssuer = resources.GetRootShardCAName(&rootShard, operatorv1alpha1.FrontProxyClientCA)
-		serverCA = resources.GetRootShardCAName(&rootShard, operatorv1alpha1.ServerCA)
-		serverURL = fmt.Sprintf("https://%s:6443", rootShard.Spec.External.Hostname)
-		serverName = rootShard.Spec.External.Hostname
+		clientCertIssuer = resources.GetRootShardCAName(rootShard, operatorv1alpha1.FrontProxyClientCA)
+		serverCA = resources.GetRootShardCAName(rootShard, operatorv1alpha1.ServerCA)
 
 	default:
 		return ctrl.Result{}, fmt.Errorf("no valid target for kubeconfig found")
@@ -156,14 +154,12 @@ func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{RequeueAfter: time.Second * 5}, nil
 	}
 
-	rootWSURL, err := url.JoinPath(serverURL, "clusters", "root")
+	reconciler, err := kubeconfig.KubeconfigSecretReconciler(&kc, rootShard, shard, serverCASecret, clientCertSecret)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
-	if err := k8creconciling.ReconcileSecrets(ctx, []k8creconciling.NamedSecretReconcilerFactory{
-		kubeconfig.KubeconfigSecretReconciler(&kc, serverCASecret, clientCertSecret, serverName, rootWSURL),
-	}, req.Namespace, r.Client); err != nil {
+	if err := k8creconciling.ReconcileSecrets(ctx, []k8creconciling.NamedSecretReconcilerFactory{reconciler}, req.Namespace, r.Client); err != nil {
 		return ctrl.Result{}, err
 	}
 
