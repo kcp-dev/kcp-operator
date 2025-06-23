@@ -30,6 +30,12 @@ import (
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
+const (
+	baseContext      string = "base"
+	shardBaseContext string = "shard-base"
+	defaultContext   string = "default"
+)
+
 func KubeconfigSecretReconciler(
 	kubeconfig *operatorv1alpha1.Kubeconfig,
 	rootShard *operatorv1alpha1.RootShard,
@@ -72,12 +78,12 @@ func KubeconfigSecretReconciler(
 			return nil, err
 		}
 
-		addCluster("default", defaultURL)
-		addContext("default", "default")
-		addCluster("base", serverURL)
-		addContext("base", "base")
-		addContext("shard-base", "base")
-		config.CurrentContext = "default"
+		addCluster(defaultContext, defaultURL)
+		addContext(defaultContext, defaultContext)
+		addCluster(baseContext, serverURL)
+		addContext(baseContext, baseContext)
+		addContext(shardBaseContext, baseContext)
+		config.CurrentContext = defaultContext
 
 	case kubeconfig.Spec.Target.ShardRef != nil:
 		if shard == nil {
@@ -90,12 +96,12 @@ func KubeconfigSecretReconciler(
 			return nil, err
 		}
 
-		addCluster("default", defaultURL)
-		addContext("default", "default")
-		addCluster("base", serverURL)
-		addContext("base", "base")
-		addContext("shard-base", "base")
-		config.CurrentContext = "default"
+		addCluster(defaultContext, defaultURL)
+		addContext(defaultContext, defaultContext)
+		addCluster(baseContext, serverURL)
+		addContext(baseContext, baseContext)
+		addContext(shardBaseContext, baseContext)
+		config.CurrentContext = defaultContext
 
 	case kubeconfig.Spec.Target.FrontProxyRef != nil:
 		if rootShard == nil {
@@ -108,11 +114,11 @@ func KubeconfigSecretReconciler(
 			return nil, err
 		}
 
-		addCluster("base", serverURL)
-		addCluster("default", defaultURL)
-		addContext("default", "default")
-		addContext("base", "base")
-		config.CurrentContext = "default"
+		addCluster(baseContext, serverURL)
+		addCluster(defaultContext, defaultURL)
+		addContext(defaultContext, defaultContext)
+		addContext(baseContext, baseContext)
+		config.CurrentContext = defaultContext
 
 	default:
 		panic("Called reconciler for an invalid kubeconfig, this should not have happened.")
