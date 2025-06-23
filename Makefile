@@ -206,3 +206,20 @@ openshift-goimports: $(OPENSHIFT_GOIMPORTS) ## Download openshift-goimports loca
 .PHONY: $(OPENSHIFT_GOIMPORTS)
 $(OPENSHIFT_GOIMPORTS):
 	@GO_MODULE=true hack/download-tool.sh github.com/openshift-eng/openshift-goimports openshift-goimports $(OPENSHIFT_GOIMPORTS_VER)
+
+## Documentation-related targets
+
+VENVDIR=$(abspath docs/venv)
+REQUIREMENTS_TXT=docs/requirements.txt
+
+.PHONY: generate-api-docs
+generate-api-docs: ## Generate api docs from CRDs.
+	git clean -fdX docs/content/reference
+	docs/generators/crd-ref/run-crd-ref-gen.sh
+
+.PHONY: local-docs
+local-docs: venv ## Serve documentation locally.
+	. $(VENV)/activate; \
+	VENV=$(VENV) cd docs && mkdocs serve
+
+include Makefile.venv

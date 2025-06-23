@@ -1,0 +1,130 @@
+# Copyright 2025 The KCP Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+site_name: kcp-operator
+repo_url: https://github.com/kcp-dev/kcp-operator
+repo_name: kcp-dev/kcp-operator
+site_url: https://docs.kcp.io/kcp-operator/
+
+# Site content
+docs_dir: 'content'
+# Where to generate
+site_dir: 'generated'
+
+theme:
+  name: material
+  language: en
+  # Common files such as images, stylesheets, theme overrides
+  custom_dir: 'overrides'
+  features:
+    # Enable navigation section index pages, so we don't see Concepts > Concepts
+    - navigation.indexes
+    # Enable navigation tabs so we can group content by persona
+    - navigation.tabs
+    # Expand subsections by default for better visibility of content
+    - navigation.expand
+    # Show "back to top" button
+    - navigation.top
+    # Enable a copy button in code blocks
+    - content.code.copy
+    # Enable annotations on specific lines in code blocks
+    - content.code.annotate
+  logo: logo.svg
+  favicon: favicons/favicon.ico
+  palette:
+  # Palette toggle for automatic mode
+  - media: "(prefers-color-scheme)"
+    toggle:
+      icon: material/brightness-auto
+      name: Switch to light mode
+
+  # Palette toggle for light mode
+  - media: "(prefers-color-scheme: light)"
+    scheme: default
+    primary: white
+    toggle:
+      icon: material/brightness-7
+      name: Switch to dark mode
+
+  # Palette toggle for dark mode
+  - media: "(prefers-color-scheme: dark)"
+    scheme: slate
+    primary: black
+    toggle:
+      icon: material/brightness-4
+      name: Switch to system preference
+
+extra_css:
+  - stylesheets/crd.css
+
+extra:
+  version:
+    # Enable mike for multi-version selection
+    provider: mike
+
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/kcp-dev/kcp
+    - icon: fontawesome/brands/slack
+      link: https://kubernetes.slack.com/archives/C021U8WSAFK
+
+plugins:
+  # https://github.com/lukasgeiter/mkdocs-awesome-pages-plugin
+  # Greater control over how navigation links are shown
+  - awesome-pages
+  # Docs site search
+  - search
+  # Use Jinja macros in .md files
+  - macros:
+      include_dir: 'overrides'
+      module_name: 'main'
+  # Configure multiple language support
+  - i18n:
+      docs_structure: suffix
+      fallback_to_default: true
+      languages:
+        - build: true
+          default: true
+          locale: en
+          name: English
+      reconfigure_material: true
+      reconfigure_search: true
+  # Configure multi-version plugin
+  - mike:
+      alias_type: redirect
+
+markdown_extensions:
+  # Code block highlighting
+  - pymdownx.highlight:
+      # Allows linking directly to specific lines in code blocks
+      anchor_linenums: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  # Inline code block highlighting
+  - pymdownx.inlinehilite
+  # Lets you embed content from another file
+  - pymdownx.snippets
+  # Arbitrary nesting of code/content blocks inside each other
+  - pymdownx.superfences
+  # Enable note/warning/etc. callouts
+  - admonition
+
+# Live reload if any of these change when running 'mkdocs serve'
+watch:
+  - mkdocs.yml
+  - content
+  - overrides
