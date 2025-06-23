@@ -6,12 +6,6 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
   name: frontproxy-sample
 spec:
-  image:
-    tag: eb60348a
-  auth:
-    # don't drop requests from administrative groups.
-    # this shouldn't be enabled in production, but makes testing easier.
-    dropGroups: [""]
   rootShard:
     ref:
       name: shard-sample

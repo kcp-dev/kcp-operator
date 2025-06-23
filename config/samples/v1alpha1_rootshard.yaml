@@ -6,8 +6,6 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
   name: shard-sample
 spec:
-  image:
-    tag: eb60348a
   external:
     hostname: example.operator.kcp.io
     port: 6443
