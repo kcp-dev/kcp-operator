@@ -1,0 +1,1 @@
+This project is following the [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/main/code-of-conduct.md). For a current version of the Code of Conduct, please see [here](https://github.com/kcp-dev/kcp/blob/main/code-of-conduct.md).
