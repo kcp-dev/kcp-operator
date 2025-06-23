@@ -18,6 +18,7 @@ package kubeconfig
 
 import (
 	"fmt"
+	"net/url"
 
 	"k8c.io/reconciler/pkg/reconciling"
 
@@ -25,42 +26,109 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 
+	"github.com/kcp-dev/kcp-operator/internal/resources"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
-func KubeconfigSecretReconciler(kubeconfig *operatorv1alpha1.Kubeconfig, caSecret, certSecret *corev1.Secret, serverName, serverURL string) reconciling.NamedSecretReconcilerFactory {
+const (
+	baseContext      string = "base"
+	shardBaseContext string = "shard-base"
+	defaultContext   string = "default"
+)
+
+func KubeconfigSecretReconciler(
+	kubeconfig *operatorv1alpha1.Kubeconfig,
+	rootShard *operatorv1alpha1.RootShard,
+	shard *operatorv1alpha1.Shard,
+	caSecret, certSecret *corev1.Secret,
+) (reconciling.NamedSecretReconcilerFactory, error) {
+	config := &clientcmdapi.Config{
+		Clusters: map[string]*clientcmdapi.Cluster{},
+		Contexts: map[string]*clientcmdapi.Context{},
+		AuthInfos: map[string]*clientcmdapi.AuthInfo{
+			kubeconfig.Spec.Username: {
+				ClientCertificateData: certSecret.Data["tls.crt"],
+				ClientKeyData:         certSecret.Data["tls.key"],
+			},
+		},
+	}
+
+	addCluster := func(clusterName, url string) {
+		config.Clusters[clusterName] = &clientcmdapi.Cluster{
+			Server:                   url,
+			CertificateAuthorityData: caSecret.Data["tls.crt"],
+		}
+	}
+	addContext := func(contextName, clusterName string) {
+		config.Contexts[contextName] = &clientcmdapi.Context{
+			Cluster:  clusterName,
+			AuthInfo: kubeconfig.Spec.Username,
+		}
+	}
+
+	switch {
+	case kubeconfig.Spec.Target.RootShardRef != nil:
+		if rootShard == nil {
+			panic("RootShard must be provided when kubeconfig targets one.")
+		}
+
+		serverURL := resources.GetRootShardBaseURL(rootShard)
+		defaultURL, err := url.JoinPath(serverURL, "clusters", "root")
+		if err != nil {
+			return nil, err
+		}
+
+		addCluster(defaultContext, defaultURL)
+		addContext(defaultContext, defaultContext)
+		addCluster(baseContext, serverURL)
+		addContext(baseContext, baseContext)
+		addContext(shardBaseContext, baseContext)
+		config.CurrentContext = defaultContext
+
+	case kubeconfig.Spec.Target.ShardRef != nil:
+		if shard == nil {
+			panic("Shard must be provided when kubeconfig targets one.")
+		}
+
+		serverURL := resources.GetShardBaseURL(shard)
+		defaultURL, err := url.JoinPath(serverURL, "clusters", "root")
+		if err != nil {
+			return nil, err
+		}
+
+		addCluster(defaultContext, defaultURL)
+		addContext(defaultContext, defaultContext)
+		addCluster(baseContext, serverURL)
+		addContext(baseContext, baseContext)
+		addContext(shardBaseContext, baseContext)
+		config.CurrentContext = defaultContext
+
+	case kubeconfig.Spec.Target.FrontProxyRef != nil:
+		if rootShard == nil {
+			panic("RootShard must be provided when kubeconfig targets a FrontProxy.")
+		}
+
+		serverURL := fmt.Sprintf("https://%s:6443", rootShard.Spec.External.Hostname)
+		defaultURL, err := url.JoinPath(serverURL, "clusters", "root")
+		if err != nil {
+			return nil, err
+		}
+
+		addCluster(baseContext, serverURL)
+		addCluster(defaultContext, defaultURL)
+		addContext(defaultContext, defaultContext)
+		addContext(baseContext, baseContext)
+		config.CurrentContext = defaultContext
+
+	default:
+		panic("Called reconciler for an invalid kubeconfig, this should not have happened.")
+	}
+
 	return func() (string, reconciling.SecretReconciler) {
 		return kubeconfig.Spec.SecretRef.Name, func(secret *corev1.Secret) (*corev1.Secret, error) {
-			var config *clientcmdapi.Config
-
 			if secret.Data == nil {
 				secret.Data = make(map[string][]byte)
 			}
-
-			config = &clientcmdapi.Config{}
-
-			config.Clusters = map[string]*clientcmdapi.Cluster{
-				serverName: {
-					Server:                   serverURL,
-					CertificateAuthorityData: caSecret.Data["tls.crt"],
-				},
-			}
-
-			contextName := fmt.Sprintf("%s:%s", serverName, kubeconfig.Spec.Username)
-
-			config.Contexts = map[string]*clientcmdapi.Context{
-				contextName: {
-					Cluster:  serverName,
-					AuthInfo: kubeconfig.Spec.Username,
-				},
-			}
-			config.AuthInfos = map[string]*clientcmdapi.AuthInfo{
-				kubeconfig.Spec.Username: {
-					ClientCertificateData: certSecret.Data["tls.crt"],
-					ClientKeyData:         certSecret.Data["tls.key"],
-				},
-			}
-			config.CurrentContext = contextName
 
 			data, err := clientcmd.Write(*config)
 			if err != nil {
@@ -71,5 +139,5 @@ func KubeconfigSecretReconciler(kubeconfig *operatorv1alpha1.Kubeconfig, caSecre
 
 			return secret, nil
 		}
-	}
+	}, nil
 }

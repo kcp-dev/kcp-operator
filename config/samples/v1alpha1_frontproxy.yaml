@@ -9,4 +9,18 @@ spec:
   rootShard:
     ref:
       name: shard-sample
-  externalHostname: kcp.example.com
+  serviceTemplate:
+    spec:
+      # hard code a specific cluster IP, e.g. for a kind setup.
+      clusterIP: 10.96.100.100
+  certificateTemplates:
+    server:
+      spec:
+        dnsNames:
+          # add localhost to the certificate.
+          - localhost
+        ipAddresses:
+          # add localhost IPs to the server certificate.
+          # this allows easy port-forward access.
+          - 127.0.0.1
+          - 127.0.0.2

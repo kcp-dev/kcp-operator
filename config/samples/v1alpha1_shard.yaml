@@ -4,6 +4,11 @@ metadata:
   labels:
     app.kubernetes.io/name: kcp-operator
     app.kubernetes.io/managed-by: kustomize
-  name: shard-sample
+  name: secondary-shard
 spec:
-  # TODO(user): Add fields here
+  etcd:
+    endpoints:
+      - http://etcd-shard.default.svc.cluster.local:2379
+  rootShard:
+    ref:
+      name: shard-sample
