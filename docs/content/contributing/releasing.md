@@ -1,3 +1,8 @@
+---
+description: >
+    The release process for cutting new minor and patch releases.
+---
+
 # Release Process
 
 The guide describes how to release a new version of the kcp-operator.

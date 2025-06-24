@@ -122,6 +122,9 @@ markdown_extensions:
   - pymdownx.superfences
   # Enable note/warning/etc. callouts
   - admonition
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
 
 # Live reload if any of these change when running 'mkdocs serve'
 watch:
