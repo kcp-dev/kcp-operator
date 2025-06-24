@@ -49,7 +49,7 @@ if [[ -n "${BRANCH:-}" ]]; then
   MIKE_OPTIONS+=(--branch "$BRANCH")
 fi
 
-LATEST=$(git describe --tags --match="v[0-9]*" `git rev-list --tags --max-count=1` | grep -o '^v[0-9]\+\.[0-9]\+')
+LATEST=$(git describe --tags --match="v[0-9]*" `git rev-list --tags --max-count=1` || echo "v0.0.0" | grep -o '^v[0-9]\+\.[0-9]\+')
 if [[ "${LATEST:-}" == "${VERSION:-}" ]]; then
   MIKE_DEPLOY_OPTIONS+=(--update-aliases)
   MIKE_ALIASES+=(latest)
