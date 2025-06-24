@@ -34,8 +34,9 @@ presubmits:
               cpu: 2
 
   - name: pull-kcp-operator-build-image
-    always_run: true
     decorate: true
+    run_if_changed: "(Dockerfile|Makefile|.prow.yaml|go.mod|go.sum|cmd|internal|sdk|hack)"
+    optional: false
     clone_uri: "https://github.com/kcp-dev/kcp-operator"
     labels:
       preset-goproxy: "true"
@@ -56,8 +57,9 @@ presubmits:
               cpu: 1
 
   - name: pull-kcp-operator-test
-    always_run: true
     decorate: true
+    run_if_changed: "(Dockerfile|Makefile|.prow.yaml|go.mod|go.sum|cmd|internal|sdk|hack|test)"
+    optional: false
     clone_uri: "https://github.com/kcp-dev/kcp-operator"
     labels:
       preset-goproxy: "true"
@@ -76,8 +78,9 @@ presubmits:
               cpu: 2
 
   - name: pull-kcp-operator-test-e2e
-    always_run: true
     decorate: true
+    run_if_changed: "(Dockerfile|Makefile|.prow.yaml|go.mod|go.sum|cmd|internal|sdk|hack|test)"
+    optional: false
     clone_uri: "https://github.com/kcp-dev/kcp-operator"
     labels:
       preset-goproxy: "true"
@@ -95,8 +98,8 @@ presubmits:
             privileged: true
 
   - name: pull-kcp-operator-test-e2e-canary
-    always_run: true
     decorate: true
+    run_if_changed: "(Dockerfile|Makefile|.prow.yaml|go.mod|go.sum|cmd|internal|sdk|hack|test)"
     optional: true
     clone_uri: "https://github.com/kcp-dev/kcp-operator"
     labels:
