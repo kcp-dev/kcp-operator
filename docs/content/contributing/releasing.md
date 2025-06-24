@@ -21,8 +21,8 @@ tag represents where the corresponding `release/v0.X` branch branches off.
 1. Tag the main module: `git tag -m "version 0.X" v0.X.0`
 1. Tag the SDK module: `git tag -m "SDK version 0.X" sdk/v0.X.0`
 1. Push the tags: `git push upstream v0.X.0 sdk/v0.X.0`
-1. Create the release branch: `git checkout -B release/v0.X`
-1. Push the release branch: `git push -u upstream release/v0.X`
+1. Create the release branch: `git checkout -B release-0.X`
+1. Push the release branch: `git push -u upstream release-0.X`
 
 ## Patch Releases
 
