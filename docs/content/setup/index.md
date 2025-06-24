@@ -15,7 +15,7 @@ helm repo add kcp https://kcp-dev.github.io/helm-charts
 And then install the chart:
 
 ```sh
-helm upgrade --install --create-namespace --namespace kcp-operator kcp/kcp-operator kcp-operator
+helm upgrade --install --create-namespace --namespace kcp-operator kcp-operator kcp/kcp-operator
 ```
 
 ## Further Reading
