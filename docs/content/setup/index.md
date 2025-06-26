@@ -2,7 +2,7 @@
 
 ## Requirements
 
-- [cert-manager](https://cert-manager.io/)
+- [cert-manager](https://cert-manager.io/) (see [Installing with Helm](https://cert-manager.io/docs/installation/helm/))
 
 ## Helm Chart
 
@@ -15,8 +15,10 @@ helm repo add kcp https://kcp-dev.github.io/helm-charts
 And then install the chart:
 
 ```sh
-helm upgrade --install --create-namespace --namespace kcp-operator kcp-operator kcp/kcp-operator
+helm install --create-namespace --namespace kcp-operator kcp-operator kcp/kcp-operator
 ```
+
+For full configuration options, check out the Chart [values](https://github.com/kcp-dev/helm-charts/blob/main/charts/kcp-operator/values.yaml).
 
 ## Further Reading
 
