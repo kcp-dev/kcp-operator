@@ -37,6 +37,7 @@ type CommonShardSpecApplyConfiguration struct {
 	CertificateTemplates *operatorv1alpha1.CertificateTemplateMap `json:"certificateTemplates,omitempty"`
 	ServiceTemplate      *ServiceTemplateApplyConfiguration       `json:"serviceTemplate,omitempty"`
 	DeploymentTemplate   *DeploymentTemplateApplyConfiguration    `json:"deploymentTemplate,omitempty"`
+	Auth                 *AuthSpecApplyConfiguration              `json:"auth,omitempty"`
 }
 
 // CommonShardSpecApplyConfiguration constructs a declarative configuration of the CommonShardSpec type for use with
@@ -122,5 +123,13 @@ func (b *CommonShardSpecApplyConfiguration) WithServiceTemplate(value *ServiceTe
 // If called multiple times, the DeploymentTemplate field is set to the value of the last call.
 func (b *CommonShardSpecApplyConfiguration) WithDeploymentTemplate(value *DeploymentTemplateApplyConfiguration) *CommonShardSpecApplyConfiguration {
 	b.DeploymentTemplate = value
+	return b
+}
+
+// WithAuth sets the Auth field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Auth field is set to the value of the last call.
+func (b *CommonShardSpecApplyConfiguration) WithAuth(value *AuthSpecApplyConfiguration) *CommonShardSpecApplyConfiguration {
+	b.Auth = value
 	return b
 }
