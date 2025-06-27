@@ -54,6 +54,9 @@ type CommonShardSpec struct {
 
 	// Optional: DeploymentTemplate configures the Kubernetes Deployment created for this shard.
 	DeploymentTemplate *DeploymentTemplate `json:"deploymentTemplate,omitempty"`
+
+	// Optional: Auth configures various aspects of Authentication and Authorization for this shard.
+	Auth *AuthSpec `json:"auth,omitempty"`
 }
 
 type AuditSpec struct {
