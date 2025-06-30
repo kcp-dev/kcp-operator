@@ -98,8 +98,6 @@ spec:
                           Optionally provide the client secret for the OIDC client. This is not used by KCP itself, but is used to generate
                           a OIDC kubeconfig that can be shared with users to log in via the OIDC provider.
                         type: string
-                      enabled:
-                        type: boolean
                       groupsClaim:
                         description: 'Experimental: Optionally provides a custom claim
                           for fetching groups. The claim must be a string or an array
@@ -125,7 +123,6 @@ spec:
                         type: string
                     required:
                     - clientID
-                    - enabled
                     - issuerURL
                     type: object
                   passOnGroups:

@@ -236,6 +236,7 @@ func DeploymentReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootShard *op
 			}
 
 			dep = utils.ApplyDeploymentTemplate(dep, frontProxy.Spec.DeploymentTemplate)
+			dep = utils.ApplyAuthConfiguration(dep, frontProxy.Spec.Auth)
 
 			return dep, nil
 		}
