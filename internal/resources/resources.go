@@ -106,6 +106,15 @@ func GetRootShardBaseURL(r *operatorv1alpha1.RootShard) string {
 	return fmt.Sprintf("https://%s:6443", GetRootShardBaseHost(r))
 }
 
+func GetRootShardExternalBaseURL(r *operatorv1alpha1.RootShard) string {
+	clusterDomain := r.Spec.ClusterDomain
+	if clusterDomain == "" {
+		clusterDomain = "cluster.local"
+	}
+
+	return fmt.Sprintf("%s-shard-kcp.%s.svc.%s", r.Name, r.Namespace, clusterDomain)
+}
+
 func GetShardBaseHost(s *operatorv1alpha1.Shard) string {
 	clusterDomain := s.Spec.ClusterDomain
 	if clusterDomain == "" {

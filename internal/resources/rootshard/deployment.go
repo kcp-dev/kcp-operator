@@ -169,6 +169,7 @@ func getArgs(rootShard *operatorv1alpha1.RootShard) []string {
 		fmt.Sprintf("--service-account-private-key-file=%s/tls.key", getCertificateMountPath(operatorv1alpha1.ServiceAccountCertificate)),
 
 		// General shard configuration.
+		fmt.Sprintf("--external-hostname=%s", resources.GetRootShardExternalBaseURL(rootShard)),
 		fmt.Sprintf("--shard-base-url=%s", resources.GetRootShardBaseURL(rootShard)),
 		fmt.Sprintf("--shard-external-url=https://%s:%d", rootShard.Spec.External.Hostname, rootShard.Spec.External.Port),
 		fmt.Sprintf("--logical-cluster-admin-kubeconfig=%s/kubeconfig", getKubeconfigMountPath(operatorv1alpha1.LogicalClusterAdminCertificate)),
