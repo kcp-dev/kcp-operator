@@ -112,7 +112,7 @@ func GetRootShardExternalBaseURL(r *operatorv1alpha1.RootShard) string {
 		clusterDomain = "cluster.local"
 	}
 
-	return fmt.Sprintf("%s-shard-kcp.%s.svc.%s", r.Name, r.Namespace, clusterDomain)
+	return fmt.Sprintf("%s-kcp.%s.svc.%s", r.Name, r.Namespace, clusterDomain)
 }
 
 func GetShardBaseHost(s *operatorv1alpha1.Shard) string {
