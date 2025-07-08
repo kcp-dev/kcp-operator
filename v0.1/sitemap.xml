@@ -2,73 +2,73 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
     <url>
         <loc>https://docs.kcp.io/kcp-operator/v0.1/</loc>
-        <lastmod>2025-06-24</lastmod>
+        <lastmod>2025-07-08</lastmod>
         <changefreq>daily</changefreq>
         <xhtml:link rel="alternate" hreflang="en" href="https://docs.kcp.io/kcp-operator/v0.1/"/>
     </url>
     <url>
         <loc>https://docs.kcp.io/kcp-operator/v0.1/contributing/</loc>
-        <lastmod>2025-06-24</lastmod>
+        <lastmod>2025-07-08</lastmod>
         <changefreq>daily</changefreq>
         <xhtml:link rel="alternate" hreflang="en" href="https://docs.kcp.io/kcp-operator/v0.1/contributing/"/>
     </url>
     <url>
         <loc>https://docs.kcp.io/kcp-operator/v0.1/contributing/architecture/</loc>
-        <lastmod>2025-06-24</lastmod>
+        <lastmod>2025-07-08</lastmod>
         <changefreq>daily</changefreq>
         <xhtml:link rel="alternate" hreflang="en" href="https://docs.kcp.io/kcp-operator/v0.1/contributing/architecture/"/>
     </url>
     <url>
         <loc>https://docs.kcp.io/kcp-operator/v0.1/contributing/releasing/</loc>
-        <lastmod>2025-06-24</lastmod>
+        <lastmod>2025-07-08</lastmod>
         <changefreq>daily</changefreq>
         <xhtml:link rel="alternate" hreflang="en" href="https://docs.kcp.io/kcp-operator/v0.1/contributing/releasing/"/>
     </url>
     <url>
         <loc>https://docs.kcp.io/kcp-operator/v0.1/contributing/continuous-integration/</loc>
-        <lastmod>2025-06-24</lastmod>
+        <lastmod>2025-07-08</lastmod>
         <changefreq>daily</changefreq>
         <xhtml:link rel="alternate" hreflang="en" href="https://docs.kcp.io/kcp-operator/v0.1/contributing/continuous-integration/"/>
     </url>
     <url>
         <loc>https://docs.kcp.io/kcp-operator/v0.1/reference/</loc>
-        <lastmod>2025-06-24</lastmod>
+        <lastmod>2025-07-08</lastmod>
         <changefreq>daily</changefreq>
         <xhtml:link rel="alternate" hreflang="en" href="https://docs.kcp.io/kcp-operator/v0.1/reference/"/>
     </url>
     <url>
         <loc>https://docs.kcp.io/kcp-operator/v0.1/reference/crd/operator.kcp.io/frontproxies/</loc>
-        <lastmod>2025-06-24</lastmod>
+        <lastmod>2025-07-08</lastmod>
         <changefreq>daily</changefreq>
         <xhtml:link rel="alternate" hreflang="en" href="https://docs.kcp.io/kcp-operator/v0.1/reference/crd/operator.kcp.io/frontproxies/"/>
     </url>
     <url>
         <loc>https://docs.kcp.io/kcp-operator/v0.1/reference/crd/operator.kcp.io/kubeconfigs/</loc>
-        <lastmod>2025-06-24</lastmod>
+        <lastmod>2025-07-08</lastmod>
         <changefreq>daily</changefreq>
         <xhtml:link rel="alternate" hreflang="en" href="https://docs.kcp.io/kcp-operator/v0.1/reference/crd/operator.kcp.io/kubeconfigs/"/>
     </url>
     <url>
         <loc>https://docs.kcp.io/kcp-operator/v0.1/reference/crd/operator.kcp.io/rootshards/</loc>
-        <lastmod>2025-06-24</lastmod>
+        <lastmod>2025-07-08</lastmod>
         <changefreq>daily</changefreq>
         <xhtml:link rel="alternate" hreflang="en" href="https://docs.kcp.io/kcp-operator/v0.1/reference/crd/operator.kcp.io/rootshards/"/>
     </url>
     <url>
         <loc>https://docs.kcp.io/kcp-operator/v0.1/reference/crd/operator.kcp.io/shards/</loc>
-        <lastmod>2025-06-24</lastmod>
+        <lastmod>2025-07-08</lastmod>
         <changefreq>daily</changefreq>
         <xhtml:link rel="alternate" hreflang="en" href="https://docs.kcp.io/kcp-operator/v0.1/reference/crd/operator.kcp.io/shards/"/>
     </url>
     <url>
         <loc>https://docs.kcp.io/kcp-operator/v0.1/setup/</loc>
-        <lastmod>2025-06-24</lastmod>
+        <lastmod>2025-07-08</lastmod>
         <changefreq>daily</changefreq>
         <xhtml:link rel="alternate" hreflang="en" href="https://docs.kcp.io/kcp-operator/v0.1/setup/"/>
     </url>
     <url>
         <loc>https://docs.kcp.io/kcp-operator/v0.1/setup/quickstart/</loc>
-        <lastmod>2025-06-24</lastmod>
+        <lastmod>2025-07-08</lastmod>
         <changefreq>daily</changefreq>
         <xhtml:link rel="alternate" hreflang="en" href="https://docs.kcp.io/kcp-operator/v0.1/setup/quickstart/"/>
     </url>
