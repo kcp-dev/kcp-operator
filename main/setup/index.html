@@ -975,18 +975,19 @@
 <h1 id="setup">Setup</h1>
 <h2 id="requirements">Requirements</h2>
 <ul>
-<li><a href="https://cert-manager.io/">cert-manager</a></li>
+<li><a href="https://cert-manager.io/">cert-manager</a> (see <a href="https://cert-manager.io/docs/installation/helm/">Installing with Helm</a>)</li>
 </ul>
 <h2 id="helm-chart">Helm Chart</h2>
 <p>A Helm chart for kcp-operator is maintained in <a href="https://github.com/kcp-dev/helm-charts/tree/main/charts/kcp-operator">kcp-dev/helm-charts</a>. To install it, first add the Helm repository:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>kcp<span class="w"> </span>https://kcp-dev.github.io/helm-charts
 </code></pre></div>
 <p>And then install the chart:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>--install<span class="w"> </span>--create-namespace<span class="w"> </span>--namespace<span class="w"> </span>kcp-operator<span class="w"> </span>kcp-operator<span class="w"> </span>kcp/kcp-operator
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>helm<span class="w"> </span>install<span class="w"> </span>--create-namespace<span class="w"> </span>--namespace<span class="w"> </span>kcp-operator<span class="w"> </span>kcp-operator<span class="w"> </span>kcp/kcp-operator
 </code></pre></div>
+<p>For full configuration options, check out the Chart <a href="https://github.com/kcp-dev/helm-charts/blob/main/charts/kcp-operator/values.yaml">values</a>.</p>
 <h2 id="further-reading">Further Reading</h2>
-<h3 id="quickstart"><a href="./quickstart/">Quickstart</a></h3>
-<p>Take your first steps after installing kcp-operator.</p>
+<h3 id="quickstart"><a href="quickstart/">Quickstart</a></h3>
+<p>Create your first objects after installing kcp-operator.</p>
 
 
 
