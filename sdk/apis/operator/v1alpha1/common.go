@@ -357,3 +357,26 @@ type PodSpecTemplate struct {
 	// +listMapKey=name
 	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
 }
+
+type OIDCConfiguration struct {
+	// IssuerURL is used for the OIDC issuer URL. Only https URLs will be accepted.
+	IssuerURL string `json:"issuerURL"`
+	// ClientID is the OIDC client ID configured on the issuer side for this KCP instance.
+	ClientID string `json:"clientID"`
+
+	// Optionally provide the client secret for the OIDC client. This is not used by KCP itself, but is used to generate
+	// a OIDC kubeconfig that can be shared with users to log in via the OIDC provider.
+	ClientSecret string `json:"clientSecret,omitempty"`
+
+	// Experimental: Optionally provides a custom claim for fetching groups. The claim must be a string or an array of strings.
+	GroupsClaim string `json:"groupsClaim,omitempty"`
+	// Optionally uses a custom claim for fetching the username. This defaults to "sub" if unset.
+	UsernameClaim string `json:"usernameClaim,omitempty"`
+
+	// Optionally sets a custom groups prefix. This defaults to "oidc:" if unset, which means a group called "group1"
+	// on the OIDC side will be recognised as "oidc:group1" in KCP.
+	GroupsPrefix string `json:"groupsPrefix,omitempty"`
+	// Optionally sets a custom username prefix. This defaults to "oidc:" if unset, which means a user called "user@example.com"
+	// on the OIDC side will be recognised as "oidc:user@example.com" in KCP.
+	UsernamePrefix string `json:"usernamePrefix,omitempty"`
+}
