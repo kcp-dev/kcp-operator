@@ -83,3 +83,15 @@ func ApplyResources(container corev1.Container, resources *corev1.ResourceRequir
 
 	return container
 }
+
+func ApplyAuthConfiguration(deployment *appsv1.Deployment, config *operatorv1alpha1.AuthSpec) *appsv1.Deployment {
+	if config == nil {
+		return deployment
+	}
+
+	if config.OIDC != nil {
+		deployment = applyOIDCConfiguration(deployment, *config.OIDC)
+	}
+
+	return deployment
+}

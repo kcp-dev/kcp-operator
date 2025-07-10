@@ -21,7 +21,6 @@ package v1alpha1
 // OIDCConfigurationApplyConfiguration represents a declarative configuration of the OIDCConfiguration type for use
 // with apply.
 type OIDCConfigurationApplyConfiguration struct {
-	Enabled        *bool   `json:"enabled,omitempty"`
 	IssuerURL      *string `json:"issuerURL,omitempty"`
 	ClientID       *string `json:"clientID,omitempty"`
 	ClientSecret   *string `json:"clientSecret,omitempty"`
@@ -35,14 +34,6 @@ type OIDCConfigurationApplyConfiguration struct {
 // apply.
 func OIDCConfiguration() *OIDCConfigurationApplyConfiguration {
 	return &OIDCConfigurationApplyConfiguration{}
-}
-
-// WithEnabled sets the Enabled field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Enabled field is set to the value of the last call.
-func (b *OIDCConfigurationApplyConfiguration) WithEnabled(value bool) *OIDCConfigurationApplyConfiguration {
-	b.Enabled = &value
-	return b
 }
 
 // WithIssuerURL sets the IssuerURL field in the declarative configuration to the given value
