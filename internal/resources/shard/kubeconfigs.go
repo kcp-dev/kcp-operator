@@ -81,3 +81,101 @@ func RootShardClientKubeconfigReconciler(shard *operatorv1alpha1.Shard, rootShar
 		}
 	}
 }
+
+func LogicalClusterAdminKubeconfigReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShard) k8creconciling.NamedSecretReconcilerFactory {
+	const (
+		serverName   = "logical-cluster:admin"
+		contextName  = "logical-cluster"
+		authInfoName = "logical-cluster-admin"
+	)
+
+	return func() (string, k8creconciling.SecretReconciler) {
+		return kubeconfigSecret(shard, operatorv1alpha1.LogicalClusterAdminCertificate), func(secret *corev1.Secret) (*corev1.Secret, error) {
+			var config *clientcmdapi.Config
+
+			if secret.Data == nil {
+				secret.Data = make(map[string][]byte)
+			}
+
+			config = &clientcmdapi.Config{
+				Clusters: map[string]*clientcmdapi.Cluster{
+					serverName: {
+						Server:               resources.GetRootShardBaseURL(rootShard),
+						CertificateAuthority: getCAMountPath(operatorv1alpha1.ServerCA) + "/tls.crt",
+					},
+				},
+				Contexts: map[string]*clientcmdapi.Context{
+					contextName: {
+						Cluster:  serverName,
+						AuthInfo: authInfoName,
+					},
+				},
+				AuthInfos: map[string]*clientcmdapi.AuthInfo{
+					authInfoName: {
+						ClientCertificate: getCertificateMountPath(operatorv1alpha1.LogicalClusterAdminCertificate) + "/tls.crt",
+						ClientKey:         getCertificateMountPath(operatorv1alpha1.LogicalClusterAdminCertificate) + "/tls.key",
+					},
+				},
+				CurrentContext: contextName,
+			}
+
+			data, err := clientcmd.Write(*config)
+			if err != nil {
+				return nil, err
+			}
+
+			secret.Data["kubeconfig"] = data
+
+			return secret, nil
+		}
+	}
+}
+
+func ExternalLogicalClusterAdminKubeconfigReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShard) k8creconciling.NamedSecretReconcilerFactory {
+	const (
+		serverName   = "external-logical-cluster:admin"
+		contextName  = "external-logical-cluster"
+		authInfoName = "external-logical-cluster-admin"
+	)
+
+	return func() (string, k8creconciling.SecretReconciler) {
+		return kubeconfigSecret(shard, operatorv1alpha1.ExternalLogicalClusterAdminCertificate), func(secret *corev1.Secret) (*corev1.Secret, error) {
+			var config *clientcmdapi.Config
+
+			if secret.Data == nil {
+				secret.Data = make(map[string][]byte)
+			}
+
+			config = &clientcmdapi.Config{
+				Clusters: map[string]*clientcmdapi.Cluster{
+					serverName: {
+						Server:               fmt.Sprintf("https://%s:%d", rootShard.Spec.External.Hostname, rootShard.Spec.External.Port),
+						CertificateAuthority: getCAMountPath(operatorv1alpha1.ServerCA) + "/tls.crt",
+					},
+				},
+				Contexts: map[string]*clientcmdapi.Context{
+					contextName: {
+						Cluster:  serverName,
+						AuthInfo: authInfoName,
+					},
+				},
+				AuthInfos: map[string]*clientcmdapi.AuthInfo{
+					authInfoName: {
+						ClientCertificate: getCertificateMountPath(operatorv1alpha1.ExternalLogicalClusterAdminCertificate) + "/tls.crt",
+						ClientKey:         getCertificateMountPath(operatorv1alpha1.ExternalLogicalClusterAdminCertificate) + "/tls.key",
+					},
+				},
+				CurrentContext: contextName,
+			}
+
+			data, err := clientcmd.Write(*config)
+			if err != nil {
+				return nil, err
+			}
+
+			secret.Data["kubeconfig"] = data
+
+			return secret, nil
+		}
+	}
+}

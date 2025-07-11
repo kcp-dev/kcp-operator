@@ -83,6 +83,8 @@ func DeploymentReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1al
 			for _, cert := range []operatorv1alpha1.Certificate{
 				// requires server CA and the shard client cert to be mounted
 				operatorv1alpha1.ClientCertificate,
+				operatorv1alpha1.LogicalClusterAdminCertificate,
+				operatorv1alpha1.ExternalLogicalClusterAdminCertificate,
 			} {
 				secretMounts = append(secretMounts, utils.SecretMount{
 					VolumeName: fmt.Sprintf("%s-kubeconfig", cert),
@@ -109,6 +111,8 @@ func DeploymentReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1al
 				operatorv1alpha1.ServerCertificate,
 				operatorv1alpha1.ServiceAccountCertificate,
 				operatorv1alpha1.ClientCertificate,
+				operatorv1alpha1.LogicalClusterAdminCertificate,
+				operatorv1alpha1.ExternalLogicalClusterAdminCertificate,
 			} {
 				secretMounts = append(secretMounts, utils.SecretMount{
 					VolumeName: fmt.Sprintf("%s-cert", cert),
@@ -169,11 +173,17 @@ func getArgs(shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShar
 
 		// General shard configuration.
 		fmt.Sprintf("--shard-name=%s", shard.Name),
-		fmt.Sprintf("--external-hostname=%s", resources.GetShardBaseHost(shard)),
+		fmt.Sprintf("--shard-base-url=%s", resources.GetShardBaseURL(shard)),
 		fmt.Sprintf("--shard-external-url=https://%s:%d", rootShard.Spec.External.Hostname, rootShard.Spec.External.Port),
+		fmt.Sprintf("--external-hostname=%s", rootShard.Spec.External.Hostname),
+
 		fmt.Sprintf("--root-shard-kubeconfig-file=%s/kubeconfig", getKubeconfigMountPath(operatorv1alpha1.ClientCertificate)),
 		fmt.Sprintf("--cache-kubeconfig=%s/kubeconfig", getKubeconfigMountPath(operatorv1alpha1.ClientCertificate)),
+		fmt.Sprintf("--logical-cluster-admin-kubeconfig=%s/kubeconfig", getKubeconfigMountPath(operatorv1alpha1.LogicalClusterAdminCertificate)),
+		fmt.Sprintf("--external-logical-cluster-admin-kubeconfig=%s/kubeconfig", getKubeconfigMountPath(operatorv1alpha1.ExternalLogicalClusterAdminCertificate)),
+
 		fmt.Sprintf("--batteries-included=%s", strings.Join(utils.GetShardBatteries(shard), ",")),
+
 		"--root-directory=",
 		"--enable-leader-election=true",
 		"--logging-format=json",

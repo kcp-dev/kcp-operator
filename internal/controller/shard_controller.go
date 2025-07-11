@@ -130,6 +130,8 @@ func (r *ShardReconciler) reconcile(ctx context.Context, s *operatorv1alpha1.Sha
 		shard.ServiceAccountCertificateReconciler(s, rootShard),
 		shard.VirtualWorkspacesCertificateReconciler(s, rootShard),
 		shard.RootShardClientCertificateReconciler(s, rootShard),
+		shard.LogicalClusterAdminCertificateReconciler(s, rootShard),
+		shard.ExternalLogicalClusterAdminCertificateReconciler(s, rootShard),
 	}
 
 	if err := reconciling.ReconcileCertificates(ctx, certReconcilers, s.Namespace, r.Client, ownerRefWrapper); err != nil {
@@ -138,6 +140,8 @@ func (r *ShardReconciler) reconcile(ctx context.Context, s *operatorv1alpha1.Sha
 
 	if err := k8creconciling.ReconcileSecrets(ctx, []k8creconciling.NamedSecretReconcilerFactory{
 		shard.RootShardClientKubeconfigReconciler(s, rootShard),
+		shard.LogicalClusterAdminKubeconfigReconciler(s, rootShard),
+		shard.ExternalLogicalClusterAdminKubeconfigReconciler(s, rootShard),
 	}, s.Namespace, r.Client, ownerRefWrapper); err != nil {
 		errs = append(errs, err)
 	}
