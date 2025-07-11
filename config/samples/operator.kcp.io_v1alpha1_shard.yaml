@@ -12,3 +12,12 @@ spec:
   rootShard:
     ref:
       name: shard-sample
+  deploymentTemplate:
+    spec:
+      template:
+        spec:
+          hostAliases:
+            # add a hardcoded DNS override to the same IP as in v1alpha1_frontproxy.yaml.
+            - ip: "10.96.100.100"
+              hostnames:
+                - "example.operator.kcp.io"
