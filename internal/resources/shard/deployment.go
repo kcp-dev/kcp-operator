@@ -173,10 +173,11 @@ func getArgs(shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShar
 
 		// General shard configuration.
 		fmt.Sprintf("--shard-name=%s", shard.Name),
-		fmt.Sprintf("--shard-base-url=%s", resources.GetShardBaseURL(shard)),
-		fmt.Sprintf("--shard-external-url=https://%s:%d", rootShard.Spec.External.Hostname, rootShard.Spec.External.Port),
-		fmt.Sprintf("--external-hostname=%s", rootShard.Spec.External.Hostname),
+		fmt.Sprintf("--shard-base-url=%s", resources.GetShardBaseHost(shard)),
+		fmt.Sprintf("--shard-external-url=%s:%d", rootShard.Spec.External.Hostname, rootShard.Spec.External.Port),
+		fmt.Sprintf("--shard-virtual-workspace-url=%s", resources.GetShardBaseHost(shard)),
 
+		fmt.Sprintf("--external-hostname=%s", rootShard.Spec.External.Hostname),
 		fmt.Sprintf("--root-shard-kubeconfig-file=%s/kubeconfig", getKubeconfigMountPath(operatorv1alpha1.ClientCertificate)),
 		fmt.Sprintf("--cache-kubeconfig=%s/kubeconfig", getKubeconfigMountPath(operatorv1alpha1.ClientCertificate)),
 		fmt.Sprintf("--logical-cluster-admin-kubeconfig=%s/kubeconfig", getKubeconfigMountPath(operatorv1alpha1.LogicalClusterAdminCertificate)),
