@@ -109,7 +109,6 @@ func DeploymentReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1al
 
 			for _, cert := range []operatorv1alpha1.Certificate{
 				operatorv1alpha1.ServerCertificate,
-				operatorv1alpha1.ServiceAccountCertificate,
 				operatorv1alpha1.ClientCertificate,
 				operatorv1alpha1.LogicalClusterAdminCertificate,
 				operatorv1alpha1.ExternalLogicalClusterAdminCertificate,
@@ -117,6 +116,16 @@ func DeploymentReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1al
 				secretMounts = append(secretMounts, utils.SecretMount{
 					VolumeName: fmt.Sprintf("%s-cert", cert),
 					SecretName: resources.GetShardCertificateName(shard, cert),
+					MountPath:  getCertificateMountPath(cert),
+				})
+			}
+
+			for _, cert := range []operatorv1alpha1.Certificate{
+				operatorv1alpha1.ServiceAccountCertificate,
+			} {
+				secretMounts = append(secretMounts, utils.SecretMount{
+					VolumeName: fmt.Sprintf("%s-cert", cert),
+					SecretName: resources.GetRootShardCertificateName(rootShard, cert),
 					MountPath:  getCertificateMountPath(cert),
 				})
 			}
