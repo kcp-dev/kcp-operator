@@ -107,38 +107,6 @@ func VirtualWorkspacesCertificateReconciler(shard *operatorv1alpha1.Shard, rootS
 	}
 }
 
-func ServiceAccountCertificateReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
-	const certKind = operatorv1alpha1.ServiceAccountCertificate
-
-	name := resources.GetShardCertificateName(shard, certKind)
-	template := shard.Spec.CertificateTemplates.CertificateTemplate(certKind)
-
-	return func() (string, reconciling.CertificateReconciler) {
-		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
-			cert.SetLabels(resources.GetShardResourceLabels(shard))
-			cert.Spec = certmanagerv1.CertificateSpec{
-				CommonName:  name,
-				SecretName:  name,
-				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
-				RenewBefore: &operatorv1alpha1.DefaultCertificateRenewal,
-
-				PrivateKey: &certmanagerv1.CertificatePrivateKey{
-					Algorithm: certmanagerv1.RSAKeyAlgorithm,
-					Size:      4096,
-				},
-
-				IssuerRef: certmanagermetav1.ObjectReference{
-					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.ServiceAccountCA),
-					Kind:  "Issuer",
-					Group: "cert-manager.io",
-				},
-			}
-
-			return utils.ApplyCertificateTemplate(cert, &template), nil
-		}
-	}
-}
-
 func RootShardClientCertificateReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
 	const certKind = operatorv1alpha1.ClientCertificate
 

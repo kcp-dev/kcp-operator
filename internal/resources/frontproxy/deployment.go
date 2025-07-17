@@ -251,6 +251,8 @@ var defaultArgs = []string{
 	"--tls-cert-file=/etc/kcp-front-proxy/tls/tls.crt",
 	"--client-ca-file=/etc/kcp-front-proxy/client-ca/tls.crt",
 	"--mapping-file=/etc/kcp-front-proxy/config/path-mapping.yaml",
+	"--service-account-key-file=/etc/kcp/tls/service-account/tls.key",
+	"--service-account-lookup=false",
 }
 
 func getArgs(fps *operatorv1alpha1.FrontProxySpec) []string {

@@ -127,7 +127,6 @@ func (r *ShardReconciler) reconcile(ctx context.Context, s *operatorv1alpha1.Sha
 
 	certReconcilers := []reconciling.NamedCertificateReconcilerFactory{
 		shard.ServerCertificateReconciler(s, rootShard),
-		shard.ServiceAccountCertificateReconciler(s, rootShard),
 		shard.VirtualWorkspacesCertificateReconciler(s, rootShard),
 		shard.RootShardClientCertificateReconciler(s, rootShard),
 		shard.LogicalClusterAdminCertificateReconciler(s, rootShard),
