@@ -45,6 +45,9 @@ type CommonShardSpec struct {
 	Audit         *AuditSpec         `json:"audit,omitempty"`
 	Authorization *AuthorizationSpec `json:"authorization,omitempty"`
 
+	// Optional: Auth configures various aspects of Authentication and Authorization for this shard.
+	Auth *AuthSpec `json:"auth,omitempty"`
+
 	// CertificateTemplates allows to customize the properties on the generated
 	// certificates for this root shard.
 	CertificateTemplates CertificateTemplateMap `json:"certificateTemplates,omitempty"`

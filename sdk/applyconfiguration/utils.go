@@ -111,6 +111,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &operatorv1alpha1.RootShardSpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("RootShardStatus"):
 		return &operatorv1alpha1.RootShardStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ServiceAccountAuthentication"):
+		return &operatorv1alpha1.ServiceAccountAuthenticationApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ServiceMetadataTemplate"):
 		return &operatorv1alpha1.ServiceMetadataTemplateApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ServiceSpecTemplate"):
@@ -119,6 +121,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &operatorv1alpha1.ServiceTemplateApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Shard"):
 		return &operatorv1alpha1.ShardApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ShardReference"):
+		return &operatorv1alpha1.ShardReferenceApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ShardSpec"):
 		return &operatorv1alpha1.ShardSpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ShardStatus"):

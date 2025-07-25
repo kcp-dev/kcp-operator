@@ -19,6 +19,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"sort"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	k8creconciling "k8c.io/reconciler/pkg/reconciling"
@@ -31,9 +32,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
@@ -49,6 +53,21 @@ type RootShardReconciler struct {
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *RootShardReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	shardHandler := handler.TypedEnqueueRequestsFromMapFunc(func(ctx context.Context, obj ctrlruntimeclient.Object) []reconcile.Request {
+		shard := obj.(*operatorv1alpha1.Shard)
+
+		var rootShard operatorv1alpha1.RootShard
+		if err := mgr.GetClient().Get(ctx, ctrlruntimeclient.ObjectKey{Namespace: shard.Namespace, Name: shard.Spec.RootShard.Reference.Name}, &rootShard); err != nil {
+			utilruntime.HandleError(err)
+			return nil
+		}
+
+		var requests []reconcile.Request
+		requests = append(requests, reconcile.Request{NamespacedName: ctrlruntimeclient.ObjectKeyFromObject(&rootShard)})
+
+		return requests
+	})
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&operatorv1alpha1.RootShard{}).
 		Owns(&appsv1.Deployment{}).
@@ -56,6 +75,7 @@ func (r *RootShardReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&corev1.Service{}).
 		Owns(&corev1.Secret{}).
 		Owns(&certmanagerv1.Certificate{}).
+		Watches(&operatorv1alpha1.Shard{}, shardHandler).
 		Complete(r)
 }
 
@@ -196,6 +216,20 @@ func (r *RootShardReconciler) reconcileStatus(ctx context.Context, oldRootShard 
 	case rootShard.Status.Phase == "":
 		rootShard.Status.Phase = operatorv1alpha1.RootShardPhaseProvisioning
 	}
+
+	shards, err := getRootShardChildren(ctx, r.Client, rootShard)
+	if err != nil {
+		errs = append(errs, err)
+	} else {
+		rootShard.Status.Shards = make([]operatorv1alpha1.ShardReference, len(shards))
+		for i, shard := range shards {
+			rootShard.Status.Shards[i] = operatorv1alpha1.ShardReference{Name: shard.Name}
+		}
+	}
+	// sort the shards by name for equality comparison
+	sort.Slice(rootShard.Status.Shards, func(i, j int) bool {
+		return rootShard.Status.Shards[i].Name < rootShard.Status.Shards[j].Name
+	})
 
 	// only patch the status if there are actual changes.
 	if !equality.Semantic.DeepEqual(oldRootShard.Status, rootShard.Status) {

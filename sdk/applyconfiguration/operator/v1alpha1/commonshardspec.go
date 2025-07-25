@@ -34,6 +34,7 @@ type CommonShardSpecApplyConfiguration struct {
 	Resources            *v1.ResourceRequirements                 `json:"resources,omitempty"`
 	Audit                *AuditSpecApplyConfiguration             `json:"audit,omitempty"`
 	Authorization        *AuthorizationSpecApplyConfiguration     `json:"authorization,omitempty"`
+	Auth                 *AuthSpecApplyConfiguration              `json:"auth,omitempty"`
 	CertificateTemplates *operatorv1alpha1.CertificateTemplateMap `json:"certificateTemplates,omitempty"`
 	ServiceTemplate      *ServiceTemplateApplyConfiguration       `json:"serviceTemplate,omitempty"`
 	DeploymentTemplate   *DeploymentTemplateApplyConfiguration    `json:"deploymentTemplate,omitempty"`
@@ -98,6 +99,14 @@ func (b *CommonShardSpecApplyConfiguration) WithAudit(value *AuditSpecApplyConfi
 // If called multiple times, the Authorization field is set to the value of the last call.
 func (b *CommonShardSpecApplyConfiguration) WithAuthorization(value *AuthorizationSpecApplyConfiguration) *CommonShardSpecApplyConfiguration {
 	b.Authorization = value
+	return b
+}
+
+// WithAuth sets the Auth field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Auth field is set to the value of the last call.
+func (b *CommonShardSpecApplyConfiguration) WithAuth(value *AuthSpecApplyConfiguration) *CommonShardSpecApplyConfiguration {
+	b.Auth = value
 	return b
 }
 

@@ -20,7 +20,10 @@ import (
 	"fmt"
 
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/kcp-dev/kcp-operator/internal/resources"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -54,6 +57,63 @@ func applyOIDCConfiguration(deployment *appsv1.Deployment, config operatorv1alph
 	}
 
 	// TODO(mjudeikis): Add support for  when OIDC is not publically trusted --oidc-ca-file=/etc/kcp/tls/oidc/<ca-secret-name>
+
+	podSpec.Containers[0].Args = append(podSpec.Containers[0].Args, extraArgs...)
+	deployment.Spec.Template.Spec = podSpec
+
+	return deployment
+}
+
+func applyServiceAccountAuthentication(deployment *appsv1.Deployment, rootShard *operatorv1alpha1.RootShard) *appsv1.Deployment {
+	// Secrets and volumes
+
+	volumes := []corev1.Volume{}
+	volumeMounts := []corev1.VolumeMount{}
+
+	// Root shard is not on the list, so we add it manually
+	volumes = append(volumes, corev1.Volume{
+		Name: resources.GetRootShardCertificateName(rootShard, operatorv1alpha1.ServiceAccountCertificate),
+		VolumeSource: corev1.VolumeSource{
+			Secret: &corev1.SecretVolumeSource{
+				SecretName: resources.GetRootShardCertificateName(rootShard, operatorv1alpha1.ServiceAccountCertificate),
+			},
+		},
+	})
+
+	volumeMounts = append(volumeMounts, corev1.VolumeMount{
+		Name:      resources.GetRootShardCertificateName(rootShard, operatorv1alpha1.ServiceAccountCertificate),
+		ReadOnly:  true,
+		MountPath: fmt.Sprintf("/etc/kcp/tls/%s/%s", rootShard.Name, string(operatorv1alpha1.ServiceAccountCertificate)),
+	})
+
+	for _, shard := range rootShard.Status.Shards {
+		volumes = append(volumes, corev1.Volume{
+			Name: resources.GetShardCertificateName(&operatorv1alpha1.Shard{ObjectMeta: metav1.ObjectMeta{Name: shard.Name}}, operatorv1alpha1.ServiceAccountCertificate),
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: resources.GetShardCertificateName(&operatorv1alpha1.Shard{ObjectMeta: metav1.ObjectMeta{Name: shard.Name}}, operatorv1alpha1.ServiceAccountCertificate),
+				},
+			},
+		})
+		volumeMounts = append(volumeMounts, corev1.VolumeMount{
+			Name:      resources.GetShardCertificateName(&operatorv1alpha1.Shard{ObjectMeta: metav1.ObjectMeta{Name: shard.Name}}, operatorv1alpha1.ServiceAccountCertificate),
+			ReadOnly:  true,
+			MountPath: fmt.Sprintf("/etc/kcp/tls/%s/%s", shard.Name, string(operatorv1alpha1.ServiceAccountCertificate)),
+		})
+	}
+
+	deployment.Spec.Template.Spec.Volumes = append(deployment.Spec.Template.Spec.Volumes, volumes...)
+	deployment.Spec.Template.Spec.Containers[0].VolumeMounts = append(deployment.Spec.Template.Spec.Containers[0].VolumeMounts, volumeMounts...)
+
+	podSpec := deployment.Spec.Template.Spec
+
+	extraArgs := []string{}
+	extraArgs = append(extraArgs, "--service-account-lookup=false")
+	extraArgs = append(extraArgs, fmt.Sprintf("--service-account-key-file=/etc/kcp/tls/%s/service-account/tls.key", rootShard.Name))
+
+	for _, shard := range rootShard.Status.Shards {
+		extraArgs = append(extraArgs, fmt.Sprintf("--service-account-key-file=/etc/kcp/tls/%s/service-account/tls.key", shard.Name))
+	}
 
 	podSpec.Containers[0].Args = append(podSpec.Containers[0].Args, extraArgs...)
 	deployment.Spec.Template.Spec = podSpec

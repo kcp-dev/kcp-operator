@@ -126,21 +126,6 @@ func DeploymentReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootShard *op
 				MountPath: frontProxyBasepath + "/kubeconfig-client-cert",
 			})
 
-			// front-proxy service-account cert
-			volumes = append(volumes, corev1.Volume{
-				Name: resources.GetRootShardCertificateName(rootShard, operatorv1alpha1.ServiceAccountCertificate),
-				VolumeSource: corev1.VolumeSource{
-					Secret: &corev1.SecretVolumeSource{
-						SecretName: resources.GetRootShardCertificateName(rootShard, operatorv1alpha1.ServiceAccountCertificate),
-					},
-				},
-			})
-			volumeMounts = append(volumeMounts, corev1.VolumeMount{
-				Name:      resources.GetRootShardCertificateName(rootShard, operatorv1alpha1.ServiceAccountCertificate),
-				ReadOnly:  true,
-				MountPath: fmt.Sprintf("/etc/kcp/tls/%s", string(operatorv1alpha1.ServiceAccountCertificate)),
-			})
-
 			// front-proxy server cert
 			volumes = append(volumes, corev1.Volume{
 				Name: resources.GetFrontProxyCertificateName(rootShard, frontProxy, operatorv1alpha1.ServerCertificate),
@@ -236,7 +221,7 @@ func DeploymentReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootShard *op
 			}
 
 			dep = utils.ApplyDeploymentTemplate(dep, frontProxy.Spec.DeploymentTemplate)
-			dep = utils.ApplyAuthConfiguration(dep, frontProxy.Spec.Auth)
+			dep = utils.ApplyFrontProxyAuthConfiguration(dep, frontProxy.Spec.Auth, rootShard)
 
 			return dep, nil
 		}

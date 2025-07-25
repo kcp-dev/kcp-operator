@@ -72,6 +72,17 @@ type RootShardStatus struct {
 	// +listType=map
 	// +listMapKey=type
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
+
+	// Shards is a list of shards that are currently registered with this root shard.
+	// +listType=map
+	// +listMapKey=name
+	// +optional
+	Shards []ShardReference `json:"shards,omitempty"`
+}
+
+type ShardReference struct {
+	// Name is the name of the shard.
+	Name string `json:"name"`
 }
 
 type RootShardPhase string

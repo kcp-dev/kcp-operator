@@ -79,7 +79,6 @@ func TestDeploymentReconciler(t *testing.T) {
 				expectedMounts := []string{
 					resources.GetFrontProxyDynamicKubeconfigName(&operatorv1alpha1.RootShard{ObjectMeta: metav1.ObjectMeta{Name: "test-root-shard"}}, &operatorv1alpha1.FrontProxy{ObjectMeta: metav1.ObjectMeta{Name: "test-front-proxy"}}),
 					resources.GetFrontProxyCertificateName(&operatorv1alpha1.RootShard{ObjectMeta: metav1.ObjectMeta{Name: "test-root-shard"}}, &operatorv1alpha1.FrontProxy{ObjectMeta: metav1.ObjectMeta{Name: "test-front-proxy"}}, operatorv1alpha1.KubeconfigCertificate),
-					resources.GetRootShardCertificateName(&operatorv1alpha1.RootShard{ObjectMeta: metav1.ObjectMeta{Name: "test-root-shard"}}, operatorv1alpha1.ServiceAccountCertificate),
 					resources.GetFrontProxyCertificateName(&operatorv1alpha1.RootShard{ObjectMeta: metav1.ObjectMeta{Name: "test-root-shard"}}, &operatorv1alpha1.FrontProxy{ObjectMeta: metav1.ObjectMeta{Name: "test-front-proxy"}}, operatorv1alpha1.ServerCertificate),
 					resources.GetFrontProxyCertificateName(&operatorv1alpha1.RootShard{ObjectMeta: metav1.ObjectMeta{Name: "test-root-shard"}}, &operatorv1alpha1.FrontProxy{ObjectMeta: metav1.ObjectMeta{Name: "test-front-proxy"}}, operatorv1alpha1.RequestHeaderClientCertificate),
 					resources.GetFrontProxyConfigName(&operatorv1alpha1.FrontProxy{ObjectMeta: metav1.ObjectMeta{Name: "test-front-proxy"}}),
@@ -302,6 +301,99 @@ func TestDeploymentReconciler(t *testing.T) {
 				}
 				assert.True(t, foundIssuer, "OIDC issuer flag not found or incorrect")
 				assert.True(t, foundClientID, "OIDC client-id flag not found or incorrect")
+			},
+		},
+		{
+			name: "service account authentication configured",
+			frontProxy: &operatorv1alpha1.FrontProxy{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-front-proxy",
+				},
+				Spec: operatorv1alpha1.FrontProxySpec{
+					RootShard: operatorv1alpha1.RootShardConfig{
+						Reference: &corev1.LocalObjectReference{
+							Name: "test-root-shard",
+						},
+					},
+					Auth: &operatorv1alpha1.AuthSpec{
+						ServiceAccount: &operatorv1alpha1.ServiceAccountAuthentication{
+							Enabled: true,
+						},
+					},
+				},
+			},
+			rootShard: &operatorv1alpha1.RootShard{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-root-shard",
+				},
+				Status: operatorv1alpha1.RootShardStatus{
+					Shards: []operatorv1alpha1.ShardReference{
+						{
+							Name: "test-root-shard",
+						},
+						{
+							Name: "test-shard-2",
+						},
+					},
+				},
+			},
+			expectedName: resources.GetFrontProxyDeploymentName(&operatorv1alpha1.FrontProxy{
+				ObjectMeta: metav1.ObjectMeta{Name: "test-front-proxy"},
+			}),
+			validateDeploy: func(t *testing.T, dep *appsv1.Deployment) {
+				container := dep.Spec.Template.Spec.Containers[0]
+				args := container.Args
+				// Debug: print all arguments
+				t.Logf("Generated args: %v", args)
+				// Check for service account lookup flag
+				foundServiceAccountLookup := false
+				foundShard1 := false
+				foundShard2 := false
+
+				for _, arg := range args {
+					if strings.HasPrefix(arg, "--service-account-lookup=false") {
+						foundServiceAccountLookup = true
+					}
+					if strings.HasPrefix(arg, "--service-account-key-file=/etc/kcp/tls/test-root-shard/service-account/tls.key") {
+						foundShard1 = true
+					}
+					if strings.HasPrefix(arg, "--service-account-key-file=/etc/kcp/tls/test-shard-2/service-account/tls.key") {
+						foundShard2 = true
+					}
+				}
+				assert.True(t, foundServiceAccountLookup, "Service account lookup flag not found or incorrect")
+				assert.True(t, foundShard1, "Shard 1 service account key file not found or incorrect")
+				assert.True(t, foundShard2, "Shard 2 service account key file not found or incorrect")
+
+				foundShard1Volume := false
+				foundShard2Volume := false
+
+				for _, volume := range dep.Spec.Template.Spec.Volumes {
+					if volume.Name == resources.GetRootShardCertificateName(&operatorv1alpha1.RootShard{ObjectMeta: metav1.ObjectMeta{Name: "test-root-shard"}}, operatorv1alpha1.ServiceAccountCertificate) {
+						foundShard1Volume = true
+					}
+					if volume.Name == resources.GetShardCertificateName(&operatorv1alpha1.Shard{ObjectMeta: metav1.ObjectMeta{Name: "test-shard-2"}}, operatorv1alpha1.ServiceAccountCertificate) {
+						foundShard2Volume = true
+					}
+				}
+
+				assert.True(t, foundShard1Volume, "Shard 1 service account volume not found or incorrect")
+				assert.True(t, foundShard2Volume, "Shard 2 service account volume not found or incorrect")
+
+				foundShard1VolumeMount := false
+				foundShard2VolumeMount := false
+
+				for _, volumeMount := range container.VolumeMounts {
+					if volumeMount.Name == resources.GetRootShardCertificateName(&operatorv1alpha1.RootShard{ObjectMeta: metav1.ObjectMeta{Name: "test-root-shard"}}, operatorv1alpha1.ServiceAccountCertificate) {
+						foundShard1VolumeMount = true
+					}
+					if volumeMount.Name == resources.GetShardCertificateName(&operatorv1alpha1.Shard{ObjectMeta: metav1.ObjectMeta{Name: "test-shard-2"}}, operatorv1alpha1.ServiceAccountCertificate) {
+						foundShard2VolumeMount = true
+					}
+				}
+
+				assert.True(t, foundShard1VolumeMount, "Shard 1 service account volume mount not found or incorrect")
+				assert.True(t, foundShard2VolumeMount, "Shard 2 service account volume mount not found or incorrect")
 			},
 		},
 	}

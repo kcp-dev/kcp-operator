@@ -27,8 +27,9 @@ import (
 // RootShardStatusApplyConfiguration represents a declarative configuration of the RootShardStatus type for use
 // with apply.
 type RootShardStatusApplyConfiguration struct {
-	Phase      *v1alpha1.RootShardPhase         `json:"phase,omitempty"`
-	Conditions []v1.ConditionApplyConfiguration `json:"conditions,omitempty"`
+	Phase      *v1alpha1.RootShardPhase           `json:"phase,omitempty"`
+	Conditions []v1.ConditionApplyConfiguration   `json:"conditions,omitempty"`
+	Shards     []ShardReferenceApplyConfiguration `json:"shards,omitempty"`
 }
 
 // RootShardStatusApplyConfiguration constructs a declarative configuration of the RootShardStatus type for use with
@@ -54,6 +55,19 @@ func (b *RootShardStatusApplyConfiguration) WithConditions(values ...*v1.Conditi
 			panic("nil value passed to WithConditions")
 		}
 		b.Conditions = append(b.Conditions, *values[i])
+	}
+	return b
+}
+
+// WithShards adds the given value to the Shards field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the Shards field.
+func (b *RootShardStatusApplyConfiguration) WithShards(values ...*ShardReferenceApplyConfiguration) *RootShardStatusApplyConfiguration {
+	for i := range values {
+		if values[i] == nil {
+			panic("nil value passed to WithShards")
+		}
+		b.Shards = append(b.Shards, *values[i])
 	}
 	return b
 }
