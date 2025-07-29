@@ -20,12 +20,17 @@ kcp-operator is a Kubernetes operator to deploy and run [kcp](https://github.com
 
 The table below marks known support of a kcp version in kcp-operator versions.
 
-| kcp    | `main`             |
-| ------ | ------------------ |
-| `main` | :warning:          |
-| 0.27.x | :white_check_mark: |
+| kcp    | `main`             | 0.1.x              |
+| ------ | ------------------ | ------------------ |
+| `main` | :warning:          | :question:         |
+| 0.28.x | :white_check_mark: | :question:         |
+| 0.27.x | :question:         | :white_check_mark: |
 
-<small>While we try to support kcp's `main` branch, this support is best effort and should not be used for deploying actual kcp instances.</small>
+*Explanation*:
+
+- :white_check_mark:: This combination is actively tested in CI and is supported.
+- :warning:: While we try to support kcp's `main` branch, this support is best effort and should not be used for deploying actual kcp instances.
+- :question:: While this *could* work, it is not actively validated by CI pipelines. Support for it is limited.
 
 ## Contributing
 
