@@ -145,6 +145,7 @@ func DeploymentReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1al
 
 			dep = utils.ApplyCommonShardConfig(dep, &shard.Spec.CommonShardSpec)
 			dep = utils.ApplyDeploymentTemplate(dep, shard.Spec.DeploymentTemplate)
+			dep = utils.ApplyAuthConfiguration(dep, shard.Spec.Auth)
 
 			return dep, nil
 		}

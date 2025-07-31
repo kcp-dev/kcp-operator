@@ -120,6 +120,74 @@ spec:
                         type: string
                     type: object
                 type: object
+              auth:
+                description: 'Optional: Auth configures various aspects of Authentication
+                  and Authorization for this shard.'
+                properties:
+                  dropGroups:
+                    description: 'Optional: DropGroups configures groups to be dropped
+                      before forwarding requests to Shards.'
+                    items:
+                      type: string
+                    type: array
+                  oidc:
+                    description: 'Optional: OIDC configures OpenID Connect Authentication.'
+                    properties:
+                      clientID:
+                        description: ClientID is the OIDC client ID configured on
+                          the issuer side for this KCP instance.
+                        type: string
+                      clientSecret:
+                        description: |-
+                          Optionally provide the client secret for the OIDC client. This is not used by KCP itself, but is used to generate
+                          a OIDC kubeconfig that can be shared with users to log in via the OIDC provider.
+                        type: string
+                      groupsClaim:
+                        description: 'Experimental: Optionally provides a custom claim
+                          for fetching groups. The claim must be a string or an array
+                          of strings.'
+                        type: string
+                      groupsPrefix:
+                        description: |-
+                          Optionally sets a custom groups prefix. This defaults to "oidc:" if unset, which means a group called "group1"
+                          on the OIDC side will be recognised as "oidc:group1" in KCP.
+                        type: string
+                      issuerURL:
+                        description: IssuerURL is used for the OIDC issuer URL. Only
+                          https URLs will be accepted.
+                        type: string
+                      usernameClaim:
+                        description: Optionally uses a custom claim for fetching the
+                          username. This defaults to "sub" if unset.
+                        type: string
+                      usernamePrefix:
+                        description: |-
+                          Optionally sets a custom username prefix. This defaults to "oidc:" if unset, which means a user called "user@example.com"
+                          on the OIDC side will be recognised as "oidc:user@example.com" in KCP.
+                        type: string
+                    required:
+                    - clientID
+                    - issuerURL
+                    type: object
+                  passOnGroups:
+                    description: 'Optional: PassOnGroups configures groups to be passed
+                      on before forwarding requests to Shards'
+                    items:
+                      type: string
+                    type: array
+                  serviceAccount:
+                    description: 'Optional: serviceAccountAuthentication configures
+                      ServiceAccount Authentication.'
+                    properties:
+                      enabled:
+                        description: |-
+                          Optional: Enabled enables or disables ServiceAccount Authentication.
+                          If set, it will mount every shard's service account certificate to the front-proxy.
+                        type: boolean
+                    required:
+                    - enabled
+                    type: object
+                type: object
               authorization:
                 properties:
                   webhook:
@@ -1742,6 +1810,21 @@ spec:
                 x-kubernetes-list-type: map
               phase:
                 type: string
+              shards:
+                description: Shards is a list of shards that are currently registered
+                  with this root shard.
+                items:
+                  properties:
+                    name:
+                      description: Name is the name of the shard.
+                      type: string
+                  required:
+                  - name
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - name
+                x-kubernetes-list-type: map
             type: object
         type: object
     served: true

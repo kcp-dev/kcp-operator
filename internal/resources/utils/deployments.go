@@ -95,3 +95,16 @@ func ApplyAuthConfiguration(deployment *appsv1.Deployment, config *operatorv1alp
 
 	return deployment
 }
+
+func ApplyFrontProxyAuthConfiguration(deployment *appsv1.Deployment, config *operatorv1alpha1.AuthSpec, rootShard *operatorv1alpha1.RootShard) *appsv1.Deployment {
+	if config == nil {
+		return deployment
+	}
+	deployment = ApplyAuthConfiguration(deployment, config)
+
+	if config.ServiceAccount != nil && config.ServiceAccount.Enabled {
+		deployment = applyServiceAccountAuthentication(deployment, rootShard)
+	}
+
+	return deployment
+}

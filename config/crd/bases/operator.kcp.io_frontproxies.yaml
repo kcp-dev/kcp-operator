@@ -82,7 +82,7 @@ spec:
                 properties:
                   dropGroups:
                     description: 'Optional: DropGroups configures groups to be dropped
-                      before forwarding requests to Shards'
+                      before forwarding requests to Shards.'
                     items:
                       type: string
                     type: array
@@ -131,6 +131,18 @@ spec:
                     items:
                       type: string
                     type: array
+                  serviceAccount:
+                    description: 'Optional: serviceAccountAuthentication configures
+                      ServiceAccount Authentication.'
+                    properties:
+                      enabled:
+                        description: |-
+                          Optional: Enabled enables or disables ServiceAccount Authentication.
+                          If set, it will mount every shard's service account certificate to the front-proxy.
+                        type: boolean
+                    required:
+                    - enabled
+                    type: object
                 type: object
               certificateTemplates:
                 additionalProperties:

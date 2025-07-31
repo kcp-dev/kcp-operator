@@ -25,6 +25,7 @@ import (
 	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/utils/ptr"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -116,4 +117,26 @@ func fetchRootShard(ctx context.Context, client ctrlruntimeclient.Client, namesp
 		Reason:  string(operatorv1alpha1.ConditionReasonRootShardRefValid),
 		Message: "RootShard reference is valid.",
 	}, rootShard
+}
+
+// getRootShardChildren returns all shards that are currently registered with the given root shard.
+func getRootShardChildren(ctx context.Context, client ctrlruntimeclient.Client, rootShard *operatorv1alpha1.RootShard) ([]operatorv1alpha1.Shard, error) {
+	var errs []error
+
+	var shards operatorv1alpha1.ShardList
+	err := client.List(ctx, &shards, &ctrlruntimeclient.ListOptions{
+		Namespace: rootShard.Namespace,
+	})
+	if err != nil {
+		errs = append(errs, err)
+	}
+
+	var result []operatorv1alpha1.Shard
+	for _, shard := range shards.Items {
+		if shard.Spec.RootShard.Reference.Name == rootShard.Name {
+			result = append(result, shard)
+		}
+	}
+
+	return result, kerrors.NewAggregate(errs)
 }
