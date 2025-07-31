@@ -1395,6 +1395,270 @@ reduce the size enough, event is discarded.</p>
 
 <div class="property depth-1">
 <div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.auth">.spec.auth</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+<div class="property-description">
+<p>Optional: Auth configures various aspects of Authentication and Authorization for this shard.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.auth.dropGroups">.spec.auth.dropGroups</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">array</span>
+
+</div>
+
+<div class="property-description">
+<p>Optional: DropGroups configures groups to be dropped before forwarding requests to Shards.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.auth.dropGroups[*]">.spec.auth.dropGroups[*]</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.auth.oidc">.spec.auth.oidc</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+<div class="property-description">
+<p>Optional: OIDC configures OpenID Connect Authentication.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.auth.oidc.clientID">.spec.auth.oidc.clientID</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>ClientID is the OIDC client ID configured on the issuer side for this KCP instance.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.auth.oidc.clientSecret">.spec.auth.oidc.clientSecret</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>Optionally provide the client secret for the OIDC client. This is not used by KCP itself, but is used to generate
+a OIDC kubeconfig that can be shared with users to log in via the OIDC provider.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.auth.oidc.groupsClaim">.spec.auth.oidc.groupsClaim</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>Experimental: Optionally provides a custom claim for fetching groups. The claim must be a string or an array of strings.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.auth.oidc.groupsPrefix">.spec.auth.oidc.groupsPrefix</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>Optionally sets a custom groups prefix. This defaults to &ldquo;oidc:&rdquo; if unset, which means a group called &ldquo;group1&rdquo;
+on the OIDC side will be recognised as &ldquo;oidc:group1&rdquo; in KCP.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.auth.oidc.issuerURL">.spec.auth.oidc.issuerURL</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>IssuerURL is used for the OIDC issuer URL. Only https URLs will be accepted.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.auth.oidc.usernameClaim">.spec.auth.oidc.usernameClaim</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>Optionally uses a custom claim for fetching the username. This defaults to &ldquo;sub&rdquo; if unset.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.auth.oidc.usernamePrefix">.spec.auth.oidc.usernamePrefix</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>Optionally sets a custom username prefix. This defaults to &ldquo;oidc:&rdquo; if unset, which means a user called &ldquo;user@example.com&rdquo;
+on the OIDC side will be recognised as &ldquo;oidc:user@example.com&rdquo; in KCP.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.auth.passOnGroups">.spec.auth.passOnGroups</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">array</span>
+
+</div>
+
+<div class="property-description">
+<p>Optional: PassOnGroups configures groups to be passed on before forwarding requests to Shards</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.auth.passOnGroups[*]">.spec.auth.passOnGroups[*]</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.auth.serviceAccount">.spec.auth.serviceAccount</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+<div class="property-description">
+<p>Optional: serviceAccountAuthentication configures ServiceAccount Authentication.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.auth.serviceAccount.enabled">.spec.auth.serviceAccount.enabled</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">boolean</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>Optional: Enabled enables or disables ServiceAccount Authentication.
+If set, it will mount every shard&rsquo;s service account certificate to the front-proxy.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-1">
+<div class="property-header">
 <h3 class="property-path" id="v1alpha1-.spec.authorization">.spec.authorization</h3>
 </div>
 <div class="property-body">
@@ -5550,6 +5814,55 @@ This field may not be empty.</p>
 <div class="property-body">
 <div class="property-meta">
 <span class="property-type">string</span>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-1">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.status.shards">.status.shards</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">array</span>
+
+</div>
+
+<div class="property-description">
+<p>Shards is a list of shards that are currently registered with this root shard.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.status.shards[*]">.status.shards[*]</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.status.shards[*].name">.status.shards[*].name</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>Name is the name of the shard.</p>
 
 </div>
 

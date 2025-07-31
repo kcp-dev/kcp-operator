@@ -1249,7 +1249,7 @@ More info: <a href="https://git.k8s.io/community/contributors/devel/sig-architec
 </div>
 
 <div class="property-description">
-<p>Optional: DropGroups configures groups to be dropped before forwarding requests to Shards</p>
+<p>Optional: DropGroups configures groups to be dropped before forwarding requests to Shards.</p>
 
 </div>
 
@@ -1441,6 +1441,43 @@ on the OIDC side will be recognised as &ldquo;oidc:user@example.com&rdquo; in KC
 <div class="property-body">
 <div class="property-meta">
 <span class="property-type">string</span>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.auth.serviceAccount">.spec.auth.serviceAccount</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+<div class="property-description">
+<p>Optional: serviceAccountAuthentication configures ServiceAccount Authentication.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.auth.serviceAccount.enabled">.spec.auth.serviceAccount.enabled</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">boolean</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>Optional: Enabled enables or disables ServiceAccount Authentication.
+If set, it will mount every shard&rsquo;s service account certificate to the front-proxy.</p>
 
 </div>
 
