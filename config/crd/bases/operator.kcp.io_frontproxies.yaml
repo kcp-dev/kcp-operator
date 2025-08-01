@@ -77,8 +77,9 @@ spec:
                   type: object
                 type: array
               auth:
-                description: 'Optional: Auth configures various aspects of Authentication
-                  and Authorization for this front-proxy instance.'
+                description: |-
+                  Optional: Auth configures various aspects of Authentication and Authorization for this front-proxy instance.
+                  If OIDC is enabled, it also requires enabling ServiceAccount authentication (as front-proxy will start validating JWT tokens, which includes ServiceAccount tokens).
                 properties:
                   dropGroups:
                     description: 'Optional: DropGroups configures groups to be dropped
@@ -144,6 +145,9 @@ spec:
                     - enabled
                     type: object
                 type: object
+                x-kubernetes-validations:
+                - message: OIDC requires ServiceAccount auth to be enabled.
+                  rule: '!has(self.oidc) || (has(self.serviceAccount) && self.serviceAccount.enabled)'
               certificateTemplates:
                 additionalProperties:
                   properties:

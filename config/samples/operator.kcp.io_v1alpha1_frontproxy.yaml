@@ -6,6 +6,9 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
   name: frontproxy-sample
 spec:
+  auth:
+    serviceAccount:
+      enabled: true
   rootShard:
     ref:
       name: shard-sample

@@ -30,6 +30,8 @@ type FrontProxySpec struct {
 	// Resources overrides the default resource requests and limits.
 	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
 	// Optional: Auth configures various aspects of Authentication and Authorization for this front-proxy instance.
+	// If OIDC is enabled, it also requires enabling ServiceAccount authentication (as front-proxy will start validating JWT tokens, which includes ServiceAccount tokens).
+	// +kubebuilder:validation:XValidation:rule="!has(self.oidc) || (has(self.serviceAccount) && self.serviceAccount.enabled)",message="OIDC requires ServiceAccount auth to be enabled."
 	Auth *AuthSpec `json:"auth,omitempty"`
 	// Optional: AdditionalPathMappings configures // TODO ?
 	AdditionalPathMappings []PathMappingEntry `json:"additionalPathMappings,omitempty"`
