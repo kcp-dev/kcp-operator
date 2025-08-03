@@ -168,6 +168,7 @@ func getArgs(rootShard *operatorv1alpha1.RootShard) []string {
 		fmt.Sprintf("--tls-cert-file=%s/tls.crt", getCertificateMountPath(operatorv1alpha1.ServerCertificate)),
 		fmt.Sprintf("--service-account-key-file=%s/tls.crt", getCertificateMountPath(operatorv1alpha1.ServiceAccountCertificate)),
 		fmt.Sprintf("--service-account-private-key-file=%s/tls.key", getCertificateMountPath(operatorv1alpha1.ServiceAccountCertificate)),
+		"--service-account-lookup=false",
 
 		// General shard configuration.
 		fmt.Sprintf("--shard-base-url=%s", resources.GetRootShardBaseURL(rootShard)),
