@@ -6,24 +6,33 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="Step by step guide to get kcp-operator up and running for development purposes in a kind cluster.
+">
       
       
       
+        <link rel="canonical" href="https://docs.kcp.io/kcp-operator/main/contributing/local-setup/">
       
       
-      <link rel="icon" href="/kcp-operator/main/favicons/favicon.ico">
+        <link rel="prev" href="../">
+      
+      
+        <link rel="next" href="../architecture/">
+      
+      
+      <link rel="icon" href="../../favicons/favicon.ico">
       <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.17">
     
     
       
-        <title>kcp-operator</title>
+        <title>Local Setup - kcp-operator</title>
       
     
     
-      <link rel="stylesheet" href="/kcp-operator/main/assets/stylesheets/main.bcfcd587.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.bcfcd587.min.css">
       
         
-        <link rel="stylesheet" href="/kcp-operator/main/assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
       
       
 
@@ -42,9 +51,9 @@
       
     
     
-      <link rel="stylesheet" href="/kcp-operator/main/stylesheets/crd.css">
+      <link rel="stylesheet" href="../../stylesheets/crd.css">
     
-    <script>__md_scope=new URL("/kcp-operator/main",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -69,6 +78,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#local-setup" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -83,9 +97,9 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="/kcp-operator/main/." title="kcp-operator" class="md-header__button md-logo" aria-label="kcp-operator" data-md-component="logo">
+    <a href="../.." title="kcp-operator" class="md-header__button md-logo" aria-label="kcp-operator" data-md-component="logo">
       
-  <img src="/kcp-operator/main/logo.svg" alt="logo">
+  <img src="../../logo.svg" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -102,7 +116,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              
+              Local Setup
             
           </span>
         </div>
@@ -219,7 +233,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="/kcp-operator/main/." class="md-tabs__link">
+      <a href="../.." class="md-tabs__link">
         
   
     
@@ -238,7 +252,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="/kcp-operator/main/setup/" class="md-tabs__link">
+        <a href="../../setup/" class="md-tabs__link">
           
   
     
@@ -258,7 +272,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="/kcp-operator/main/reference/" class="md-tabs__link">
+        <a href="../../reference/" class="md-tabs__link">
           
   
     
@@ -274,11 +288,13 @@
         
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="/kcp-operator/main/contributing/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
           
   
     
@@ -313,9 +329,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="/kcp-operator/main/." title="kcp-operator" class="md-nav__button md-logo" aria-label="kcp-operator" data-md-component="logo">
+    <a href="../.." title="kcp-operator" class="md-nav__button md-logo" aria-label="kcp-operator" data-md-component="logo">
       
-  <img src="/kcp-operator/main/logo.svg" alt="logo">
+  <img src="../../logo.svg" alt="logo">
 
     </a>
     kcp-operator
@@ -342,7 +358,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/kcp-operator/main/." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -387,7 +403,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="/kcp-operator/main/setup/" class="md-nav__link ">
+            <a href="../../setup/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -420,7 +436,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/kcp-operator/main/setup/quickstart/" class="md-nav__link">
+      <a href="../../setup/quickstart/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -473,7 +489,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="/kcp-operator/main/reference/" class="md-nav__link ">
+            <a href="../../reference/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -600,7 +616,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/kcp-operator/main/reference/crd/operator.kcp.io/frontproxies/" class="md-nav__link">
+      <a href="../../reference/crd/operator.kcp.io/frontproxies/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -621,7 +637,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/kcp-operator/main/reference/crd/operator.kcp.io/kubeconfigs/" class="md-nav__link">
+      <a href="../../reference/crd/operator.kcp.io/kubeconfigs/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -642,7 +658,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/kcp-operator/main/reference/crd/operator.kcp.io/rootshards/" class="md-nav__link">
+      <a href="../../reference/crd/operator.kcp.io/rootshards/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -663,7 +679,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/kcp-operator/main/reference/crd/operator.kcp.io/shards/" class="md-nav__link">
+      <a href="../../reference/crd/operator.kcp.io/shards/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -704,6 +720,8 @@
       
   
   
+    
+  
   
   
     
@@ -724,21 +742,22 @@
     
     
       
+        
+        
+      
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="/kcp-operator/main/contributing/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -749,13 +768,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             Contributing
@@ -768,10 +787,30 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="/kcp-operator/main/contributing/local-setup/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Local Setup
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -780,6 +819,95 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prerequisites
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prepare-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prepare Environment
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#run-operator" class="md-nav__link">
+    <span class="md-ellipsis">
+      Run Operator
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Run Operator">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#option-1-deploy-operator" class="md-nav__link">
+    <span class="md-ellipsis">
+      Option 1: Deploy Operator
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#option-2-run-operator-directly" class="md-nav__link">
+    <span class="md-ellipsis">
+      Option 2: Run Operator Directly
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-kcp-instance" class="md-nav__link">
+    <span class="md-ellipsis">
+      Create kcp Instance
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#connect-to-kcp" class="md-nav__link">
+    <span class="md-ellipsis">
+      Connect to kcp
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -792,7 +920,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/kcp-operator/main/contributing/architecture/" class="md-nav__link">
+      <a href="../architecture/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -813,7 +941,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/kcp-operator/main/contributing/releasing/" class="md-nav__link">
+      <a href="../releasing/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -857,7 +985,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="/kcp-operator/main/contributing/continuous-integration/" class="md-nav__link ">
+            <a href="../continuous-integration/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -910,6 +1038,85 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prerequisites
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prepare-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prepare Environment
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#run-operator" class="md-nav__link">
+    <span class="md-ellipsis">
+      Run Operator
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Run Operator">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#option-1-deploy-operator" class="md-nav__link">
+    <span class="md-ellipsis">
+      Option 1: Deploy Operator
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#option-2-run-operator-directly" class="md-nav__link">
+    <span class="md-ellipsis">
+      Option 2: Run Operator Directly
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-kcp-instance" class="md-nav__link">
+    <span class="md-ellipsis">
+      Create kcp Instance
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#connect-to-kcp" class="md-nav__link">
+    <span class="md-ellipsis">
+      Connect to kcp
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -921,8 +1128,100 @@
             <div class="md-content" data-md-component="content">
               <article class="md-content__inner md-typeset">
                 
-  <h1>404 - Not found</h1>
+                  
 
+  
+  
+
+
+<h1 id="local-setup">Local Setup</h1>
+<p>The files in <a href="https://github.com/kcp-dev/kcp-operator/tree/main/config/samples">config/samples</a> showcase kcp-operator resources but have been crafted to get a kind setup up and running quickly.</p>
+<p>Also check out the <a href="../../setup/quickstart/">Quickstart guide</a> for more information on getting a first kcp setup up and running.</p>
+<h2 id="prerequisites">Prerequisites</h2>
+<ul>
+<li>A local copy of the kcp-operator repository</li>
+<li><a href="https://kind.sigs.k8s.io/">kind</a></li>
+</ul>
+<p>To make DNS working from your local machine, it is necessary to create an entry in your <code>/etc/hosts</code> (or corresponding OS mechanism):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>127.0.0.2 example.operator.kcp.io
+</code></pre></div>
+<h2 id="prepare-environment">Prepare Environment</h2>
+<p>First, create a kind cluster if you do not have one yet:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>kind<span class="w"> </span>create<span class="w"> </span>cluster
+</code></pre></div>
+<p>Install cert-manager, it is required to create kcp's PKI:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>https://github.com/cert-manager/cert-manager/releases/download/v1.18.2/cert-manager.yaml
+</code></pre></div>
+<p>Set up two etcd instances, one for the root shard and one for a supplementary shard:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>helm<span class="w"> </span>install<span class="w"> </span>etcd<span class="w"> </span>oci://registry-1.docker.io/bitnamicharts/etcd<span class="w"> </span>--set<span class="w"> </span>auth.rbac.enabled<span class="o">=</span><span class="nb">false</span><span class="w"> </span>--set<span class="w"> </span>auth.rbac.create<span class="o">=</span><span class="nb">false</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>helm<span class="w"> </span>install<span class="w"> </span>etcd-shard<span class="w"> </span>oci://registry-1.docker.io/bitnamicharts/etcd<span class="w"> </span>--set<span class="w"> </span>auth.rbac.enabled<span class="o">=</span><span class="nb">false</span><span class="w"> </span>--set<span class="w"> </span>auth.rbac.create<span class="o">=</span><span class="nb">false</span>
+</code></pre></div>
+<p>Create a "self-signed" cert-manager issuer:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>config/samples/cert-manager/issuer.yaml
+</code></pre></div>
+<h2 id="run-operator">Run Operator</h2>
+<p>Now the operator needs to be started. You can either deploy the operator into the cluster to ensure
+the built container image behaves as intended (e.g. has the necessary RBAC, etc) or -- for rapid development --
+run the operator as a binary.</p>
+<h3 id="option-1-deploy-operator">Option 1: Deploy Operator</h3>
+<p>Build the image:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>make<span class="w"> </span>docker-build<span class="w"> </span><span class="nv">IMG</span><span class="o">=</span>ghcr.io/kcp-dev/kcp-operator:1
+</code></pre></div>
+<p>Load the image into the kind cluster:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>kind<span class="w"> </span>load<span class="w"> </span>docker-image<span class="w"> </span>ghcr.io/kcp-dev/kcp-operator:1
+</code></pre></div>
+<p>Deploy the operator manifests into the cluster:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>make<span class="w"> </span>deploy<span class="w"> </span><span class="nv">IMG</span><span class="o">=</span>ghcr.io/kcp-dev/kcp-operator:1
+</code></pre></div>
+<h3 id="option-2-run-operator-directly">Option 2: Run Operator Directly</h3>
+<p>Alternatively, apply the CRDs to the cluster:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-k<span class="w"> </span>./config/crd/
+</code></pre></div>
+<p>Then start the operator via <code>go run</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>go<span class="w"> </span>run<span class="w"> </span>./cmd/main.go
+</code></pre></div>
+<h2 id="create-kcp-instance">Create kcp Instance</h2>
+<p>Now you can create a root shard:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>config/samples/operator.kcp.io_v1alpha1_rootshard.yaml<span class="w">       </span>
+</code></pre></div>
+<p>Create the additional shard:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>config/samples/operator.kcp.io_v1alpha1_shard.yaml
+</code></pre></div>
+<p>Create the front-proxy instance:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>config/samples/operator.kcp.io_v1alpha1_frontproxy.yaml
+</code></pre></div>
+<p>Finally, let's create a kubeconfig that we can use to access the kcp
+environment via its front-proxy:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>config/samples/operator.kcp.io_v1alpha1_kubeconfig.yaml
+</code></pre></div>
+<h2 id="connect-to-kcp">Connect to kcp</h2>
+<p>Once the kubeconfig above has been reconciled, we can use it to connect to kcp.</p>
+<p>First, fetch the created kubeconfig:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>sample-kubeconfig<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s2">&quot;{.data.kubeconfig}&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="w"> </span>&gt;<span class="w"> </span>admin.kubeconfig
+</code></pre></div>
+<p>Create a port-forwarding in a second terminal:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>kubectl<span class="w"> </span>port-forward<span class="w"> </span>svc/frontproxy-sample-front-proxy<span class="w"> </span><span class="m">6443</span><span class="w"> </span>--address<span class="o">=</span><span class="m">127</span>.0.0.2
+</code></pre></div>
+<p>Use the new 'admin.kubeconfig` to connect:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">KUBECONFIG</span><span class="o">=</span><span class="nv">$PWD</span>/admin.kubeconfig
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>ws
+</code></pre></div>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
               </article>
             </div>
           
@@ -988,10 +1287,10 @@
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "/kcp-operator/main", "features": ["navigation.indexes", "navigation.tabs", "navigation.expand", "navigation.top", "content.code.copy", "content.code.annotate"], "search": "/kcp-operator/main/assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.indexes", "navigation.tabs", "navigation.expand", "navigation.top", "content.code.copy", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="/kcp-operator/main/assets/javascripts/bundle.1e8ae164.min.js"></script>
+      <script src="../../assets/javascripts/bundle.1e8ae164.min.js"></script>
       
     
   </body>
