@@ -42,12 +42,24 @@ type KubeconfigSpec struct {
 	// CertificateTemplate allows to customize the properties on the generated
 	// certificate for this kubeconfig.
 	CertificateTemplate *CertificateTemplate `json:"certificateTemplate,omitempty"`
+
+	// Authorization allows to provision permissions for this kubeconfig.
+	Authorization *KubeconfigAuthorization `json:"authorization,omitempty"`
 }
 
 type KubeconfigTarget struct {
 	RootShardRef  *corev1.LocalObjectReference `json:"rootShardRef,omitempty"`
 	ShardRef      *corev1.LocalObjectReference `json:"shardRef,omitempty"`
 	FrontProxyRef *corev1.LocalObjectReference `json:"frontProxyRef,omitempty"`
+}
+
+type KubeconfigAuthorization struct {
+	ClusterRoleBindings KubeconfigClusterRoleBindings `json:"clusterRoleBindings"`
+}
+
+type KubeconfigClusterRoleBindings struct {
+	WorkspacePath string   `json:"workspacePath"`
+	ClusterRoles  []string `json:"clusterRoles"`
 }
 
 type KubeconfigPhase string
