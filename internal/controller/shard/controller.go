@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controller
+package shard
 
 import (
 	"context"
@@ -38,6 +38,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/kcp-dev/kcp-operator/internal/controller/util"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
 	"github.com/kcp-dev/kcp-operator/internal/resources/shard"
@@ -116,7 +117,7 @@ func (r *ShardReconciler) reconcile(ctx context.Context, s *operatorv1alpha1.Sha
 		conditions []metav1.Condition
 	)
 
-	cond, rootShard := fetchRootShard(ctx, r.Client, s.Namespace, s.Spec.RootShard.Reference)
+	cond, rootShard := util.FetchRootShard(ctx, r.Client, s.Namespace, s.Spec.RootShard.Reference)
 	conditions = append(conditions, cond)
 
 	if rootShard == nil {
@@ -167,7 +168,7 @@ func (r *ShardReconciler) reconcileStatus(ctx context.Context, oldShard *operato
 	var errs []error
 
 	depKey := types.NamespacedName{Namespace: newShard.Namespace, Name: resources.GetShardDeploymentName(newShard)}
-	cond, err := getDeploymentAvailableCondition(ctx, r.Client, depKey)
+	cond, err := util.GetDeploymentAvailableCondition(ctx, r.Client, depKey)
 	if err != nil {
 		errs = append(errs, err)
 	} else {
@@ -176,7 +177,7 @@ func (r *ShardReconciler) reconcileStatus(ctx context.Context, oldShard *operato
 
 	for _, condition := range conditions {
 		condition.ObservedGeneration = newShard.Generation
-		newShard.Status.Conditions = updateCondition(newShard.Status.Conditions, condition)
+		newShard.Status.Conditions = util.UpdateCondition(newShard.Status.Conditions, condition)
 	}
 
 	availableCond := apimeta.FindStatusCondition(newShard.Status.Conditions, string(operatorv1alpha1.ConditionTypeAvailable))
