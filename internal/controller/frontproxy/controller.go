@@ -191,16 +191,15 @@ func (r *FrontProxyReconciler) reconcileStatus(ctx context.Context, oldFrontProx
 		frontProxy.Status.Conditions = util.UpdateCondition(frontProxy.Status.Conditions, condition)
 	}
 
-	availableCond := apimeta.FindStatusCondition(frontProxy.Status.Conditions, string(operatorv1alpha1.ConditionTypeAvailable))
-	switch {
-	case availableCond.Status == metav1.ConditionTrue:
-		frontProxy.Status.Phase = operatorv1alpha1.FrontProxyPhaseRunning
-
-	case frontProxy.DeletionTimestamp != nil:
+	if frontProxy.DeletionTimestamp != nil {
 		frontProxy.Status.Phase = operatorv1alpha1.FrontProxyPhaseDeleting
-
-	case frontProxy.Status.Phase == "":
-		frontProxy.Status.Phase = operatorv1alpha1.FrontProxyPhaseProvisioning
+	} else {
+		availableCond := apimeta.FindStatusCondition(frontProxy.Status.Conditions, string(operatorv1alpha1.ConditionTypeAvailable))
+		if availableCond != nil && availableCond.Status == metav1.ConditionTrue {
+			frontProxy.Status.Phase = operatorv1alpha1.FrontProxyPhaseRunning
+		} else {
+			frontProxy.Status.Phase = operatorv1alpha1.FrontProxyPhaseProvisioning
+		}
 	}
 
 	// only patch the status if there are actual changes.

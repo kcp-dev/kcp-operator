@@ -20,15 +20,14 @@ import (
 	"context"
 	"testing"
 
-	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/stretchr/testify/require"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 	ctrlruntimefakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/kcp-dev/kcp-operator/internal/controller/util"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -61,15 +60,14 @@ func TestReconciling(t *testing.T) {
 		},
 	}
 
-	scheme := runtime.NewScheme()
-	require.Nil(t, operatorv1alpha1.AddToScheme(scheme))
-	require.Nil(t, certmanagerv1.AddToScheme(scheme))
+	scheme := util.GetTestScheme()
 
 	for _, testcase := range testcases {
 		t.Run(testcase.name, func(t *testing.T) {
 			client := ctrlruntimefakeclient.
 				NewClientBuilder().
 				WithScheme(scheme).
+				WithStatusSubresource(testcase.rootShard).
 				WithObjects(testcase.rootShard).
 				Build()
 
@@ -83,7 +81,7 @@ func TestReconciling(t *testing.T) {
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
 				NamespacedName: ctrlruntimeclient.ObjectKeyFromObject(testcase.rootShard),
 			})
-			require.Nil(t, err)
+			require.NoError(t, err)
 		})
 	}
 }

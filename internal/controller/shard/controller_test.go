@@ -90,7 +90,8 @@ func TestReconciling(t *testing.T) {
 			client := ctrlruntimefakeclient.
 				NewClientBuilder().
 				WithScheme(scheme).
-				WithObjects(testcase.rootShard).
+				WithStatusSubresource(testcase.rootShard, testcase.shard).
+				WithObjects(testcase.rootShard, testcase.shard).
 				Build()
 
 			ctx := context.Background()
@@ -103,7 +104,7 @@ func TestReconciling(t *testing.T) {
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
 				NamespacedName: ctrlruntimeclient.ObjectKeyFromObject(testcase.rootShard),
 			})
-			require.Nil(t, err)
+			require.NoError(t, err)
 		})
 	}
 }

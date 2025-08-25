@@ -206,16 +206,15 @@ func (r *RootShardReconciler) reconcileStatus(ctx context.Context, oldRootShard 
 		rootShard.Status.Conditions = util.UpdateCondition(rootShard.Status.Conditions, condition)
 	}
 
-	availableCond := apimeta.FindStatusCondition(rootShard.Status.Conditions, string(operatorv1alpha1.ConditionTypeAvailable))
-	switch {
-	case availableCond.Status == metav1.ConditionTrue:
-		rootShard.Status.Phase = operatorv1alpha1.RootShardPhaseRunning
-
-	case rootShard.DeletionTimestamp != nil:
+	if rootShard.DeletionTimestamp != nil {
 		rootShard.Status.Phase = operatorv1alpha1.RootShardPhaseDeleting
-
-	case rootShard.Status.Phase == "":
-		rootShard.Status.Phase = operatorv1alpha1.RootShardPhaseProvisioning
+	} else {
+		availableCond := apimeta.FindStatusCondition(rootShard.Status.Conditions, string(operatorv1alpha1.ConditionTypeAvailable))
+		if availableCond != nil && availableCond.Status == metav1.ConditionTrue {
+			rootShard.Status.Phase = operatorv1alpha1.RootShardPhaseRunning
+		} else {
+			rootShard.Status.Phase = operatorv1alpha1.RootShardPhaseProvisioning
+		}
 	}
 
 	shards, err := util.GetRootShardChildren(ctx, r.Client, rootShard)
