@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controller
+package rootshard
 
 import (
 	"context"
@@ -39,6 +39,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/kcp-dev/kcp-operator/internal/controller/util"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
 	"github.com/kcp-dev/kcp-operator/internal/resources/rootshard"
@@ -193,7 +194,7 @@ func (r *RootShardReconciler) reconcileStatus(ctx context.Context, oldRootShard 
 	var errs []error
 
 	depKey := types.NamespacedName{Namespace: rootShard.Namespace, Name: resources.GetRootShardDeploymentName(rootShard)}
-	cond, err := getDeploymentAvailableCondition(ctx, r.Client, depKey)
+	cond, err := util.GetDeploymentAvailableCondition(ctx, r.Client, depKey)
 	if err != nil {
 		errs = append(errs, err)
 	} else {
@@ -202,22 +203,21 @@ func (r *RootShardReconciler) reconcileStatus(ctx context.Context, oldRootShard 
 
 	for _, condition := range conditions {
 		condition.ObservedGeneration = rootShard.Generation
-		rootShard.Status.Conditions = updateCondition(rootShard.Status.Conditions, condition)
+		rootShard.Status.Conditions = util.UpdateCondition(rootShard.Status.Conditions, condition)
 	}
 
-	availableCond := apimeta.FindStatusCondition(rootShard.Status.Conditions, string(operatorv1alpha1.ConditionTypeAvailable))
-	switch {
-	case availableCond.Status == metav1.ConditionTrue:
-		rootShard.Status.Phase = operatorv1alpha1.RootShardPhaseRunning
-
-	case rootShard.DeletionTimestamp != nil:
+	if rootShard.DeletionTimestamp != nil {
 		rootShard.Status.Phase = operatorv1alpha1.RootShardPhaseDeleting
-
-	case rootShard.Status.Phase == "":
-		rootShard.Status.Phase = operatorv1alpha1.RootShardPhaseProvisioning
+	} else {
+		availableCond := apimeta.FindStatusCondition(rootShard.Status.Conditions, string(operatorv1alpha1.ConditionTypeAvailable))
+		if availableCond != nil && availableCond.Status == metav1.ConditionTrue {
+			rootShard.Status.Phase = operatorv1alpha1.RootShardPhaseRunning
+		} else {
+			rootShard.Status.Phase = operatorv1alpha1.RootShardPhaseProvisioning
+		}
 	}
 
-	shards, err := getRootShardChildren(ctx, r.Client, rootShard)
+	shards, err := util.GetRootShardChildren(ctx, r.Client, rootShard)
 	if err != nil {
 		errs = append(errs, err)
 	} else {

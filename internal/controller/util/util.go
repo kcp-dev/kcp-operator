@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controller
+package util
 
 import (
 	"context"
@@ -36,7 +36,7 @@ func deploymentReady(dep appsv1.Deployment) bool {
 	return dep.Status.UpdatedReplicas == dep.Status.ReadyReplicas && dep.Status.ReadyReplicas == ptr.Deref(dep.Spec.Replicas, 0)
 }
 
-func getDeploymentAvailableCondition(ctx context.Context, client ctrlruntimeclient.Client, key types.NamespacedName) (metav1.Condition, error) {
+func GetDeploymentAvailableCondition(ctx context.Context, client ctrlruntimeclient.Client, key types.NamespacedName) (metav1.Condition, error) {
 	var dep appsv1.Deployment
 	if err := client.Get(ctx, key, &dep); ctrlruntimeclient.IgnoreNotFound(err) != nil {
 		return metav1.Condition{}, err
@@ -68,7 +68,7 @@ func getDeploymentAvailableCondition(ctx context.Context, client ctrlruntimeclie
 	}, nil
 }
 
-func updateCondition(conditions []metav1.Condition, newCondition metav1.Condition) []metav1.Condition {
+func UpdateCondition(conditions []metav1.Condition, newCondition metav1.Condition) []metav1.Condition {
 	if conditions == nil {
 		conditions = make([]metav1.Condition, 0)
 	}
@@ -91,7 +91,7 @@ func updateCondition(conditions []metav1.Condition, newCondition metav1.Conditio
 	return conditions
 }
 
-func fetchRootShard(ctx context.Context, client ctrlruntimeclient.Client, namespace string, ref *corev1.LocalObjectReference) (metav1.Condition, *operatorv1alpha1.RootShard) {
+func FetchRootShard(ctx context.Context, client ctrlruntimeclient.Client, namespace string, ref *corev1.LocalObjectReference) (metav1.Condition, *operatorv1alpha1.RootShard) {
 	if ref == nil {
 		return metav1.Condition{
 			Type:    string(operatorv1alpha1.ConditionTypeRootShard),
@@ -119,8 +119,8 @@ func fetchRootShard(ctx context.Context, client ctrlruntimeclient.Client, namesp
 	}, rootShard
 }
 
-// getRootShardChildren returns all shards that are currently registered with the given root shard.
-func getRootShardChildren(ctx context.Context, client ctrlruntimeclient.Client, rootShard *operatorv1alpha1.RootShard) ([]operatorv1alpha1.Shard, error) {
+// GetRootShardChildren returns all shards that are currently registered with the given root shard.
+func GetRootShardChildren(ctx context.Context, client ctrlruntimeclient.Client, rootShard *operatorv1alpha1.RootShard) ([]operatorv1alpha1.Shard, error) {
 	var errs []error
 
 	var shards operatorv1alpha1.ShardList

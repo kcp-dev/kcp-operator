@@ -36,7 +36,11 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	"github.com/kcp-dev/kcp-operator/internal/controller"
+	"github.com/kcp-dev/kcp-operator/internal/controller/cacheserver"
+	"github.com/kcp-dev/kcp-operator/internal/controller/frontproxy"
+	"github.com/kcp-dev/kcp-operator/internal/controller/kubeconfig"
+	"github.com/kcp-dev/kcp-operator/internal/controller/rootshard"
+	"github.com/kcp-dev/kcp-operator/internal/controller/shard"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
@@ -149,35 +153,35 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controller.RootShardReconciler{
+	if err = (&rootshard.RootShardReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "KCPInstance")
 		os.Exit(1)
 	}
-	if err = (&controller.FrontProxyReconciler{
+	if err = (&frontproxy.FrontProxyReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "FrontProxy")
 		os.Exit(1)
 	}
-	if err = (&controller.ShardReconciler{
+	if err = (&shard.ShardReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Shard")
 		os.Exit(1)
 	}
-	if err = (&controller.CacheServerReconciler{
+	if err = (&cacheserver.CacheServerReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "CacheServer")
 		os.Exit(1)
 	}
-	if err = (&controller.KubeconfigReconciler{
+	if err = (&kubeconfig.KubeconfigReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {

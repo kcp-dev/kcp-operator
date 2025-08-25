@@ -2,13 +2,10 @@
 # for checking import statements.
 OPENSHIFT_GOIMPORTS_VER := c72f1dc2e3aacfa00aece3391d938c9bc734e791
 RECONCILER_GEN_VER := v0.5.0
-# ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
-ENVTEST_K8S_VERSION = 1.31.0
 ## Tool Versions
 KUBECTL_VERSION ?= v1.32.0
 KUSTOMIZE_VERSION ?= v5.4.3
 CONTROLLER_TOOLS_VERSION ?= v0.16.1
-ENVTEST_VERSION ?= release-0.19
 GOLANGCI_LINT_VERSION ?= 2.1.6
 PROTOKOL_VERSION ?= 0.7.2
 
@@ -63,8 +60,8 @@ vet: ## Run go vet against code.
 	go vet ./...
 
 .PHONY: test
-test: fmt vet envtest ## Run tests.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(TOOLS_DIR) -p path)" go test $$(go list ./... | grep -v /e2e) -coverprofile cover.out
+test: fmt vet ## Run tests.
+	go test $$(go list ./... | grep -v /e2e) -coverprofile cover.out
 
 # Utilize Kind or modify the e2e tests to load the image locally, enabling compatibility with other vendors.
 .PHONY: test-e2e  # Run the e2e tests against a Kind k8s instance that is spun up.
@@ -152,7 +149,6 @@ undeploy: kubectl kustomize ## Undeploy controller from the K8s cluster specifie
 ## Tool Binaries
 KUBECTL ?= $(TOOLS_DIR)/kubectl
 KUSTOMIZE ?= $(TOOLS_DIR)/kustomize
-ENVTEST ?= $(TOOLS_DIR)/setup-envtest
 GOLANGCI_LINT = $(TOOLS_DIR)/golangci-lint
 PROTOKOL = $(TOOLS_DIR)/protokol
 RECONCILER_GEN := $(TOOLS_DIR)/reconciler-gen
@@ -171,13 +167,6 @@ kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary.
 .PHONY: $(KUSTOMIZE)
 $(KUSTOMIZE):
 	@GO_MODULE=true hack/download-tool.sh sigs.k8s.io/kustomize/kustomize/v5 kustomize $(KUSTOMIZE_VERSION)
-
-.PHONY: envtest
-envtest: $(ENVTEST) ## Download setup-envtest locally if necessary.
-
-.PHONY: $(ENVTEST)
-$(ENVTEST):
-	@GO_MODULE=true hack/download-tool.sh sigs.k8s.io/controller-runtime/tools/setup-envtest setup-envtest $(ENVTEST_VERSION)
 
 .PHONY: golangci-lint
 golangci-lint: $(GOLANGCI_LINT) ## Download golangci-lint locally if necessary.
