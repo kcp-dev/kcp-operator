@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package provisioning
+package shardbootstrapping
 
 import (
 	"k8c.io/reconciler/pkg/reconciling"
@@ -25,8 +25,8 @@ import (
 )
 
 const (
-	clusterRoleName        = "system:kcp-operator:provisioner"
-	clusterRoleBindingName = "system:kcp-operator:provisioner"
+	clusterRoleName        = "system:kcp-operator"
+	clusterRoleBindingName = "system:kcp-operator"
 )
 
 // ClusterRoleReconciler creates a dedicated ClusterRole for the kcp-operator to give it permissions

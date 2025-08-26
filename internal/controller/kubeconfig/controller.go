@@ -36,7 +36,7 @@ import (
 
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
-	"github.com/kcp-dev/kcp-operator/internal/resources/kubeconfig"
+	ctrlresources "github.com/kcp-dev/kcp-operator/internal/resources/kubeconfig"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -133,7 +133,7 @@ func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	certReconcilers := []reconciling.NamedCertificateReconcilerFactory{
-		kubeconfig.ClientCertificateReconciler(&kc, clientCertIssuer),
+		ctrlresources.ClientCertificateReconciler(&kc, clientCertIssuer),
 	}
 
 	if err := reconciling.ReconcileCertificates(ctx, certReconcilers, req.Namespace, r.Client); err != nil {
@@ -154,7 +154,7 @@ func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{RequeueAfter: time.Second * 5}, nil
 	}
 
-	reconciler, err := kubeconfig.KubeconfigSecretReconciler(&kc, rootShard, shard, serverCASecret, clientCertSecret)
+	reconciler, err := ctrlresources.KubeconfigSecretReconciler(&kc, rootShard, shard, serverCASecret, clientCertSecret)
 	if err != nil {
 		return ctrl.Result{}, err
 	}

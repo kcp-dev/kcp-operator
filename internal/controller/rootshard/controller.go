@@ -42,7 +42,7 @@ import (
 	"github.com/kcp-dev/kcp-operator/internal/controller/util"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
-	"github.com/kcp-dev/kcp-operator/internal/resources/rootshard"
+	ctrlresources "github.com/kcp-dev/kcp-operator/internal/resources/rootshard"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -130,16 +130,16 @@ func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operator
 	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*metav1.NewControllerRef(rootShard, operatorv1alpha1.SchemeGroupVersion.WithKind("RootShard")))
 
 	issuerReconcilers := []reconciling.NamedIssuerReconcilerFactory{
-		rootshard.RootCAIssuerReconciler(rootShard),
+		ctrlresources.RootCAIssuerReconciler(rootShard),
 	}
 
 	certReconcilers := []reconciling.NamedCertificateReconcilerFactory{
-		rootshard.ServerCertificateReconciler(rootShard),
-		rootshard.ServiceAccountCertificateReconciler(rootShard),
-		rootshard.VirtualWorkspacesCertificateReconciler(rootShard),
-		rootshard.LogicalClusterAdminCertificateReconciler(rootShard),
-		rootshard.ExternalLogicalClusterAdminCertificateReconciler(rootShard),
-		rootshard.OperatorClientCertificateReconciler(rootShard),
+		ctrlresources.ServerCertificateReconciler(rootShard),
+		ctrlresources.ServiceAccountCertificateReconciler(rootShard),
+		ctrlresources.VirtualWorkspacesCertificateReconciler(rootShard),
+		ctrlresources.LogicalClusterAdminCertificateReconciler(rootShard),
+		ctrlresources.ExternalLogicalClusterAdminCertificateReconciler(rootShard),
+		ctrlresources.OperatorClientCertificateReconciler(rootShard),
 	}
 
 	// Intermediate CAs that we need to generate a certificate and an issuer for.
@@ -152,11 +152,11 @@ func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operator
 	}
 
 	for _, ca := range intermediateCAs {
-		certReconcilers = append(certReconcilers, rootshard.CACertificateReconciler(rootShard, ca))
-		issuerReconcilers = append(issuerReconcilers, rootshard.CAIssuerReconciler(rootShard, ca))
+		certReconcilers = append(certReconcilers, ctrlresources.CACertificateReconciler(rootShard, ca))
+		issuerReconcilers = append(issuerReconcilers, ctrlresources.CAIssuerReconciler(rootShard, ca))
 	}
 	if rootShard.Spec.Certificates.IssuerRef != nil {
-		certReconcilers = append(certReconcilers, rootshard.RootCACertificateReconciler(rootShard))
+		certReconcilers = append(certReconcilers, ctrlresources.RootCACertificateReconciler(rootShard))
 	}
 
 	if err := reconciling.ReconcileCertificates(ctx, certReconcilers, rootShard.Namespace, r.Client, ownerRefWrapper); err != nil {
@@ -168,20 +168,20 @@ func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operator
 	}
 
 	if err := k8creconciling.ReconcileSecrets(ctx, []k8creconciling.NamedSecretReconcilerFactory{
-		rootshard.LogicalClusterAdminKubeconfigReconciler(rootShard),
-		rootshard.ExternalLogicalClusterAdminKubeconfigReconciler(rootShard),
+		ctrlresources.LogicalClusterAdminKubeconfigReconciler(rootShard),
+		ctrlresources.ExternalLogicalClusterAdminKubeconfigReconciler(rootShard),
 	}, rootShard.Namespace, r.Client, ownerRefWrapper); err != nil {
 		errs = append(errs, err)
 	}
 
 	if err := k8creconciling.ReconcileDeployments(ctx, []k8creconciling.NamedDeploymentReconcilerFactory{
-		rootshard.DeploymentReconciler(rootShard),
+		ctrlresources.DeploymentReconciler(rootShard),
 	}, rootShard.Namespace, r.Client, ownerRefWrapper); err != nil {
 		errs = append(errs, err)
 	}
 
 	if err := k8creconciling.ReconcileServices(ctx, []k8creconciling.NamedServiceReconcilerFactory{
-		rootshard.ServiceReconciler(rootShard),
+		ctrlresources.ServiceReconciler(rootShard),
 	}, rootShard.Namespace, r.Client, ownerRefWrapper); err != nil {
 		errs = append(errs, err)
 	}

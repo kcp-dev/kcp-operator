@@ -14,8 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package provisioning is responsible for creating operator-specific resources
-// in all kcp (root)shards.
+// Package shardbootstrapping is responsible for creating operator-specific
+// resources in all kcp (root)shards.
 //
 // This is required because the operator will, in other controllers, manage
 // RBAC for Kubeconfigs. Since kubeconfigs can target front-proxies instead of
@@ -27,9 +27,9 @@ limitations under the License.
 // with "system:masters" in it, the front-proxy would drop it and we end up
 // authenticated but permissionless on the target shard.
 //
-// To avoid this scenario, this controller will provision a special
+// To avoid this scenario, this controller will bootstrap a special
 // ClusterRoleBinding on each shard in the system:admin cluster, binding a
 // custom group. The kubeconfig controller will then use a certificate with
 // that group to truly authenticate at any endpoint (shard or front-proxy) with
 // system permissions.
-package provisioning
+package shardbootstrapping

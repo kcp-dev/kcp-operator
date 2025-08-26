@@ -41,7 +41,7 @@ import (
 	"github.com/kcp-dev/kcp-operator/internal/controller/util"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
-	"github.com/kcp-dev/kcp-operator/internal/resources/shard"
+	ctrlresources "github.com/kcp-dev/kcp-operator/internal/resources/shard"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -127,12 +127,12 @@ func (r *ShardReconciler) reconcile(ctx context.Context, s *operatorv1alpha1.Sha
 	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*metav1.NewControllerRef(s, operatorv1alpha1.SchemeGroupVersion.WithKind("Shard")))
 
 	certReconcilers := []reconciling.NamedCertificateReconcilerFactory{
-		shard.ServerCertificateReconciler(s, rootShard),
-		shard.ServiceAccountCertificateReconciler(s, rootShard),
-		shard.VirtualWorkspacesCertificateReconciler(s, rootShard),
-		shard.RootShardClientCertificateReconciler(s, rootShard),
-		shard.LogicalClusterAdminCertificateReconciler(s, rootShard),
-		shard.ExternalLogicalClusterAdminCertificateReconciler(s, rootShard),
+		ctrlresources.ServerCertificateReconciler(s, rootShard),
+		ctrlresources.ServiceAccountCertificateReconciler(s, rootShard),
+		ctrlresources.VirtualWorkspacesCertificateReconciler(s, rootShard),
+		ctrlresources.RootShardClientCertificateReconciler(s, rootShard),
+		ctrlresources.LogicalClusterAdminCertificateReconciler(s, rootShard),
+		ctrlresources.ExternalLogicalClusterAdminCertificateReconciler(s, rootShard),
 	}
 
 	if err := reconciling.ReconcileCertificates(ctx, certReconcilers, s.Namespace, r.Client, ownerRefWrapper); err != nil {
@@ -140,21 +140,21 @@ func (r *ShardReconciler) reconcile(ctx context.Context, s *operatorv1alpha1.Sha
 	}
 
 	if err := k8creconciling.ReconcileSecrets(ctx, []k8creconciling.NamedSecretReconcilerFactory{
-		shard.RootShardClientKubeconfigReconciler(s, rootShard),
-		shard.LogicalClusterAdminKubeconfigReconciler(s, rootShard),
-		shard.ExternalLogicalClusterAdminKubeconfigReconciler(s, rootShard),
+		ctrlresources.RootShardClientKubeconfigReconciler(s, rootShard),
+		ctrlresources.LogicalClusterAdminKubeconfigReconciler(s, rootShard),
+		ctrlresources.ExternalLogicalClusterAdminKubeconfigReconciler(s, rootShard),
 	}, s.Namespace, r.Client, ownerRefWrapper); err != nil {
 		errs = append(errs, err)
 	}
 
 	if err := k8creconciling.ReconcileDeployments(ctx, []k8creconciling.NamedDeploymentReconcilerFactory{
-		shard.DeploymentReconciler(s, rootShard),
+		ctrlresources.DeploymentReconciler(s, rootShard),
 	}, s.Namespace, r.Client, ownerRefWrapper); err != nil {
 		errs = append(errs, err)
 	}
 
 	if err := k8creconciling.ReconcileServices(ctx, []k8creconciling.NamedServiceReconcilerFactory{
-		shard.ServiceReconciler(s),
+		ctrlresources.ServiceReconciler(s),
 	}, s.Namespace, r.Client, ownerRefWrapper); err != nil {
 		errs = append(errs, err)
 	}

@@ -41,7 +41,7 @@ import (
 	"github.com/kcp-dev/kcp-operator/internal/controller/util"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
-	"github.com/kcp-dev/kcp-operator/internal/resources/frontproxy"
+	ctrlresources "github.com/kcp-dev/kcp-operator/internal/resources/frontproxy"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -129,26 +129,26 @@ func (r *FrontProxyReconciler) reconcile(ctx context.Context, frontProxy *operat
 	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*metav1.NewControllerRef(frontProxy, operatorv1alpha1.SchemeGroupVersion.WithKind("FrontProxy")))
 
 	configMapReconcilers := []k8creconciling.NamedConfigMapReconcilerFactory{
-		frontproxy.PathMappingConfigMapReconciler(frontProxy, rootShard),
+		ctrlresources.PathMappingConfigMapReconciler(frontProxy, rootShard),
 	}
 
 	secretReconcilers := []k8creconciling.NamedSecretReconcilerFactory{
-		frontproxy.DynamicKubeconfigSecretReconciler(frontProxy, rootShard),
+		ctrlresources.DynamicKubeconfigSecretReconciler(frontProxy, rootShard),
 	}
 
 	certReconcilers := []reconciling.NamedCertificateReconcilerFactory{
-		frontproxy.ServerCertificateReconciler(frontProxy, rootShard),
-		frontproxy.KubeconfigCertificateReconciler(frontProxy, rootShard),
-		frontproxy.AdminKubeconfigCertificateReconciler(frontProxy, rootShard),
-		frontproxy.RequestHeaderCertificateReconciler(frontProxy, rootShard),
+		ctrlresources.ServerCertificateReconciler(frontProxy, rootShard),
+		ctrlresources.KubeconfigCertificateReconciler(frontProxy, rootShard),
+		ctrlresources.AdminKubeconfigCertificateReconciler(frontProxy, rootShard),
+		ctrlresources.RequestHeaderCertificateReconciler(frontProxy, rootShard),
 	}
 
 	deploymentReconcilers := []k8creconciling.NamedDeploymentReconcilerFactory{
-		frontproxy.DeploymentReconciler(frontProxy, rootShard),
+		ctrlresources.DeploymentReconciler(frontProxy, rootShard),
 	}
 
 	serviceReconcilers := []k8creconciling.NamedServiceReconcilerFactory{
-		frontproxy.ServiceReconciler(frontProxy),
+		ctrlresources.ServiceReconciler(frontProxy),
 	}
 
 	if err := k8creconciling.ReconcileConfigMaps(ctx, configMapReconcilers, frontProxy.Namespace, r.Client, ownerRefWrapper); err != nil {

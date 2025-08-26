@@ -39,9 +39,9 @@ import (
 	"github.com/kcp-dev/kcp-operator/internal/controller/cacheserver"
 	"github.com/kcp-dev/kcp-operator/internal/controller/frontproxy"
 	"github.com/kcp-dev/kcp-operator/internal/controller/kubeconfig"
-	"github.com/kcp-dev/kcp-operator/internal/controller/provisioning"
 	"github.com/kcp-dev/kcp-operator/internal/controller/rootshard"
 	"github.com/kcp-dev/kcp-operator/internal/controller/shard"
+	"github.com/kcp-dev/kcp-operator/internal/controller/shardbootstrapping"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
@@ -189,11 +189,11 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Kubeconfig")
 		os.Exit(1)
 	}
-	if err = (&provisioning.ProvisioningReconciler{
+	if err = (&shardbootstrapping.ShardBootstrappingReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Provisioning")
+		setupLog.Error(err, "unable to create controller", "controller", "ShardBootstrapping")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder

@@ -87,7 +87,7 @@ const (
 	ExternalLogicalClusterAdminCertificate Certificate = "external-logical-cluster-admin"
 
 	// OperatorCertificate is created for each RootShard and Shard. It's used by
-	// the kcp-operator to provision resources inside the shards.
+	// the kcp-operator to bootstrap resources inside the shards.
 	OperatorCertificate Certificate = "operator"
 )
 
