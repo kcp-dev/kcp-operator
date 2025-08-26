@@ -39,6 +39,11 @@ const (
 	ShardLabel      = "operator.kcp.io/shard"
 	FrontProxyLabel = "operator.kcp.io/front-proxy"
 	KubeconfigLabel = "operator.kcp.io/kubeconfig"
+
+	// OperatorUsername is a special username bound via ClusterRoleBinding in system:admin
+	// to be able to perform all operations inside shards that the kcp-operator has to
+	// perform.
+	OperatorUsername = "system:kcp-operator"
 )
 
 func GetImageSettings(imageSpec *operatorv1alpha1.ImageSpec) (string, []corev1.LocalObjectReference) {
