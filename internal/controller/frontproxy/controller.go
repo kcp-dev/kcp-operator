@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controller
+package frontproxy
 
 import (
 	"context"
@@ -38,6 +38,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/kcp-dev/kcp-operator/internal/controller/util"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
 	"github.com/kcp-dev/kcp-operator/internal/resources/frontproxy"
@@ -118,7 +119,7 @@ func (r *FrontProxyReconciler) reconcile(ctx context.Context, frontProxy *operat
 		conditions []metav1.Condition
 	)
 
-	cond, rootShard := fetchRootShard(ctx, r.Client, frontProxy.Namespace, frontProxy.Spec.RootShard.Reference)
+	cond, rootShard := util.FetchRootShard(ctx, r.Client, frontProxy.Namespace, frontProxy.Spec.RootShard.Reference)
 	conditions = append(conditions, cond)
 
 	if rootShard == nil {
@@ -178,7 +179,7 @@ func (r *FrontProxyReconciler) reconcileStatus(ctx context.Context, oldFrontProx
 	var errs []error
 
 	depKey := types.NamespacedName{Namespace: frontProxy.Namespace, Name: resources.GetFrontProxyDeploymentName(frontProxy)}
-	cond, err := getDeploymentAvailableCondition(ctx, r.Client, depKey)
+	cond, err := util.GetDeploymentAvailableCondition(ctx, r.Client, depKey)
 	if err != nil {
 		errs = append(errs, err)
 	} else {
@@ -187,19 +188,18 @@ func (r *FrontProxyReconciler) reconcileStatus(ctx context.Context, oldFrontProx
 
 	for _, condition := range conditions {
 		condition.ObservedGeneration = frontProxy.Generation
-		frontProxy.Status.Conditions = updateCondition(frontProxy.Status.Conditions, condition)
+		frontProxy.Status.Conditions = util.UpdateCondition(frontProxy.Status.Conditions, condition)
 	}
 
-	availableCond := apimeta.FindStatusCondition(frontProxy.Status.Conditions, string(operatorv1alpha1.ConditionTypeAvailable))
-	switch {
-	case availableCond.Status == metav1.ConditionTrue:
-		frontProxy.Status.Phase = operatorv1alpha1.FrontProxyPhaseRunning
-
-	case frontProxy.DeletionTimestamp != nil:
+	if frontProxy.DeletionTimestamp != nil {
 		frontProxy.Status.Phase = operatorv1alpha1.FrontProxyPhaseDeleting
-
-	case frontProxy.Status.Phase == "":
-		frontProxy.Status.Phase = operatorv1alpha1.FrontProxyPhaseProvisioning
+	} else {
+		availableCond := apimeta.FindStatusCondition(frontProxy.Status.Conditions, string(operatorv1alpha1.ConditionTypeAvailable))
+		if availableCond != nil && availableCond.Status == metav1.ConditionTrue {
+			frontProxy.Status.Phase = operatorv1alpha1.FrontProxyPhaseRunning
+		} else {
+			frontProxy.Status.Phase = operatorv1alpha1.FrontProxyPhaseProvisioning
+		}
 	}
 
 	// only patch the status if there are actual changes.
