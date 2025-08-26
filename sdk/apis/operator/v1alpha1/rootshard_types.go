@@ -109,6 +109,14 @@ type RootShard struct {
 	Status RootShardStatus `json:"status,omitempty"`
 }
 
+func (in *RootShard) GetConditions() []metav1.Condition {
+	return in.Status.Conditions
+}
+
+func (in *RootShard) SetConditions(conditions []metav1.Condition) {
+	in.Status.Conditions = conditions
+}
+
 // +kubebuilder:object:root=true
 
 // RootShardList contains a list of RootShard

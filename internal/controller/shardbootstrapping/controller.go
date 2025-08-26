@@ -22,11 +22,14 @@ import (
 	"fmt"
 	"strings"
 
+	"k8c.io/reconciler/pkg/equality"
 	"k8c.io/reconciler/pkg/reconciling"
 
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -34,6 +37,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/kcp-dev/kcp-operator/internal/controller/util"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
 	ctrlresources "github.com/kcp-dev/kcp-operator/internal/resources/shardbootstrapping"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
@@ -89,12 +93,13 @@ func (r *ShardBootstrappingReconciler) Reconcile(ctx context.Context, req ctrl.R
 	logger.V(4).Info(fmt.Sprintf("Reconciling %s object", kind))
 
 	var serviceName string
+
+	shard := &operatorv1alpha1.Shard{}
 	rootShard := &operatorv1alpha1.RootShard{}
 
 	switch kind {
 	case shardKind:
-		var s operatorv1alpha1.Shard
-		if err := r.Get(ctx, key, &s); err != nil {
+		if err := r.Get(ctx, key, shard); err != nil {
 			if ctrlruntimeclient.IgnoreNotFound(err) != nil {
 				return ctrl.Result{}, fmt.Errorf("failed to get Shard: %w", err)
 			}
@@ -102,9 +107,9 @@ func (r *ShardBootstrappingReconciler) Reconcile(ctx context.Context, req ctrl.R
 			return ctrl.Result{}, nil
 		}
 
-		serviceName = resources.GetShardServiceName(&s)
+		serviceName = resources.GetShardServiceName(shard)
 
-		ref := s.Spec.RootShard.Reference
+		ref := shard.Spec.RootShard.Reference
 		if ref == nil || ref.Name == "" {
 			return ctrl.Result{}, errors.New("the Shard does not reference a (valid) RootShard")
 		}
@@ -131,15 +136,48 @@ func (r *ShardBootstrappingReconciler) Reconcile(ctx context.Context, req ctrl.R
 	// We use the same client cert to connect to all of the shards and root shard.
 	secretName := resources.GetRootShardCertificateName(rootShard, operatorv1alpha1.OperatorCertificate)
 
-	recErr = r.reconcile(ctx, key.Namespace, secretName, serviceName)
+	conditions, recErr := r.reconcile(ctx, key.Namespace, secretName, serviceName)
+
+	switch kind {
+	case shardKind:
+		oldShard := shard.DeepCopy()
+		upsertConditions(shard, conditions)
+
+		if !equality.Semantic.DeepEqual(oldShard.Status, shard.Status) {
+			if err := r.Status().Patch(ctx, shard, ctrlruntimeclient.MergeFrom(oldShard)); err != nil {
+				recErr = kerrors.NewAggregate([]error{recErr, err})
+			}
+		}
+
+	case rootShardKind:
+		oldRootShard := rootShard.DeepCopy()
+		upsertConditions(rootShard, conditions)
+
+		if !equality.Semantic.DeepEqual(oldRootShard.Status, rootShard.Status) {
+			if err := r.Status().Patch(ctx, rootShard, ctrlruntimeclient.MergeFrom(oldRootShard)); err != nil {
+				recErr = kerrors.NewAggregate([]error{recErr, err})
+			}
+		}
+	}
 
 	return ctrl.Result{}, recErr
 }
 
-func (r *ShardBootstrappingReconciler) reconcile(ctx context.Context, namespace, secretName, serviceName string) error {
+func errorCondition(err error) []metav1.Condition {
+	return []metav1.Condition{{
+		Type:    string(operatorv1alpha1.ConditionTypeBootstrapping),
+		Status:  metav1.ConditionFalse,
+		Reason:  string(operatorv1alpha1.ConditionReasonBootstrappingPending),
+		Message: fmt.Sprintf("Bootstrapping failed: %v.", err),
+	}}
+}
+
+func (r *ShardBootstrappingReconciler) reconcile(ctx context.Context, namespace, secretName, serviceName string) ([]metav1.Condition, error) {
 	certSecret := &corev1.Secret{}
 	if err := r.Get(ctx, types.NamespacedName{Namespace: namespace, Name: secretName}, certSecret); err != nil {
-		return fmt.Errorf("failed to get kubeconfig Secret: %w", err)
+		err = fmt.Errorf("failed to get kubeconfig Secret: %w", err)
+		c := errorCondition(err)
+		return c, err
 	}
 
 	cfg := &rest.Config{
@@ -153,20 +191,47 @@ func (r *ShardBootstrappingReconciler) reconcile(ctx context.Context, namespace,
 
 	client, err := ctrlruntimeclient.New(cfg, ctrlruntimeclient.Options{})
 	if err != nil {
-		return fmt.Errorf("failed to create shard client: %w", err)
+		err = fmt.Errorf("failed to create shard client: %w", err)
+		c := errorCondition(err)
+		return c, err
 	}
 
 	if err := reconciling.ReconcileClusterRoles(ctx, []reconciling.NamedClusterRoleReconcilerFactory{
 		ctrlresources.ClusterRoleReconciler(),
 	}, "", client); err != nil {
-		return fmt.Errorf("failed to reconcile ClusterRoles: %w", err)
+		err = fmt.Errorf("failed to reconcile ClusterRoles: %w", err)
+		c := errorCondition(err)
+		return c, err
 	}
 
 	if err := reconciling.ReconcileClusterRoleBindings(ctx, []reconciling.NamedClusterRoleBindingReconcilerFactory{
 		ctrlresources.ClusterRoleBindingReconciler(),
 	}, "", client); err != nil {
-		return fmt.Errorf("failed to reconcile ClusterRoleBindings: %w", err)
+		err = fmt.Errorf("failed to reconcile ClusterRoleBindings: %w", err)
+		c := errorCondition(err)
+		return c, err
 	}
 
-	return nil
+	return []metav1.Condition{{
+		Type:    string(operatorv1alpha1.ConditionTypeBootstrapping),
+		Status:  metav1.ConditionTrue,
+		Reason:  string(operatorv1alpha1.ConditionReasonBootstrappingCompleted),
+		Message: "All resources have been created.",
+	}}, nil
+}
+
+type conditionedObject interface {
+	ctrlruntimeclient.Object
+	GetConditions() []metav1.Condition
+	SetConditions(conditions []metav1.Condition)
+}
+
+func upsertConditions(obj conditionedObject, newConditions []metav1.Condition) {
+	objConditions := obj.GetConditions()
+	for _, condition := range newConditions {
+		condition.ObservedGeneration = obj.GetGeneration()
+		objConditions = util.UpdateCondition(objConditions, condition)
+	}
+
+	obj.SetConditions(objConditions)
 }

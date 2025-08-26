@@ -248,8 +248,9 @@ type CertificateSecretTemplate struct {
 type ConditionType string
 
 const (
-	ConditionTypeAvailable ConditionType = "Available"
-	ConditionTypeRootShard ConditionType = "RootShard"
+	ConditionTypeAvailable     ConditionType = "Available"
+	ConditionTypeRootShard     ConditionType = "RootShard"
+	ConditionTypeBootstrapping ConditionType = "Bootstrapping"
 )
 
 type ConditionReason string
@@ -266,6 +267,11 @@ const (
 	ConditionReasonRootShardRefInvalid  ConditionReason = "InvalidReference"
 	ConditionReasonRootShardRefNotFound ConditionReason = "RootShardNotFound"
 	ConditionReasonRootShardRefValid    ConditionReason = "Valid"
+
+	// reasons for ConditionTypeBootstrapping
+
+	ConditionReasonBootstrappingPending   ConditionReason = "Pending"
+	ConditionReasonBootstrappingCompleted ConditionReason = "Completed"
 )
 
 type ServiceTemplate struct {

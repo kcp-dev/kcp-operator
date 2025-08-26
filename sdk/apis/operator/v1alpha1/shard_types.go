@@ -164,6 +164,14 @@ type Shard struct {
 	Status ShardStatus `json:"status,omitempty"`
 }
 
+func (in *Shard) GetConditions() []metav1.Condition {
+	return in.Status.Conditions
+}
+
+func (in *Shard) SetConditions(conditions []metav1.Condition) {
+	in.Status.Conditions = conditions
+}
+
 // +kubebuilder:object:root=true
 
 // ShardList contains a list of Shard
