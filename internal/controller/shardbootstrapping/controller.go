@@ -107,6 +107,10 @@ func (r *ShardBootstrappingReconciler) Reconcile(ctx context.Context, req ctrl.R
 			return ctrl.Result{}, nil
 		}
 
+		if shard.DeletionTimestamp != nil || shard.Status.Phase != operatorv1alpha1.ShardPhaseRunning {
+			return ctrl.Result{}, nil
+		}
+
 		serviceName = resources.GetShardServiceName(shard)
 
 		ref := shard.Spec.RootShard.Reference
@@ -124,6 +128,10 @@ func (r *ShardBootstrappingReconciler) Reconcile(ctx context.Context, req ctrl.R
 				return ctrl.Result{}, fmt.Errorf("failed to get RootShard: %w", err)
 			}
 
+			return ctrl.Result{}, nil
+		}
+
+		if rootShard.DeletionTimestamp != nil || rootShard.Status.Phase != operatorv1alpha1.RootShardPhaseRunning {
 			return ctrl.Result{}, nil
 		}
 
