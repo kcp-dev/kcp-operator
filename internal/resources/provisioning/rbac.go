@@ -17,9 +17,11 @@ limitations under the License.
 package provisioning
 
 import (
-	"github.com/kcp-dev/kcp-operator/internal/resources"
 	"k8c.io/reconciler/pkg/reconciling"
+
 	rbacv1 "k8s.io/api/rbac/v1"
+
+	"github.com/kcp-dev/kcp-operator/internal/resources"
 )
 
 const (
