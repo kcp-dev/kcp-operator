@@ -232,6 +232,12 @@ func ExternalLogicalClusterAdminCertificateReconciler(rootShard *operatorv1alpha
 	}
 }
 
+// OperatorClientCertificateReconciler reconciles a client certificate that is used both
+// for bootstrapping (root)shards (in this case the system:masters organization in it gives
+// it permissions) and subsequently by other controllers to provision resources inside
+// workspaces (like RBAC for kubeconfigs), in which case it is assumed that a front-proxy
+// will strip the system:masters group from the authInfo, but pass on the commonName
+// untouched. And the common name is bootstrapped to have all necessary permissions.
 func OperatorClientCertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
 	const certKind = operatorv1alpha1.OperatorCertificate
 
@@ -242,7 +248,7 @@ func OperatorClientCertificateReconciler(rootShard *operatorv1alpha1.RootShard) 
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
 			cert.SetLabels(resources.GetRootShardResourceLabels(rootShard))
 			cert.Spec = certmanagerv1.CertificateSpec{
-				CommonName:  "kcp-operator",
+				CommonName:  resources.OperatorUsername,
 				SecretName:  name,
 				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
 				RenewBefore: &operatorv1alpha1.DefaultCertificateRenewal,
