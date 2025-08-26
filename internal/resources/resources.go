@@ -43,6 +43,10 @@ const (
 	// OperatorUsername is a special username bound via ClusterRoleBinding in system:admin
 	// to be able to perform all operations inside shards that the kcp-operator has to
 	// perform.
+	// This name is prefixed with "system:" because the per-workspace OIDC authentication
+	// in kcp will not allow users to assume this name, so no external OIDC issuer can
+	// pretend to be the real kcp-operator. In effect, only the (optional) global kcp
+	// OIDC authentication or the kcp client CA can attest that a user is kcp-operator.
 	OperatorUsername = "system:kcp-operator"
 )
 
