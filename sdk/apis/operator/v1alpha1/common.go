@@ -85,6 +85,10 @@ const (
 	AdminKubeconfigClientCertificate       Certificate = "admin-kubeconfig"
 	LogicalClusterAdminCertificate         Certificate = "logical-cluster-admin"
 	ExternalLogicalClusterAdminCertificate Certificate = "external-logical-cluster-admin"
+
+	// OperatorCertificate is created for each RootShard and Shard. It's used by
+	// the kcp-operator to provision resources inside the shards.
+	OperatorCertificate Certificate = "operator"
 )
 
 type CA string
