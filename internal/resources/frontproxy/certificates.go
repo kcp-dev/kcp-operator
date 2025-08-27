@@ -17,6 +17,8 @@ limitations under the License.
 package frontproxy
 
 import (
+	"fmt"
+
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	certmanagermetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 
@@ -31,10 +33,13 @@ func ServerCertificateReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootSh
 
 	name := resources.GetFrontProxyCertificateName(rootShard, frontProxy, certKind)
 	template := frontProxy.Spec.CertificateTemplates.CertificateTemplate(certKind)
+	fpService := resources.GetFrontProxyServiceName(frontProxy)
 
 	dnsNames := []string{
 		rootShard.Spec.External.Hostname,
-		resources.GetFrontProxyServiceName(frontProxy),
+		fpService,
+		fmt.Sprintf("%s.%s", fpService, frontProxy.Namespace),
+		fmt.Sprintf("%s.%s.svc.cluster.local", fpService, frontProxy.Namespace),
 	}
 
 	if frontProxy.Spec.ExternalHostname != "" {
