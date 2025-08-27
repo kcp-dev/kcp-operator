@@ -109,6 +109,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &operatorv1alpha1.RootShardApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("RootShardConfig"):
 		return &operatorv1alpha1.RootShardConfigApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("RootShardProxySpec"):
+		return &operatorv1alpha1.RootShardProxySpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("RootShardSpec"):
 		return &operatorv1alpha1.RootShardSpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("RootShardStatus"):

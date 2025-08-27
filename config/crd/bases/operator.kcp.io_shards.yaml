@@ -425,7 +425,7 @@ spec:
                   type: object
                 description: |-
                   CertificateTemplates allows to customize the properties on the generated
-                  certificates for this root shard.
+                  certificates for this shard.
                 type: object
               clusterDomain:
                 type: string

@@ -28,9 +28,10 @@ import (
 // with apply.
 type RootShardSpecApplyConfiguration struct {
 	CommonShardSpecApplyConfiguration `json:",inline"`
-	External                          *ExternalConfigApplyConfiguration `json:"external,omitempty"`
-	Cache                             *CacheConfigApplyConfiguration    `json:"cache,omitempty"`
-	Certificates                      *CertificatesApplyConfiguration   `json:"certificates,omitempty"`
+	External                          *ExternalConfigApplyConfiguration     `json:"external,omitempty"`
+	Cache                             *CacheConfigApplyConfiguration        `json:"cache,omitempty"`
+	Proxy                             *RootShardProxySpecApplyConfiguration `json:"proxy,omitempty"`
+	Certificates                      *CertificatesApplyConfiguration       `json:"certificates,omitempty"`
 }
 
 // RootShardSpecApplyConfiguration constructs a declarative configuration of the RootShardSpec type for use with
@@ -140,6 +141,14 @@ func (b *RootShardSpecApplyConfiguration) WithExternal(value *ExternalConfigAppl
 // If called multiple times, the Cache field is set to the value of the last call.
 func (b *RootShardSpecApplyConfiguration) WithCache(value *CacheConfigApplyConfiguration) *RootShardSpecApplyConfiguration {
 	b.Cache = value
+	return b
+}
+
+// WithProxy sets the Proxy field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Proxy field is set to the value of the last call.
+func (b *RootShardSpecApplyConfiguration) WithProxy(value *RootShardProxySpecApplyConfiguration) *RootShardSpecApplyConfiguration {
+	b.Proxy = value
 	return b
 }
 
