@@ -26,15 +26,24 @@ import (
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
-func PathMappingConfigMapReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootShard *operatorv1alpha1.RootShard) reconciling.NamedConfigMapReconcilerFactory {
-	name := resources.GetFrontProxyConfigName(frontProxy)
+func (r *reconciler) pathMappingConfigMapName() string {
+	if r.frontProxy != nil {
+		return resources.GetFrontProxyConfigName(r.frontProxy)
+	} else {
+		return resources.GetRootShardProxyConfigName(r.rootShard)
+	}
+}
 
+func (r *reconciler) pathMappingConfigMapReconciler() reconciling.NamedConfigMapReconcilerFactory {
 	return func() (string, reconciling.ConfigMapReconciler) {
-		return name, func(cm *corev1.ConfigMap) (*corev1.ConfigMap, error) {
-			cm.SetLabels(resources.GetFrontProxyResourceLabels(frontProxy))
+		return r.pathMappingConfigMapName(), func(cm *corev1.ConfigMap) (*corev1.ConfigMap, error) {
+			cm.SetLabels(r.resourceLabels)
 
-			mappings := defaultPathMappings(rootShard)
-			mappings = append(mappings, frontProxy.Spec.AdditionalPathMappings...)
+			mappings := r.defaultPathMappings()
+			if r.frontProxy != nil {
+				mappings = append(mappings, r.frontProxy.Spec.AdditionalPathMappings...)
+			}
+
 			d, err := yaml.Marshal(mappings)
 			if err != nil {
 				return nil, err
@@ -49,8 +58,8 @@ func PathMappingConfigMapReconciler(frontProxy *operatorv1alpha1.FrontProxy, roo
 }
 
 // defaultPathMappings sets up default paths for a front-proxy
-func defaultPathMappings(rootShard *operatorv1alpha1.RootShard) []operatorv1alpha1.PathMappingEntry {
-	url := resources.GetRootShardBaseURL(rootShard)
+func (r *reconciler) defaultPathMappings() []operatorv1alpha1.PathMappingEntry {
+	url := resources.GetRootShardBaseURL(r.rootShard)
 
 	return []operatorv1alpha1.PathMappingEntry{
 		{

@@ -33,17 +33,42 @@ import (
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
-func DeploymentReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootShard *operatorv1alpha1.RootShard) reconciling.NamedDeploymentReconcilerFactory {
-	return func() (string, reconciling.DeploymentReconciler) {
-		return resources.GetFrontProxyDeploymentName(frontProxy), func(dep *appsv1.Deployment) (*appsv1.Deployment, error) {
-			dep.SetLabels(resources.GetFrontProxyResourceLabels(frontProxy))
-			dep.Spec.Selector = &metav1.LabelSelector{
-				MatchLabels: resources.GetFrontProxyResourceLabels(frontProxy),
-			}
-			dep.Spec.Template.SetLabels(resources.GetFrontProxyResourceLabels(frontProxy))
+func (r *reconciler) deploymentReconciler() reconciling.NamedDeploymentReconcilerFactory {
+	var (
+		name         string
+		imageSpec    *operatorv1alpha1.ImageSpec
+		depResources *corev1.ResourceRequirements
+		template     *operatorv1alpha1.DeploymentTemplate
+		replicas     *int32
+	)
 
-			image, _ := resources.GetImageSettings(frontProxy.Spec.Image)
-			args := getArgs(&frontProxy.Spec)
+	if r.frontProxy != nil {
+		name = resources.GetFrontProxyDeploymentName(r.frontProxy)
+		imageSpec = r.frontProxy.Spec.Image
+		depResources = r.frontProxy.Spec.Resources
+		template = r.frontProxy.Spec.DeploymentTemplate
+		replicas = r.frontProxy.Spec.Replicas
+	} else {
+		name = resources.GetRootShardProxyDeploymentName(r.rootShard)
+
+		if r.rootShard.Spec.Proxy != nil {
+			imageSpec = r.rootShard.Spec.Proxy.Image
+			depResources = r.rootShard.Spec.Proxy.Resources
+			template = r.rootShard.Spec.Proxy.DeploymentTemplate
+			replicas = r.rootShard.Spec.Proxy.Replicas
+		}
+	}
+
+	return func() (string, reconciling.DeploymentReconciler) {
+		return name, func(dep *appsv1.Deployment) (*appsv1.Deployment, error) {
+			dep.SetLabels(r.resourceLabels)
+			dep.Spec.Selector = &metav1.LabelSelector{
+				MatchLabels: r.resourceLabels,
+			}
+			dep.Spec.Template.SetLabels(r.resourceLabels)
+
+			image, _ := resources.GetImageSettings(imageSpec)
+			args := r.getArgs()
 
 			container := corev1.Container{
 				Name:    "kcp-front-proxy",
@@ -95,133 +120,88 @@ func DeploymentReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootShard *op
 			volumes := []corev1.Volume{}
 			volumeMounts := []corev1.VolumeMount{}
 
-			// front-proxy dynamic kubeconfig
-			volumes = append(volumes, corev1.Volume{
-				Name: resources.GetFrontProxyDynamicKubeconfigName(rootShard, frontProxy),
-				VolumeSource: corev1.VolumeSource{
-					Secret: &corev1.SecretVolumeSource{
-						SecretName: resources.GetFrontProxyDynamicKubeconfigName(rootShard, frontProxy),
-					},
-				},
-			})
-			volumeMounts = append(volumeMounts, corev1.VolumeMount{
-				Name:      resources.GetFrontProxyDynamicKubeconfigName(rootShard, frontProxy),
-				ReadOnly:  false, // as FrontProxy writes to it to work with different shards
-				MountPath: frontProxyBasepath + "/kubeconfig",
-			})
-
-			// front-proxy kubeconfig client cert
-			kubeconfigClientCertName := resources.GetFrontProxyCertificateName(rootShard, frontProxy, operatorv1alpha1.KubeconfigCertificate)
-			volumes = append(volumes, corev1.Volume{
-				Name: kubeconfigClientCertName,
-				VolumeSource: corev1.VolumeSource{
-					Secret: &corev1.SecretVolumeSource{
-						SecretName: kubeconfigClientCertName,
-					},
-				},
-			})
-			volumeMounts = append(volumeMounts, corev1.VolumeMount{
-				Name:      kubeconfigClientCertName,
-				ReadOnly:  true,
-				MountPath: frontProxyBasepath + "/kubeconfig-client-cert",
-			})
-
-			// front-proxy server cert
-			volumes = append(volumes, corev1.Volume{
-				Name: resources.GetFrontProxyCertificateName(rootShard, frontProxy, operatorv1alpha1.ServerCertificate),
-				VolumeSource: corev1.VolumeSource{
-					Secret: &corev1.SecretVolumeSource{
-						SecretName: resources.GetFrontProxyCertificateName(rootShard, frontProxy, operatorv1alpha1.ServerCertificate),
-					},
-				},
-			})
-			volumeMounts = append(volumeMounts, corev1.VolumeMount{
-				Name:      resources.GetFrontProxyCertificateName(rootShard, frontProxy, operatorv1alpha1.ServerCertificate),
-				ReadOnly:  true,
-				MountPath: frontProxyBasepath + "/tls",
-			})
-
-			// front-proxy requestheader client cert
-			requestHeaderClientCertName := resources.GetFrontProxyCertificateName(rootShard, frontProxy, operatorv1alpha1.RequestHeaderClientCertificate)
-			volumes = append(volumes, corev1.Volume{
-				Name: requestHeaderClientCertName,
-				VolumeSource: corev1.VolumeSource{
-					Secret: &corev1.SecretVolumeSource{
-						SecretName: requestHeaderClientCertName,
-					},
-				},
-			})
-			volumeMounts = append(volumeMounts, corev1.VolumeMount{
-				Name:      requestHeaderClientCertName,
-				ReadOnly:  true,
-				MountPath: frontProxyBasepath + "/requestheader-client",
-			})
-
-			// front-proxy config
-			cmName := resources.GetFrontProxyConfigName(frontProxy)
-			volumes = append(volumes, corev1.Volume{
-				Name: cmName,
-				VolumeSource: corev1.VolumeSource{
-					ConfigMap: &corev1.ConfigMapVolumeSource{
-						LocalObjectReference: corev1.LocalObjectReference{
-							Name: cmName,
+			mountSecret := func(secretName string, mountPath string, readOnly bool) {
+				volumes = append(volumes, corev1.Volume{
+					Name: secretName,
+					VolumeSource: corev1.VolumeSource{
+						Secret: &corev1.SecretVolumeSource{
+							SecretName: secretName,
 						},
 					},
-				},
-			})
-			volumeMounts = append(volumeMounts, corev1.VolumeMount{
-				Name:      cmName,
-				ReadOnly:  true,
-				MountPath: frontProxyBasepath + "/config",
-			})
+				})
+				volumeMounts = append(volumeMounts, corev1.VolumeMount{
+					Name:      secretName,
+					ReadOnly:  readOnly,
+					MountPath: mountPath,
+				})
+			}
+
+			// front-proxy dynamic kubeconfig
+			{
+				var secretName string
+				if r.frontProxy != nil {
+					secretName = resources.GetFrontProxyDynamicKubeconfigName(r.rootShard, r.frontProxy)
+				} else {
+					secretName = resources.GetRootShardProxyDynamicKubeconfigName(r.rootShard)
+				}
+
+				// readonly=false because front-proxy updates the file to work with different shards
+				mountSecret(secretName, frontProxyBasepath+"/kubeconfig", false)
+			}
+
+			// front-proxy kubeconfig client cert
+			mountSecret(r.certName(operatorv1alpha1.KubeconfigCertificate), frontProxyBasepath+"/kubeconfig-client-cert", true)
+
+			// front-proxy server cert
+			mountSecret(r.certName(operatorv1alpha1.ServerCertificate), frontProxyBasepath+"/tls", true)
+
+			// front-proxy requestheader client cert
+			mountSecret(r.certName(operatorv1alpha1.RequestHeaderClientCertificate), frontProxyBasepath+"/requestheader-client", true)
 
 			// rootshard frontproxy client ca
-			rsClientCAName := resources.GetRootShardCAName(rootShard, operatorv1alpha1.FrontProxyClientCA)
-			volumes = append(volumes, corev1.Volume{
-				Name: rsClientCAName,
-				VolumeSource: corev1.VolumeSource{
-					Secret: &corev1.SecretVolumeSource{
-						SecretName: rsClientCAName,
-					},
-				},
-			})
-			volumeMounts = append(volumeMounts, corev1.VolumeMount{
-				Name:      rsClientCAName,
-				ReadOnly:  true,
-				MountPath: frontProxyBasepath + "/client-ca",
-			})
+			mountSecret(resources.GetRootShardCAName(r.rootShard, operatorv1alpha1.FrontProxyClientCA), frontProxyBasepath+"/client-ca", true)
 
 			// kcp rootshard root ca
-			rootCAName := resources.GetRootShardCAName(rootShard, operatorv1alpha1.RootCA)
-			volumes = append(volumes, corev1.Volume{
-				Name: rootCAName,
-				VolumeSource: corev1.VolumeSource{
-					Secret: &corev1.SecretVolumeSource{
-						SecretName: rootCAName,
+			mountSecret(resources.GetRootShardCAName(r.rootShard, operatorv1alpha1.RootCA), kcpBasepath+"/tls/ca", true)
+
+			// front-proxy config
+			{
+				cmName := r.pathMappingConfigMapName()
+				volumes = append(volumes, corev1.Volume{
+					Name: cmName,
+					VolumeSource: corev1.VolumeSource{
+						ConfigMap: &corev1.ConfigMapVolumeSource{
+							LocalObjectReference: corev1.LocalObjectReference{
+								Name: cmName,
+							},
+						},
 					},
-				},
-			})
-			volumeMounts = append(volumeMounts, corev1.VolumeMount{
-				Name:      rootCAName,
-				ReadOnly:  true,
-				MountPath: kcpBasepath + "/tls/ca",
-			})
+				})
+				volumeMounts = append(volumeMounts, corev1.VolumeMount{
+					Name:      cmName,
+					ReadOnly:  true,
+					MountPath: frontProxyBasepath + "/config",
+				})
+			}
 
 			container.VolumeMounts = volumeMounts
+			dep.Spec.Template.Spec.Volumes = volumes
 
-			if frontProxy.Spec.Replicas != nil {
-				dep.Spec.Replicas = frontProxy.Spec.Replicas
+			if replicas != nil {
+				dep.Spec.Replicas = replicas
 			} else if dep.Spec.Replicas == nil {
 				dep.Spec.Replicas = ptr.To[int32](2)
 			}
 
-			dep.Spec.Template.Spec.Volumes = volumes
 			dep.Spec.Template.Spec.Containers = []corev1.Container{
-				utils.ApplyResources(container, frontProxy.Spec.Resources),
+				utils.ApplyResources(container, depResources),
 			}
 
-			dep = utils.ApplyDeploymentTemplate(dep, frontProxy.Spec.DeploymentTemplate)
-			dep = utils.ApplyFrontProxyAuthConfiguration(dep, frontProxy.Spec.Auth, rootShard)
+			dep = utils.ApplyDeploymentTemplate(dep, template)
+
+			if r.frontProxy != nil {
+				dep = utils.ApplyFrontProxyAuthConfiguration(dep, r.frontProxy.Spec.Auth, r.rootShard)
+			}
 
 			return dep, nil
 		}
@@ -238,16 +218,19 @@ var defaultArgs = []string{
 	"--mapping-file=/etc/kcp-front-proxy/config/path-mapping.yaml",
 }
 
-func getArgs(fps *operatorv1alpha1.FrontProxySpec) []string {
+func (r *reconciler) getArgs() []string {
 	args := defaultArgs
+	if r.frontProxy == nil {
+		return args
+	}
 
-	if fps.Auth != nil {
-		if fps.Auth.DropGroups != nil {
-			args = append(args, fmt.Sprintf("--authentication-drop-groups=%q", strings.Join(fps.Auth.DropGroups, ",")))
+	if auth := r.frontProxy.Spec.Auth; auth != nil {
+		if auth.DropGroups != nil {
+			args = append(args, fmt.Sprintf("--authentication-drop-groups=%q", strings.Join(auth.DropGroups, ",")))
 		}
 
-		if fps.Auth.PassOnGroups != nil {
-			args = append(args, fmt.Sprintf("--authentication-pass-on-groups=%q", strings.Join(fps.Auth.PassOnGroups, ",")))
+		if auth.PassOnGroups != nil {
+			args = append(args, fmt.Sprintf("--authentication-pass-on-groups=%q", strings.Join(auth.PassOnGroups, ",")))
 		}
 	}
 

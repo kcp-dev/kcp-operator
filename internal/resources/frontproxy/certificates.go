@@ -28,34 +28,74 @@ import (
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
-func ServerCertificateReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
-	const certKind = operatorv1alpha1.ServerCertificate
-
-	name := resources.GetFrontProxyCertificateName(rootShard, frontProxy, certKind)
-	template := frontProxy.Spec.CertificateTemplates.CertificateTemplate(certKind)
-	fpService := resources.GetFrontProxyServiceName(frontProxy)
-
-	dnsNames := []string{
-		rootShard.Spec.External.Hostname,
-		fpService,
-		fmt.Sprintf("%s.%s", fpService, frontProxy.Namespace),
-		fmt.Sprintf("%s.%s.svc.cluster.local", fpService, frontProxy.Namespace),
+func (r *reconciler) certSecretLabels() map[string]string {
+	labels := map[string]string{
+		resources.RootShardLabel: r.rootShard.Name,
 	}
 
-	if frontProxy.Spec.ExternalHostname != "" {
-		dnsNames = append(dnsNames, frontProxy.Spec.ExternalHostname)
+	if r.frontProxy != nil {
+		labels[resources.FrontProxyLabel] = r.frontProxy.Name
+	}
+
+	return labels
+}
+
+func (r *reconciler) certName(certKind operatorv1alpha1.Certificate) string {
+	if r.frontProxy != nil {
+		return resources.GetFrontProxyCertificateName(r.rootShard, r.frontProxy, certKind)
+	} else {
+		return resources.GetRootShardProxyCertificateName(r.rootShard, certKind)
+	}
+}
+
+func (r *reconciler) certCommonName() string {
+	if r.frontProxy != nil {
+		return "kcp-front-proxy"
+	} else {
+		return "kcp-root-shard-proxy"
+	}
+}
+
+func (r *reconciler) certTemplateMap() operatorv1alpha1.CertificateTemplateMap {
+	switch {
+	case r.frontProxy != nil:
+		return r.frontProxy.Spec.CertificateTemplates
+	case r.rootShard.Spec.Proxy != nil:
+		return r.rootShard.Spec.Proxy.CertificateTemplates
+	default:
+		return nil
+	}
+}
+
+func (r *reconciler) serverCertificateReconciler() reconciling.NamedCertificateReconcilerFactory {
+	const certKind = operatorv1alpha1.ServerCertificate
+
+	name := r.certName(certKind)
+	template := r.certTemplateMap().CertificateTemplate(certKind)
+	fpService := r.serviceName()
+
+	dnsNames := []string{
+		fpService,
+		fmt.Sprintf("%s.%s", fpService, r.rootShard.Namespace),
+		fmt.Sprintf("%s.%s.svc.cluster.local", fpService, r.rootShard.Namespace),
+	}
+
+	if r.frontProxy != nil {
+		// only add the external hostname if this is not reconciling the rootshard-internal-only proxy
+		dnsNames = append(dnsNames, r.rootShard.Spec.External.Hostname)
+
+		if r.frontProxy.Spec.ExternalHostname != "" {
+			dnsNames = append(dnsNames, r.frontProxy.Spec.ExternalHostname)
+		}
 	}
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
-			cert.SetLabels(resources.GetFrontProxyResourceLabels(frontProxy))
+			cert.SetLabels(r.resourceLabels)
 			cert.Spec = certmanagerv1.CertificateSpec{
 				SecretName: name,
 				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
-					Labels: map[string]string{
-						resources.RootShardLabel:  rootShard.Name,
-						resources.FrontProxyLabel: frontProxy.Name,
-					},
+					Labels: r.certSecretLabels(),
 				},
 				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
 				RenewBefore: &operatorv1alpha1.DefaultCertificateRenewal,
@@ -72,7 +112,7 @@ func ServerCertificateReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootSh
 				DNSNames: dnsNames,
 
 				IssuerRef: certmanagermetav1.ObjectReference{
-					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.ServerCA),
+					Name:  resources.GetRootShardCAName(r.rootShard, operatorv1alpha1.ServerCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},
@@ -83,22 +123,20 @@ func ServerCertificateReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootSh
 	}
 }
 
-func AdminKubeconfigCertificateReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
+// adminKubeconfigCertificateReconciler is only reconciled for true front-proxies.
+func (r *reconciler) adminKubeconfigCertificateReconciler() reconciling.NamedCertificateReconcilerFactory {
 	const certKind = operatorv1alpha1.AdminKubeconfigClientCertificate
 
-	name := resources.GetFrontProxyCertificateName(rootShard, frontProxy, certKind)
-	template := frontProxy.Spec.CertificateTemplates.CertificateTemplate(certKind)
+	name := r.certName(certKind)
+	template := r.certTemplateMap().CertificateTemplate(certKind)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
-			cert.SetLabels(resources.GetFrontProxyResourceLabels(frontProxy))
+			cert.SetLabels(r.resourceLabels)
 			cert.Spec = certmanagerv1.CertificateSpec{
 				SecretName: name,
 				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
-					Labels: map[string]string{
-						resources.RootShardLabel:  rootShard.Name,
-						resources.FrontProxyLabel: frontProxy.Name,
-					},
+					Labels: r.certSecretLabels(),
 				},
 				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
 				RenewBefore: &operatorv1alpha1.DefaultCertificateRenewal,
@@ -119,7 +157,7 @@ func AdminKubeconfigCertificateReconciler(frontProxy *operatorv1alpha1.FrontProx
 				},
 
 				IssuerRef: certmanagermetav1.ObjectReference{
-					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.FrontProxyClientCA),
+					Name:  resources.GetRootShardCAName(r.rootShard, operatorv1alpha1.FrontProxyClientCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},
@@ -130,22 +168,19 @@ func AdminKubeconfigCertificateReconciler(frontProxy *operatorv1alpha1.FrontProx
 	}
 }
 
-func KubeconfigCertificateReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
+func (r *reconciler) kubeconfigCertificateReconciler() reconciling.NamedCertificateReconcilerFactory {
 	const certKind = operatorv1alpha1.KubeconfigCertificate
 
-	name := resources.GetFrontProxyCertificateName(rootShard, frontProxy, certKind)
-	template := frontProxy.Spec.CertificateTemplates.CertificateTemplate(certKind)
+	name := r.certName(certKind)
+	template := r.certTemplateMap().CertificateTemplate(certKind)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
-			cert.SetLabels(resources.GetFrontProxyResourceLabels(frontProxy))
+			cert.SetLabels(r.resourceLabels)
 			cert.Spec = certmanagerv1.CertificateSpec{
 				SecretName: name,
 				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
-					Labels: map[string]string{
-						resources.RootShardLabel:  rootShard.Name,
-						resources.FrontProxyLabel: frontProxy.Name,
-					},
+					Labels: r.certSecretLabels(),
 				},
 				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
 				RenewBefore: &operatorv1alpha1.DefaultCertificateRenewal,
@@ -155,7 +190,7 @@ func KubeconfigCertificateReconciler(frontProxy *operatorv1alpha1.FrontProxy, ro
 					Size:      4096,
 				},
 
-				CommonName: "kcp-front-proxy",
+				CommonName: r.certCommonName(),
 
 				Subject: &certmanagerv1.X509Subject{
 					Organizations: []string{"system:masters"},
@@ -166,7 +201,7 @@ func KubeconfigCertificateReconciler(frontProxy *operatorv1alpha1.FrontProxy, ro
 				},
 
 				IssuerRef: certmanagermetav1.ObjectReference{
-					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.ClientCA),
+					Name:  resources.GetRootShardCAName(r.rootShard, operatorv1alpha1.ClientCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},
@@ -177,22 +212,19 @@ func KubeconfigCertificateReconciler(frontProxy *operatorv1alpha1.FrontProxy, ro
 	}
 }
 
-func RequestHeaderCertificateReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
+func (r *reconciler) requestHeaderCertificateReconciler() reconciling.NamedCertificateReconcilerFactory {
 	const certKind = operatorv1alpha1.RequestHeaderClientCertificate
 
-	name := resources.GetFrontProxyRequestHeaderName(rootShard, frontProxy)
-	template := frontProxy.Spec.CertificateTemplates.CertificateTemplate(certKind)
+	name := r.certName(certKind)
+	template := r.certTemplateMap().CertificateTemplate(certKind)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
-			cert.SetLabels(resources.GetFrontProxyResourceLabels(frontProxy))
+			cert.SetLabels(r.resourceLabels)
 			cert.Spec = certmanagerv1.CertificateSpec{
 				SecretName: name,
 				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
-					Labels: map[string]string{
-						resources.RootShardLabel:  rootShard.Name,
-						resources.FrontProxyLabel: frontProxy.Name,
-					},
+					Labels: r.certSecretLabels(),
 				},
 				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
 				RenewBefore: &operatorv1alpha1.DefaultCertificateRenewal,
@@ -202,16 +234,14 @@ func RequestHeaderCertificateReconciler(frontProxy *operatorv1alpha1.FrontProxy,
 					Size:      4096,
 				},
 
-				DNSNames: []string{
-					"kcp-front-proxy",
-				},
+				CommonName: r.certCommonName(),
 
 				Usages: []certmanagerv1.KeyUsage{
 					certmanagerv1.UsageClientAuth,
 				},
 
 				IssuerRef: certmanagermetav1.ObjectReference{
-					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.RequestHeaderClientCA),
+					Name:  resources.GetRootShardCAName(r.rootShard, operatorv1alpha1.RequestHeaderClientCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},

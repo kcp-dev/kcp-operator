@@ -64,6 +64,10 @@ func GetRootShardDeploymentName(r *operatorv1alpha1.RootShard) string {
 	return fmt.Sprintf("%s-kcp", r.Name)
 }
 
+func GetRootShardProxyDeploymentName(r *operatorv1alpha1.RootShard) string {
+	return fmt.Sprintf("%s-proxy", r.Name)
+}
+
 func GetShardDeploymentName(s *operatorv1alpha1.Shard) string {
 	return fmt.Sprintf("%s-shard-kcp", s.Name)
 }
@@ -87,6 +91,10 @@ func getResourceLabels(instance, component string) map[string]string {
 
 func GetRootShardResourceLabels(r *operatorv1alpha1.RootShard) map[string]string {
 	return getResourceLabels(r.Name, "rootshard")
+}
+
+func GetRootShardProxyResourceLabels(r *operatorv1alpha1.RootShard) map[string]string {
+	return getResourceLabels(r.Name, "rootshard-proxy")
 }
 
 func GetShardResourceLabels(s *operatorv1alpha1.Shard) map[string]string {
@@ -123,6 +131,10 @@ func GetRootShardCertificateName(r *operatorv1alpha1.RootShard, certName operato
 	return fmt.Sprintf("%s-%s", r.Name, certName)
 }
 
+func GetRootShardProxyCertificateName(r *operatorv1alpha1.RootShard, certName operatorv1alpha1.Certificate) string {
+	return fmt.Sprintf("%s-proxy-%s", r.Name, certName)
+}
+
 func GetShardCertificateName(s *operatorv1alpha1.Shard, certName operatorv1alpha1.Certificate) string {
 	return fmt.Sprintf("%s-%s", s.Name, certName)
 }
@@ -146,12 +158,16 @@ func GetFrontProxyCertificateName(r *operatorv1alpha1.RootShard, f *operatorv1al
 	return fmt.Sprintf("%s-%s-%s", r.Name, f.Name, certName)
 }
 
+func GetRootShardProxyDynamicKubeconfigName(r *operatorv1alpha1.RootShard) string {
+	return fmt.Sprintf("%s-proxy-dynamic-kubeconfig", r.Name)
+}
+
 func GetFrontProxyDynamicKubeconfigName(r *operatorv1alpha1.RootShard, f *operatorv1alpha1.FrontProxy) string {
 	return fmt.Sprintf("%s-%s-dynamic-kubeconfig", r.Name, f.Name)
 }
 
-func GetFrontProxyRequestHeaderName(r *operatorv1alpha1.RootShard, f *operatorv1alpha1.FrontProxy) string {
-	return fmt.Sprintf("%s-%s-requestheader", r.Name, f.Name)
+func GetRootShardProxyConfigName(r *operatorv1alpha1.RootShard) string {
+	return fmt.Sprintf("%s-proxy-config", r.Name)
 }
 
 func GetFrontProxyConfigName(f *operatorv1alpha1.FrontProxy) string {
@@ -160,4 +176,8 @@ func GetFrontProxyConfigName(f *operatorv1alpha1.FrontProxy) string {
 
 func GetFrontProxyServiceName(f *operatorv1alpha1.FrontProxy) string {
 	return fmt.Sprintf("%s-front-proxy", f.Name)
+}
+
+func GetRootShardProxyServiceName(r *operatorv1alpha1.RootShard) string {
+	return fmt.Sprintf("%s-proxy", r.Name)
 }

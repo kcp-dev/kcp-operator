@@ -21,7 +21,6 @@ import (
 	"fmt"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	k8creconciling "k8c.io/reconciler/pkg/reconciling"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -39,7 +38,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/kcp-dev/kcp-operator/internal/controller/util"
-	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
 	"github.com/kcp-dev/kcp-operator/internal/resources/frontproxy"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
@@ -114,10 +112,7 @@ func (r *FrontProxyReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 }
 
 func (r *FrontProxyReconciler) reconcile(ctx context.Context, frontProxy *operatorv1alpha1.FrontProxy) ([]metav1.Condition, error) {
-	var (
-		errs       []error
-		conditions []metav1.Condition
-	)
+	var conditions []metav1.Condition
 
 	cond, rootShard := util.FetchRootShard(ctx, r.Client, frontProxy.Namespace, frontProxy.Spec.RootShard.Reference)
 	conditions = append(conditions, cond)
@@ -126,52 +121,13 @@ func (r *FrontProxyReconciler) reconcile(ctx context.Context, frontProxy *operat
 		return conditions, nil
 	}
 
-	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*metav1.NewControllerRef(frontProxy, operatorv1alpha1.SchemeGroupVersion.WithKind("FrontProxy")))
+	fpReconciler := frontproxy.NewFrontProxy(frontProxy, rootShard)
 
-	configMapReconcilers := []k8creconciling.NamedConfigMapReconcilerFactory{
-		frontproxy.PathMappingConfigMapReconciler(frontProxy, rootShard),
+	if err := fpReconciler.Reconcile(ctx, r.Client, frontProxy.Namespace); err != nil {
+		return conditions, fmt.Errorf("failed to reconcile: %w", err)
 	}
 
-	secretReconcilers := []k8creconciling.NamedSecretReconcilerFactory{
-		frontproxy.DynamicKubeconfigSecretReconciler(frontProxy, rootShard),
-	}
-
-	certReconcilers := []reconciling.NamedCertificateReconcilerFactory{
-		frontproxy.ServerCertificateReconciler(frontProxy, rootShard),
-		frontproxy.KubeconfigCertificateReconciler(frontProxy, rootShard),
-		frontproxy.AdminKubeconfigCertificateReconciler(frontProxy, rootShard),
-		frontproxy.RequestHeaderCertificateReconciler(frontProxy, rootShard),
-	}
-
-	deploymentReconcilers := []k8creconciling.NamedDeploymentReconcilerFactory{
-		frontproxy.DeploymentReconciler(frontProxy, rootShard),
-	}
-
-	serviceReconcilers := []k8creconciling.NamedServiceReconcilerFactory{
-		frontproxy.ServiceReconciler(frontProxy),
-	}
-
-	if err := k8creconciling.ReconcileConfigMaps(ctx, configMapReconcilers, frontProxy.Namespace, r.Client, ownerRefWrapper); err != nil {
-		errs = append(errs, err)
-	}
-
-	if err := k8creconciling.ReconcileSecrets(ctx, secretReconcilers, frontProxy.Namespace, r.Client, ownerRefWrapper); err != nil {
-		errs = append(errs, err)
-	}
-
-	if err := reconciling.ReconcileCertificates(ctx, certReconcilers, frontProxy.Namespace, r.Client, ownerRefWrapper); err != nil {
-		errs = append(errs, err)
-	}
-
-	if err := k8creconciling.ReconcileDeployments(ctx, deploymentReconcilers, frontProxy.Namespace, r.Client, ownerRefWrapper); err != nil {
-		errs = append(errs, err)
-	}
-
-	if err := k8creconciling.ReconcileServices(ctx, serviceReconcilers, frontProxy.Namespace, r.Client, ownerRefWrapper); err != nil {
-		errs = append(errs, err)
-	}
-
-	return conditions, kerrors.NewAggregate(errs)
+	return conditions, nil
 }
 
 func (r *FrontProxyReconciler) reconcileStatus(ctx context.Context, oldFrontProxy *operatorv1alpha1.FrontProxy, conditions []metav1.Condition) error {

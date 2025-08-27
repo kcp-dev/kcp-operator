@@ -30,9 +30,35 @@ type RootShardSpec struct {
 	// Cache configures the cache server (with a Kubernetes-like API) used by a sharded kcp instance.
 	Cache CacheConfig `json:"cache"`
 
+	// Proxy configures the internal front-proxy that is only (supposed to be) used by the kcp-operator
+	// to manage all shards belonging to a root shard instance. No external traffic should ever be
+	// routed through this proxy, use a dedicated FrontProxy for that purpose.
+	Proxy *RootShardProxySpec `json:"proxy,omitempty"`
+
 	// Certificates configures how the operator should create the kcp root CA, from which it will
 	// then create all other sub CAs and leaf certificates.
 	Certificates Certificates `json:"certificates"`
+}
+
+type RootShardProxySpec struct {
+	// Optional: Image allows to override the container image used for this proxy.
+	Image *ImageSpec `json:"image,omitempty"`
+
+	// Optional: Replicas configures how many instances of this proxy run in parallel. Defaults to 2 if not set.
+	Replicas *int32 `json:"replicas,omitempty"`
+
+	// Optional: Resources overrides the default resource requests and limits.
+	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
+
+	// Optional: ServiceTemplate configures the Kubernetes Service created for this proxy.
+	ServiceTemplate *ServiceTemplate `json:"serviceTemplate,omitempty"`
+
+	// Optional: DeploymentTemplate configures the Kubernetes Deployment created for this proxy.
+	DeploymentTemplate *DeploymentTemplate `json:"deploymentTemplate,omitempty"`
+
+	// CertificateTemplates allows to customize the properties on the generated
+	// certificates for this front-proxy.
+	CertificateTemplates CertificateTemplateMap `json:"certificateTemplates,omitempty"`
 }
 
 type ExternalConfig struct {

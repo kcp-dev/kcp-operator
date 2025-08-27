@@ -400,8 +400,8 @@ func TestDeploymentReconciler(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			reconciler := DeploymentReconciler(tt.frontProxy, tt.rootShard)
-			name, reconcilerFunc := reconciler()
+			fpReconciler := NewFrontProxy(tt.frontProxy, tt.rootShard)
+			name, reconcilerFunc := fpReconciler.deploymentReconciler()()
 
 			assert.Equal(t, tt.expectedName, name)
 
@@ -514,7 +514,12 @@ func TestGetArgs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := getArgs(tt.spec)
+			rec := NewFrontProxy(
+				&operatorv1alpha1.FrontProxy{Spec: *tt.spec},
+				&operatorv1alpha1.RootShard{},
+			)
+
+			result := rec.getArgs()
 			assert.Equal(t, tt.expected, result)
 		})
 	}

@@ -42,6 +42,7 @@ import (
 	"github.com/kcp-dev/kcp-operator/internal/controller/util"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/frontproxy"
 	"github.com/kcp-dev/kcp-operator/internal/resources/rootshard"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
@@ -183,6 +184,10 @@ func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operator
 		rootshard.ServiceReconciler(rootShard),
 	}, rootShard.Namespace, r.Client, ownerRefWrapper); err != nil {
 		errs = append(errs, err)
+	}
+
+	if err := frontproxy.NewRootShardProxy(rootShard).Reconcile(ctx, r.Client, rootShard.Namespace); err != nil {
+		errs = append(errs, fmt.Errorf("failed to reconcile proxy: %w", err))
 	}
 
 	return conditions, kerrors.NewAggregate(errs)
