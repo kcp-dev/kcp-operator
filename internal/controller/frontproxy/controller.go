@@ -114,6 +114,10 @@ func (r *FrontProxyReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 func (r *FrontProxyReconciler) reconcile(ctx context.Context, frontProxy *operatorv1alpha1.FrontProxy) ([]metav1.Condition, error) {
 	var conditions []metav1.Condition
 
+	if frontProxy.DeletionTimestamp != nil {
+		return conditions, nil
+	}
+
 	cond, rootShard := util.FetchRootShard(ctx, r.Client, frontProxy.Namespace, frontProxy.Spec.RootShard.Reference)
 	conditions = append(conditions, cond)
 

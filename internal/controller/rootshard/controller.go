@@ -128,6 +128,10 @@ func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operator
 		conditions []metav1.Condition
 	)
 
+	if rootShard.DeletionTimestamp != nil {
+		return conditions, nil
+	}
+
 	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*metav1.NewControllerRef(rootShard, operatorv1alpha1.SchemeGroupVersion.WithKind("RootShard")))
 
 	issuerReconcilers := []reconciling.NamedIssuerReconcilerFactory{
