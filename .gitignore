@@ -27,3 +27,6 @@ go.work.sum
 # Downloaded and built binaries
 /_build/
 /_tools/
+
+# e2e test logs and artifacts
+/.e2e-*
