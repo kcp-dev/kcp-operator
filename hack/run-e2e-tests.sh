@@ -19,8 +19,11 @@ set -euo pipefail
 KIND_CLUSTER_NAME="${KIND_CLUSTER_NAME:-e2e}"
 DATA_DIR=".e2e-$KIND_CLUSTER_NAME"
 OPERATOR_PID=0
+PROTOKOL_PID=0
+NO_TEARDOWN=${NO_TEARDOWN:-false}
 
 mkdir -p "$DATA_DIR"
+rm -rf "$DATA_DIR/kind-logs"
 echo "Logs are stored in $DATA_DIR/."
 DATA_DIR="$(realpath "$DATA_DIR")"
 
@@ -32,14 +35,26 @@ kind create cluster --name "$KIND_CLUSTER_NAME"
 chmod 600 "$KUBECONFIG"
 
 teardown_kind() {
-  echo "Stopping kcp-operator…"
-  kill -TERM $OPERATOR_PID
-  wait $OPERATOR_PID
+  if [[ $OPERATOR_PID -gt 0 ]]; then
+    echo "Stopping kcp-operator…"
+    kill -TERM $OPERATOR_PID
+    wait $OPERATOR_PID
+  fi
+
+  if [[ $PROTOKOL_PID -gt 0 ]]; then
+    echo "Stopping protokol…"
+    kill -TERM $PROTOKOL_PID
+    # no wait because protokol ends quickly and wait would fail
+  fi
 
   kind delete cluster --name "$KIND_CLUSTER_NAME"
   rm "$KUBECONFIG"
 }
-trap teardown_kind EXIT
+
+if ! $NO_TEARDOWN; then
+  echo "Will tear down kind cluster once the script has finished."
+  trap teardown_kind EXIT
+fi
 
 echo "Kubeconfig is in $KUBECONFIG."
 
@@ -75,6 +90,14 @@ _build/manager \
 OPERATOR_PID=$!
 echo "Running as process $OPERATOR_PID."
 
+if command -v protokol &> /dev/null; then
+  protokol --namespace 'e2e-*' --output "$DATA_DIR/kind-logs" 2>/dev/null &
+  PROTOKOL_PID=$!
+else
+  echo "Install https://codeberg.org/xrstf/protokol to automatically"
+  echo "collect logs from the kind cluster."
+fi
+
 echo "Running e2e tests…"
 
 export HELM_BINARY="$(realpath _tools/helm)"
@@ -84,4 +107,4 @@ WHAT="${WHAT:-./test/e2e/...}"
 TEST_ARGS="${TEST_ARGS:--timeout 2h -v}"
 E2E_PARALLELISM=${E2E_PARALLELISM:-2}
 
-(set -x; go test -tags e2e -p $E2E_PARALLELISM $TEST_ARGS "$WHAT")
+(set -x; go test -tags e2e -parallel $E2E_PARALLELISM $TEST_ARGS "$WHAT")

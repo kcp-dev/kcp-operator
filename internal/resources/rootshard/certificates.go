@@ -231,3 +231,43 @@ func ExternalLogicalClusterAdminCertificateReconciler(rootShard *operatorv1alpha
 		}
 	}
 }
+
+func OperatorClientCertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
+	const certKind = operatorv1alpha1.OperatorCertificate
+
+	name := resources.GetRootShardCertificateName(rootShard, certKind)
+	template := rootShard.Spec.CertificateTemplates.CertificateTemplate(certKind)
+
+	return func() (string, reconciling.CertificateReconciler) {
+		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
+			cert.SetLabels(resources.GetRootShardResourceLabels(rootShard))
+			cert.Spec = certmanagerv1.CertificateSpec{
+				CommonName:  resources.OperatorUsername,
+				SecretName:  name,
+				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
+				RenewBefore: &operatorv1alpha1.DefaultCertificateRenewal,
+
+				PrivateKey: &certmanagerv1.CertificatePrivateKey{
+					Algorithm: certmanagerv1.RSAKeyAlgorithm,
+					Size:      4096,
+				},
+
+				Subject: &certmanagerv1.X509Subject{
+					Organizations: []string{"system:kcp:admin"},
+				},
+
+				Usages: []certmanagerv1.KeyUsage{
+					certmanagerv1.UsageClientAuth,
+				},
+
+				IssuerRef: certmanagermetav1.ObjectReference{
+					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.FrontProxyClientCA),
+					Kind:  "Issuer",
+					Group: "cert-manager.io",
+				},
+			}
+
+			return utils.ApplyCertificateTemplate(cert, &template), nil
+		}
+	}
+}

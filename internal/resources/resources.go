@@ -39,6 +39,12 @@ const (
 	ShardLabel      = "operator.kcp.io/shard"
 	FrontProxyLabel = "operator.kcp.io/front-proxy"
 	KubeconfigLabel = "operator.kcp.io/kubeconfig"
+
+	// OperatorUsername is the common name embedded in the operator's admin certificate
+	// that is created for each RootShard. This name alone has no special meaning, as
+	// the certificate also has system:masters as an organization, which is what ultimately
+	// grants the operator its permissions.
+	OperatorUsername = "system:kcp-operator"
 )
 
 func GetImageSettings(imageSpec *operatorv1alpha1.ImageSpec) (string, []corev1.LocalObjectReference) {
