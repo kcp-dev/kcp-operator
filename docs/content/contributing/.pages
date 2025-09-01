@@ -1,6 +1,5 @@
 nav:
     - index.md
     - local-setup.md
-    - architecture.md
     - releasing.md
     - continuous-integration
