@@ -93,6 +93,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &operatorv1alpha1.KubeconfigTargetApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ObjectReference"):
 		return &operatorv1alpha1.ObjectReferenceApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("OIDCCAFileRef"):
+		return &operatorv1alpha1.OIDCCAFileRefApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("OIDCConfiguration"):
 		return &operatorv1alpha1.OIDCConfigurationApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("PathMappingEntry"):

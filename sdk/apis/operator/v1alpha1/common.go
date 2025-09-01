@@ -379,4 +379,14 @@ type OIDCConfiguration struct {
 	// Optionally sets a custom username prefix. This defaults to "oidc:" if unset, which means a user called "user@example.com"
 	// on the OIDC side will be recognised as "oidc:user@example.com" in KCP.
 	UsernamePrefix string `json:"usernamePrefix,omitempty"`
+
+	CAFileRef *OIDCCAFileRef `json:"caFileRef,omitempty"`
+}
+
+type OIDCCAFileRef struct {
+	// Name is the name of the secret that contains the CA file.
+	Name string `json:"name"`
+	// Key is the key in the secret that contains the CA file. Defaults to "ca.crt".
+	// +optional
+	Key string `json:"key,omitempty"`
 }

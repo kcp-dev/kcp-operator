@@ -56,6 +56,26 @@ func applyOIDCConfiguration(deployment *appsv1.Deployment, config operatorv1alph
 		extraArgs = append(extraArgs, fmt.Sprintf("--oidc-groups-prefix=%s", val))
 	}
 
+	if val := config.CAFileRef; val != nil {
+		extraArgs = append(extraArgs, fmt.Sprintf("--oidc-ca-file=/etc/kcp/tls/oidc/%s", val.Key))
+
+		podSpec.Volumes = append(deployment.Spec.Template.Spec.Volumes, corev1.Volume{
+			Name: "oidc-ca-file",
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: val.Name,
+				},
+			},
+		})
+
+		podSpec.Containers[0].VolumeMounts = append(podSpec.Containers[0].VolumeMounts, corev1.VolumeMount{
+			Name:      "oidc-ca-file",
+			MountPath: "/etc/kcp/tls/oidc",
+			ReadOnly:  true,
+		})
+
+	}
+
 	// TODO(mjudeikis): Add support for  when OIDC is not publically trusted --oidc-ca-file=/etc/kcp/tls/oidc/<ca-secret-name>
 
 	podSpec.Containers[0].Args = append(podSpec.Containers[0].Args, extraArgs...)

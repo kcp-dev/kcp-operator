@@ -21,13 +21,14 @@ package v1alpha1
 // OIDCConfigurationApplyConfiguration represents a declarative configuration of the OIDCConfiguration type for use
 // with apply.
 type OIDCConfigurationApplyConfiguration struct {
-	IssuerURL      *string `json:"issuerURL,omitempty"`
-	ClientID       *string `json:"clientID,omitempty"`
-	ClientSecret   *string `json:"clientSecret,omitempty"`
-	GroupsClaim    *string `json:"groupsClaim,omitempty"`
-	UsernameClaim  *string `json:"usernameClaim,omitempty"`
-	GroupsPrefix   *string `json:"groupsPrefix,omitempty"`
-	UsernamePrefix *string `json:"usernamePrefix,omitempty"`
+	IssuerURL      *string                          `json:"issuerURL,omitempty"`
+	ClientID       *string                          `json:"clientID,omitempty"`
+	ClientSecret   *string                          `json:"clientSecret,omitempty"`
+	GroupsClaim    *string                          `json:"groupsClaim,omitempty"`
+	UsernameClaim  *string                          `json:"usernameClaim,omitempty"`
+	GroupsPrefix   *string                          `json:"groupsPrefix,omitempty"`
+	UsernamePrefix *string                          `json:"usernamePrefix,omitempty"`
+	CAFileRef      *OIDCCAFileRefApplyConfiguration `json:"caFileRef,omitempty"`
 }
 
 // OIDCConfigurationApplyConfiguration constructs a declarative configuration of the OIDCConfiguration type for use with
@@ -89,5 +90,13 @@ func (b *OIDCConfigurationApplyConfiguration) WithGroupsPrefix(value string) *OI
 // If called multiple times, the UsernamePrefix field is set to the value of the last call.
 func (b *OIDCConfigurationApplyConfiguration) WithUsernamePrefix(value string) *OIDCConfigurationApplyConfiguration {
 	b.UsernamePrefix = &value
+	return b
+}
+
+// WithCAFileRef sets the CAFileRef field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the CAFileRef field is set to the value of the last call.
+func (b *OIDCConfigurationApplyConfiguration) WithCAFileRef(value *OIDCCAFileRefApplyConfiguration) *OIDCConfigurationApplyConfiguration {
+	b.CAFileRef = value
 	return b
 }
