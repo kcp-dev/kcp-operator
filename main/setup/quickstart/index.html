@@ -1123,8 +1123,9 @@
 <p class="admonition-title">Warning</p>
 <p>Never deploy etcd like below in production as it sets up an etcd instance without authentication or TLS.</p>
 </div>
-<p>Running a root shard requires a running etcd instance/cluster. A simple one can be set up with Helm and the Bitnami etcd chart:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>helm<span class="w"> </span>install<span class="w"> </span>etcd<span class="w"> </span>oci://registry-1.docker.io/bitnamicharts/etcd<span class="w"> </span>--set<span class="w"> </span>auth.rbac.enabled<span class="o">=</span><span class="nb">false</span><span class="w"> </span>--set<span class="w"> </span>auth.rbac.create<span class="o">=</span><span class="nb">false</span>
+<p>Running a root shard requires a running etcd instance/cluster. A simple one can be set up with Helm and the CI chart used by the kcp-operator for testing itself:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/kcp-dev/kcp-operator
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>helm<span class="w"> </span>install<span class="w"> </span>etcd<span class="w"> </span>./kcp-operator/hack/ci/testdata/etcd
 </code></pre></div>
 <h2 id="create-root-shard">Create Root Shard</h2>
 <p>In addition to a running etcd, the root shard requires a reference to a cert-manager <code>Issuer</code> to issue its PKI. Create a self-signing one:</p>
