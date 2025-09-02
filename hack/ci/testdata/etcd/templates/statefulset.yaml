@@ -1,0 +1,108 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: '{{ .Release.Name }}'
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: '{{ .Release.Name }}'
+      app.kubernetes.io/name: etcd
+  serviceName: '{{ .Release.Name }}-headless'
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: '{{ .Release.Name }}'
+        app.kubernetes.io/name: etcd
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        fsGroup: 1001
+        fsGroupChangePolicy: Always
+      serviceAccountName: '{{ .Release.Name }}'
+      containers:
+        - name: etcd
+          image: quay.io/coreos/etcd:v3.5.21
+          imagePullPolicy: IfNotPresent
+          command:
+            - /usr/local/bin/etcd
+          args:
+            - --name=$(HOSTNAME)
+            - --data-dir=/data
+            - --wal-dir=/data/wal
+            - --listen-peer-urls=$(URI_SCHEME)://0.0.0.0:2380
+            - --listen-client-urls=$(URI_SCHEME)://0.0.0.0:2379
+            - --advertise-client-urls=$(URI_SCHEME)://$(HOSTNAME).$(SERVICE_NAME).svc.cluster.local:2379
+            - --initial-cluster-state=new
+            - --initial-cluster-token=$(HOSTNAME)
+            - --initial-cluster=$(HOSTNAME)=$(URI_SCHEME)://$(HOSTNAME).$(SERVICE_NAME).svc.cluster.local:2380
+            - --initial-advertise-peer-urls=$(URI_SCHEME)://$(HOSTNAME).$(SERVICE_NAME).svc.cluster.local:2380
+            - --listen-metrics-urls=http://0.0.0.0:8080
+          env:
+            - name: HOSTNAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: SERVICE_NAME
+              value: '{{ .Release.Name }}-headless'
+            - name: ETCDCTL_ENDPOINTS
+              value: $(HOSTNAME).$(SERVICE_NAME):2379
+            - name: URI_SCHEME
+              value: "http"
+          ports:
+            - name: client
+              containerPort: 2379
+              protocol: TCP
+            - name: peer
+              containerPort: 2380
+              protocol: TCP
+            - name: metrics
+              containerPort: 8080
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /livez
+              port: metrics
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: metrics
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 30
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsGroup: 1001
+            runAsNonRoot: true
+            runAsUser: 1001
+            seccompProfile:
+              type: RuntimeDefault
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 8Gi

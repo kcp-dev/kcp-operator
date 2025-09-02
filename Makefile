@@ -8,6 +8,7 @@ KUSTOMIZE_VERSION ?= v5.4.3
 CONTROLLER_TOOLS_VERSION ?= v0.16.1
 GOLANGCI_LINT_VERSION ?= 2.1.6
 PROTOKOL_VERSION ?= 0.7.2
+HELM_VERSION ?= 3.18.6
 
 # Image URL to use all building/pushing image targets
 IMG ?= ghcr.io/kcp-dev/kcp-operator
@@ -153,6 +154,7 @@ GOLANGCI_LINT = $(TOOLS_DIR)/golangci-lint
 PROTOKOL = $(TOOLS_DIR)/protokol
 RECONCILER_GEN := $(TOOLS_DIR)/reconciler-gen
 OPENSHIFT_GOIMPORTS := $(TOOLS_DIR)/openshift-goimports
+HELM := $(TOOLS_DIR)/helm
 
 .PHONY: kubectl
 kubectl: $(KUBECTL) ## Download kubectl locally if necessary.
@@ -195,6 +197,13 @@ openshift-goimports: $(OPENSHIFT_GOIMPORTS) ## Download openshift-goimports loca
 .PHONY: $(OPENSHIFT_GOIMPORTS)
 $(OPENSHIFT_GOIMPORTS):
 	@GO_MODULE=true hack/download-tool.sh github.com/openshift-eng/openshift-goimports openshift-goimports $(OPENSHIFT_GOIMPORTS_VER)
+
+.PHONY: helm
+helm: $(HELM) ## Download Helm locally if necessary.
+
+.PHONY: $(HELM)
+$(HELM):
+	@hack/download-tool.sh https://get.helm.sh/helm-v${HELM_VERSION}-$(shell go env GOOS)-$(shell go env GOARCH).tar.gz helm $(HELM_VERSION)
 
 ##@ Documentation
 
