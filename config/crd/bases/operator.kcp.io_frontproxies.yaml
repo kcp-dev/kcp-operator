@@ -90,6 +90,22 @@ spec:
                   oidc:
                     description: 'Optional: OIDC configures OpenID Connect Authentication.'
                     properties:
+                      caFileRef:
+                        description: |-
+                          Optionally provides a reference to a secret that contains a CA bundle for the OIDC issuer. This is useful when
+                          the OIDC issuer is not publicly trusted.
+                        properties:
+                          key:
+                            description: Key is the key in the secret that contains
+                              the CA file. Defaults to "ca.crt".
+                            type: string
+                          name:
+                            description: Name is the name of the secret that contains
+                              the CA file.
+                            type: string
+                        required:
+                        - name
+                        type: object
                       clientID:
                         description: ClientID is the OIDC client ID configured on
                           the issuer side for this KCP instance.
