@@ -91,6 +91,9 @@ spec:
                     description: 'Optional: OIDC configures OpenID Connect Authentication.'
                     properties:
                       caFileRef:
+                        description: |-
+                          Optionally provides a reference to a secret that contains a CA bundle for the OIDC issuer. This is useful when
+                          the OIDC issuer is not publicly trusted.
                         properties:
                           key:
                             description: Key is the key in the secret that contains

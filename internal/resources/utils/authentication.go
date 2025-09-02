@@ -73,10 +73,7 @@ func applyOIDCConfiguration(deployment *appsv1.Deployment, config operatorv1alph
 			MountPath: "/etc/kcp/tls/oidc",
 			ReadOnly:  true,
 		})
-
 	}
-
-	// TODO(mjudeikis): Add support for  when OIDC is not publically trusted --oidc-ca-file=/etc/kcp/tls/oidc/<ca-secret-name>
 
 	podSpec.Containers[0].Args = append(podSpec.Containers[0].Args, extraArgs...)
 	deployment.Spec.Template.Spec = podSpec
