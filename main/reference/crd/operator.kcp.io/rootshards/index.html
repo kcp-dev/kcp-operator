@@ -1485,6 +1485,61 @@ reduce the size enough, event is discarded.</p>
 
 <div class="property depth-3">
 <div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.auth.oidc.caFileRef">.spec.auth.oidc.caFileRef</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+<div class="property-description">
+<p>Optionally provides a reference to a secret that contains a CA bundle for the OIDC issuer. This is useful when
+the OIDC issuer is not publicly trusted.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-4">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.auth.oidc.caFileRef.key">.spec.auth.oidc.caFileRef.key</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>Key is the key in the secret that contains the CA file. Defaults to &ldquo;ca.crt&rdquo;.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-4">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.auth.oidc.caFileRef.name">.spec.auth.oidc.caFileRef.name</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>Name is the name of the secret that contains the CA file.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
 <h3 class="property-path" id="v1alpha1-.spec.auth.oidc.clientID">.spec.auth.oidc.clientID</h3>
 </div>
 <div class="property-body">
