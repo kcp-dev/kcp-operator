@@ -67,6 +67,9 @@ chmod 600 "$KUBECONFIG"
 make protokol
 _tools/protokol --output "$ARTIFACTS/logs" --namespace 'kcp-*' --namespace 'e2e-*' >/dev/null 2>&1 &
 
+# need Helm to setup etcd
+make helm
+
 # load the operator image into the kind cluster
 image="ghcr.io/kcp-dev/kcp-operator:$IMAGE_TAG"
 archive=operator.tar
@@ -84,10 +87,10 @@ kubectl --namespace kcp-operator-system wait pod --all --for condition=Ready
 # deploying cert-manager
 echo "Deploying cert-manager…"
 
-helm repo add jetstack https://charts.jetstack.io --force-update
-helm repo update
+_tools/helm repo add jetstack https://charts.jetstack.io --force-update
+_tools/helm repo update
 
-helm upgrade \
+_tools/helm upgrade \
   --install \
   --namespace cert-manager \
   --create-namespace \
@@ -98,6 +101,10 @@ helm upgrade \
 kubectl apply --filename hack/ci/testdata/clusterissuer.yaml
 
 echo "Running e2e tests…"
+
+export HELM_BINARY="$(realpath _tools/helm)"
+export ETCD_HELM_CHART="$(realpath hack/ci/testdata/etcd)"
+
 (set -x; go test -tags e2e -timeout 2h -v ./test/e2e/...)
 
 echo "Done. :-)"

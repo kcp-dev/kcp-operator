@@ -32,18 +32,17 @@ import (
 func DeployEtcd(t *testing.T, name, namespace string) string {
 	t.Helper()
 
+	helmChart := os.Getenv("ETCD_HELM_CHART")
+
 	t.Logf("Installing etcd %q into %s…", name, namespace)
-	args := []string{
-		"install",
-		name,
-		"oci://registry-1.docker.io/bitnamicharts/etcd",
-		"--namespace", namespace,
-		"--version", "10.7.1", // latest version at the time of writing
-		"--set", "auth.rbac.enabled=false",
-		"--set", "auth.rbac.create=false",
+	args := []string{"install", "--namespace", namespace, "--atomic", name, helmChart}
+
+	helmCommand := os.Getenv("HELM_BINARY")
+	if helmCommand == "" {
+		helmCommand = "helm"
 	}
 
-	if err := exec.Command("helm", args...).Run(); err != nil {
+	if err := exec.Command(helmCommand, args...).Run(); err != nil {
 		t.Fatalf("Failed to deploy etcd: %v", err)
 	}
 
@@ -57,7 +56,12 @@ func DeployEtcd(t *testing.T, name, namespace string) string {
 		"--timeout", "3m",
 	}
 
-	if err := exec.Command("kubectl", args...).Run(); err != nil {
+	kubectlCommand := os.Getenv("KUBECTL_BINARY")
+	if kubectlCommand == "" {
+		kubectlCommand = "kubectl"
+	}
+
+	if err := exec.Command(kubectlCommand, args...).Run(); err != nil {
 		t.Fatalf("Failed to wait for etcd to become ready: %v", err)
 	}
 

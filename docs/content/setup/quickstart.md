@@ -12,10 +12,11 @@ kcp-operator has to be installed according to the instructions given in [Setup](
 !!! warning
     Never deploy etcd like below in production as it sets up an etcd instance without authentication or TLS.
 
-Running a root shard requires a running etcd instance/cluster. A simple one can be set up with Helm and the Bitnami etcd chart:
+Running a root shard requires a running etcd instance/cluster. A simple one can be set up with Helm and the CI chart used by the kcp-operator for testing itself:
 
 ```sh
-helm install etcd oci://registry-1.docker.io/bitnamicharts/etcd --set auth.rbac.enabled=false --set auth.rbac.create=false
+git clone https://github.com/kcp-dev/kcp-operator
+helm install etcd ./kcp-operator/hack/ci/testdata/etcd
 ```
 
 ## Create Root Shard
@@ -85,7 +86,7 @@ spec:
     spec:
       # expose this front-proxy via a load balancer
       type: LoadBalancer
-``` 
+```
 
 kcp-operator will deploy a kcp-front-proxy installation based on this and connect it to the `root` root shard created before.
 
@@ -166,7 +167,7 @@ To create a workspace, run:
 
 ```sh
 kubectl create-workspace test
-``` 
+```
 
 Output should look like this:
 
