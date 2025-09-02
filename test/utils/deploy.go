@@ -35,7 +35,7 @@ func DeployEtcd(t *testing.T, name, namespace string) string {
 	helmChart := os.Getenv("ETCD_HELM_CHART")
 
 	t.Logf("Installing etcd %q into %s…", name, namespace)
-	args := []string{"install", "--namespace", namespace, name, helmChart}
+	args := []string{"install", "--namespace", namespace, "--atomic", name, helmChart}
 
 	helmCommand := os.Getenv("HELM_BINARY")
 	if helmCommand == "" {
