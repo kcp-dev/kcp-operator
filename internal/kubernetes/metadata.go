@@ -24,24 +24,20 @@ import (
 
 func EnsureLabels(o metav1.Object, toEnsure map[string]string) {
 	labels := maps.Clone(o.GetLabels())
-
 	if labels == nil {
 		labels = make(map[string]string)
 	}
-	for key, value := range toEnsure {
-		labels[key] = value
-	}
+
+	maps.Copy(labels, toEnsure)
 	o.SetLabels(labels)
 }
 
 func EnsureAnnotations(o metav1.Object, toEnsure map[string]string) {
 	annotations := maps.Clone(o.GetAnnotations())
-
 	if annotations == nil {
 		annotations = make(map[string]string)
 	}
-	for key, value := range toEnsure {
-		annotations[key] = value
-	}
+
+	maps.Copy(annotations, toEnsure)
 	o.SetAnnotations(annotations)
 }
