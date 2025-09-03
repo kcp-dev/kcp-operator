@@ -261,7 +261,11 @@ func OperatorClientCertificateReconciler(rootShard *operatorv1alpha1.RootShard) 
 				},
 
 				IssuerRef: certmanagermetav1.ObjectReference{
-					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.FrontProxyClientCA),
+					// This shard is meant to be used against shards directly (cluster-local) or with
+					// the internal root shard proxy (also cluster-local). All of these are configured
+					// to use the regular client CA (not like "normal" front-proxies, which have their
+					// own CA).
+					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.ClientCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},
