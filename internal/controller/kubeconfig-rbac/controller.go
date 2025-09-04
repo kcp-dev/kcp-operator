@@ -152,7 +152,7 @@ func (r *KubeconfigRBACReconciler) reconcileBindings(ctx context.Context, kc *op
 		Name:     kubeconfig.KubeconfigGroup(kc),
 	}
 
-	var reconcilers []reconciling.NamedClusterRoleBindingReconcilerFactory
+	reconcilers := make([]reconciling.NamedClusterRoleBindingReconcilerFactory, 0, desiredBindings.Len())
 	for _, roleName := range sets.List(desiredBindings) {
 		reconcilers = append(reconcilers, kubeconfig.ClusterRoleBindingReconciler(kc, roleName, subject))
 	}
