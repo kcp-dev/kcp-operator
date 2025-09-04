@@ -73,6 +73,7 @@ func (r *RootShardReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	})
 
 	return ctrl.NewControllerManagedBy(mgr).
+		Named("rootshard").
 		For(&operatorv1alpha1.RootShard{}).
 		Owns(&appsv1.Deployment{}).
 		Owns(&corev1.ConfigMap{}).

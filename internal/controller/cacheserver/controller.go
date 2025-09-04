@@ -57,6 +57,7 @@ func (r *CacheServerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 // SetupWithManager sets up the controller with the Manager.
 func (r *CacheServerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
+		Named("cacheserver").
 		For(&operatorv1alpha1.CacheServer{}).
 		Complete(r)
 }
