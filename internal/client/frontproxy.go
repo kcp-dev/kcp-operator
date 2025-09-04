@@ -30,6 +30,8 @@ import (
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
+// +kubebuilder:rbac:groups=operator.kcp.io,resources=rootshards;shards;frontproxies,verbs=get
+
 func NewInternalKubeconfigClient(ctx context.Context, c ctrlruntimeclient.Client, kubeconfig *operatorv1alpha1.Kubeconfig, cluster logicalcluster.Name, scheme *runtime.Scheme) (ctrlruntimeclient.Client, error) {
 	target := kubeconfig.Spec.Target
 

@@ -85,6 +85,8 @@ func newClient(
 	return ctrlruntimeclient.New(cfg, ctrlruntimeclient.Options{Scheme: scheme})
 }
 
+// +kubebuilder:rbac:groups=core,resources=secrets,verbs=get
+
 func getTLSConfig(ctx context.Context, c ctrlruntimeclient.Client, rootShard *operatorv1alpha1.RootShard, shard *operatorv1alpha1.Shard, frontProxy *operatorv1alpha1.FrontProxy) (rest.TLSClientConfig, error) {
 	rootShard, err := getRootShard(ctx, c, rootShard, shard, frontProxy)
 	if err != nil {
@@ -108,6 +110,8 @@ func getTLSConfig(ctx context.Context, c ctrlruntimeclient.Client, rootShard *op
 		KeyData:  certSecret.Data["tls.key"],
 	}, nil
 }
+
+// +kubebuilder:rbac:groups=operator.kcp.io,resources=rootshards,verbs=get
 
 func getRootShard(ctx context.Context, c ctrlruntimeclient.Client, rootShard *operatorv1alpha1.RootShard, shard *operatorv1alpha1.Shard, frontProxy *operatorv1alpha1.FrontProxy) (*operatorv1alpha1.RootShard, error) {
 	if rootShard != nil {
