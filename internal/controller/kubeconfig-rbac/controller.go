@@ -48,6 +48,7 @@ type KubeconfigRBACReconciler struct {
 func (r *KubeconfigRBACReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&operatorv1alpha1.Kubeconfig{}).
+		Named("kubeconfig-rbac").
 		Complete(r)
 }
 
