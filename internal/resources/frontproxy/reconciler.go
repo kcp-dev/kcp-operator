@@ -55,6 +55,10 @@ func NewRootShardProxy(rootShard *operatorv1alpha1.RootShard) *reconciler {
 	}
 }
 
+// +kubebuilder:rbac:groups=core,resources=configmaps;secrets;services,verbs=get;update;patch
+// +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;update;patch
+// +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;update;patch
+
 func (r *reconciler) Reconcile(ctx context.Context, client ctrlruntimeclient.Client, namespace string) error {
 	var errs []error
 
