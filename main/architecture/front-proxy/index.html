@@ -6,30 +6,33 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="Explains how the kcp front-proxy can be used to ingest traffic.
+">
       
       
-        <link rel="canonical" href="https://docs.kcp.io/kcp-operator/main/setup/">
+      
+        <link rel="canonical" href="https://docs.kcp.io/kcp-operator/main/architecture/front-proxy/">
       
       
-        <link rel="prev" href="..">
+        <link rel="prev" href="../basics/">
       
       
-        <link rel="next" href="quickstart/">
+        <link rel="next" href="../pki/">
       
       
-      <link rel="icon" href="../favicons/favicon.ico">
+      <link rel="icon" href="../../favicons/favicon.ico">
       <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.17">
     
     
       
-        <title>Setup - kcp-operator</title>
+        <title>kcp front-proxy - kcp-operator</title>
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.bcfcd587.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.bcfcd587.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
       
       
 
@@ -48,9 +51,9 @@
       
     
     
-      <link rel="stylesheet" href="../stylesheets/crd.css">
+      <link rel="stylesheet" href="../../stylesheets/crd.css">
     
-    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -76,7 +79,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#setup" class="md-skip">
+        <a href="#kcp-front-proxy" class="md-skip">
           Skip to content
         </a>
       
@@ -94,9 +97,9 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="kcp-operator" class="md-header__button md-logo" aria-label="kcp-operator" data-md-component="logo">
+    <a href="../.." title="kcp-operator" class="md-header__button md-logo" aria-label="kcp-operator" data-md-component="logo">
       
-  <img src="../logo.svg" alt="logo">
+  <img src="../../logo.svg" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -113,7 +116,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Setup
+              kcp front-proxy
             
           </span>
         </div>
@@ -230,7 +233,7 @@
   
   
     <li class="md-tabs__item">
-      <a href=".." class="md-tabs__link">
+      <a href="../.." class="md-tabs__link">
         
   
     
@@ -245,13 +248,11 @@
         
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../setup/" class="md-tabs__link">
           
   
     
@@ -267,11 +268,13 @@
         
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../architecture/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
           
   
     
@@ -291,7 +294,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../reference/" class="md-tabs__link">
+        <a href="../../reference/" class="md-tabs__link">
           
   
     
@@ -311,7 +314,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../contributing/" class="md-tabs__link">
+        <a href="../../contributing/" class="md-tabs__link">
           
   
     
@@ -346,9 +349,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="kcp-operator" class="md-nav__button md-logo" aria-label="kcp-operator" data-md-component="logo">
+    <a href="../.." title="kcp-operator" class="md-nav__button md-logo" aria-label="kcp-operator" data-md-component="logo">
       
-  <img src="../logo.svg" alt="logo">
+  <img src="../../logo.svg" alt="logo">
 
     </a>
     kcp-operator
@@ -375,7 +378,7 @@
   
   
     <li class="md-nav__item">
-      <a href=".." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -392,8 +395,6 @@
       
   
   
-    
-  
   
   
     
@@ -408,22 +409,21 @@
     
     
       
-        
-        
-      
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
         
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="./" class="md-nav__link md-nav__link--active">
+            <a href="../../setup/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -434,13 +434,13 @@
             </a>
             
               
-              <label class="md-nav__link md-nav__link--active" for="__nav_2" id="__nav_2_label" tabindex="">
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             Setup
@@ -456,7 +456,7 @@
   
   
     <li class="md-nav__item">
-      <a href="quickstart/" class="md-nav__link">
+      <a href="../../setup/quickstart/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -481,6 +481,8 @@
       
   
   
+    
+  
   
   
     
@@ -499,21 +501,22 @@
     
     
       
+        
+        
+      
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../architecture/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -524,13 +527,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             Architecture
@@ -546,7 +549,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../architecture/basics/" class="md-nav__link">
+      <a href="../basics/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -564,10 +567,30 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../architecture/front-proxy/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    kcp front-proxy
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -576,6 +599,53 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      Usage
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mode-of-operation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Mode of Operation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rootshard-proxy" class="md-nav__link">
+    <span class="md-ellipsis">
+      RootShard Proxy
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -588,7 +658,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../architecture/pki/" class="md-nav__link">
+      <a href="../pki/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -641,7 +711,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../reference/" class="md-nav__link ">
+            <a href="../../reference/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -768,7 +838,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/crd/operator.kcp.io/frontproxies/" class="md-nav__link">
+      <a href="../../reference/crd/operator.kcp.io/frontproxies/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -789,7 +859,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/crd/operator.kcp.io/kubeconfigs/" class="md-nav__link">
+      <a href="../../reference/crd/operator.kcp.io/kubeconfigs/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -810,7 +880,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/crd/operator.kcp.io/rootshards/" class="md-nav__link">
+      <a href="../../reference/crd/operator.kcp.io/rootshards/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -831,7 +901,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/crd/operator.kcp.io/shards/" class="md-nav__link">
+      <a href="../../reference/crd/operator.kcp.io/shards/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -904,7 +974,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../contributing/" class="md-nav__link ">
+            <a href="../../contributing/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -937,7 +1007,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../contributing/local-setup/" class="md-nav__link">
+      <a href="../../contributing/local-setup/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -958,7 +1028,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../contributing/releasing/" class="md-nav__link">
+      <a href="../../contributing/releasing/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1002,7 +1072,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../contributing/continuous-integration/" class="md-nav__link ">
+            <a href="../../contributing/continuous-integration/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -1065,44 +1135,29 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#requirements" class="md-nav__link">
+  <a href="#usage" class="md-nav__link">
     <span class="md-ellipsis">
-      Requirements
+      Usage
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#helm-chart" class="md-nav__link">
+  <a href="#mode-of-operation" class="md-nav__link">
     <span class="md-ellipsis">
-      Helm Chart
+      Mode of Operation
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#further-reading" class="md-nav__link">
+  <a href="#rootshard-proxy" class="md-nav__link">
     <span class="md-ellipsis">
-      Further Reading
+      RootShard Proxy
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Further Reading">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#quickstart" class="md-nav__link">
-    <span class="md-ellipsis">
-      Quickstart
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1124,28 +1179,30 @@
   
 
 
-<h1 id="setup">Setup</h1>
-<h2 id="requirements">Requirements</h2>
-<ul>
-<li><a href="https://cert-manager.io/">cert-manager</a> (see <a href="https://cert-manager.io/docs/installation/helm/">Installing with Helm</a>)</li>
-</ul>
-<h2 id="helm-chart">Helm Chart</h2>
-<p>A Helm chart for kcp-operator is maintained in <a href="https://github.com/kcp-dev/helm-charts/tree/main/charts/kcp-operator">kcp-dev/helm-charts</a>. To install it, first add the Helm repository:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>kcp<span class="w"> </span>https://kcp-dev.github.io/helm-charts
-</code></pre></div>
-<p>And then install the chart:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>helm<span class="w"> </span>install<span class="w"> </span>--create-namespace<span class="w"> </span>--namespace<span class="w"> </span>kcp-operator<span class="w"> </span>kcp-operator<span class="w"> </span>kcp/kcp-operator
-</code></pre></div>
-<p>For full configuration options, check out the Chart <a href="https://github.com/kcp-dev/helm-charts/blob/main/charts/kcp-operator/values.yaml">values</a>.</p>
-<h2 id="further-reading">Further Reading</h2>
-<h3 id="quickstart"><a href="quickstart/">Quickstart</a></h3>
-<p>Create your first objects after installing kcp-operator.</p>
+<h1 id="kcp-front-proxy">kcp front-proxy</h1>
+<p>The kcp front-proxy can be used to provide access to either a whole or a subset of a kcp installation. Its main purpose is to act as a gateway, since it builds up a runtime map of all existing workspaces across all shards that it targets, so it knows where to route a request to <code>/clusters/root:my-team</code> to the shard where the logicalcluster for that workspace resides.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Currently it is required to have at least one front-proxy in a kcp installation, which must be reachable at the hostname also configured as the external name for the root shard. Without a front-proxy, new workspaces will not be able to be scheduled.</p>
+<p>The front-proxy must exist even if there is only one shard (the RootShard). This is a requirement of kcp, not the operator itself.</p>
+</div>
+<h2 id="usage">Usage</h2>
+<p>As mentioned above, your first front-proxy should have the same external hostname as is configured on the root shard. Every additional front-proxy can be served at arbitrary hostnames. Since the CA used to generate the serving certs for front-proxies is embedded in kubeconfigs generated by the kcp-operator, there is no need to use well-known CAs or ACME providers like Let's Encrypt, unless you intend to also access kcp from systems that do not use kubeconfig files and have no way to configure additional CAs.</p>
+<h2 id="mode-of-operation">Mode of Operation</h2>
+<p>The kcp front-proxy will build up a runtime map of all shards, workspaces and logicalclusters in a kcp installation. For this it connects dynamically to each shard individually and begins to watch the necessary resources. This runtime index is then used to route incoming requests to their target shards.</p>
+<p>The proxy can optionally perform authentication, for example using OIDC, and pass authentication information (like username and groups) on to the shard (via HTTP headers). This can be configured for each front-proxy individually. If no authentication is performed, the requests will be passed unauthenticated to their target shards, where then authentication happens.</p>
+<h2 id="rootshard-proxy">RootShard Proxy</h2>
+<p>The kcp-operator will deploy an internal front-proxy for every <code>RootShard</code> (i.e. one for each kcp installation). This internal proxy is solely used by the operator itself to allow it to resolve workspace paths to logicalclusters and provision resources inside those workspaces.</p>
+<p>The reason a standalone proxy is deployed is that the admin-configured front-proxies (based on <code>FrontProxy</code> objects) can be configured to drop sensitive groups, like <code>system:masters</code>, from incoming requests. This is a security measure, ensuring no super admin access is possible to kcp from the outside.</p>
 
 
 
 
 
 
+
+  
+  
 
 
 
@@ -1218,10 +1275,10 @@
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.indexes", "navigation.tabs", "navigation.expand", "navigation.top", "content.code.copy", "content.code.annotate"], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.indexes", "navigation.tabs", "navigation.expand", "navigation.top", "content.code.copy", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.1e8ae164.min.js"></script>
+      <script src="../../assets/javascripts/bundle.1e8ae164.min.js"></script>
       
     
   </body>

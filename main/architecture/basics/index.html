@@ -6,18 +6,18 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="An overview of architecture design decisions made for kcp-operator.
+        <meta name="description" content="A general overview over the resources provided by the kcp-operator.
 ">
       
       
       
-        <link rel="canonical" href="https://docs.kcp.io/kcp-operator/main/contributing/architecture/">
+        <link rel="canonical" href="https://docs.kcp.io/kcp-operator/main/architecture/basics/">
       
       
-        <link rel="prev" href="../local-setup/">
+        <link rel="prev" href="../">
       
       
-        <link rel="next" href="../releasing/">
+        <link rel="next" href="../front-proxy/">
       
       
       <link rel="icon" href="../../favicons/favicon.ico">
@@ -25,7 +25,7 @@
     
     
       
-        <title>Architecture - kcp-operator</title>
+        <title>Basics - kcp-operator</title>
       
     
     
@@ -79,7 +79,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#architecture" class="md-skip">
+        <a href="#basics" class="md-skip">
           Skip to content
         </a>
       
@@ -116,7 +116,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Architecture
+              Basics
             
           </span>
         </div>
@@ -268,6 +268,28 @@
         
   
   
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
+          
+  
+    
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
   
     
     
@@ -288,13 +310,11 @@
         
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../contributing/" class="md-tabs__link">
           
   
     
@@ -461,6 +481,232 @@
       
   
   
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+        
+        
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    Architecture
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Architecture
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Basics
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Basics
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#resource-relationships" class="md-nav__link">
+    <span class="md-ellipsis">
+      Resource Relationships
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Resource Relationships">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rootshard-shard" class="md-nav__link">
+    <span class="md-ellipsis">
+      RootShard &amp; Shard
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#frontproxy" class="md-nav__link">
+    <span class="md-ellipsis">
+      FrontProxy
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#kubeconfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      Kubeconfig
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cross-namespacecluster-references" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cross-Namespace/Cluster References
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../front-proxy/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    kcp front-proxy
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pki/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Certificate Management
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
   
   
     
@@ -484,7 +730,7 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
         
           
           
@@ -500,14 +746,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             Reference
           </label>
@@ -538,10 +784,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_2" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_2" >
         
           
-          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="0">
             
   
   <span class="md-ellipsis">
@@ -552,8 +798,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_2">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_2">
             <span class="md-nav__icon md-icon"></span>
             CRD
           </label>
@@ -588,10 +834,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_2_1" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_2_1" >
         
           
-          <label class="md-nav__link" for="__nav_3_2_1" id="__nav_3_2_1_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_2_1" id="__nav_4_2_1_label" tabindex="0">
             
   
   <span class="md-ellipsis">
@@ -602,8 +848,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_1_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_2_1">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_2_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_2_1">
             <span class="md-nav__icon md-icon"></span>
             operator.kcp.io
           </label>
@@ -720,8 +966,6 @@
       
   
   
-    
-  
   
   
     
@@ -737,27 +981,24 @@
       
         
       
-        
-      
     
     
-      
-        
-        
       
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
         
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../../contributing/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -768,14 +1009,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="">
+              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_4">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             Contributing
           </label>
@@ -790,7 +1031,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../local-setup/" class="md-nav__link">
+      <a href="../../contributing/local-setup/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -808,98 +1049,10 @@
                 
   
   
-    
-  
-  
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    Architecture
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
-        
-  
-  <span class="md-ellipsis">
-    Architecture
-  </span>
-  
-
-      </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#resource-relationships" class="md-nav__link">
-    <span class="md-ellipsis">
-      Resource Relationships
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#cross-namespacecluster-references" class="md-nav__link">
-    <span class="md-ellipsis">
-      Cross-Namespace/Cluster References
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#certificate-management" class="md-nav__link">
-    <span class="md-ellipsis">
-      Certificate Management
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
   
   
     <li class="md-nav__item">
-      <a href="../releasing/" class="md-nav__link">
+      <a href="../../contributing/releasing/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -938,12 +1091,12 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_5" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5_4" >
         
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../continuous-integration/" class="md-nav__link ">
+            <a href="../../contributing/continuous-integration/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -955,8 +1108,8 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_5">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_4">
             <span class="md-nav__icon md-icon"></span>
             Continuous integration
           </label>
@@ -1012,21 +1165,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Resource Relationships">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rootshard-shard" class="md-nav__link">
+    <span class="md-ellipsis">
+      RootShard &amp; Shard
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#frontproxy" class="md-nav__link">
+    <span class="md-ellipsis">
+      FrontProxy
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#kubeconfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      Kubeconfig
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
   <a href="#cross-namespacecluster-references" class="md-nav__link">
     <span class="md-ellipsis">
       Cross-Namespace/Cluster References
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#certificate-management" class="md-nav__link">
-    <span class="md-ellipsis">
-      Certificate Management
     </span>
   </a>
   
@@ -1050,8 +1227,8 @@
   
 
 
-<h1 id="architecture">Architecture</h1>
-<p>kcp-operator is a kubebuilder/controller-runtime based collection of controllers that allow setting up complex kcp environments.</p>
+<h1 id="basics">Basics</h1>
+<p>kcp-operator ships with a number of resources that, together, can be used to create a kcp installation.</p>
 <h2 id="resource-relationships">Resource Relationships</h2>
 <pre class="mermaid"><code>flowchart TD
     FrontProxy -- ObjRef (n:1)--&gt; RootShard
@@ -1061,53 +1238,20 @@
     Kubeconfig --ObjRef (n:1)--&gt;Shard
     Kubeconfig --ObjRef (n:1)--&gt;RootShard
     Kubeconfig --ObjRef (n:1)--&gt;FrontProxy</code></pre>
-<p>The above flow chart renders the following considerations:</p>
-<ul>
-<li>The <code>RootShard</code> is the nucleus of a kcp setup. Each object of this resource basically creates a new kcp setup.</li>
-<li>A <code>RootShard</code> has an optional dependency on a <code>CacheServer</code>, if the cache server embedded in the kcp binary is not used.</li>
-<li>There can be no, one or multiple kcp-front-proxy deployments that all serve traffic into the same kcp setup (e.g. because you want to run front proxies in multiple regions). The <code>FrontProxy</code> object therefore has a object reference to a <code>RootShard</code>.</li>
-<li>There can be one or multiple additional shards added to a kcp setup. The <code>Shard</code> object therefore has an object reference to a <code>RootShard</code>.</li>
-<li><code>Kubeconfigs</code> can be generated for either a <code>Shard</code>, a <code>RootShard</code> or a <code>FrontProxy</code>. The former two are more useful for components running alongside shards (e.g. additional controllers), while the latter is useful for external access to the kcp setup.</li>
-</ul>
+<h3 id="rootshard-shard"><code>RootShard</code> &amp; <code>Shard</code></h3>
+<p>Each kcp installation consists at the minimum of one root shard and one <a href="../front-proxy/">front-proxy</a>, but you can add additional "regular" shards to scale kcp horizontally.</p>
+<p>Creating a new <code>RootShard</code> object means creating a new kcp installation, as you cannot have more than one root shard in one kcp installation, however multiple installations can run in the same Kubernetes namespace (though this is not necessarily recommended). The <code>RootShard</code> object's name is not really important inside kcp itself.</p>
+<p>Each additional shard is created by creating a <code>Shard</code> object, which will reference the root shard it belongs to. Shard names are relevant in kcp, as each shard will register itself on its root shard, using the name of the <code>Shard</code> object.</p>
+<h3 id="frontproxy"><code>FrontProxy</code></h3>
+<p>The kcp front-proxy can be used to provide access to either a whole or a subset of a kcp installation. Its main purpose is to act as a gateway, since it builds up a runtime map of all existing workspaces across all shards that it targets, so it knows where to route a request to <code>/clusters/root:my-team</code> to the shard where the logicalcluster for that workspace resides.</p>
+<p>A kcp installation can contain multiple front-proxies with different settings; one might perform additional authentication while another might pass unauthenticated requests to the shards (which will then perform their own authentication).</p>
+<p>For developing controllers against kcp, it is often necessary to access the shards directly, so front-proxies are not the only way to access kcp.</p>
+<h3 id="kubeconfig"><code>Kubeconfig</code></h3>
+<p>Kubeconfigs allow the easy creation of credentials to access kcp. As a sharded system, kcp relies on client certificate authentication and the kcp-operator will ensure the correct certificates are generated and then neatly wrapped up in ready-to-use kubeconfig Secrets.</p>
+<p>Kubeconfigs can be configured to point to a specific shard or to a front-proxy instance, which affects which client CA is used to generate the certificates.</p>
 <h2 id="cross-namespacecluster-references">Cross-Namespace/Cluster References</h2>
 <p>Due to the potential "global" nature of a kcp setup it might be necessary to run kcp-operator on multiple clusters while attempting to form one single kcp setup with multiple shards and front proxies.</p>
 <p>To make this possible, resources with object references (see above) could have a secondary way of reading necessary configuration (instead of a <code>corev1.LocalObjectReference</code>). This could be a reference to a <code>ConfigMap</code> or a <code>Secret</code> (to be determined) which are automatically generated for various resource types. A sync process (outside of the kcp-operator) could then sync the <code>ConfigMap</code> (or the <code>Secret</code>, or a custom resource type) across namespaces or even clusters, where e.g. a <code>Shard</code> object references a <code>Secret</code> which was generated for a <code>RootShard</code> on another cluster.</p>
-<h2 id="certificate-management">Certificate Management</h2>
-<p>The placeholders <code>$rootshard</code> and <code>$frontproxy</code> in the chart are used to denote the name of the corresponding operator resource.</p>
-<pre class="mermaid"><code>graph TB
-    A([kcp-pki-bootstrap]):::issuer --&gt; B(kcp-pki-ca):::ca
-    B --&gt; C([$rootshard-ca]):::issuer
-
-    C --&gt; D(kcp-etcd-client-ca):::ca
-    C --&gt; E(kcp-etcd-peer-ca):::ca
-    C --&gt; F($rootshard-front-proxy-client-ca):::ca
-    C --&gt; G($rootshard-server-ca):::ca
-    C --&gt; H($rootshard-requestheaer-client-ca):::ca
-    C --&gt; I($rootshard-client-ca):::ca
-    C --&gt; J(kcp-service-account-ca):::ca
-
-    D --&gt; K([kcp-etcd-client-issuer]):::issuer
-    E --&gt; L([kcp-etcd-peer-issuer]):::issuer
-    F --&gt; M([$rootshard-front-proxy-client-ca]):::issuer
-    G --&gt; N([$rootshard-server-ca]):::issuer
-    H --&gt; O([$rootshard-requestheader-client-ca]):::issuer
-    I --&gt; P([$rootshard-client-ca]):::issuer
-    J --&gt; Q([kcp-service-account-issuer]):::issuer
-
-    K --- K1(kcp-etcd):::cert --&gt; K2(kcp-etcd-client):::cert
-    L --&gt; L1(kcp-etcd-peer):::cert
-    M --&gt; M1($rootshard-$frontproxy-admin-kubeconfig):::cert
-    N --- N1(kcp):::cert --- N2($rootshard-$frontproxy-server):::cert --&gt; N3(kcp-virtual-workspaces):::cert
-    O --- O1($rootshard-$frontproxy-requestheader):::cert --&gt; O2("(kcp-front-proxy-vw-client)"):::cert
-    P --- P1($rootshard-$frontproxy-kubeconfig):::cert --&gt; P2(kcp-internal-admin-kubeconfig):::cert
-    Q --&gt; Q1(kcp-service-account):::cert
-
-    B --&gt; R([$rootshard2-ca]):::issuer
-    R --&gt; S(...):::ca
-
-    classDef issuer color:#77F
-    classDef ca color:#F77
-    classDef cert color:orange</code></pre>
 
 
 

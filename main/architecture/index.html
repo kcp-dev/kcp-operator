@@ -8,13 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://docs.kcp.io/kcp-operator/main/setup/">
+        <link rel="canonical" href="https://docs.kcp.io/kcp-operator/main/architecture/">
       
       
-        <link rel="prev" href="..">
+        <link rel="prev" href="../setup/quickstart/">
       
       
-        <link rel="next" href="quickstart/">
+        <link rel="next" href="basics/">
       
       
       <link rel="icon" href="../favicons/favicon.ico">
@@ -22,7 +22,7 @@
     
     
       
-        <title>Setup - kcp-operator</title>
+        <title>Architecture - kcp-operator</title>
       
     
     
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#setup" class="md-skip">
+        <a href="#architecture" class="md-skip">
           Skip to content
         </a>
       
@@ -113,7 +113,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Setup
+              Architecture
             
           </span>
         </div>
@@ -245,13 +245,11 @@
         
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../setup/" class="md-tabs__link">
           
   
     
@@ -267,11 +265,13 @@
         
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../architecture/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./" class="md-tabs__link">
           
   
     
@@ -392,8 +392,6 @@
       
   
   
-    
-  
   
   
     
@@ -408,22 +406,21 @@
     
     
       
-        
-        
-      
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
         
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="./" class="md-nav__link md-nav__link--active">
+            <a href="../setup/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -434,13 +431,13 @@
             </a>
             
               
-              <label class="md-nav__link md-nav__link--active" for="__nav_2" id="__nav_2_label" tabindex="">
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             Setup
@@ -456,7 +453,7 @@
   
   
     <li class="md-nav__item">
-      <a href="quickstart/" class="md-nav__link">
+      <a href="../setup/quickstart/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -481,6 +478,8 @@
       
   
   
+    
+  
   
   
     
@@ -499,21 +498,22 @@
     
     
       
+        
+        
+      
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../architecture/" class="md-nav__link ">
+            <a href="./" class="md-nav__link md-nav__link--active">
               
   
   <span class="md-ellipsis">
@@ -524,13 +524,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="0">
+              <label class="md-nav__link md-nav__link--active" for="__nav_3" id="__nav_3_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             Architecture
@@ -546,7 +546,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../architecture/basics/" class="md-nav__link">
+      <a href="basics/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -567,7 +567,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../architecture/front-proxy/" class="md-nav__link">
+      <a href="front-proxy/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -588,7 +588,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../architecture/pki/" class="md-nav__link">
+      <a href="pki/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1065,44 +1065,11 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#requirements" class="md-nav__link">
+  <a href="#overview" class="md-nav__link">
     <span class="md-ellipsis">
-      Requirements
+      Overview
     </span>
   </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#helm-chart" class="md-nav__link">
-    <span class="md-ellipsis">
-      Helm Chart
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#further-reading" class="md-nav__link">
-    <span class="md-ellipsis">
-      Further Reading
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Further Reading">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#quickstart" class="md-nav__link">
-    <span class="md-ellipsis">
-      Quickstart
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1124,22 +1091,18 @@
   
 
 
-<h1 id="setup">Setup</h1>
-<h2 id="requirements">Requirements</h2>
+<h1 id="architecture">Architecture</h1>
+<p>This section describes how the kcp-operator is designed and meant to be used.</p>
+<h2 id="overview">Overview</h2>
 <ul>
-<li><a href="https://cert-manager.io/">cert-manager</a> (see <a href="https://cert-manager.io/docs/installation/helm/">Installing with Helm</a>)</li>
+<li><a href="basics/">Basics</a> – A general overview over the resources provided by the kcp-operator.</li>
+<li><a href="front-proxy/">front-proxy</a> – Explains how the kcp front-proxy can be used to ingest traffic.</li>
+<li><a href="pki/">Certificate Management</a> – This page describes the various CAs and certificates used in a kcp installation.</li>
 </ul>
-<h2 id="helm-chart">Helm Chart</h2>
-<p>A Helm chart for kcp-operator is maintained in <a href="https://github.com/kcp-dev/helm-charts/tree/main/charts/kcp-operator">kcp-dev/helm-charts</a>. To install it, first add the Helm repository:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>kcp<span class="w"> </span>https://kcp-dev.github.io/helm-charts
-</code></pre></div>
-<p>And then install the chart:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>helm<span class="w"> </span>install<span class="w"> </span>--create-namespace<span class="w"> </span>--namespace<span class="w"> </span>kcp-operator<span class="w"> </span>kcp-operator<span class="w"> </span>kcp/kcp-operator
-</code></pre></div>
-<p>For full configuration options, check out the Chart <a href="https://github.com/kcp-dev/helm-charts/blob/main/charts/kcp-operator/values.yaml">values</a>.</p>
-<h2 id="further-reading">Further Reading</h2>
-<h3 id="quickstart"><a href="quickstart/">Quickstart</a></h3>
-<p>Create your first objects after installing kcp-operator.</p>
+<!--
+- [Sharding](sharding.md) – How `RootShards` and `Shards` work together to create a scalable kcp setup.
+- [Kubeconfigs](kubeconfigs.md) – Shows how `Kubeconfig` objects can be used to provide credentials to kcp.
+-->
 
 
 
