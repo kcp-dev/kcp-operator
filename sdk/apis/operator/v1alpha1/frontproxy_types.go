@@ -47,7 +47,7 @@ type FrontProxySpec struct {
 	DeploymentTemplate *DeploymentTemplate `json:"deploymentTemplate,omitempty"`
 
 	// CertificateTemplates allows to customize the properties on the generated
-	// certificates for this root shard.
+	// certificates for this front-proxy.
 	CertificateTemplates CertificateTemplateMap `json:"certificateTemplates,omitempty"`
 }
 

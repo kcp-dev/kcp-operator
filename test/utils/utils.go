@@ -28,17 +28,39 @@ import (
 	"time"
 
 	kcpcorev1alpha1 "github.com/kcp-dev/kcp/sdk/apis/core/v1alpha1"
+	kcptenancyv1alpha1 "github.com/kcp-dev/kcp/sdk/apis/tenancy/v1alpha1"
+	"github.com/kcp-dev/logicalcluster/v3"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/scale/scheme"
 	"k8s.io/client-go/tools/clientcmd"
 	ctrlruntime "sigs.k8s.io/controller-runtime"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kcp-dev/kcp-operator/internal/resources"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
+
+func NewScheme(t *testing.T) *runtime.Scheme {
+	sc := runtime.NewScheme()
+	if err := scheme.AddToScheme(sc); err != nil {
+		t.Fatal(err)
+	}
+	if err := corev1.AddToScheme(sc); err != nil {
+		t.Fatal(err)
+	}
+	if err := kcpcorev1alpha1.AddToScheme(sc); err != nil {
+		t.Fatal(err)
+	}
+	if err := kcptenancyv1alpha1.AddToScheme(sc); err != nil {
+		t.Fatal(err)
+	}
+
+	return sc
+}
 
 func GetSelfSignedIssuerRef() *operatorv1alpha1.ObjectReference {
 	return &operatorv1alpha1.ObjectReference{
@@ -198,18 +220,59 @@ func ConnectWithKubeconfig(
 	clientConfig.Host = parsed.String()
 
 	// create a client through the tunnel
-	sc := runtime.NewScheme()
-	if err := scheme.AddToScheme(sc); err != nil {
-		t.Fatal(err)
-	}
-	if err := corev1.AddToScheme(sc); err != nil {
-		t.Fatal(err)
-	}
-	if err := kcpcorev1alpha1.AddToScheme(sc); err != nil {
+	kcpClient, err := ctrlruntimeclient.New(clientConfig, ctrlruntimeclient.Options{Scheme: NewScheme(t)})
+	if err != nil {
 		t.Fatal(err)
 	}
 
-	kcpClient, err := ctrlruntimeclient.New(clientConfig, ctrlruntimeclient.Options{Scheme: sc})
+	return kcpClient
+}
+
+func ConnectWithRootShardProxy(
+	t *testing.T,
+	ctx context.Context,
+	client ctrlruntimeclient.Client,
+	rootShard *operatorv1alpha1.RootShard,
+	cluster logicalcluster.Path,
+) ctrlruntimeclient.Client {
+	t.Helper()
+
+	// get the secret for the kcp-operator client cert
+	key := types.NamespacedName{
+		Namespace: rootShard.Namespace,
+		Name:      resources.GetRootShardCertificateName(rootShard, operatorv1alpha1.OperatorCertificate),
+	}
+
+	certSecret := &corev1.Secret{}
+	if err := client.Get(ctx, key, certSecret); err != nil {
+		t.Fatalf("Failed to get root shard proxy Secret: %v", err)
+	}
+
+	// start a port forwarding
+	localPort := getPort()
+	servicePort := 6443
+	serviceName := resources.GetRootShardProxyServiceName(rootShard)
+
+	SelfDestuctingPortForward(t, ctx, rootShard.Namespace, "svc/"+serviceName, servicePort, localPort)
+
+	// create rest config
+	proxyUrl := fmt.Sprintf("https://%s", net.JoinHostPort("localhost", fmt.Sprintf("%d", localPort)))
+
+	if !cluster.Empty() {
+		proxyUrl = fmt.Sprintf("%s/clusters/%s", proxyUrl, cluster.String())
+	}
+
+	cfg := &rest.Config{
+		Host: proxyUrl,
+		TLSClientConfig: rest.TLSClientConfig{
+			CAData:   certSecret.Data["ca.crt"],
+			CertData: certSecret.Data["tls.crt"],
+			KeyData:  certSecret.Data["tls.key"],
+		},
+	}
+
+	// create a client through the tunnel
+	kcpClient, err := ctrlruntimeclient.New(cfg, ctrlruntimeclient.Options{Scheme: NewScheme(t)})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -28,11 +28,26 @@ import (
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
-func ServiceReconciler(frontProxy *operatorv1alpha1.FrontProxy) reconciling.NamedServiceReconcilerFactory {
+func (r *reconciler) serviceName() string {
+	if r.frontProxy != nil {
+		return resources.GetFrontProxyServiceName(r.frontProxy)
+	} else {
+		return resources.GetRootShardProxyServiceName(r.rootShard)
+	}
+}
+
+func (r *reconciler) serviceReconciler() reconciling.NamedServiceReconcilerFactory {
+	var tpl *operatorv1alpha1.ServiceTemplate
+	switch {
+	case r.frontProxy != nil:
+		tpl = r.frontProxy.Spec.ServiceTemplate
+	case r.rootShard.Spec.Proxy != nil:
+		tpl = r.rootShard.Spec.Proxy.ServiceTemplate
+	}
+
 	return func() (string, reconciling.ServiceReconciler) {
-		return resources.GetFrontProxyServiceName(frontProxy), func(svc *corev1.Service) (*corev1.Service, error) {
-			labels := resources.GetFrontProxyResourceLabels(frontProxy)
-			svc.SetLabels(labels)
+		return r.serviceName(), func(svc *corev1.Service) (*corev1.Service, error) {
+			svc.SetLabels(r.resourceLabels)
 			svc.Spec.Type = corev1.ServiceTypeClusterIP
 
 			var port corev1.ServicePort
@@ -49,9 +64,9 @@ func ServiceReconciler(frontProxy *operatorv1alpha1.FrontProxy) reconciling.Name
 			svc.Spec.Ports = []corev1.ServicePort{
 				port,
 			}
-			svc.Spec.Selector = labels
+			svc.Spec.Selector = r.resourceLabels
 
-			return utils.ApplyServiceTemplate(svc, frontProxy.Spec.ServiceTemplate), nil
+			return utils.ApplyServiceTemplate(svc, tpl), nil
 		}
 	}
 }

@@ -24,7 +24,6 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/kcp-dev/kcp-operator/internal/resources"
-	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
 const (
@@ -34,53 +33,63 @@ const (
 	kubeconfigCAPath      = "/etc/kcp/tls/ca/tls.crt"
 )
 
-func DynamicKubeconfigSecretReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootshard *operatorv1alpha1.RootShard) reconciling.NamedSecretReconcilerFactory {
+func (r *reconciler) dynamicKubeconfigSecretReconciler() reconciling.NamedSecretReconcilerFactory {
+	var name string
+	if r.frontProxy != nil {
+		name = resources.GetFrontProxyDynamicKubeconfigName(r.rootShard, r.frontProxy)
+	} else {
+		name = resources.GetRootShardProxyDynamicKubeconfigName(r.rootShard)
+	}
+
 	return func() (string, reconciling.SecretReconciler) {
-		return resources.GetFrontProxyDynamicKubeconfigName(rootshard, frontProxy), func(obj *corev1.Secret) (*corev1.Secret, error) {
-			obj.SetLabels(resources.GetFrontProxyResourceLabels(frontProxy))
+		return name, func(obj *corev1.Secret) (*corev1.Secret, error) {
+			obj.SetLabels(r.resourceLabels)
 
-			kubeconfig := clientcmdv1.Config{
-				Clusters: []clientcmdv1.NamedCluster{
-					{
-						Name: "system:admin",
-						Cluster: clientcmdv1.Cluster{
-							CertificateAuthority: kubeconfigCAPath,
-							Server:               resources.GetRootShardBaseURL(rootshard),
-						},
-					},
-				},
-				Contexts: []clientcmdv1.NamedContext{
-					{
-						Name: "system:admin",
-						Context: clientcmdv1.Context{
-							Cluster:  "system:admin",
-							AuthInfo: "admin",
-						},
-					},
-				},
-				CurrentContext: "system:admin",
-				AuthInfos: []clientcmdv1.NamedAuthInfo{
-					{
-						Name: "admin",
-						AuthInfo: clientcmdv1.AuthInfo{
-							ClientCertificate: clientCertificatePath,
-							ClientKey:         clientKeyPath,
-						},
-					},
-				},
-			}
-
-			var b []byte
-			var err error
-			if b, err = yaml.Marshal(kubeconfig); err != nil {
+			kubeconfig, err := r.dynamicKubeconfig()
+			if err != nil {
 				return nil, err
 			}
 
 			obj.Data = map[string][]byte{
-				"kubeconfig": b,
+				"kubeconfig": kubeconfig,
 			}
 
 			return obj, nil
 		}
 	}
+}
+
+func (r *reconciler) dynamicKubeconfig() ([]byte, error) {
+	kubeconfig := clientcmdv1.Config{
+		Clusters: []clientcmdv1.NamedCluster{
+			{
+				Name: "system:admin",
+				Cluster: clientcmdv1.Cluster{
+					CertificateAuthority: kubeconfigCAPath,
+					Server:               resources.GetRootShardBaseURL(r.rootShard),
+				},
+			},
+		},
+		Contexts: []clientcmdv1.NamedContext{
+			{
+				Name: "system:admin",
+				Context: clientcmdv1.Context{
+					Cluster:  "system:admin",
+					AuthInfo: "admin",
+				},
+			},
+		},
+		CurrentContext: "system:admin",
+		AuthInfos: []clientcmdv1.NamedAuthInfo{
+			{
+				Name: "admin",
+				AuthInfo: clientcmdv1.AuthInfo{
+					ClientCertificate: clientCertificatePath,
+					ClientKey:         clientKeyPath,
+				},
+			},
+		},
+	}
+
+	return yaml.Marshal(kubeconfig)
 }

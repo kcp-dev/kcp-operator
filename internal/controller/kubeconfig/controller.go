@@ -77,6 +77,10 @@ func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, err
 	}
 
+	if kc.DeletionTimestamp != nil {
+		return ctrl.Result{}, nil
+	}
+
 	rootShard := &operatorv1alpha1.RootShard{}
 	shard := &operatorv1alpha1.Shard{}
 

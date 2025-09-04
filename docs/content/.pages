@@ -1,5 +1,6 @@
 nav:
   - Home: README.md
   - Setup: setup
+  - Architecture: architecture
   - Reference: reference
   - Contributing: contributing

@@ -400,8 +400,8 @@ func TestDeploymentReconciler(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			reconciler := DeploymentReconciler(tt.frontProxy, tt.rootShard)
-			name, reconcilerFunc := reconciler()
+			fpReconciler := NewFrontProxy(tt.frontProxy, tt.rootShard)
+			name, reconcilerFunc := fpReconciler.deploymentReconciler()()
 
 			assert.Equal(t, tt.expectedName, name)
 
@@ -450,8 +450,8 @@ func TestGetArgs(t *testing.T) {
 				"--shards-kubeconfig=/etc/kcp-front-proxy/kubeconfig/kubeconfig",
 				"--tls-private-key-file=/etc/kcp-front-proxy/tls/tls.key",
 				"--tls-cert-file=/etc/kcp-front-proxy/tls/tls.crt",
-				"--client-ca-file=/etc/kcp-front-proxy/client-ca/tls.crt",
 				"--mapping-file=/etc/kcp-front-proxy/config/path-mapping.yaml",
+				"--client-ca-file=/etc/kcp-front-proxy/client-ca/tls.crt",
 			},
 		},
 		{
@@ -467,8 +467,8 @@ func TestGetArgs(t *testing.T) {
 				"--shards-kubeconfig=/etc/kcp-front-proxy/kubeconfig/kubeconfig",
 				"--tls-private-key-file=/etc/kcp-front-proxy/tls/tls.key",
 				"--tls-cert-file=/etc/kcp-front-proxy/tls/tls.crt",
-				"--client-ca-file=/etc/kcp-front-proxy/client-ca/tls.crt",
 				"--mapping-file=/etc/kcp-front-proxy/config/path-mapping.yaml",
+				"--client-ca-file=/etc/kcp-front-proxy/client-ca/tls.crt",
 				"--authentication-drop-groups=\"group1,group2\"",
 			},
 		},
@@ -485,8 +485,8 @@ func TestGetArgs(t *testing.T) {
 				"--shards-kubeconfig=/etc/kcp-front-proxy/kubeconfig/kubeconfig",
 				"--tls-private-key-file=/etc/kcp-front-proxy/tls/tls.key",
 				"--tls-cert-file=/etc/kcp-front-proxy/tls/tls.crt",
-				"--client-ca-file=/etc/kcp-front-proxy/client-ca/tls.crt",
 				"--mapping-file=/etc/kcp-front-proxy/config/path-mapping.yaml",
+				"--client-ca-file=/etc/kcp-front-proxy/client-ca/tls.crt",
 				"--authentication-pass-on-groups=\"group3,group4\"",
 			},
 		},
@@ -504,8 +504,8 @@ func TestGetArgs(t *testing.T) {
 				"--shards-kubeconfig=/etc/kcp-front-proxy/kubeconfig/kubeconfig",
 				"--tls-private-key-file=/etc/kcp-front-proxy/tls/tls.key",
 				"--tls-cert-file=/etc/kcp-front-proxy/tls/tls.crt",
-				"--client-ca-file=/etc/kcp-front-proxy/client-ca/tls.crt",
 				"--mapping-file=/etc/kcp-front-proxy/config/path-mapping.yaml",
+				"--client-ca-file=/etc/kcp-front-proxy/client-ca/tls.crt",
 				"--authentication-drop-groups=\"group1\"",
 				"--authentication-pass-on-groups=\"group2\"",
 			},
@@ -514,7 +514,12 @@ func TestGetArgs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := getArgs(tt.spec)
+			rec := NewFrontProxy(
+				&operatorv1alpha1.FrontProxy{Spec: *tt.spec},
+				&operatorv1alpha1.RootShard{},
+			)
+
+			result := rec.getArgs()
 			assert.Equal(t, tt.expected, result)
 		})
 	}

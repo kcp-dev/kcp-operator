@@ -42,6 +42,7 @@ import (
 	"github.com/kcp-dev/kcp-operator/internal/controller/util"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/frontproxy"
 	"github.com/kcp-dev/kcp-operator/internal/resources/rootshard"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
@@ -127,6 +128,10 @@ func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operator
 		conditions []metav1.Condition
 	)
 
+	if rootShard.DeletionTimestamp != nil {
+		return conditions, nil
+	}
+
 	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*metav1.NewControllerRef(rootShard, operatorv1alpha1.SchemeGroupVersion.WithKind("RootShard")))
 
 	issuerReconcilers := []reconciling.NamedIssuerReconcilerFactory{
@@ -139,6 +144,7 @@ func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operator
 		rootshard.VirtualWorkspacesCertificateReconciler(rootShard),
 		rootshard.LogicalClusterAdminCertificateReconciler(rootShard),
 		rootshard.ExternalLogicalClusterAdminCertificateReconciler(rootShard),
+		rootshard.OperatorClientCertificateReconciler(rootShard),
 	}
 
 	// Intermediate CAs that we need to generate a certificate and an issuer for.
@@ -183,6 +189,10 @@ func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operator
 		rootshard.ServiceReconciler(rootShard),
 	}, rootShard.Namespace, r.Client, ownerRefWrapper); err != nil {
 		errs = append(errs, err)
+	}
+
+	if err := frontproxy.NewRootShardProxy(rootShard).Reconcile(ctx, r.Client, rootShard.Namespace); err != nil {
+		errs = append(errs, fmt.Errorf("failed to reconcile proxy: %w", err))
 	}
 
 	return conditions, kerrors.NewAggregate(errs)

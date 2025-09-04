@@ -159,6 +159,21 @@ func DeployRootShard(ctx context.Context, t *testing.T, client ctrlruntimeclient
 				},
 			},
 		}),
+		Proxy: &operatorv1alpha1.RootShardProxySpec{
+			CertificateTemplates: operatorv1alpha1.CertificateTemplateMap{
+				string(operatorv1alpha1.ServerCertificate): operatorv1alpha1.CertificateTemplate{
+					Spec: &operatorv1alpha1.CertificateSpecTemplate{
+						DNSNames: []string{"localhost"},
+					},
+				},
+			},
+		},
+	}
+
+	if tag := getKcpTag(); tag != "" {
+		rootShard.Spec.Proxy.Image = &operatorv1alpha1.ImageSpec{
+			Tag: tag,
+		}
 	}
 
 	for _, patch := range patches {

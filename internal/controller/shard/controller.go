@@ -117,6 +117,10 @@ func (r *ShardReconciler) reconcile(ctx context.Context, s *operatorv1alpha1.Sha
 		conditions []metav1.Condition
 	)
 
+	if s.DeletionTimestamp != nil {
+		return conditions, nil
+	}
+
 	cond, rootShard := util.FetchRootShard(ctx, r.Client, s.Namespace, s.Spec.RootShard.Reference)
 	conditions = append(conditions, cond)
 

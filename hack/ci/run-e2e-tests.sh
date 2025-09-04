@@ -105,6 +105,10 @@ echo "Running e2e tests…"
 export HELM_BINARY="$(realpath _tools/helm)"
 export ETCD_HELM_CHART="$(realpath hack/ci/testdata/etcd)"
 
-(set -x; go test -tags e2e -timeout 2h -v ./test/e2e/...)
+WHAT="${WHAT:-./test/e2e/...}"
+TEST_ARGS="${TEST_ARGS:--timeout 2h -v}"
+E2E_PARALLELISM=${E2E_PARALLELISM:-2}
+
+(set -x; go test -tags e2e -parallel $E2E_PARALLELISM $TEST_ARGS "$WHAT")
 
 echo "Done. :-)"

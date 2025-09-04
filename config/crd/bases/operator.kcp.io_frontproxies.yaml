@@ -355,7 +355,7 @@ spec:
                   type: object
                 description: |-
                   CertificateTemplates allows to customize the properties on the generated
-                  certificates for this root shard.
+                  certificates for this front-proxy.
                 type: object
               deploymentTemplate:
                 description: 'Optional: DeploymentTemplate configures the Kubernetes

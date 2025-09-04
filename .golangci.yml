@@ -6,7 +6,6 @@ linters:
   enable:
     - copyloopvar
     - errcheck
-    - ginkgolinter
     - goconst
     - gocyclo
     - govet

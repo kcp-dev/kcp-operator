@@ -49,7 +49,7 @@ type CommonShardSpec struct {
 	Auth *AuthSpec `json:"auth,omitempty"`
 
 	// CertificateTemplates allows to customize the properties on the generated
-	// certificates for this root shard.
+	// certificates for this shard.
 	CertificateTemplates CertificateTemplateMap `json:"certificateTemplates,omitempty"`
 
 	// Optional: ServiceTemplate configures the Kubernetes Service created for this shard.

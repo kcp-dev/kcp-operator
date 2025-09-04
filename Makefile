@@ -65,9 +65,14 @@ test: fmt vet ## Run tests.
 	go test $$(go list ./... | grep -v /e2e) -coverprofile cover.out
 
 # Utilize Kind or modify the e2e tests to load the image locally, enabling compatibility with other vendors.
-.PHONY: test-e2e  # Run the e2e tests against a Kind k8s instance that is spun up.
+.PHONY: test-e2e  # Run the e2e tests against a kind k8s instance that is already spun up.
 test-e2e:
-	go test ./test/e2e/ -v -ginkgo.v
+	go test ./test/e2e/ -v
+
+# Creates a kind cluster and runs the e2e tests in them. The kind cluster is destroyed after the tests.
+.PHONY: test-e2e-with-kind  # Run the e2e tests against a temporary kind cluster.
+test-e2e-with-kind: helm
+	@./hack/run-e2e-tests.sh
 
 .PHONY: lint
 lint: golangci-lint ## Run golangci-lint linter.
