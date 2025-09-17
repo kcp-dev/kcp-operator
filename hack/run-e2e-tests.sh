@@ -16,7 +16,7 @@
 
 set -euo pipefail
 
-KIND_CLUSTER_NAME="${KIND_CLUSTER_NAME:-e2e}"
+export KIND_CLUSTER_NAME="${KIND_CLUSTER_NAME:-e2e}"
 DATA_DIR=".e2e-$KIND_CLUSTER_NAME"
 OPERATOR_PID=0
 PROTOKOL_PID=0
@@ -35,12 +35,6 @@ kind create cluster --name "$KIND_CLUSTER_NAME"
 chmod 600 "$KUBECONFIG"
 
 teardown_kind() {
-  if [[ $OPERATOR_PID -gt 0 ]]; then
-    echo "Stopping kcp-operator..."
-    kill -TERM $OPERATOR_PID
-    wait $OPERATOR_PID
-  fi
-
   if [[ $PROTOKOL_PID -gt 0 ]]; then
     echo "Stopping protokol..."
     kill -TERM $PROTOKOL_PID
@@ -63,7 +57,7 @@ HELM="$(UGET_PRINT_PATH=absolute make --no-print-directory install-helm)"
 PROTOKOL="$(UGET_PRINT_PATH=absolute make --no-print-directory install-protokol)"
 
 # apply kernel limits job first and wait for completion
-echo "Applying kernel limits job…"
+echo "Applying kernel limits job..."
 "$KUBECTL" apply --filename hack/ci/kernel.yaml
 "$KUBECTL" wait --for=condition=Complete job/kernel-limits --timeout=300s
 echo "Kernel limits job completed."
@@ -89,20 +83,14 @@ echo "Deploying cert-manager..."
 
 "$KUBECTL" apply --filename hack/ci/testdata/clusterissuer.yaml
 
-# start the operator locally
-echo "Starting kcp-operator..."
-_build/manager \
-  -kubeconfig "$KUBECONFIG" \
-  -zap-log-level debug \
-  -zap-encoder console \
-  -zap-time-encoding iso8601 \
-  -health-probe-bind-address="" \
-  >"$DATA_DIR/kcp-operator.log" 2>&1 &
-OPERATOR_PID=$!
-echo "Running as process $OPERATOR_PID."
+# build operator image and deploy it into kind
+echo "Building and deploying kcp-operator..."
+export IMG="ghcr.io/kcp-dev/kcp-operator:e2e"
+make --no-print-directory docker-build kind-load deploy
 
 "$PROTOKOL" --namespace 'e2e-*' --output "$DATA_DIR/kind-logs" 2>/dev/null &
 PROTOKOL_PID=$!
+
 
 echo "Running e2e tests..."
 

@@ -5,3 +5,4 @@ resources:
 images:
 - name: controller
   newName: ghcr.io/kcp-dev/kcp-operator
+  newTag: e2e
