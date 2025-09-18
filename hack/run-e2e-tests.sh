@@ -85,7 +85,7 @@ export IMG="ghcr.io/kcp-dev/kcp-operator:e2e"
 make --no-print-directory docker-build kind-load deploy
 
 if command -v protokol &> /dev/null; then
-  protokol --namespace 'e2e-*' --output "$DATA_DIR/kind-logs" 2>/dev/null &
+  protokol --namespace 'e2e-*' --namespace kcp-operator-system --output "$DATA_DIR/kind-logs" 2>/dev/null &
   PROTOKOL_PID=$!
 else
   echo "Install https://codeberg.org/xrstf/protokol to automatically"
