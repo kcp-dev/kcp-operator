@@ -88,7 +88,7 @@ echo "Building and deploying kcp-operator..."
 export IMG="ghcr.io/kcp-dev/kcp-operator:e2e"
 make --no-print-directory docker-build kind-load deploy
 
-"$PROTOKOL" --namespace 'e2e-*' --output "$DATA_DIR/kind-logs" 2>/dev/null &
+"$PROTOKOL" --namespace 'e2e-*' --namespace kcp-operator-system --output "$DATA_DIR/kind-logs" 2>/dev/null &
 PROTOKOL_PID=$!
 
 

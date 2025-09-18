@@ -32,6 +32,7 @@ import (
 
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 	"github.com/kcp-dev/kcp-operator/test/utils"
+	"github.com/kcp-dev/logicalcluster/v3"
 )
 
 func TestCreateRootShard(t *testing.T) {
@@ -70,7 +71,7 @@ func TestCreateRootShard(t *testing.T) {
 	utils.WaitForObject(t, ctx, client, &corev1.Secret{}, types.NamespacedName{Namespace: rsConfig.Namespace, Name: rsConfig.Spec.SecretRef.Name})
 
 	t.Log("Connecting to RootShard...")
-	kcpClient := utils.ConnectWithKubeconfig(t, ctx, client, namespace.Name, rsConfig.Name)
+	kcpClient := utils.ConnectWithKubeconfig(t, ctx, client, namespace.Name, rsConfig.Name, logicalcluster.None)
 
 	// proof of life: list something every logicalcluster in kcp has
 	t.Log("Should be able to list Secrets.")

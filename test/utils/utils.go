@@ -22,6 +22,7 @@ import (
 	"net"
 	"net/url"
 	"os/exec"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -110,12 +111,12 @@ func CreateSelfDestructingNamespace(t *testing.T, ctx context.Context, client ct
 		t.Fatal(err)
 	}
 
-	t.Cleanup(func() {
-		t.Logf("Deleting namespace %s...", name)
-		if err := client.Delete(ctx, &ns); err != nil {
-			t.Fatal(err)
-		}
-	})
+	// t.Cleanup(func() {
+	// 	t.Logf("Deleting namespace %s...", name)
+	// 	if err := client.Delete(ctx, &ns); err != nil {
+	// 		t.Fatal(err)
+	// 	}
+	// })
 
 	return &ns
 }
@@ -169,6 +170,7 @@ func ConnectWithKubeconfig(
 	client ctrlruntimeclient.Client,
 	namespace string,
 	kubeconfigName string,
+	cluster logicalcluster.Path,
 ) ctrlruntimeclient.Client {
 	t.Helper()
 
@@ -219,6 +221,11 @@ func ConnectWithKubeconfig(
 	parsed.Host = net.JoinHostPort("localhost", fmt.Sprintf("%d", localPort))
 	clientConfig.Host = parsed.String()
 
+	// switch to another workspace is desired
+	if !cluster.Empty() {
+		clientConfig.Host = changeClusterInURL(clientConfig.Host, cluster)
+	}
+
 	// create a client through the tunnel
 	kcpClient, err := ctrlruntimeclient.New(clientConfig, ctrlruntimeclient.Options{Scheme: NewScheme(t)})
 	if err != nil {
@@ -259,7 +266,7 @@ func ConnectWithRootShardProxy(
 	proxyUrl := fmt.Sprintf("https://%s", net.JoinHostPort("localhost", fmt.Sprintf("%d", localPort)))
 
 	if !cluster.Empty() {
-		proxyUrl = fmt.Sprintf("%s/clusters/%s", proxyUrl, cluster.String())
+		proxyUrl = changeClusterInURL(proxyUrl, cluster)
 	}
 
 	cfg := &rest.Config{
@@ -278,4 +285,20 @@ func ConnectWithRootShardProxy(
 	}
 
 	return kcpClient
+}
+
+var clusterRegexp = regexp.MustCompile(`/clusters/([^/]+)`)
+
+func changeClusterInURL(u string, newCluster logicalcluster.Path) string {
+	newPath := fmt.Sprintf("/clusters/%s", newCluster)
+
+	matches := clusterRegexp.FindAllString(u, 1)
+	if len(matches) == 0 {
+		return u + newPath
+	}
+
+	// make sure that if a URL is "/clusters/root/apis/example.com/v1/namespaces/bla/clusters/mycluster",
+	// we only replace the first match, especially important if the URL was "/clusters/X/apis/example.com/v1/clusters/X"
+	// (i.e. accessing the cluster resource X in the kcp cluster also called X)
+	return strings.Replace(u, matches[0], newPath, 1)
 }
