@@ -91,7 +91,7 @@ func applyEtcdConfiguration(deployment *appsv1.Deployment, config operatorv1alph
 			MountPath: mountPath,
 		})
 
-		deployment.Spec.Template.Spec.Volumes = append(deployment.Spec.Template.Spec.Volumes, corev1.Volume{
+		podSpec.Volumes = append(podSpec.Volumes, corev1.Volume{
 			Name: volumeName,
 			VolumeSource: corev1.VolumeSource{
 				Secret: &corev1.SecretVolumeSource{
