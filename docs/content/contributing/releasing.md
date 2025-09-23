@@ -24,6 +24,15 @@ tag represents where the corresponding `release/v0.X` branch branches off.
 1. Create the release branch: `git checkout -B release-0.X`
 1. Push the release branch: `git push -u upstream release-0.X`
 
+Once the tag and branch have been pushed, the documentation has to be manually
+updated to include the new minor release.
+
+1. Navigate to https://github.com/kcp-dev/kcp-operator/actions/workflows/docs-gen-and-push.yaml
+1. Run the workflow manually on the new release branch.
+
+Within a few minutes of the action finishing, the new branch should show up on
+https://docs.kcp.io/kcp-operator/.
+
 ## Patch Releases
 
 Patch releases (v0.x.y) are tagged with in a release branch.
