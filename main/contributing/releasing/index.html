@@ -1197,6 +1197,14 @@ tag represents where the corresponding <code>release/v0.X</code> branch branches
 <li>Create the release branch: <code>git checkout -B release-0.X</code></li>
 <li>Push the release branch: <code>git push -u upstream release-0.X</code></li>
 </ol>
+<p>Once the tag and branch have been pushed, the documentation has to be manually
+updated to include the new minor release.</p>
+<ol>
+<li>Navigate to https://github.com/kcp-dev/kcp-operator/actions/workflows/docs-gen-and-push.yaml</li>
+<li>Run the workflow manually on the new release branch.</li>
+</ol>
+<p>Within a few minutes of the action finishing, the new branch should show up on
+https://docs.kcp.io/kcp-operator/.</p>
 <h2 id="patch-releases">Patch Releases</h2>
 <p>Patch releases (v0.x.y) are tagged with in a release branch.</p>
 <ol>
