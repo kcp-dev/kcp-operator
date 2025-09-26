@@ -26,12 +26,13 @@ import (
 // KubeconfigSpecApplyConfiguration represents a declarative configuration of the KubeconfigSpec type for use
 // with apply.
 type KubeconfigSpecApplyConfiguration struct {
-	Target              *KubeconfigTargetApplyConfiguration    `json:"target,omitempty"`
-	Username            *string                                `json:"username,omitempty"`
-	Groups              []string                               `json:"groups,omitempty"`
-	Validity            *v1.Duration                           `json:"validity,omitempty"`
-	SecretRef           *corev1.LocalObjectReference           `json:"secretRef,omitempty"`
-	CertificateTemplate *CertificateTemplateApplyConfiguration `json:"certificateTemplate,omitempty"`
+	Target              *KubeconfigTargetApplyConfiguration        `json:"target,omitempty"`
+	Username            *string                                    `json:"username,omitempty"`
+	Groups              []string                                   `json:"groups,omitempty"`
+	Validity            *v1.Duration                               `json:"validity,omitempty"`
+	SecretRef           *corev1.LocalObjectReference               `json:"secretRef,omitempty"`
+	CertificateTemplate *CertificateTemplateApplyConfiguration     `json:"certificateTemplate,omitempty"`
+	Authorization       *KubeconfigAuthorizationApplyConfiguration `json:"authorization,omitempty"`
 }
 
 // KubeconfigSpecApplyConfiguration constructs a declarative configuration of the KubeconfigSpec type for use with
@@ -87,5 +88,13 @@ func (b *KubeconfigSpecApplyConfiguration) WithSecretRef(value corev1.LocalObjec
 // If called multiple times, the CertificateTemplate field is set to the value of the last call.
 func (b *KubeconfigSpecApplyConfiguration) WithCertificateTemplate(value *CertificateTemplateApplyConfiguration) *KubeconfigSpecApplyConfiguration {
 	b.CertificateTemplate = value
+	return b
+}
+
+// WithAuthorization sets the Authorization field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Authorization field is set to the value of the last call.
+func (b *KubeconfigSpecApplyConfiguration) WithAuthorization(value *KubeconfigAuthorizationApplyConfiguration) *KubeconfigSpecApplyConfiguration {
+	b.Authorization = value
 	return b
 }
