@@ -7,7 +7,7 @@ presubmits:
       preset-goproxy: "true"
     spec:
       containers:
-        - image: ghcr.io/kcp-dev/infra/build:1.24.4-1
+        - image: ghcr.io/kcp-dev/infra/build:1.24.8-1
           command:
             - make
             - verify
@@ -24,7 +24,7 @@ presubmits:
       preset-goproxy: "true"
     spec:
       containers:
-        - image: ghcr.io/kcp-dev/infra/build:1.24.4-1
+        - image: ghcr.io/kcp-dev/infra/build:1.24.8-1
           command:
             - make
             - lint
@@ -47,7 +47,7 @@ presubmits:
             - hack/ci/build-image.sh
           env:
             - name: DRY_RUN
-              value: '1'
+              value: "1"
           # docker-in-docker needs privileged mode
           securityContext:
             privileged: true
@@ -65,13 +65,13 @@ presubmits:
       preset-goproxy: "true"
     spec:
       containers:
-        - image: ghcr.io/kcp-dev/infra/build:1.24.4-1
+        - image: ghcr.io/kcp-dev/infra/build:1.24.8-1
           command:
             - make
             - test
           env:
             - name: USE_GOTESTSUM
-              value: '1'
+              value: "1"
           resources:
             requests:
               memory: 4Gi
@@ -86,7 +86,7 @@ presubmits:
       preset-goproxy: "true"
     spec:
       containers:
-        - image: ghcr.io/kcp-dev/infra/build:1.24.4-1
+        - image: ghcr.io/kcp-dev/infra/build:1.24.8-1
           command:
             - hack/ci/run-e2e-tests.sh
           resources:
@@ -106,7 +106,7 @@ presubmits:
       preset-goproxy: "true"
     spec:
       containers:
-        - image: ghcr.io/kcp-dev/infra/build:1.24.4-1
+        - image: ghcr.io/kcp-dev/infra/build:1.24.8-1
           command:
             - hack/ci/run-e2e-tests.sh
           env:
