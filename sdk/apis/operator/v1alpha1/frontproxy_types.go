@@ -49,6 +49,15 @@ type FrontProxySpec struct {
 	// CertificateTemplates allows to customize the properties on the generated
 	// certificates for this front-proxy.
 	CertificateTemplates CertificateTemplateMap `json:"certificateTemplates,omitempty"`
+
+	// CABundle references a v1.Secret object that contains the CA bundle
+	// that should be used to validate the API server's TLS certificate.
+	// The secret must contain a key named `tls.crt` that holds the PEM encoded CA certificate.
+	// It will be merged into the "external-logical-cluster-admin-kubeconfig" kubeconfig under the `certificate-authority-data` field.
+	// If not specified, the kubeconfig will use the CA bundle of the root shard or front-proxy referenced in the Target field.
+	// It will NOT be used to configure the API server's own TLS certificate or any other component.
+	// +optional
+	CABundleSecretRef *corev1.LocalObjectReference `json:"caBundleSecretRef,omitempty"`
 }
 
 type AuthSpec struct {

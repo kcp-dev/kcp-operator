@@ -19,14 +19,14 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"context"
+	context "context"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	gentype "k8s.io/client-go/gentype"
 
-	v1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
+	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 	scheme "github.com/kcp-dev/kcp-operator/sdk/clientset/versioned/scheme"
 )
 
@@ -38,33 +38,34 @@ type KubeconfigsGetter interface {
 
 // KubeconfigInterface has methods to work with Kubeconfig resources.
 type KubeconfigInterface interface {
-	Create(ctx context.Context, kubeconfig *v1alpha1.Kubeconfig, opts v1.CreateOptions) (*v1alpha1.Kubeconfig, error)
-	Update(ctx context.Context, kubeconfig *v1alpha1.Kubeconfig, opts v1.UpdateOptions) (*v1alpha1.Kubeconfig, error)
+	Create(ctx context.Context, kubeconfig *operatorv1alpha1.Kubeconfig, opts v1.CreateOptions) (*operatorv1alpha1.Kubeconfig, error)
+	Update(ctx context.Context, kubeconfig *operatorv1alpha1.Kubeconfig, opts v1.UpdateOptions) (*operatorv1alpha1.Kubeconfig, error)
 	// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-	UpdateStatus(ctx context.Context, kubeconfig *v1alpha1.Kubeconfig, opts v1.UpdateOptions) (*v1alpha1.Kubeconfig, error)
+	UpdateStatus(ctx context.Context, kubeconfig *operatorv1alpha1.Kubeconfig, opts v1.UpdateOptions) (*operatorv1alpha1.Kubeconfig, error)
 	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
-	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha1.Kubeconfig, error)
-	List(ctx context.Context, opts v1.ListOptions) (*v1alpha1.KubeconfigList, error)
+	Get(ctx context.Context, name string, opts v1.GetOptions) (*operatorv1alpha1.Kubeconfig, error)
+	List(ctx context.Context, opts v1.ListOptions) (*operatorv1alpha1.KubeconfigList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
-	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.Kubeconfig, err error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *operatorv1alpha1.Kubeconfig, err error)
 	KubeconfigExpansion
 }
 
 // kubeconfigs implements KubeconfigInterface
 type kubeconfigs struct {
-	*gentype.ClientWithList[*v1alpha1.Kubeconfig, *v1alpha1.KubeconfigList]
+	*gentype.ClientWithList[*operatorv1alpha1.Kubeconfig, *operatorv1alpha1.KubeconfigList]
 }
 
 // newKubeconfigs returns a Kubeconfigs
 func newKubeconfigs(c *OperatorV1alpha1Client, namespace string) *kubeconfigs {
 	return &kubeconfigs{
-		gentype.NewClientWithList[*v1alpha1.Kubeconfig, *v1alpha1.KubeconfigList](
+		gentype.NewClientWithList[*operatorv1alpha1.Kubeconfig, *operatorv1alpha1.KubeconfigList](
 			"kubeconfigs",
 			c.RESTClient(),
 			scheme.ParameterCodec,
 			namespace,
-			func() *v1alpha1.Kubeconfig { return &v1alpha1.Kubeconfig{} },
-			func() *v1alpha1.KubeconfigList { return &v1alpha1.KubeconfigList{} }),
+			func() *operatorv1alpha1.Kubeconfig { return &operatorv1alpha1.Kubeconfig{} },
+			func() *operatorv1alpha1.KubeconfigList { return &operatorv1alpha1.KubeconfigList{} },
+		),
 	}
 }
