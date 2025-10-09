@@ -100,6 +100,9 @@ const (
 	ClientCA              CA = "client"
 	FrontProxyClientCA    CA = "front-proxy-client"
 	RequestHeaderClientCA CA = "requestheader-client"
+
+	// CABundleCA is the CA used to validate the API server's TLS certificate.
+	CABundleCA CA = "ca-bundle"
 )
 
 type CertificateTemplateMap map[string]CertificateTemplate
@@ -134,8 +137,16 @@ type CertificateSpecTemplate struct {
 	// +optional
 	Subject *X509Subject `json:"subject,omitempty"`
 
+	// IssuerRef is a reference to the issuer for this certificate.
+	//
+	// +optional
+	IssuerRef *ObjectReference `json:"issuerRef"`
+
 	// Requested DNS subject alternative names. The values given here will be merged into the
 	// DNS names determined automatically by the kcp-operator.
+	// If DNSNames is used together with IssuerRef, DNSNames will be uses as-is and not merged.
+	// If IssuerRef is not set, DNSNames will be merged with the defaults. This is to avoid
+	// trying to guess what DNSNames configued issuer might support.
 	//
 	// +optional
 	DNSNames []string `json:"dnsNames,omitempty"`

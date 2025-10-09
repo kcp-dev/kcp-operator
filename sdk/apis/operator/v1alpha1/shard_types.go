@@ -29,7 +29,14 @@ type ShardSpec struct {
 }
 
 type CommonShardSpec struct {
+	// ClusterDomain is the DNS domain for services in the cluster. Defaults to "cluster.local" if not set.
+	// +optional
 	ClusterDomain string `json:"clusterDomain,omitempty"`
+
+	// ShardBaseURL is the base URL under which this shard should be reachable. This is used to configure
+	// the external URL. If not provided, the operator will use kubernetes service address to generate it.
+	// +optional
+	ShardBaseURL string `json:"shardBaseURL"`
 
 	// Etcd configures the etcd cluster that this shard should be using.
 	Etcd EtcdConfig `json:"etcd"`
@@ -57,6 +64,15 @@ type CommonShardSpec struct {
 
 	// Optional: DeploymentTemplate configures the Kubernetes Deployment created for this shard.
 	DeploymentTemplate *DeploymentTemplate `json:"deploymentTemplate,omitempty"`
+
+	// CABundle references a v1.Secret object that contains the CA bundle
+	// that should be used to validate the API server's TLS certificate.
+	// The secret must contain a key named `tls.crt` that holds the PEM encoded CA certificate.
+	// It will be merged into the "external-logical-cluster-admin-kubeconfig" kubeconfig under the `certificate-authority-data` field.
+	// If not specified, the kubeconfig will use the CA bundle of the root shard or front-proxy referenced in the Target field.
+	// It will NOT be used to configure the API server's own TLS certificate or any other component.
+	// +optional
+	CABundleSecretRef *corev1.LocalObjectReference `json:"caBundleSecretRef,omitempty"`
 }
 
 type AuditSpec struct {

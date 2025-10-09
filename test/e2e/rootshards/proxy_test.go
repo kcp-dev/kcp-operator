@@ -80,22 +80,22 @@ func TestRootShardProxy(t *testing.T) {
 		Groups: []string{"system:kcp:admin"},
 	}
 
-	t.Log("Creating kubeconfig for RootShard…")
+	t.Log("Creating kubeconfig for RootShard...")
 	if err := client.Create(ctx, &rsConfig); err != nil {
 		t.Fatal(err)
 	}
 	utils.WaitForObject(t, ctx, client, &corev1.Secret{}, types.NamespacedName{Namespace: rsConfig.Namespace, Name: rsConfig.Spec.SecretRef.Name})
 
-	t.Log("Connecting to RootShard…")
+	t.Log("Connecting to RootShard...")
 	rootShardClient := utils.ConnectWithKubeconfig(t, ctx, client, namespace.Name, rsConfig.Name)
 
 	// wait until the 2nd shard has registered itself successfully at the root shard
 	shardKey := types.NamespacedName{Name: shardName}
-	t.Log("Waiting for Shard to register itself on the RootShard…")
+	t.Log("Waiting for Shard to register itself on the RootShard...")
 	utils.WaitForObject(t, ctx, rootShardClient, &kcpcorev1alpha1.Shard{}, shardKey)
 
 	// create workspace that we want to have scheduled onto the 2nd shard
-	t.Log("Creating workspace with its logicalcluster on the 2nd Shard…")
+	t.Log("Creating workspace with its logicalcluster on the 2nd Shard...")
 	workspace := &kcptenancyv1alpha1.Workspace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test",

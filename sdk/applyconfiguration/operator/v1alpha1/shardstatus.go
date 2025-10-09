@@ -21,13 +21,13 @@ package v1alpha1
 import (
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
 
-	v1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
+	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
 // ShardStatusApplyConfiguration represents a declarative configuration of the ShardStatus type for use
 // with apply.
 type ShardStatusApplyConfiguration struct {
-	Phase      *v1alpha1.ShardPhase             `json:"phase,omitempty"`
+	Phase      *operatorv1alpha1.ShardPhase     `json:"phase,omitempty"`
 	Conditions []v1.ConditionApplyConfiguration `json:"conditions,omitempty"`
 }
 
@@ -40,7 +40,7 @@ func ShardStatus() *ShardStatusApplyConfiguration {
 // WithPhase sets the Phase field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Phase field is set to the value of the last call.
-func (b *ShardStatusApplyConfiguration) WithPhase(value v1alpha1.ShardPhase) *ShardStatusApplyConfiguration {
+func (b *ShardStatusApplyConfiguration) WithPhase(value operatorv1alpha1.ShardPhase) *ShardStatusApplyConfiguration {
 	b.Phase = &value
 	return b
 }

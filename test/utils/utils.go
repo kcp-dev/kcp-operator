@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -105,13 +106,17 @@ func CreateSelfDestructingNamespace(t *testing.T, ctx context.Context, client ct
 	ns := corev1.Namespace{}
 	ns.Name = fmt.Sprintf("e2e-%s", name)
 
-	t.Logf("Creating namespace %s…", name)
+	t.Logf("Creating namespace %s...", name)
 	if err := client.Create(ctx, &ns); err != nil {
 		t.Fatal(err)
 	}
 
 	t.Cleanup(func() {
-		t.Logf("Deleting namespace %s…", name)
+		if NoTeardown() {
+			t.Logf("Skipping teardown of namespace %s", name)
+			return
+		}
+		t.Logf("Deleting namespace %s", ns.Name)
 		if err := client.Delete(ctx, &ns); err != nil {
 			t.Fatal(err)
 		}
@@ -137,7 +142,7 @@ func SelfDestuctingPortForward(
 		fmt.Sprintf("%d:%d", localPort, targetPort),
 	}
 
-	t.Logf("Exposing %s:%d on port %d…", target, targetPort, localPort)
+	t.Logf("Exposing %s:%d on port %d...", target, targetPort, localPort)
 
 	localCtx, cancel := context.WithCancel(ctx)
 
@@ -278,4 +283,8 @@ func ConnectWithRootShardProxy(
 	}
 
 	return kcpClient
+}
+
+func NoTeardown() bool {
+	return os.Getenv("NO_TEARDOWN") != ""
 }

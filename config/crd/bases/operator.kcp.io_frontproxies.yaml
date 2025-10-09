@@ -164,6 +164,26 @@ spec:
                 x-kubernetes-validations:
                 - message: OIDC requires ServiceAccount auth to be enabled.
                   rule: '!has(self.oidc) || (has(self.serviceAccount) && self.serviceAccount.enabled)'
+              caBundleSecretRef:
+                description: |-
+                  CABundle references a v1.Secret object that contains the CA bundle
+                  that should be used to validate the API server's TLS certificate.
+                  The secret must contain a key named `tls.crt` that holds the PEM encoded CA certificate.
+                  It will be merged into the "external-logical-cluster-admin-kubeconfig" kubeconfig under the `certificate-authority-data` field.
+                  If not specified, the kubeconfig will use the CA bundle of the root shard or front-proxy referenced in the Target field.
+                  It will NOT be used to configure the API server's own TLS certificate or any other component.
+                properties:
+                  name:
+                    default: ""
+                    description: |-
+                      Name of the referent.
+                      This field is effectively required, but due to backwards compatibility is
+                      allowed to be empty. Instances of this type with an empty value here are
+                      almost certainly wrong.
+                      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                    type: string
+                type: object
+                x-kubernetes-map-type: atomic
               certificateTemplates:
                 additionalProperties:
                   properties:
@@ -188,6 +208,9 @@ spec:
                           description: |-
                             Requested DNS subject alternative names. The values given here will be merged into the
                             DNS names determined automatically by the kcp-operator.
+                            If DNSNames is used together with IssuerRef, DNSNames will be uses as-is and not merged.
+                            If IssuerRef is not set, DNSNames will be merged with the defaults. This is to avoid
+                            trying to guess what DNSNames configued issuer might support.
                           items:
                             type: string
                           type: array
@@ -208,6 +231,22 @@ spec:
                           items:
                             type: string
                           type: array
+                        issuerRef:
+                          description: IssuerRef is a reference to the issuer for
+                            this certificate.
+                          properties:
+                            group:
+                              description: Group of the object being referred to.
+                              type: string
+                            kind:
+                              description: Kind of the object being referred to.
+                              type: string
+                            name:
+                              description: Name of the object being referred to.
+                              type: string
+                          required:
+                          - name
+                          type: object
                         privateKey:
                           description: |-
                             Private key options. These include the key algorithm and size, the used

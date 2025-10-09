@@ -21,14 +21,14 @@ package v1alpha1
 import (
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
 
-	v1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
+	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
 // FrontProxyStatusApplyConfiguration represents a declarative configuration of the FrontProxyStatus type for use
 // with apply.
 type FrontProxyStatusApplyConfiguration struct {
-	Phase      *v1alpha1.FrontProxyPhase        `json:"phase,omitempty"`
-	Conditions []v1.ConditionApplyConfiguration `json:"conditions,omitempty"`
+	Phase      *operatorv1alpha1.FrontProxyPhase `json:"phase,omitempty"`
+	Conditions []v1.ConditionApplyConfiguration  `json:"conditions,omitempty"`
 }
 
 // FrontProxyStatusApplyConfiguration constructs a declarative configuration of the FrontProxyStatus type for use with
@@ -40,7 +40,7 @@ func FrontProxyStatus() *FrontProxyStatusApplyConfiguration {
 // WithPhase sets the Phase field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Phase field is set to the value of the last call.
-func (b *FrontProxyStatusApplyConfiguration) WithPhase(value v1alpha1.FrontProxyPhase) *FrontProxyStatusApplyConfiguration {
+func (b *FrontProxyStatusApplyConfiguration) WithPhase(value operatorv1alpha1.FrontProxyPhase) *FrontProxyStatusApplyConfiguration {
 	b.Phase = &value
 	return b
 }

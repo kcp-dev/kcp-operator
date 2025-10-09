@@ -19,14 +19,14 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"context"
+	context "context"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	gentype "k8s.io/client-go/gentype"
 
-	v1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
+	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 	scheme "github.com/kcp-dev/kcp-operator/sdk/clientset/versioned/scheme"
 )
 
@@ -38,33 +38,34 @@ type FrontProxiesGetter interface {
 
 // FrontProxyInterface has methods to work with FrontProxy resources.
 type FrontProxyInterface interface {
-	Create(ctx context.Context, frontProxy *v1alpha1.FrontProxy, opts v1.CreateOptions) (*v1alpha1.FrontProxy, error)
-	Update(ctx context.Context, frontProxy *v1alpha1.FrontProxy, opts v1.UpdateOptions) (*v1alpha1.FrontProxy, error)
+	Create(ctx context.Context, frontProxy *operatorv1alpha1.FrontProxy, opts v1.CreateOptions) (*operatorv1alpha1.FrontProxy, error)
+	Update(ctx context.Context, frontProxy *operatorv1alpha1.FrontProxy, opts v1.UpdateOptions) (*operatorv1alpha1.FrontProxy, error)
 	// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-	UpdateStatus(ctx context.Context, frontProxy *v1alpha1.FrontProxy, opts v1.UpdateOptions) (*v1alpha1.FrontProxy, error)
+	UpdateStatus(ctx context.Context, frontProxy *operatorv1alpha1.FrontProxy, opts v1.UpdateOptions) (*operatorv1alpha1.FrontProxy, error)
 	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
-	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha1.FrontProxy, error)
-	List(ctx context.Context, opts v1.ListOptions) (*v1alpha1.FrontProxyList, error)
+	Get(ctx context.Context, name string, opts v1.GetOptions) (*operatorv1alpha1.FrontProxy, error)
+	List(ctx context.Context, opts v1.ListOptions) (*operatorv1alpha1.FrontProxyList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
-	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.FrontProxy, err error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *operatorv1alpha1.FrontProxy, err error)
 	FrontProxyExpansion
 }
 
 // frontProxies implements FrontProxyInterface
 type frontProxies struct {
-	*gentype.ClientWithList[*v1alpha1.FrontProxy, *v1alpha1.FrontProxyList]
+	*gentype.ClientWithList[*operatorv1alpha1.FrontProxy, *operatorv1alpha1.FrontProxyList]
 }
 
 // newFrontProxies returns a FrontProxies
 func newFrontProxies(c *OperatorV1alpha1Client, namespace string) *frontProxies {
 	return &frontProxies{
-		gentype.NewClientWithList[*v1alpha1.FrontProxy, *v1alpha1.FrontProxyList](
+		gentype.NewClientWithList[*operatorv1alpha1.FrontProxy, *operatorv1alpha1.FrontProxyList](
 			"frontproxies",
 			c.RESTClient(),
 			scheme.ParameterCodec,
 			namespace,
-			func() *v1alpha1.FrontProxy { return &v1alpha1.FrontProxy{} },
-			func() *v1alpha1.FrontProxyList { return &v1alpha1.FrontProxyList{} }),
+			func() *operatorv1alpha1.FrontProxy { return &operatorv1alpha1.FrontProxy{} },
+			func() *operatorv1alpha1.FrontProxyList { return &operatorv1alpha1.FrontProxyList{} },
+		),
 	}
 }

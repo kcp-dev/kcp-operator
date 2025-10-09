@@ -121,6 +121,18 @@ func DeploymentReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1al
 				})
 			}
 
+			// If CABundle is specified, mount the merged CA bundle secret.
+			// This secret contains both ServerCA and user-provided CA bundle merged together.
+			// It will not be used for the API server itself, but only for the "external-logical-cluster-admin-kubeconfig" kubeconfig.
+			// See the comment in the RootShard spec for more details.
+			if shard.Spec.CABundleSecretRef != nil {
+				secretMounts = append(secretMounts, utils.SecretMount{
+					VolumeName: "ca-bundle",
+					SecretName: fmt.Sprintf("%s-merged-ca-bundle", shard.Name),
+					MountPath:  getCAMountPath(operatorv1alpha1.CABundleCA),
+				})
+			}
+
 			volumes := []corev1.Volume{}
 			volumeMounts := []corev1.VolumeMount{}
 

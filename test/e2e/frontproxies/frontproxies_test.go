@@ -73,14 +73,14 @@ func TestCreateFrontProxy(t *testing.T) {
 		Groups: []string{"system:masters"},
 	}
 
-	t.Log("Creating kubeconfig for FrontProxy…")
+	t.Log("Creating kubeconfig for FrontProxy...")
 	if err := client.Create(ctx, &fpConfig); err != nil {
 		t.Fatal(err)
 	}
 	utils.WaitForObject(t, ctx, client, &corev1.Secret{}, types.NamespacedName{Namespace: fpConfig.Namespace, Name: fpConfig.Spec.SecretRef.Name})
 
 	// verify that we can use frontproxy kubeconfig to access rootshard workspaces
-	t.Log("Connecting to FrontProxy…")
+	t.Log("Connecting to FrontProxy...")
 	kcpClient := utils.ConnectWithKubeconfig(t, ctx, client, namespace.Name, fpConfig.Name)
 	// proof of life: list something every logicalcluster in kcp has
 	t.Log("Should be able to list Secrets.")
