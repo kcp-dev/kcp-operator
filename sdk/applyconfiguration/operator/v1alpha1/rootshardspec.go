@@ -44,7 +44,7 @@ func RootShardSpec() *RootShardSpecApplyConfiguration {
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the ClusterDomain field is set to the value of the last call.
 func (b *RootShardSpecApplyConfiguration) WithClusterDomain(value string) *RootShardSpecApplyConfiguration {
-	b.ClusterDomain = &value
+	b.CommonShardSpecApplyConfiguration.ClusterDomain = &value
 	return b
 }
 
@@ -52,7 +52,7 @@ func (b *RootShardSpecApplyConfiguration) WithClusterDomain(value string) *RootS
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the ShardBaseURL field is set to the value of the last call.
 func (b *RootShardSpecApplyConfiguration) WithShardBaseURL(value string) *RootShardSpecApplyConfiguration {
-	b.ShardBaseURL = &value
+	b.CommonShardSpecApplyConfiguration.ShardBaseURL = &value
 	return b
 }
 
@@ -60,7 +60,7 @@ func (b *RootShardSpecApplyConfiguration) WithShardBaseURL(value string) *RootSh
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Etcd field is set to the value of the last call.
 func (b *RootShardSpecApplyConfiguration) WithEtcd(value *EtcdConfigApplyConfiguration) *RootShardSpecApplyConfiguration {
-	b.Etcd = value
+	b.CommonShardSpecApplyConfiguration.Etcd = value
 	return b
 }
 
@@ -68,7 +68,7 @@ func (b *RootShardSpecApplyConfiguration) WithEtcd(value *EtcdConfigApplyConfigu
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Image field is set to the value of the last call.
 func (b *RootShardSpecApplyConfiguration) WithImage(value *ImageSpecApplyConfiguration) *RootShardSpecApplyConfiguration {
-	b.Image = value
+	b.CommonShardSpecApplyConfiguration.Image = value
 	return b
 }
 
@@ -76,7 +76,7 @@ func (b *RootShardSpecApplyConfiguration) WithImage(value *ImageSpecApplyConfigu
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Replicas field is set to the value of the last call.
 func (b *RootShardSpecApplyConfiguration) WithReplicas(value int32) *RootShardSpecApplyConfiguration {
-	b.Replicas = &value
+	b.CommonShardSpecApplyConfiguration.Replicas = &value
 	return b
 }
 
@@ -84,7 +84,7 @@ func (b *RootShardSpecApplyConfiguration) WithReplicas(value int32) *RootShardSp
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Resources field is set to the value of the last call.
 func (b *RootShardSpecApplyConfiguration) WithResources(value v1.ResourceRequirements) *RootShardSpecApplyConfiguration {
-	b.Resources = &value
+	b.CommonShardSpecApplyConfiguration.Resources = &value
 	return b
 }
 
@@ -92,7 +92,7 @@ func (b *RootShardSpecApplyConfiguration) WithResources(value v1.ResourceRequire
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Audit field is set to the value of the last call.
 func (b *RootShardSpecApplyConfiguration) WithAudit(value *AuditSpecApplyConfiguration) *RootShardSpecApplyConfiguration {
-	b.Audit = value
+	b.CommonShardSpecApplyConfiguration.Audit = value
 	return b
 }
 
@@ -100,7 +100,7 @@ func (b *RootShardSpecApplyConfiguration) WithAudit(value *AuditSpecApplyConfigu
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Authorization field is set to the value of the last call.
 func (b *RootShardSpecApplyConfiguration) WithAuthorization(value *AuthorizationSpecApplyConfiguration) *RootShardSpecApplyConfiguration {
-	b.Authorization = value
+	b.CommonShardSpecApplyConfiguration.Authorization = value
 	return b
 }
 
@@ -108,7 +108,7 @@ func (b *RootShardSpecApplyConfiguration) WithAuthorization(value *Authorization
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Auth field is set to the value of the last call.
 func (b *RootShardSpecApplyConfiguration) WithAuth(value *AuthSpecApplyConfiguration) *RootShardSpecApplyConfiguration {
-	b.Auth = value
+	b.CommonShardSpecApplyConfiguration.Auth = value
 	return b
 }
 
@@ -116,7 +116,7 @@ func (b *RootShardSpecApplyConfiguration) WithAuth(value *AuthSpecApplyConfigura
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the CertificateTemplates field is set to the value of the last call.
 func (b *RootShardSpecApplyConfiguration) WithCertificateTemplates(value operatorv1alpha1.CertificateTemplateMap) *RootShardSpecApplyConfiguration {
-	b.CertificateTemplates = &value
+	b.CommonShardSpecApplyConfiguration.CertificateTemplates = &value
 	return b
 }
 
@@ -124,7 +124,7 @@ func (b *RootShardSpecApplyConfiguration) WithCertificateTemplates(value operato
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the ServiceTemplate field is set to the value of the last call.
 func (b *RootShardSpecApplyConfiguration) WithServiceTemplate(value *ServiceTemplateApplyConfiguration) *RootShardSpecApplyConfiguration {
-	b.ServiceTemplate = value
+	b.CommonShardSpecApplyConfiguration.ServiceTemplate = value
 	return b
 }
 
@@ -132,7 +132,15 @@ func (b *RootShardSpecApplyConfiguration) WithServiceTemplate(value *ServiceTemp
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the DeploymentTemplate field is set to the value of the last call.
 func (b *RootShardSpecApplyConfiguration) WithDeploymentTemplate(value *DeploymentTemplateApplyConfiguration) *RootShardSpecApplyConfiguration {
-	b.DeploymentTemplate = value
+	b.CommonShardSpecApplyConfiguration.DeploymentTemplate = value
+	return b
+}
+
+// WithCABundleSecretRef sets the CABundleSecretRef field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the CABundleSecretRef field is set to the value of the last call.
+func (b *RootShardSpecApplyConfiguration) WithCABundleSecretRef(value v1.LocalObjectReference) *RootShardSpecApplyConfiguration {
+	b.CommonShardSpecApplyConfiguration.CABundleSecretRef = &value
 	return b
 }
 

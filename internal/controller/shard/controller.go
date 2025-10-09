@@ -151,6 +151,14 @@ func (r *ShardReconciler) reconcile(ctx context.Context, s *operatorv1alpha1.Sha
 		errs = append(errs, err)
 	}
 
+	if s.Spec.CABundleSecretRef != nil {
+		if err := k8creconciling.ReconcileSecrets(ctx, []k8creconciling.NamedSecretReconcilerFactory{
+			shard.MergedCABundleSecretReconciler(ctx, s, r.Client),
+		}, s.Namespace, r.Client, ownerRefWrapper); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
 	if err := k8creconciling.ReconcileDeployments(ctx, []k8creconciling.NamedDeploymentReconcilerFactory{
 		shard.DeploymentReconciler(s, rootShard),
 	}, s.Namespace, r.Client, ownerRefWrapper); err != nil {

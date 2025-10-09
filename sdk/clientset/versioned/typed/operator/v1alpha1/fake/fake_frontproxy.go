@@ -19,130 +19,33 @@ limitations under the License.
 package fake
 
 import (
-	"context"
-
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	labels "k8s.io/apimachinery/pkg/labels"
-	types "k8s.io/apimachinery/pkg/types"
-	watch "k8s.io/apimachinery/pkg/watch"
-	testing "k8s.io/client-go/testing"
+	gentype "k8s.io/client-go/gentype"
 
 	v1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
+	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/clientset/versioned/typed/operator/v1alpha1"
 )
 
-// FakeFrontProxies implements FrontProxyInterface
-type FakeFrontProxies struct {
+// fakeFrontProxies implements FrontProxyInterface
+type fakeFrontProxies struct {
+	*gentype.FakeClientWithList[*v1alpha1.FrontProxy, *v1alpha1.FrontProxyList]
 	Fake *FakeOperatorV1alpha1
-	ns   string
 }
 
-var frontproxiesResource = v1alpha1.SchemeGroupVersion.WithResource("frontproxies")
-
-var frontproxiesKind = v1alpha1.SchemeGroupVersion.WithKind("FrontProxy")
-
-// Get takes name of the frontProxy, and returns the corresponding frontProxy object, and an error if there is any.
-func (c *FakeFrontProxies) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.FrontProxy, err error) {
-	emptyResult := &v1alpha1.FrontProxy{}
-	obj, err := c.Fake.
-		Invokes(testing.NewGetActionWithOptions(frontproxiesResource, c.ns, name, options), emptyResult)
-
-	if obj == nil {
-		return emptyResult, err
+func newFakeFrontProxies(fake *FakeOperatorV1alpha1, namespace string) operatorv1alpha1.FrontProxyInterface {
+	return &fakeFrontProxies{
+		gentype.NewFakeClientWithList[*v1alpha1.FrontProxy, *v1alpha1.FrontProxyList](
+			fake.Fake,
+			namespace,
+			v1alpha1.SchemeGroupVersion.WithResource("frontproxies"),
+			v1alpha1.SchemeGroupVersion.WithKind("FrontProxy"),
+			func() *v1alpha1.FrontProxy { return &v1alpha1.FrontProxy{} },
+			func() *v1alpha1.FrontProxyList { return &v1alpha1.FrontProxyList{} },
+			func(dst, src *v1alpha1.FrontProxyList) { dst.ListMeta = src.ListMeta },
+			func(list *v1alpha1.FrontProxyList) []*v1alpha1.FrontProxy { return gentype.ToPointerSlice(list.Items) },
+			func(list *v1alpha1.FrontProxyList, items []*v1alpha1.FrontProxy) {
+				list.Items = gentype.FromPointerSlice(items)
+			},
+		),
+		fake,
 	}
-	return obj.(*v1alpha1.FrontProxy), err
-}
-
-// List takes label and field selectors, and returns the list of FrontProxies that match those selectors.
-func (c *FakeFrontProxies) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.FrontProxyList, err error) {
-	emptyResult := &v1alpha1.FrontProxyList{}
-	obj, err := c.Fake.
-		Invokes(testing.NewListActionWithOptions(frontproxiesResource, frontproxiesKind, c.ns, opts), emptyResult)
-
-	if obj == nil {
-		return emptyResult, err
-	}
-
-	label, _, _ := testing.ExtractFromListOptions(opts)
-	if label == nil {
-		label = labels.Everything()
-	}
-	list := &v1alpha1.FrontProxyList{ListMeta: obj.(*v1alpha1.FrontProxyList).ListMeta}
-	for _, item := range obj.(*v1alpha1.FrontProxyList).Items {
-		if label.Matches(labels.Set(item.Labels)) {
-			list.Items = append(list.Items, item)
-		}
-	}
-	return list, err
-}
-
-// Watch returns a watch.Interface that watches the requested frontProxies.
-func (c *FakeFrontProxies) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
-	return c.Fake.
-		InvokesWatch(testing.NewWatchActionWithOptions(frontproxiesResource, c.ns, opts))
-
-}
-
-// Create takes the representation of a frontProxy and creates it.  Returns the server's representation of the frontProxy, and an error, if there is any.
-func (c *FakeFrontProxies) Create(ctx context.Context, frontProxy *v1alpha1.FrontProxy, opts v1.CreateOptions) (result *v1alpha1.FrontProxy, err error) {
-	emptyResult := &v1alpha1.FrontProxy{}
-	obj, err := c.Fake.
-		Invokes(testing.NewCreateActionWithOptions(frontproxiesResource, c.ns, frontProxy, opts), emptyResult)
-
-	if obj == nil {
-		return emptyResult, err
-	}
-	return obj.(*v1alpha1.FrontProxy), err
-}
-
-// Update takes the representation of a frontProxy and updates it. Returns the server's representation of the frontProxy, and an error, if there is any.
-func (c *FakeFrontProxies) Update(ctx context.Context, frontProxy *v1alpha1.FrontProxy, opts v1.UpdateOptions) (result *v1alpha1.FrontProxy, err error) {
-	emptyResult := &v1alpha1.FrontProxy{}
-	obj, err := c.Fake.
-		Invokes(testing.NewUpdateActionWithOptions(frontproxiesResource, c.ns, frontProxy, opts), emptyResult)
-
-	if obj == nil {
-		return emptyResult, err
-	}
-	return obj.(*v1alpha1.FrontProxy), err
-}
-
-// UpdateStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeFrontProxies) UpdateStatus(ctx context.Context, frontProxy *v1alpha1.FrontProxy, opts v1.UpdateOptions) (result *v1alpha1.FrontProxy, err error) {
-	emptyResult := &v1alpha1.FrontProxy{}
-	obj, err := c.Fake.
-		Invokes(testing.NewUpdateSubresourceActionWithOptions(frontproxiesResource, "status", c.ns, frontProxy, opts), emptyResult)
-
-	if obj == nil {
-		return emptyResult, err
-	}
-	return obj.(*v1alpha1.FrontProxy), err
-}
-
-// Delete takes name of the frontProxy and deletes it. Returns an error if one occurs.
-func (c *FakeFrontProxies) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
-	_, err := c.Fake.
-		Invokes(testing.NewDeleteActionWithOptions(frontproxiesResource, c.ns, name, opts), &v1alpha1.FrontProxy{})
-
-	return err
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *FakeFrontProxies) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	action := testing.NewDeleteCollectionActionWithOptions(frontproxiesResource, c.ns, opts, listOpts)
-
-	_, err := c.Fake.Invokes(action, &v1alpha1.FrontProxyList{})
-	return err
-}
-
-// Patch applies the patch and returns the patched frontProxy.
-func (c *FakeFrontProxies) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.FrontProxy, err error) {
-	emptyResult := &v1alpha1.FrontProxy{}
-	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceActionWithOptions(frontproxiesResource, c.ns, name, pt, data, opts, subresources...), emptyResult)
-
-	if obj == nil {
-		return emptyResult, err
-	}
-	return obj.(*v1alpha1.FrontProxy), err
 }

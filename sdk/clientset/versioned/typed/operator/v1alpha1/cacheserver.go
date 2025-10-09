@@ -19,14 +19,14 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"context"
+	context "context"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	gentype "k8s.io/client-go/gentype"
 
-	v1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
+	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 	scheme "github.com/kcp-dev/kcp-operator/sdk/clientset/versioned/scheme"
 )
 
@@ -38,33 +38,34 @@ type CacheServersGetter interface {
 
 // CacheServerInterface has methods to work with CacheServer resources.
 type CacheServerInterface interface {
-	Create(ctx context.Context, cacheServer *v1alpha1.CacheServer, opts v1.CreateOptions) (*v1alpha1.CacheServer, error)
-	Update(ctx context.Context, cacheServer *v1alpha1.CacheServer, opts v1.UpdateOptions) (*v1alpha1.CacheServer, error)
+	Create(ctx context.Context, cacheServer *operatorv1alpha1.CacheServer, opts v1.CreateOptions) (*operatorv1alpha1.CacheServer, error)
+	Update(ctx context.Context, cacheServer *operatorv1alpha1.CacheServer, opts v1.UpdateOptions) (*operatorv1alpha1.CacheServer, error)
 	// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-	UpdateStatus(ctx context.Context, cacheServer *v1alpha1.CacheServer, opts v1.UpdateOptions) (*v1alpha1.CacheServer, error)
+	UpdateStatus(ctx context.Context, cacheServer *operatorv1alpha1.CacheServer, opts v1.UpdateOptions) (*operatorv1alpha1.CacheServer, error)
 	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
-	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha1.CacheServer, error)
-	List(ctx context.Context, opts v1.ListOptions) (*v1alpha1.CacheServerList, error)
+	Get(ctx context.Context, name string, opts v1.GetOptions) (*operatorv1alpha1.CacheServer, error)
+	List(ctx context.Context, opts v1.ListOptions) (*operatorv1alpha1.CacheServerList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
-	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.CacheServer, err error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *operatorv1alpha1.CacheServer, err error)
 	CacheServerExpansion
 }
 
 // cacheServers implements CacheServerInterface
 type cacheServers struct {
-	*gentype.ClientWithList[*v1alpha1.CacheServer, *v1alpha1.CacheServerList]
+	*gentype.ClientWithList[*operatorv1alpha1.CacheServer, *operatorv1alpha1.CacheServerList]
 }
 
 // newCacheServers returns a CacheServers
 func newCacheServers(c *OperatorV1alpha1Client, namespace string) *cacheServers {
 	return &cacheServers{
-		gentype.NewClientWithList[*v1alpha1.CacheServer, *v1alpha1.CacheServerList](
+		gentype.NewClientWithList[*operatorv1alpha1.CacheServer, *operatorv1alpha1.CacheServerList](
 			"cacheservers",
 			c.RESTClient(),
 			scheme.ParameterCodec,
 			namespace,
-			func() *v1alpha1.CacheServer { return &v1alpha1.CacheServer{} },
-			func() *v1alpha1.CacheServerList { return &v1alpha1.CacheServerList{} }),
+			func() *operatorv1alpha1.CacheServer { return &operatorv1alpha1.CacheServer{} },
+			func() *operatorv1alpha1.CacheServerList { return &operatorv1alpha1.CacheServerList{} },
+		),
 	}
 }

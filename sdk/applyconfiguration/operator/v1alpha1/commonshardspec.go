@@ -39,6 +39,7 @@ type CommonShardSpecApplyConfiguration struct {
 	CertificateTemplates *operatorv1alpha1.CertificateTemplateMap `json:"certificateTemplates,omitempty"`
 	ServiceTemplate      *ServiceTemplateApplyConfiguration       `json:"serviceTemplate,omitempty"`
 	DeploymentTemplate   *DeploymentTemplateApplyConfiguration    `json:"deploymentTemplate,omitempty"`
+	CABundleSecretRef    *v1.LocalObjectReference                 `json:"caBundleSecretRef,omitempty"`
 }
 
 // CommonShardSpecApplyConfiguration constructs a declarative configuration of the CommonShardSpec type for use with
@@ -140,5 +141,13 @@ func (b *CommonShardSpecApplyConfiguration) WithServiceTemplate(value *ServiceTe
 // If called multiple times, the DeploymentTemplate field is set to the value of the last call.
 func (b *CommonShardSpecApplyConfiguration) WithDeploymentTemplate(value *DeploymentTemplateApplyConfiguration) *CommonShardSpecApplyConfiguration {
 	b.DeploymentTemplate = value
+	return b
+}
+
+// WithCABundleSecretRef sets the CABundleSecretRef field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the CABundleSecretRef field is set to the value of the last call.
+func (b *CommonShardSpecApplyConfiguration) WithCABundleSecretRef(value v1.LocalObjectReference) *CommonShardSpecApplyConfiguration {
+	b.CABundleSecretRef = &value
 	return b
 }

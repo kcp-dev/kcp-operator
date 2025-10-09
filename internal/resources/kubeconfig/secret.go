@@ -27,6 +27,7 @@ import (
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 
 	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/utils"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -40,8 +41,19 @@ func KubeconfigSecretReconciler(
 	kubeconfig *operatorv1alpha1.Kubeconfig,
 	rootShard *operatorv1alpha1.RootShard,
 	shard *operatorv1alpha1.Shard,
-	caSecret, certSecret *corev1.Secret,
+	caSecret *corev1.Secret,
+	certSecret *corev1.Secret,
+	caBundle *corev1.Secret, // can be nil
 ) (reconciling.NamedSecretReconcilerFactory, error) {
+	if caBundle != nil && caBundle.Data["tls.crt"] == nil {
+		return nil, fmt.Errorf("the CA bundle secret %s/%s does not contain a `tls.crt` key", caBundle.Namespace, caBundle.Name)
+	}
+
+	caData, err := utils.MergeCABundles(caSecret, caBundle)
+	if err != nil {
+		return nil, fmt.Errorf("failed to merge CA bundles: %w", err)
+	}
+
 	config := &clientcmdapi.Config{
 		Clusters: map[string]*clientcmdapi.Cluster{},
 		Contexts: map[string]*clientcmdapi.Context{},
@@ -56,7 +68,7 @@ func KubeconfigSecretReconciler(
 	addCluster := func(clusterName, url string) {
 		config.Clusters[clusterName] = &clientcmdapi.Cluster{
 			Server:                   url,
-			CertificateAuthorityData: caSecret.Data["tls.crt"],
+			CertificateAuthorityData: caData,
 		}
 	}
 	addContext := func(contextName, clusterName string) {
