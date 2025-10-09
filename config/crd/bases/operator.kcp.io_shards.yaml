@@ -258,6 +258,9 @@ spec:
                           description: |-
                             Requested DNS subject alternative names. The values given here will be merged into the
                             DNS names determined automatically by the kcp-operator.
+                            If DNSNames is used together with IssuerRef, DNSNames will be uses as-is and not merged.
+                            If IssuerRef is not set, DNSNames will be merged with the defaults. This is to avoid
+                            trying to guess what DNSNames configued issuer might support.
                           items:
                             type: string
                           type: array
@@ -278,6 +281,22 @@ spec:
                           items:
                             type: string
                           type: array
+                        issuerRef:
+                          description: IssuerRef is a reference to the issuer for
+                            this certificate.
+                          properties:
+                            group:
+                              description: Group of the object being referred to.
+                              type: string
+                            kind:
+                              description: Kind of the object being referred to.
+                              type: string
+                            name:
+                              description: Name of the object being referred to.
+                              type: string
+                          required:
+                          - name
+                          type: object
                         privateKey:
                           description: |-
                             Private key options. These include the key algorithm and size, the used
