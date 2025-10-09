@@ -18,7 +18,7 @@ set -euo pipefail
 
 # make git available
 if ! [ -x "$(command -v git)" ]; then
-  echo "Installing git…"
+  echo "Installing git..."
   dnf install -y git
 fi
 
@@ -27,7 +27,7 @@ if [ -n "${DOCKER_REGISTRY_MIRROR_ADDR:-}" ]; then
   # remove "http://" or "https://" prefix
   mirror="$(echo "$DOCKER_REGISTRY_MIRROR_ADDR" | awk -F// '{print $NF}')"
 
-  echo "Configuring registry mirror for docker.io…"
+  echo "Configuring registry mirror for docker.io..."
 
   cat <<EOF > /etc/containers/registries.conf.d/mirror.conf
 [[registry]]
@@ -65,13 +65,13 @@ if [ -z "$version" ]; then
 fi
 
 image="$repository:$version"
-echo "Building container image $image…"
+echo "Building container image $image..."
 
 # build image for all architectures
 for arch in $architectures; do
   fullTag="$image-$arch"
 
-  echo "Building $version-$arch…"
+  echo "Building $version-$arch..."
   buildah build-using-dockerfile \
     --file Dockerfile \
     --tag "$fullTag" \
@@ -94,7 +94,7 @@ function create_manifest() {
   buildah manifest create "$name"
 }
 
-echo "Creating manifest $image…"
+echo "Creating manifest $image..."
 create_manifest "$image"
 for arch in $architectures; do
   buildah manifest add "$image" "$image-$arch"
@@ -107,7 +107,7 @@ done
 if [ -n "$branchName" ]; then
   branchImage="$repository:$branchName"
 
-  echo "Creating manifest $branchImage…"
+  echo "Creating manifest $branchImage..."
   create_manifest "$branchImage"
   for arch in $architectures; do
     buildah manifest add "$branchImage" "$image-$arch"
@@ -116,10 +116,10 @@ fi
 
 # push manifest, except in presubmits
 if [ -z "${DRY_RUN:-}" ]; then
-  echo "Logging into GHCR…"
+  echo "Logging into GHCR..."
   buildah login --username "$KCP_GHCR_USERNAME" --password "$KCP_GHCR_PASSWORD" ghcr.io
 
-  echo "Pushing manifest and images…"
+  echo "Pushing manifest and images..."
   buildah manifest push --all "$image" "docker://$image"
 
   if [ -n "${branchImage:-}" ]; then

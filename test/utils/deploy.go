@@ -34,7 +34,7 @@ func DeployEtcd(t *testing.T, name, namespace string) string {
 
 	helmChart := os.Getenv("ETCD_HELM_CHART")
 
-	t.Logf("Installing etcd %q into %s…", name, namespace)
+	t.Logf("Installing etcd %q into %s...", name, namespace)
 	args := []string{"install", "--namespace", namespace, "--atomic", name, helmChart}
 
 	helmCommand := os.Getenv("HELM_BINARY")
@@ -46,7 +46,7 @@ func DeployEtcd(t *testing.T, name, namespace string) string {
 		t.Fatalf("Failed to deploy etcd: %v", err)
 	}
 
-	t.Log("Waiting for etcd to get ready…")
+	t.Log("Waiting for etcd to get ready...")
 	args = []string{
 		"wait",
 		"pods",
@@ -108,7 +108,7 @@ func DeployShard(ctx context.Context, t *testing.T, client ctrlruntimeclient.Cli
 		patch(&shard)
 	}
 
-	t.Logf("Creating Shard %s…", shard.Name)
+	t.Logf("Creating Shard %s...", shard.Name)
 	if err := client.Create(ctx, &shard); err != nil {
 		t.Fatal(err)
 	}
@@ -180,7 +180,7 @@ func DeployRootShard(ctx context.Context, t *testing.T, client ctrlruntimeclient
 		patch(&rootShard)
 	}
 
-	t.Logf("Creating RootShard %s…", rootShard.Name)
+	t.Logf("Creating RootShard %s...", rootShard.Name)
 	if err := client.Create(ctx, &rootShard); err != nil {
 		t.Fatal(err)
 	}
@@ -233,7 +233,7 @@ func DeployFrontProxy(ctx context.Context, t *testing.T, client ctrlruntimeclien
 		patch(&frontProxy)
 	}
 
-	t.Logf("Creating FrontProxy %s…", frontProxy.Name)
+	t.Logf("Creating FrontProxy %s...", frontProxy.Name)
 	if err := client.Create(ctx, &frontProxy); err != nil {
 		t.Fatal(err)
 	}
