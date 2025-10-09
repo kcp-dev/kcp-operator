@@ -28,6 +28,7 @@ import (
 // with apply.
 type CommonShardSpecApplyConfiguration struct {
 	ClusterDomain        *string                                  `json:"clusterDomain,omitempty"`
+	ShardBaseURL         *string                                  `json:"shardBaseURL,omitempty"`
 	Etcd                 *EtcdConfigApplyConfiguration            `json:"etcd,omitempty"`
 	Image                *ImageSpecApplyConfiguration             `json:"image,omitempty"`
 	Replicas             *int32                                   `json:"replicas,omitempty"`
@@ -38,6 +39,7 @@ type CommonShardSpecApplyConfiguration struct {
 	CertificateTemplates *operatorv1alpha1.CertificateTemplateMap `json:"certificateTemplates,omitempty"`
 	ServiceTemplate      *ServiceTemplateApplyConfiguration       `json:"serviceTemplate,omitempty"`
 	DeploymentTemplate   *DeploymentTemplateApplyConfiguration    `json:"deploymentTemplate,omitempty"`
+	CABundleSecretRef    *v1.LocalObjectReference                 `json:"caBundleSecretRef,omitempty"`
 }
 
 // CommonShardSpecApplyConfiguration constructs a declarative configuration of the CommonShardSpec type for use with
@@ -51,6 +53,14 @@ func CommonShardSpec() *CommonShardSpecApplyConfiguration {
 // If called multiple times, the ClusterDomain field is set to the value of the last call.
 func (b *CommonShardSpecApplyConfiguration) WithClusterDomain(value string) *CommonShardSpecApplyConfiguration {
 	b.ClusterDomain = &value
+	return b
+}
+
+// WithShardBaseURL sets the ShardBaseURL field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the ShardBaseURL field is set to the value of the last call.
+func (b *CommonShardSpecApplyConfiguration) WithShardBaseURL(value string) *CommonShardSpecApplyConfiguration {
+	b.ShardBaseURL = &value
 	return b
 }
 
@@ -131,5 +141,13 @@ func (b *CommonShardSpecApplyConfiguration) WithServiceTemplate(value *ServiceTe
 // If called multiple times, the DeploymentTemplate field is set to the value of the last call.
 func (b *CommonShardSpecApplyConfiguration) WithDeploymentTemplate(value *DeploymentTemplateApplyConfiguration) *CommonShardSpecApplyConfiguration {
 	b.DeploymentTemplate = value
+	return b
+}
+
+// WithCABundleSecretRef sets the CABundleSecretRef field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the CABundleSecretRef field is set to the value of the last call.
+func (b *CommonShardSpecApplyConfiguration) WithCABundleSecretRef(value v1.LocalObjectReference) *CommonShardSpecApplyConfiguration {
+	b.CABundleSecretRef = &value
 	return b
 }

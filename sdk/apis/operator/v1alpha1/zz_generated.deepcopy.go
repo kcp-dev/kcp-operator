@@ -336,6 +336,11 @@ func (in *CertificateSpecTemplate) DeepCopyInto(out *CertificateSpecTemplate) {
 		*out = new(X509Subject)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.IssuerRef != nil {
+		in, out := &in.IssuerRef, &out.IssuerRef
+		*out = new(ObjectReference)
+		**out = **in
+	}
 	if in.DNSNames != nil {
 		in, out := &in.DNSNames, &out.DNSNames
 		*out = make([]string, len(*in))
@@ -499,6 +504,11 @@ func (in *CommonShardSpec) DeepCopyInto(out *CommonShardSpec) {
 		in, out := &in.DeploymentTemplate, &out.DeploymentTemplate
 		*out = new(DeploymentTemplate)
 		(*in).DeepCopyInto(*out)
+	}
+	if in.CABundleSecretRef != nil {
+		in, out := &in.CABundleSecretRef, &out.CABundleSecretRef
+		*out = new(v1.LocalObjectReference)
+		**out = **in
 	}
 }
 
@@ -761,6 +771,11 @@ func (in *FrontProxySpec) DeepCopyInto(out *FrontProxySpec) {
 		for key, val := range *in {
 			(*out)[key] = *val.DeepCopy()
 		}
+	}
+	if in.CABundleSecretRef != nil {
+		in, out := &in.CABundleSecretRef, &out.CABundleSecretRef
+		*out = new(v1.LocalObjectReference)
+		**out = **in
 	}
 }
 

@@ -30,7 +30,7 @@ import (
 func WaitForPods(t *testing.T, ctx context.Context, client ctrlruntimeclient.Client, listOpts ...ctrlruntimeclient.ListOption) {
 	t.Helper()
 
-	t.Log("Waiting for pods to be available…")
+	t.Log("Waiting for pods to be available...")
 
 	err := wait.PollUntilContextTimeout(ctx, 500*time.Millisecond, 5*time.Minute, false, func(ctx context.Context) (done bool, err error) {
 		pods := corev1.PodList{}
@@ -69,7 +69,7 @@ func podIsReady(pod corev1.Pod) bool {
 
 func WaitForObject(t *testing.T, ctx context.Context, client ctrlruntimeclient.Client, obj ctrlruntimeclient.Object, key types.NamespacedName) {
 	t.Helper()
-	t.Logf("Waiting for %T to be available…", obj)
+	t.Logf("Waiting for %T to be available...", obj)
 
 	err := wait.PollUntilContextTimeout(ctx, 500*time.Millisecond, 3*time.Minute, false, func(ctx context.Context) (done bool, err error) {
 		err = client.Get(ctx, key, obj)

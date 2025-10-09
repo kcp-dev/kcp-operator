@@ -63,13 +63,13 @@ func TestCreateRootShard(t *testing.T) {
 		Groups: []string{"system:masters"},
 	}
 
-	t.Log("Creating kubeconfig for RootShard…")
+	t.Log("Creating kubeconfig for RootShard...")
 	if err := client.Create(ctx, &rsConfig); err != nil {
 		t.Fatal(err)
 	}
 	utils.WaitForObject(t, ctx, client, &corev1.Secret{}, types.NamespacedName{Namespace: rsConfig.Namespace, Name: rsConfig.Spec.SecretRef.Name})
 
-	t.Log("Connecting to RootShard…")
+	t.Log("Connecting to RootShard...")
 	kcpClient := utils.ConnectWithKubeconfig(t, ctx, client, namespace.Name, rsConfig.Name)
 
 	// proof of life: list something every logicalcluster in kcp has

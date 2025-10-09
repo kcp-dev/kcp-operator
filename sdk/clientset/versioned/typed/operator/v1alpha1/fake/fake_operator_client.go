@@ -30,23 +30,23 @@ type FakeOperatorV1alpha1 struct {
 }
 
 func (c *FakeOperatorV1alpha1) CacheServers(namespace string) v1alpha1.CacheServerInterface {
-	return &FakeCacheServers{c, namespace}
+	return newFakeCacheServers(c, namespace)
 }
 
 func (c *FakeOperatorV1alpha1) FrontProxies(namespace string) v1alpha1.FrontProxyInterface {
-	return &FakeFrontProxies{c, namespace}
+	return newFakeFrontProxies(c, namespace)
 }
 
 func (c *FakeOperatorV1alpha1) Kubeconfigs(namespace string) v1alpha1.KubeconfigInterface {
-	return &FakeKubeconfigs{c, namespace}
+	return newFakeKubeconfigs(c, namespace)
 }
 
 func (c *FakeOperatorV1alpha1) RootShards(namespace string) v1alpha1.RootShardInterface {
-	return &FakeRootShards{c, namespace}
+	return newFakeRootShards(c, namespace)
 }
 
 func (c *FakeOperatorV1alpha1) Shards(namespace string) v1alpha1.ShardInterface {
-	return &FakeShards{c, namespace}
+	return newFakeShards(c, namespace)
 }
 
 // RESTClient returns a RESTClient that is used to communicate

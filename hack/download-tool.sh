@@ -46,7 +46,7 @@ fi
   mkdir -p tmp
   cd tmp
 
-  echo "Downloading $BINARY version $VERSION …" >&2
+  echo "Downloading $BINARY version $VERSION ..." >&2
 
   if $GO_MODULE; then
     GOBIN=$(realpath .) go install "$URL@$VERSION"

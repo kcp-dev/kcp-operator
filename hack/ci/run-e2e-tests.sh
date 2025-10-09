@@ -21,7 +21,7 @@ set -euo pipefail
 if [ -n "${KCP_TAG:-}" ]; then
   # resolve what looks like branch names
   if [[ "$KCP_TAG" == main ]] || [[ "$KCP_TAG" =~ ^release- ]]; then
-    echo "Resolving kcp $KCP_TAG …"
+    echo "Resolving kcp $KCP_TAG ..."
 
     tmpdir="$(mktemp -d)"
     here="$(pwd)"
@@ -46,7 +46,7 @@ fi
 # build the image(s)
 export IMAGE_TAG=local
 
-echo "Building container images…"
+echo "Building container images..."
 ARCHITECTURES=arm64 DRY_RUN=yes ./hack/ci/build-image.sh
 
 # start docker so we can run kind
@@ -55,11 +55,11 @@ start-docker.sh
 # create a local kind cluster
 KIND_CLUSTER_NAME=e2e
 
-echo "Preloading the kindest/node image…"
+echo "Preloading the kindest/node image..."
 docker load --input /kindest.tar
 
 export KUBECONFIG=$(mktemp)
-echo "Creating kind cluster $KIND_CLUSTER_NAME…"
+echo "Creating kind cluster $KIND_CLUSTER_NAME..."
 kind create cluster --name "$KIND_CLUSTER_NAME"
 chmod 600 "$KUBECONFIG"
 
@@ -74,18 +74,18 @@ make helm
 image="ghcr.io/kcp-dev/kcp-operator:$IMAGE_TAG"
 archive=operator.tar
 
-echo "Loading operator image into kind…"
+echo "Loading operator image into kind..."
 buildah manifest push --all "$image" "oci-archive:$archive:$image"
 kind load image-archive "$archive" --name "$KIND_CLUSTER_NAME"
 
 # deploy the operator
-echo "Deploying operator…"
+echo "Deploying operator..."
 kubectl kustomize hack/ci/testdata | kubectl apply --filename -
 kubectl --namespace kcp-operator-system wait deployment kcp-operator-controller-manager --for condition=Available
 kubectl --namespace kcp-operator-system wait pod --all --for condition=Ready
 
 # deploying cert-manager
-echo "Deploying cert-manager…"
+echo "Deploying cert-manager..."
 
 _tools/helm repo add jetstack https://charts.jetstack.io --force-update
 _tools/helm repo update
@@ -100,7 +100,7 @@ _tools/helm upgrade \
 
 kubectl apply --filename hack/ci/testdata/clusterissuer.yaml
 
-echo "Running e2e tests…"
+echo "Running e2e tests..."
 
 export HELM_BINARY="$(realpath _tools/helm)"
 export ETCD_HELM_CHART="$(realpath hack/ci/testdata/etcd)"

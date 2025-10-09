@@ -26,6 +26,7 @@ import (
 // with apply.
 type CertificateSpecTemplateApplyConfiguration struct {
 	Subject        *X509SubjectApplyConfiguration                   `json:"subject,omitempty"`
+	IssuerRef      *ObjectReferenceApplyConfiguration               `json:"issuerRef,omitempty"`
 	DNSNames       []string                                         `json:"dnsNames,omitempty"`
 	IPAddresses    []string                                         `json:"ipAddresses,omitempty"`
 	SecretTemplate *CertificateSecretTemplateApplyConfiguration     `json:"secretTemplate,omitempty"`
@@ -45,6 +46,14 @@ func CertificateSpecTemplate() *CertificateSpecTemplateApplyConfiguration {
 // If called multiple times, the Subject field is set to the value of the last call.
 func (b *CertificateSpecTemplateApplyConfiguration) WithSubject(value *X509SubjectApplyConfiguration) *CertificateSpecTemplateApplyConfiguration {
 	b.Subject = value
+	return b
+}
+
+// WithIssuerRef sets the IssuerRef field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the IssuerRef field is set to the value of the last call.
+func (b *CertificateSpecTemplateApplyConfiguration) WithIssuerRef(value *ObjectReferenceApplyConfiguration) *CertificateSpecTemplateApplyConfiguration {
+	b.IssuerRef = value
 	return b
 }
 

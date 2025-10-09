@@ -73,18 +73,18 @@ func TestCreateShard(t *testing.T) {
 		Groups: []string{"system:masters"},
 	}
 
-	t.Log("Creating kubeconfig for RootShard…")
+	t.Log("Creating kubeconfig for RootShard...")
 	if err := client.Create(ctx, &rsConfig); err != nil {
 		t.Fatal(err)
 	}
 	utils.WaitForObject(t, ctx, client, &corev1.Secret{}, types.NamespacedName{Namespace: rsConfig.Namespace, Name: rsConfig.Spec.SecretRef.Name})
 
-	t.Log("Connecting to RootShard…")
+	t.Log("Connecting to RootShard...")
 	rootShardClient := utils.ConnectWithKubeconfig(t, ctx, client, namespace.Name, rsConfig.Name)
 
 	// wait until the 2nd shard has registered itself successfully at the root shard
 	shardKey := types.NamespacedName{Name: shardName}
-	t.Log("Waiting for Shard to register itself on the RootShard…")
+	t.Log("Waiting for Shard to register itself on the RootShard...")
 	utils.WaitForObject(t, ctx, rootShardClient, &kcpcorev1alpha1.Shard{}, shardKey)
 
 	// create a kubeconfig to access the shard
@@ -108,13 +108,13 @@ func TestCreateShard(t *testing.T) {
 		Groups: []string{"system:masters"},
 	}
 
-	t.Log("Creating kubeconfig for Shard…")
+	t.Log("Creating kubeconfig for Shard...")
 	if err := client.Create(ctx, &shardConfig); err != nil {
 		t.Fatal(err)
 	}
 	utils.WaitForObject(t, ctx, client, &corev1.Secret{}, types.NamespacedName{Namespace: shardConfig.Namespace, Name: shardConfig.Spec.SecretRef.Name})
 
-	t.Log("Connecting to Shard…")
+	t.Log("Connecting to Shard...")
 	kcpClient := utils.ConnectWithKubeconfig(t, ctx, client, namespace.Name, shardConfig.Name)
 
 	// proof of life: list something every logicalcluster in kcp has

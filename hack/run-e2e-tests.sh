@@ -30,19 +30,19 @@ DATA_DIR="$(realpath "$DATA_DIR")"
 # create a local kind cluster
 
 export KUBECONFIG="$DATA_DIR/kind.kubeconfig"
-echo "Creating kind cluster $KIND_CLUSTER_NAME…"
+echo "Creating kind cluster $KIND_CLUSTER_NAME..."
 kind create cluster --name "$KIND_CLUSTER_NAME"
 chmod 600 "$KUBECONFIG"
 
 teardown_kind() {
   if [[ $OPERATOR_PID -gt 0 ]]; then
-    echo "Stopping kcp-operator…"
+    echo "Stopping kcp-operator..."
     kill -TERM $OPERATOR_PID
     wait $OPERATOR_PID
   fi
 
   if [[ $PROTOKOL_PID -gt 0 ]]; then
-    echo "Stopping protokol…"
+    echo "Stopping protokol..."
     kill -TERM $PROTOKOL_PID
     # no wait because protokol ends quickly and wait would fail
   fi
@@ -59,11 +59,11 @@ fi
 echo "Kubeconfig is in $KUBECONFIG."
 
 # deploying operator CRDs
-echo "Deploying operator CRDs…"
+echo "Deploying operator CRDs..."
 kubectl apply --kustomize config/crd
 
 # deploying cert-manager
-echo "Deploying cert-manager…"
+echo "Deploying cert-manager..."
 
 _tools/helm repo add jetstack https://charts.jetstack.io --force-update
 _tools/helm repo update
@@ -80,12 +80,13 @@ _tools/helm upgrade \
 kubectl apply --filename hack/ci/testdata/clusterissuer.yaml
 
 # start the operator locally
-echo "Starting kcp-operator…"
+echo "Starting kcp-operator..."
 _build/manager \
   -kubeconfig "$KUBECONFIG" \
   -zap-log-level debug \
   -zap-encoder console \
   -zap-time-encoding iso8601 \
+  -health-probe-bind-address="" \
   >"$DATA_DIR/kcp-operator.log" 2>&1 &
 OPERATOR_PID=$!
 echo "Running as process $OPERATOR_PID."
@@ -98,7 +99,7 @@ else
   echo "collect logs from the kind cluster."
 fi
 
-echo "Running e2e tests…"
+echo "Running e2e tests..."
 
 export HELM_BINARY="$(realpath _tools/helm)"
 export ETCD_HELM_CHART="$(realpath hack/ci/testdata/etcd)"
