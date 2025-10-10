@@ -55,12 +55,12 @@ start-docker.sh
 # create a local kind cluster
 KIND_CLUSTER_NAME=e2e
 
-echo "Preloading the kindest/node image..."
-docker load --input /kindest.tar
+#echo "Preloading the kindest/node image..."
+#docker load --input /kindest.tar
 
 export KUBECONFIG=$(mktemp)
 echo "Creating kind cluster $KIND_CLUSTER_NAME..."
-kind create cluster --name "$KIND_CLUSTER_NAME"
+kind create cluster --name "$KIND_CLUSTER_NAME" --image=kindest/node:v1.33.4
 chmod 600 "$KUBECONFIG"
 
 # store logs as artifacts
