@@ -73,6 +73,9 @@ func WaitForObject(t *testing.T, ctx context.Context, client ctrlruntimeclient.C
 
 	err := wait.PollUntilContextTimeout(ctx, 500*time.Millisecond, 3*time.Minute, false, func(ctx context.Context) (done bool, err error) {
 		err = client.Get(ctx, key, obj)
+		if err != nil {
+			t.Logf("Waiting for %T to be available: %v", obj, err)
+		}
 		return err == nil, nil
 	})
 	if err != nil {
