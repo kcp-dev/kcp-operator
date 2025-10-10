@@ -41,6 +41,7 @@ import (
 )
 
 func TestRootShardProxy(t *testing.T) {
+	t.Parallel()
 	ctrlruntime.SetLogger(logr.Discard())
 
 	client := utils.GetKubeClient(t)
