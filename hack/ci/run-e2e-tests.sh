@@ -60,7 +60,7 @@ docker load --input /kindest.tar
 
 export KUBECONFIG=$(mktemp)
 echo "Creating kind cluster $KIND_CLUSTER_NAME…"
-kind create cluster --name "$KIND_CLUSTER_NAME"
+kind create cluster --name "$KIND_CLUSTER_NAME" --image kindest/node:v1.32.2
 chmod 600 "$KUBECONFIG"
 
 # store logs as artifacts
