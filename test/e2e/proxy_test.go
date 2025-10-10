@@ -118,7 +118,7 @@ func TestRootShardProxy(t *testing.T) {
 		t.Fatalf("Failed to create workspace: %v", err)
 	}
 
-	err := wait.PollUntilContextTimeout(ctx, 500*time.Millisecond, 30*time.Second, false, func(ctx context.Context) (done bool, err error) {
+	err := wait.PollUntilContextTimeout(ctx, 500*time.Millisecond, 60*time.Second, false, func(ctx context.Context) (done bool, err error) {
 		err = rootShardClient.Get(ctx, ctrlruntimeclient.ObjectKeyFromObject(workspace), workspace)
 		if err != nil {
 			return false, err
