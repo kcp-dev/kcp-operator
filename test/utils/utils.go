@@ -103,15 +103,15 @@ func CreateSelfDestructingNamespace(t *testing.T, ctx context.Context, client ct
 	t.Helper()
 
 	ns := corev1.Namespace{}
-	ns.Name = fmt.Sprintf("e2e-%s", name)
+	ns.Name = fmt.Sprintf("e2e-%s-%s", name, time.Now().Format("20060102150405"))
 
-	t.Logf("Creating namespace %s...", name)
+	t.Logf("Creating namespace %s...", ns.Name)
 	if err := client.Create(ctx, &ns); err != nil {
 		t.Fatal(err)
 	}
 
 	t.Cleanup(func() {
-		t.Logf("Deleting namespace %s...", name)
+		t.Logf("Deleting namespace %s...", ns.Name)
 		if err := client.Delete(ctx, &ns); err != nil {
 			t.Fatal(err)
 		}
