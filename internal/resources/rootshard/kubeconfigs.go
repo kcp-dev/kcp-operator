@@ -101,8 +101,8 @@ func ExternalLogicalClusterAdminKubeconfigReconciler(rootShard *operatorv1alpha1
 				Clusters: map[string]*clientcmdapi.Cluster{
 					serverName: {
 						// This has to point to a front-proxy, not the root shard itself.
-						Server:               fmt.Sprintf("https://%s:%d", rootShard.Spec.External.Hostname, rootShard.Spec.External.Port),
-						CertificateAuthority: getCAMountPath(operatorv1alpha1.ServerCA) + "/tls.crt",
+						Server: fmt.Sprintf("https://%s:%d", rootShard.Spec.External.Hostname, rootShard.Spec.External.Port),
+						// CertificateAuthority will be populated below, depending on whether CABundle is specified or not.
 					},
 				},
 				Contexts: map[string]*clientcmdapi.Context{
@@ -118,6 +118,14 @@ func ExternalLogicalClusterAdminKubeconfigReconciler(rootShard *operatorv1alpha1
 					},
 				},
 				CurrentContext: contextName,
+			}
+
+			if rootShard.Spec.CABundleSecretRef == nil {
+				config.Clusters[serverName].CertificateAuthority = getCAMountPath(operatorv1alpha1.ServerCA) + "/tls.crt"
+			} else {
+				// If CABundle is specified, it will be mounted to pod by deployment so we can use it file path
+				// Secret data is merged by operator by creating dedicate CA bundle secret.
+				config.Clusters[serverName].CertificateAuthority = getCAMountPath(operatorv1alpha1.CABundleCA) + "/tls.crt"
 			}
 
 			data, err := clientcmd.Write(*config)

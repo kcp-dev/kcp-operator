@@ -21,25 +21,25 @@ package v1alpha1
 import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	v1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
+	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
 // AuditWebhookSpecApplyConfiguration represents a declarative configuration of the AuditWebhookSpec type for use
 // with apply.
 type AuditWebhookSpecApplyConfiguration struct {
-	BatchBufferSize      *int                       `json:"batchBufferSize,omitempty"`
-	BatchMaxSize         *int                       `json:"batchMaxSize,omitempty"`
-	BatchMaxWait         *v1.Duration               `json:"batchMaxWait,omitempty"`
-	BatchThrottleBurst   *int                       `json:"batchThrottleBurst,omitempty"`
-	BatchThrottleEnable  *bool                      `json:"batchThrottleEnable,omitempty"`
-	BatchThrottleQPS     *string                    `json:"batchThrottleQPS,omitempty"`
-	ConfigSecretName     *string                    `json:"configSecretName,omitempty"`
-	InitialBackoff       *v1.Duration               `json:"initialBackoff,omitempty"`
-	Mode                 *v1alpha1.AuditWebhookMode `json:"mode,omitempty"`
-	TruncateEnabled      *bool                      `json:"truncateEnabled,omitempty"`
-	TruncateMaxBatchSize *int                       `json:"truncateMaxBatchSize,omitempty"`
-	TruncateMaxEventSize *int                       `json:"truncateMaxEventSize,omitempty"`
-	Version              *string                    `json:"version,omitempty"`
+	BatchBufferSize      *int                               `json:"batchBufferSize,omitempty"`
+	BatchMaxSize         *int                               `json:"batchMaxSize,omitempty"`
+	BatchMaxWait         *v1.Duration                       `json:"batchMaxWait,omitempty"`
+	BatchThrottleBurst   *int                               `json:"batchThrottleBurst,omitempty"`
+	BatchThrottleEnable  *bool                              `json:"batchThrottleEnable,omitempty"`
+	BatchThrottleQPS     *string                            `json:"batchThrottleQPS,omitempty"`
+	ConfigSecretName     *string                            `json:"configSecretName,omitempty"`
+	InitialBackoff       *v1.Duration                       `json:"initialBackoff,omitempty"`
+	Mode                 *operatorv1alpha1.AuditWebhookMode `json:"mode,omitempty"`
+	TruncateEnabled      *bool                              `json:"truncateEnabled,omitempty"`
+	TruncateMaxBatchSize *int                               `json:"truncateMaxBatchSize,omitempty"`
+	TruncateMaxEventSize *int                               `json:"truncateMaxEventSize,omitempty"`
+	Version              *string                            `json:"version,omitempty"`
 }
 
 // AuditWebhookSpecApplyConfiguration constructs a declarative configuration of the AuditWebhookSpec type for use with
@@ -115,7 +115,7 @@ func (b *AuditWebhookSpecApplyConfiguration) WithInitialBackoff(value v1.Duratio
 // WithMode sets the Mode field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Mode field is set to the value of the last call.
-func (b *AuditWebhookSpecApplyConfiguration) WithMode(value v1alpha1.AuditWebhookMode) *AuditWebhookSpecApplyConfiguration {
+func (b *AuditWebhookSpecApplyConfiguration) WithMode(value operatorv1alpha1.AuditWebhookMode) *AuditWebhookSpecApplyConfiguration {
 	b.Mode = &value
 	return b
 }

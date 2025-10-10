@@ -100,6 +100,9 @@ const (
 	ClientCA              CA = "client"
 	FrontProxyClientCA    CA = "front-proxy-client"
 	RequestHeaderClientCA CA = "requestheader-client"
+
+	// CABundleCA is the CA used to validate the API server's TLS certificate.
+	CABundleCA CA = "ca-bundle"
 )
 
 type CertificateTemplateMap map[string]CertificateTemplate

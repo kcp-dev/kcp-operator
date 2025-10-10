@@ -83,6 +83,7 @@ func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	rootShard := &operatorv1alpha1.RootShard{}
 	shard := &operatorv1alpha1.Shard{}
+	var caBundle *corev1.Secret
 
 	var (
 		clientCertIssuer string
@@ -132,6 +133,13 @@ func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		clientCertIssuer = resources.GetRootShardCAName(rootShard, operatorv1alpha1.FrontProxyClientCA)
 		serverCA = resources.GetRootShardCAName(rootShard, operatorv1alpha1.ServerCA)
 
+		if frontProxy.Spec.CABundleSecretRef != nil {
+			caBundle = &corev1.Secret{}
+			if err := r.Get(ctx, types.NamespacedName{Name: frontProxy.Spec.CABundleSecretRef.Name, Namespace: req.Namespace}, caBundle); err != nil {
+				return ctrl.Result{}, fmt.Errorf("failed to get CA bundle secret %s/%s: %w", req.Namespace, frontProxy.Spec.CABundleSecretRef.Name, err)
+			}
+		}
+
 	default:
 		return ctrl.Result{}, fmt.Errorf("no valid target for kubeconfig found")
 	}
@@ -158,7 +166,7 @@ func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{RequeueAfter: time.Second * 5}, nil
 	}
 
-	reconciler, err := kubeconfig.KubeconfigSecretReconciler(&kc, rootShard, shard, serverCASecret, clientCertSecret)
+	reconciler, err := kubeconfig.KubeconfigSecretReconciler(&kc, rootShard, shard, serverCASecret, clientCertSecret, caBundle)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
