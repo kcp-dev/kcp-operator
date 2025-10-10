@@ -428,6 +428,8 @@ spec:
                   certificates for this shard.
                 type: object
               clusterDomain:
+                description: ClusterDomain is the DNS domain for services in the cluster.
+                  Defaults to "cluster.local" if not set.
                 type: string
               deploymentTemplate:
                 description: 'Optional: DeploymentTemplate configures the Kubernetes
@@ -1702,6 +1704,11 @@ spec:
                         type: string
                     type: object
                 type: object
+              shardBaseURL:
+                description: |-
+                  ShardBaseURL is the base URL under which this shard should be reachable. This is used to configure
+                  the external URL. If not provided, the operator will use kubernetes service address to generate it.
+                type: string
             required:
             - etcd
             - rootShard
