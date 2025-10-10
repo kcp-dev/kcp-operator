@@ -60,7 +60,7 @@ KIND_CLUSTER_NAME=e2e
 
 export KUBECONFIG=$(mktemp)
 echo "Creating kind cluster $KIND_CLUSTER_NAME..."
-kind create cluster --name "$KIND_CLUSTER_NAME" --image kindest/node:v1.32.2@sha256:f226345927d7e348497136874b6d207e0b32cc52154ad8323129352923a3142f
+kind create cluster --name "$KIND_CLUSTER_NAME" --image kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a
 chmod 600 "$KUBECONFIG"
 
 # store logs as artifacts
