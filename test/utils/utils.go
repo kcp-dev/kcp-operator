@@ -110,13 +110,6 @@ func CreateSelfDestructingNamespace(t *testing.T, ctx context.Context, client ct
 		t.Fatal(err)
 	}
 
-	t.Cleanup(func() {
-		t.Logf("Deleting namespace %s...", ns.Name)
-		if err := client.Delete(ctx, &ns); err != nil {
-			t.Fatal(err)
-		}
-	})
-
 	return &ns
 }
 
