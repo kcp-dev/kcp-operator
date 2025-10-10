@@ -36,7 +36,6 @@ import (
 )
 
 func TestCreateFrontProxy(t *testing.T) {
-	t.Parallel()
 	fmt.Println()
 
 	ctrlruntime.SetLogger(logr.Discard())
