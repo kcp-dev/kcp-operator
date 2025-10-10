@@ -86,7 +86,7 @@ presubmits:
       preset-goproxy: "true"
     spec:
       containers:
-        - image: ghcr.io/kcp-dev/infra/build:1.24.8-2
+        - image: ghcr.io/kcp-dev/infra/build:1.24.6-1
           command:
             - hack/ci/run-e2e-tests.sh
           resources:
