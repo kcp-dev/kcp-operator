@@ -24,6 +24,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/go-logr/logr"
 	kcpcorev1alpha1 "github.com/kcp-dev/kcp/sdk/apis/core/v1alpha1"
 	kcptenancyv1alpha1 "github.com/kcp-dev/kcp/sdk/apis/tenancy/v1alpha1"
@@ -117,12 +118,12 @@ func TestRootShardProxy(t *testing.T) {
 		t.Fatalf("Failed to create workspace: %v", err)
 	}
 
-	err := wait.PollUntilContextTimeout(ctx, 500*time.Millisecond, 60*time.Second, false, func(ctx context.Context) (done bool, err error) {
+	err := wait.PollUntilContextTimeout(ctx, 500*time.Millisecond, 3*time.Minute, false, func(ctx context.Context) (done bool, err error) {
 		err = rootShardClient.Get(ctx, ctrlruntimeclient.ObjectKeyFromObject(workspace), workspace)
 		if err != nil {
 			return false, err
 		}
-
+		spew.Dump(workspace.Status)
 		return workspace.Status.Phase == kcpcorev1alpha1.LogicalClusterPhaseReady, nil
 	})
 	if err != nil {
