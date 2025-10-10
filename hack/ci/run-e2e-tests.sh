@@ -32,8 +32,8 @@ if [ -n "${KCP_TAG:-}" ]; then
     cd "$here"
     rm -rf "$tmpdir"
 
-    # kcp's containers are tagged with the first 8 characters of the Git hash
-    KCP_TAG="${KCP_TAG:0:8}"
+    # kcp's containers are tagged with the first 9 characters of the Git hash
+    KCP_TAG="${KCP_TAG:0:9}"
   fi
 
   echo "kcp image tag.......: $KCP_TAG"
