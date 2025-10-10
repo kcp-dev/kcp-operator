@@ -43,7 +43,7 @@ func WaitForPods(t *testing.T, ctx context.Context, client ctrlruntimeclient.Cli
 		}
 
 		for _, pod := range pods.Items {
-			if !podIsReady(pod) {
+			if !podIsReady(t, pod) {
 				return false, nil
 			}
 		}
@@ -57,12 +57,14 @@ func WaitForPods(t *testing.T, ctx context.Context, client ctrlruntimeclient.Cli
 	t.Log("Pods are ready.")
 }
 
-func podIsReady(pod corev1.Pod) bool {
+func podIsReady(t *testing.T, pod corev1.Pod) bool {
 	for _, cond := range pod.Status.Conditions {
 		if cond.Type == corev1.PodReady {
 			return cond.Status == corev1.ConditionTrue
 		}
 	}
+	t.Logf("Pod %s/%s does not have PodReady condition", pod.Namespace, pod.Name)
+	t.Logf("Pod conditions: %+v", pod.Status.Conditions)
 
 	return false
 }
@@ -73,6 +75,9 @@ func WaitForObject(t *testing.T, ctx context.Context, client ctrlruntimeclient.C
 
 	err := wait.PollUntilContextTimeout(ctx, 500*time.Millisecond, 3*time.Minute, false, func(ctx context.Context) (done bool, err error) {
 		err = client.Get(ctx, key, obj)
+		if err != nil {
+			t.Logf("Waiting for %T to be available: %v", obj, err)
+		}
 		return err == nil, nil
 	})
 	if err != nil {

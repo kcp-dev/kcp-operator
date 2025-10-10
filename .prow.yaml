@@ -91,8 +91,8 @@ presubmits:
             - hack/ci/run-e2e-tests.sh
           resources:
             requests:
-              memory: 4Gi
-              cpu: 2
+              memory: 8Gi
+              cpu: 4
           # docker-in-docker needs privileged mode
           securityContext:
             privileged: true
@@ -114,8 +114,8 @@ presubmits:
               value: main
           resources:
             requests:
-              memory: 4Gi
-              cpu: 2
+              memory: 8Gi
+              cpu: 4
           # docker-in-docker needs privileged mode
           securityContext:
             privileged: true
