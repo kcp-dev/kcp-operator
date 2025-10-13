@@ -66,6 +66,16 @@ type ExternalConfig struct {
 	// record pointing to the kcp-front-proxy Service's external IP address.
 	Hostname string `json:"hostname"`
 	Port     uint32 `json:"port"`
+
+	// Optional: InternalHostname is an optional hostname that should be used to
+	// access internal front-proxy services, e.g. by other kcp components. This is helpful
+	// if you don't want to use the public hostname for internal communication, e.g.
+	// because it resolves to an external IP address that is not accessible from within
+	// the cluster. If not set, the value of `hostname` is used. This usually points to
+	// dedicated front-proxy services that are not exposed externally with certificates
+	// that are not trusted outside of the cluster.
+	// +optional
+	InternalHostname string `json:"internalHostname,omitempty"`
 }
 
 // Certificates configures how certificates for kcp should be created.

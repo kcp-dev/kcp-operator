@@ -11,7 +11,7 @@ PROTOKOL_VERSION ?= 0.7.2
 HELM_VERSION ?= 3.18.6
 
 # Image URL to use all building/pushing image targets
-IMG ?= ghcr.io/kcp-dev/kcp-operator
+IMG ?= ghcr.io/mjudeikis/kcp-operator:v32
 
 TOOLS_DIR = $(shell pwd)/_tools
 
@@ -67,12 +67,12 @@ test: fmt vet ## Run tests.
 # Utilize Kind or modify the e2e tests to load the image locally, enabling compatibility with other vendors.
 .PHONY: test-e2e  # Run the e2e tests against a kind k8s instance that is already spun up.
 test-e2e:
-	go test ./test/e2e/ -v
+	go test ./test/e2e -v
 
 # Creates a kind cluster and runs the e2e tests in them. The kind cluster is destroyed after the tests.
 .PHONY: test-e2e-with-kind  # Run the e2e tests against a temporary kind cluster.
 test-e2e-with-kind: helm
-	@./hack/run-e2e-tests.sh
+	@hack/run-e2e-tests.sh
 
 .PHONY: lint
 lint: golangci-lint ## Run golangci-lint linter.
@@ -115,7 +115,7 @@ run: fmt vet ## Run a controller from your host.
 # More info: https://docs.docker.com/develop/develop-images/build_enhancements/
 .PHONY: docker-build
 docker-build: ## Build docker image with the manager.
-	$(CONTAINER_TOOL) build -t ${IMG} .
+	$(CONTAINER_TOOL) build --platform linux/amd64 -t ${IMG} .
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
