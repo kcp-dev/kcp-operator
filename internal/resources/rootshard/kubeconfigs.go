@@ -120,8 +120,12 @@ func ExternalLogicalClusterAdminKubeconfigReconciler(rootShard *operatorv1alpha1
 				CurrentContext: contextName,
 			}
 
-			if rootShard.Spec.External.InternalHostname != "" {
-				config.Clusters[serverName].Server = fmt.Sprintf("https://%s:%d", rootShard.Spec.External.InternalHostname, rootShard.Spec.External.Port)
+			if rootShard.Spec.External.PrivateHostname != "" {
+				port := rootShard.Spec.External.Port
+				if rootShard.Spec.External.PrivatePort != nil {
+					port = *rootShard.Spec.External.PrivatePort
+				}
+				config.Clusters[serverName].Server = fmt.Sprintf("https://%s:%d", rootShard.Spec.External.PrivateHostname, port)
 			} else {
 				config.Clusters[serverName].Server = fmt.Sprintf("https://%s:%d", rootShard.Spec.External.Hostname, rootShard.Spec.External.Port)
 			}

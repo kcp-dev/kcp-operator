@@ -67,15 +67,20 @@ type ExternalConfig struct {
 	Hostname string `json:"hostname"`
 	Port     uint32 `json:"port"`
 
-	// Optional: InternalHostname is an optional hostname that should be used to
+	// Optional: PrivateHostname is an optional hostname that should be used to
 	// access internal front-proxy services, e.g. by other kcp components. This is helpful
 	// if you don't want to use the public hostname for internal communication, e.g.
-	// because it resolves to an external IP address that is not accessible from within
-	// the cluster. If not set, the value of `hostname` is used. This usually points to
-	// dedicated front-proxy services that are not exposed externally with certificates
-	// that are not trusted outside of the cluster.
+	// You have a DNS configuration, where DNS is re-encrypted for external access, but
+	// internal components can access the front-proxy directly. If not set, the value of `hostname` is used.
 	// +optional
-	InternalHostname string `json:"internalHostname,omitempty"`
+	PrivateHostname string `json:"privateHostname,omitempty"`
+
+	// Optional: PrivatePort is an optional port that should be used to
+	// access internal front-proxy services, e.g. by other kcp components. This is helpful
+	// if you don't want to use the public port for internal communication, e.g.
+	// because it is firewalled. If not set, the value of `port` is used.
+	// +optional
+	PrivatePort *uint32 `json:"privatePort,omitempty"`
 }
 
 // Certificates configures how certificates for kcp should be created.

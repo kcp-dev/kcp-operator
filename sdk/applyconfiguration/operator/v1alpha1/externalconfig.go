@@ -21,9 +21,10 @@ package v1alpha1
 // ExternalConfigApplyConfiguration represents a declarative configuration of the ExternalConfig type for use
 // with apply.
 type ExternalConfigApplyConfiguration struct {
-	Hostname         *string `json:"hostname,omitempty"`
-	Port             *uint32 `json:"port,omitempty"`
-	InternalHostname *string `json:"internalHostname,omitempty"`
+	Hostname        *string `json:"hostname,omitempty"`
+	Port            *uint32 `json:"port,omitempty"`
+	PrivateHostname *string `json:"privateHostname,omitempty"`
+	PrivatePort     *uint32 `json:"privatePort,omitempty"`
 }
 
 // ExternalConfigApplyConfiguration constructs a declarative configuration of the ExternalConfig type for use with
@@ -48,10 +49,18 @@ func (b *ExternalConfigApplyConfiguration) WithPort(value uint32) *ExternalConfi
 	return b
 }
 
-// WithInternalHostname sets the InternalHostname field in the declarative configuration to the given value
+// WithPrivateHostname sets the PrivateHostname field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the InternalHostname field is set to the value of the last call.
-func (b *ExternalConfigApplyConfiguration) WithInternalHostname(value string) *ExternalConfigApplyConfiguration {
-	b.InternalHostname = &value
+// If called multiple times, the PrivateHostname field is set to the value of the last call.
+func (b *ExternalConfigApplyConfiguration) WithPrivateHostname(value string) *ExternalConfigApplyConfiguration {
+	b.PrivateHostname = &value
+	return b
+}
+
+// WithPrivatePort sets the PrivatePort field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the PrivatePort field is set to the value of the last call.
+func (b *ExternalConfigApplyConfiguration) WithPrivatePort(value uint32) *ExternalConfigApplyConfiguration {
+	b.PrivatePort = &value
 	return b
 }
