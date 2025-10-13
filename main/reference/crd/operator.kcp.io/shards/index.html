@@ -2016,6 +2016,11 @@ certificates for this shard.</p>
 
 </div>
 
+<div class="property-description">
+<p>ClusterDomain is the DNS domain for services in the cluster. Defaults to &ldquo;cluster.local&rdquo; if not set.</p>
+
+</div>
+
 </div>
 </div>
 
@@ -5654,6 +5659,25 @@ to be copied to the Kubernetes Service resource.</p>
 
 <div class="property-description">
 <p>Service Type string describes ingress methods for a service</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-1">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.shardBaseURL">.spec.shardBaseURL</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>ShardBaseURL is the base URL under which this shard should be reachable. This is used to configure
+the external URL. If not provided, the operator will use kubernetes service address to generate it.</p>
 
 </div>
 
