@@ -1524,10 +1524,6 @@ spec:
                   Optional: ExternalHostname under which the FrontProxy can be reached. If empty, the RootShard's external hostname will be used only.
                   Deprecated: use Spec.RootShard.Ref.Name to point to a FrontProxy that is used for external access instead.
                 type: string
-                x-kubernetes-validations:
-                - message: Cannot set both ExternalHostname (deprecated) and External.hostname.
-                    Use External.hostname only.
-                  rule: '!(has(self.externalHostname) && has(self.external.hostname))'
               image:
                 description: 'Optional: Image defines the image to use. Defaults to
                   the latest versioned image during the release of kcp-operator.'
@@ -1681,6 +1677,10 @@ spec:
             required:
             - rootShard
             type: object
+            x-kubernetes-validations:
+            - message: Cannot set both ExternalHostname (deprecated) and External.hostname.
+                Use External.hostname only.
+              rule: '!(has(self.externalHostname) && has(self.external.hostname))'
           status:
             description: FrontProxyStatus defines the observed state of FrontProxy
             properties:

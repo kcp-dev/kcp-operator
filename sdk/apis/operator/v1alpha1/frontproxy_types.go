@@ -22,6 +22,7 @@ import (
 )
 
 // FrontProxySpec defines the desired state of FrontProxy.
+// +kubebuilder:validation:XValidation:rule="!(has(self.externalHostname) && has(self.external.hostname))",message="Cannot set both ExternalHostname (deprecated) and External.hostname. Use External.hostname only."
 type FrontProxySpec struct {
 	// RootShard configures the kcp root shard that this front-proxy instance should connect to.
 	RootShard RootShardConfig `json:"rootShard"`
@@ -37,7 +38,6 @@ type FrontProxySpec struct {
 	AdditionalPathMappings []PathMappingEntry `json:"additionalPathMappings,omitempty"`
 	// Optional: Image defines the image to use. Defaults to the latest versioned image during the release of kcp-operator.
 	Image *ImageSpec `json:"image,omitempty"`
-	// +kubebuilder:validation:XValidation:rule="!(has(self.externalHostname) && has(self.external.hostname))",message="Cannot set both ExternalHostname (deprecated) and External.hostname. Use External.hostname only."
 	// Optional: ExternalHostname under which the FrontProxy can be reached. If empty, the RootShard's external hostname will be used only.
 	// Deprecated: use Spec.RootShard.Ref.Name to point to a FrontProxy that is used for external access instead.
 	ExternalHostname string `json:"externalHostname,omitempty"`
