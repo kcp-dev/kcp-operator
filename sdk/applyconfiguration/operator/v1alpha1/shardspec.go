@@ -45,6 +45,14 @@ func (b *ShardSpecApplyConfiguration) WithClusterDomain(value string) *ShardSpec
 	return b
 }
 
+// WithShardBaseURL sets the ShardBaseURL field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the ShardBaseURL field is set to the value of the last call.
+func (b *ShardSpecApplyConfiguration) WithShardBaseURL(value string) *ShardSpecApplyConfiguration {
+	b.ShardBaseURL = &value
+	return b
+}
+
 // WithEtcd sets the Etcd field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Etcd field is set to the value of the last call.

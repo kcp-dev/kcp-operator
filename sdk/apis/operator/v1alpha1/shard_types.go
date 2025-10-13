@@ -29,7 +29,14 @@ type ShardSpec struct {
 }
 
 type CommonShardSpec struct {
+	// ClusterDomain is the DNS domain for services in the cluster. Defaults to "cluster.local" if not set.
+	// +optional
 	ClusterDomain string `json:"clusterDomain,omitempty"`
+
+	// ShardBaseURL is the base URL under which this shard should be reachable. This is used to configure
+	// the external URL. If not provided, the operator will use kubernetes service address to generate it.
+	// +optional
+	ShardBaseURL string `json:"shardBaseURL,omitempty"`
 
 	// Etcd configures the etcd cluster that this shard should be using.
 	Etcd EtcdConfig `json:"etcd"`

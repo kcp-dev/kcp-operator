@@ -28,6 +28,7 @@ import (
 // with apply.
 type CommonShardSpecApplyConfiguration struct {
 	ClusterDomain        *string                                  `json:"clusterDomain,omitempty"`
+	ShardBaseURL         *string                                  `json:"shardBaseURL,omitempty"`
 	Etcd                 *EtcdConfigApplyConfiguration            `json:"etcd,omitempty"`
 	Image                *ImageSpecApplyConfiguration             `json:"image,omitempty"`
 	Replicas             *int32                                   `json:"replicas,omitempty"`
@@ -51,6 +52,14 @@ func CommonShardSpec() *CommonShardSpecApplyConfiguration {
 // If called multiple times, the ClusterDomain field is set to the value of the last call.
 func (b *CommonShardSpecApplyConfiguration) WithClusterDomain(value string) *CommonShardSpecApplyConfiguration {
 	b.ClusterDomain = &value
+	return b
+}
+
+// WithShardBaseURL sets the ShardBaseURL field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the ShardBaseURL field is set to the value of the last call.
+func (b *CommonShardSpecApplyConfiguration) WithShardBaseURL(value string) *CommonShardSpecApplyConfiguration {
+	b.ShardBaseURL = &value
 	return b
 }
 
