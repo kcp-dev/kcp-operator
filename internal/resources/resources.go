@@ -117,6 +117,9 @@ func GetRootShardBaseHost(r *operatorv1alpha1.RootShard) string {
 }
 
 func GetRootShardBaseURL(r *operatorv1alpha1.RootShard) string {
+	if r.Spec.ShardBaseURL != "" {
+		return r.Spec.ShardBaseURL
+	}
 	return fmt.Sprintf("https://%s:6443", GetRootShardBaseHost(r))
 }
 
@@ -130,6 +133,9 @@ func GetShardBaseHost(s *operatorv1alpha1.Shard) string {
 }
 
 func GetShardBaseURL(s *operatorv1alpha1.Shard) string {
+	if s.Spec.ShardBaseURL != "" {
+		return s.Spec.ShardBaseURL
+	}
 	return fmt.Sprintf("https://%s:6443", GetShardBaseHost(s))
 }
 

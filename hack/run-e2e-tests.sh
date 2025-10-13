@@ -58,6 +58,12 @@ fi
 
 echo "Kubeconfig is in $KUBECONFIG."
 
+# apply kernel limits job first and wait for completion
+echo "Applying kernel limits job…"
+kubectl apply --filename hack/ci/kernel.yaml
+kubectl wait --for=condition=Complete job/kernel-limits --timeout=300s
+echo "Kernel limits job completed."
+
 # deploying operator CRDs
 echo "Deploying operator CRDs..."
 kubectl apply --kustomize config/crd
