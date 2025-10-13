@@ -37,8 +37,13 @@ type FrontProxySpec struct {
 	AdditionalPathMappings []PathMappingEntry `json:"additionalPathMappings,omitempty"`
 	// Optional: Image defines the image to use. Defaults to the latest versioned image during the release of kcp-operator.
 	Image *ImageSpec `json:"image,omitempty"`
+	// +kubebuilder:validation:XValidation:rule="!(has(self.externalHostname) && has(self.external.hostname))",message="Cannot set both ExternalHostname (deprecated) and External.hostname. Use External.hostname only."
 	// Optional: ExternalHostname under which the FrontProxy can be reached. If empty, the RootShard's external hostname will be used only.
+	// Deprecated: use Spec.RootShard.Ref.Name to point to a FrontProxy that is used for external access instead.
 	ExternalHostname string `json:"externalHostname,omitempty"`
+
+	// Optional: External configures how this front-proxy should be exposed to the outside world.  If empty, the RootShard's external hostname will be used only.
+	External ExternalConfig `json:"external,omitempty"`
 
 	// Optional: ServiceTemplate configures the Kubernetes Service created for this front-proxy instance.
 	ServiceTemplate *ServiceTemplate `json:"serviceTemplate,omitempty"`

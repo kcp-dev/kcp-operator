@@ -760,6 +760,7 @@ func (in *FrontProxySpec) DeepCopyInto(out *FrontProxySpec) {
 		*out = new(ImageSpec)
 		(*in).DeepCopyInto(*out)
 	}
+	in.External.DeepCopyInto(&out.External)
 	if in.ServiceTemplate != nil {
 		in, out := &in.ServiceTemplate, &out.ServiceTemplate
 		*out = new(ServiceTemplate)

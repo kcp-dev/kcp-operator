@@ -87,8 +87,12 @@ func (r *reconciler) serverCertificateReconciler() reconciling.NamedCertificateR
 			dnsNames = append(dnsNames, r.rootShard.Spec.External.PrivateHostname)
 		}
 
+		// DEPRECATED: keep support for the deprecated ExternalHostname field for now
+		// to not break existing front-proxy installations.
 		if r.frontProxy.Spec.ExternalHostname != "" {
 			dnsNames = append(dnsNames, r.frontProxy.Spec.ExternalHostname)
+		} else {
+			dnsNames = append(dnsNames, r.rootShard.Spec.External.Hostname)
 		}
 	}
 
