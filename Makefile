@@ -11,7 +11,7 @@ PROTOKOL_VERSION ?= 0.7.2
 HELM_VERSION ?= 3.18.6
 
 # Image URL to use all building/pushing image targets
-IMG ?= ghcr.io/mjudeikis/kcp-operator:v33
+IMG ?= ghcr.io/mjudeikis/kcp-operator:v34
 
 TOOLS_DIR = $(shell pwd)/_tools
 
