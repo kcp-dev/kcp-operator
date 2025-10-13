@@ -63,6 +63,12 @@ echo "Creating kind cluster $KIND_CLUSTER_NAME..."
 kind create cluster --name "$KIND_CLUSTER_NAME" --image kindest/node:v1.32.2
 chmod 600 "$KUBECONFIG"
 
+# apply kernel limits job first and wait for completion
+echo "Applying kernel limits job…"
+kubectl apply --filename hack/ci/kernel.yaml
+kubectl wait --for=condition=Complete job/kernel-limits --timeout=300s
+echo "Kernel limits job completed."
+
 # store logs as artifacts
 make protokol
 _tools/protokol --output "$ARTIFACTS/logs" --namespace 'kcp-*' --namespace 'e2e-*' >/dev/null 2>&1 &
@@ -108,6 +114,9 @@ export ETCD_HELM_CHART="$(realpath hack/ci/testdata/etcd)"
 WHAT="${WHAT:-./test/e2e/...}"
 TEST_ARGS="${TEST_ARGS:--timeout 2h -v}"
 E2E_PARALLELISM=${E2E_PARALLELISM:-2}
+
+# Increase file descriptor limit for CI environments
+ulimit -n 65536
 
 (set -x; go test -tags e2e -parallel $E2E_PARALLELISM $TEST_ARGS "$WHAT")
 
