@@ -1355,7 +1355,10 @@ certificate for this kubeconfig.</p>
 
 <div class="property-description">
 <p>Requested DNS subject alternative names. The values given here will be merged into the
-DNS names determined automatically by the kcp-operator.</p>
+DNS names determined automatically by the kcp-operator.
+If DNSNames is used together with IssuerRef, DNSNames will be uses as-is and not merged.
+If IssuerRef is not set, DNSNames will be merged with the defaults. This is to avoid
+trying to guess what DNSNames configued issuer might support.</p>
 
 </div>
 
@@ -1425,6 +1428,78 @@ DNS names determined automatically by the kcp-operator.</p>
 <div class="property-body">
 <div class="property-meta">
 <span class="property-type">string</span>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.certificateTemplate.spec.issuerRef">.spec.certificateTemplate.spec.issuerRef</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+<div class="property-description">
+<p>IssuerRef is a reference to the issuer for this certificate.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-4">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.certificateTemplate.spec.issuerRef.group">.spec.certificateTemplate.spec.issuerRef.group</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>Group of the object being referred to.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-4">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.certificateTemplate.spec.issuerRef.kind">.spec.certificateTemplate.spec.issuerRef.kind</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>Kind of the object being referred to.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-4">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.certificateTemplate.spec.issuerRef.name">.spec.certificateTemplate.spec.issuerRef.name</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>Name of the object being referred to.</p>
 
 </div>
 
