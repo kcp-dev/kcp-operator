@@ -336,6 +336,11 @@ func (in *CertificateSpecTemplate) DeepCopyInto(out *CertificateSpecTemplate) {
 		*out = new(X509Subject)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.IssuerRef != nil {
+		in, out := &in.IssuerRef, &out.IssuerRef
+		*out = new(ObjectReference)
+		**out = **in
+	}
 	if in.DNSNames != nil {
 		in, out := &in.DNSNames, &out.DNSNames
 		*out = make([]string, len(*in))

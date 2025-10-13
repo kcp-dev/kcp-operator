@@ -20,6 +20,7 @@ import (
 	"maps"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 
 	"k8s.io/apimachinery/pkg/util/sets"
 
@@ -65,7 +66,16 @@ func applyCertificateSpecTemplate(cert *certmanagerv1.Certificate, tpl *operator
 		return cert
 	}
 
-	cert.Spec.DNSNames = mergeSlices(cert.Spec.DNSNames, tpl.DNSNames)
+	// If DNSNames is provided in the template and issuer is overrided,
+	// it will replace any existing DNSNames.
+	// We don't merge as we don't know if issuer supports our default names.
+	// Its users responsibility to add them back if needed.
+	if len(tpl.DNSNames) > 0 && tpl.IssuerRef != nil {
+		cert.Spec.DNSNames = tpl.DNSNames
+	} else if len(tpl.DNSNames) > 0 {
+		cert.Spec.DNSNames = mergeSlices(cert.Spec.DNSNames, tpl.DNSNames)
+	}
+
 	cert.Spec.IPAddresses = mergeSlices(cert.Spec.IPAddresses, tpl.IPAddresses)
 
 	if tpl.Duration != nil {
@@ -83,6 +93,13 @@ func applyCertificateSpecTemplate(cert *certmanagerv1.Certificate, tpl *operator
 
 		cert.Spec.SecretTemplate.Annotations = addNewKeys(cert.Spec.SecretTemplate.Annotations, secretTpl.Annotations)
 		cert.Spec.SecretTemplate.Labels = addNewKeys(cert.Spec.SecretTemplate.Labels, secretTpl.Labels)
+	}
+	if tpl.IssuerRef != nil {
+		cert.Spec.IssuerRef = cmmeta.ObjectReference{
+			Name:  tpl.IssuerRef.Name,
+			Kind:  tpl.IssuerRef.Kind,
+			Group: tpl.IssuerRef.Group,
+		}
 	}
 
 	cert.Spec.PrivateKey = applyCertificatePrivateKeyTemplate(cert.Spec.PrivateKey, tpl.PrivateKey)
