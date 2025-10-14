@@ -1989,6 +1989,51 @@ authorization webhook configuration.</p>
 
 <div class="property depth-1">
 <div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.caBundleSecretRef">.spec.caBundleSecretRef</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+<div class="property-description">
+<p>CABundle references a v1.Secret object that contains the CA bundle
+that should be used to validate the API server&rsquo;s TLS certificate.
+The secret must contain a key named <code>tls.crt</code> that holds the PEM encoded CA certificate.
+It will be merged into the &ldquo;external-logical-cluster-admin-kubeconfig&rdquo; kubeconfig under the <code>certificate-authority-data</code> field.
+If not specified, the kubeconfig will use the CA bundle of the root shard or front-proxy referenced in the Target field.
+It will NOT be used to configure the API server&rsquo;s own TLS certificate or any other component.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.caBundleSecretRef.name">.spec.caBundleSecretRef.name</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+More info: <a href="https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names">https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</a></p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-1">
+<div class="property-header">
 <h3 class="property-path" id="v1alpha1-.spec.certificateTemplates">.spec.certificateTemplates</h3>
 </div>
 <div class="property-body">
