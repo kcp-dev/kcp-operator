@@ -41,7 +41,7 @@ func ShardSpec() *ShardSpecApplyConfiguration {
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the ClusterDomain field is set to the value of the last call.
 func (b *ShardSpecApplyConfiguration) WithClusterDomain(value string) *ShardSpecApplyConfiguration {
-	b.ClusterDomain = &value
+	b.CommonShardSpecApplyConfiguration.ClusterDomain = &value
 	return b
 }
 
@@ -49,7 +49,7 @@ func (b *ShardSpecApplyConfiguration) WithClusterDomain(value string) *ShardSpec
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the ShardBaseURL field is set to the value of the last call.
 func (b *ShardSpecApplyConfiguration) WithShardBaseURL(value string) *ShardSpecApplyConfiguration {
-	b.ShardBaseURL = &value
+	b.CommonShardSpecApplyConfiguration.ShardBaseURL = &value
 	return b
 }
 
@@ -57,7 +57,7 @@ func (b *ShardSpecApplyConfiguration) WithShardBaseURL(value string) *ShardSpecA
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Etcd field is set to the value of the last call.
 func (b *ShardSpecApplyConfiguration) WithEtcd(value *EtcdConfigApplyConfiguration) *ShardSpecApplyConfiguration {
-	b.Etcd = value
+	b.CommonShardSpecApplyConfiguration.Etcd = value
 	return b
 }
 
@@ -65,7 +65,7 @@ func (b *ShardSpecApplyConfiguration) WithEtcd(value *EtcdConfigApplyConfigurati
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Image field is set to the value of the last call.
 func (b *ShardSpecApplyConfiguration) WithImage(value *ImageSpecApplyConfiguration) *ShardSpecApplyConfiguration {
-	b.Image = value
+	b.CommonShardSpecApplyConfiguration.Image = value
 	return b
 }
 
@@ -73,7 +73,7 @@ func (b *ShardSpecApplyConfiguration) WithImage(value *ImageSpecApplyConfigurati
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Replicas field is set to the value of the last call.
 func (b *ShardSpecApplyConfiguration) WithReplicas(value int32) *ShardSpecApplyConfiguration {
-	b.Replicas = &value
+	b.CommonShardSpecApplyConfiguration.Replicas = &value
 	return b
 }
 
@@ -81,7 +81,7 @@ func (b *ShardSpecApplyConfiguration) WithReplicas(value int32) *ShardSpecApplyC
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Resources field is set to the value of the last call.
 func (b *ShardSpecApplyConfiguration) WithResources(value v1.ResourceRequirements) *ShardSpecApplyConfiguration {
-	b.Resources = &value
+	b.CommonShardSpecApplyConfiguration.Resources = &value
 	return b
 }
 
@@ -89,7 +89,7 @@ func (b *ShardSpecApplyConfiguration) WithResources(value v1.ResourceRequirement
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Audit field is set to the value of the last call.
 func (b *ShardSpecApplyConfiguration) WithAudit(value *AuditSpecApplyConfiguration) *ShardSpecApplyConfiguration {
-	b.Audit = value
+	b.CommonShardSpecApplyConfiguration.Audit = value
 	return b
 }
 
@@ -97,7 +97,7 @@ func (b *ShardSpecApplyConfiguration) WithAudit(value *AuditSpecApplyConfigurati
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Authorization field is set to the value of the last call.
 func (b *ShardSpecApplyConfiguration) WithAuthorization(value *AuthorizationSpecApplyConfiguration) *ShardSpecApplyConfiguration {
-	b.Authorization = value
+	b.CommonShardSpecApplyConfiguration.Authorization = value
 	return b
 }
 
@@ -105,7 +105,7 @@ func (b *ShardSpecApplyConfiguration) WithAuthorization(value *AuthorizationSpec
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Auth field is set to the value of the last call.
 func (b *ShardSpecApplyConfiguration) WithAuth(value *AuthSpecApplyConfiguration) *ShardSpecApplyConfiguration {
-	b.Auth = value
+	b.CommonShardSpecApplyConfiguration.Auth = value
 	return b
 }
 
@@ -113,7 +113,7 @@ func (b *ShardSpecApplyConfiguration) WithAuth(value *AuthSpecApplyConfiguration
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the CertificateTemplates field is set to the value of the last call.
 func (b *ShardSpecApplyConfiguration) WithCertificateTemplates(value operatorv1alpha1.CertificateTemplateMap) *ShardSpecApplyConfiguration {
-	b.CertificateTemplates = &value
+	b.CommonShardSpecApplyConfiguration.CertificateTemplates = &value
 	return b
 }
 
@@ -121,7 +121,7 @@ func (b *ShardSpecApplyConfiguration) WithCertificateTemplates(value operatorv1a
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the ServiceTemplate field is set to the value of the last call.
 func (b *ShardSpecApplyConfiguration) WithServiceTemplate(value *ServiceTemplateApplyConfiguration) *ShardSpecApplyConfiguration {
-	b.ServiceTemplate = value
+	b.CommonShardSpecApplyConfiguration.ServiceTemplate = value
 	return b
 }
 
@@ -129,7 +129,15 @@ func (b *ShardSpecApplyConfiguration) WithServiceTemplate(value *ServiceTemplate
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the DeploymentTemplate field is set to the value of the last call.
 func (b *ShardSpecApplyConfiguration) WithDeploymentTemplate(value *DeploymentTemplateApplyConfiguration) *ShardSpecApplyConfiguration {
-	b.DeploymentTemplate = value
+	b.CommonShardSpecApplyConfiguration.DeploymentTemplate = value
+	return b
+}
+
+// WithCABundleSecretRef sets the CABundleSecretRef field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the CABundleSecretRef field is set to the value of the last call.
+func (b *ShardSpecApplyConfiguration) WithCABundleSecretRef(value v1.LocalObjectReference) *ShardSpecApplyConfiguration {
+	b.CommonShardSpecApplyConfiguration.CABundleSecretRef = &value
 	return b
 }
 

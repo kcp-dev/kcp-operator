@@ -19,130 +19,35 @@ limitations under the License.
 package fake
 
 import (
-	"context"
-
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	labels "k8s.io/apimachinery/pkg/labels"
-	types "k8s.io/apimachinery/pkg/types"
-	watch "k8s.io/apimachinery/pkg/watch"
-	testing "k8s.io/client-go/testing"
+	gentype "k8s.io/client-go/gentype"
 
 	v1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
+	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/clientset/versioned/typed/operator/v1alpha1"
 )
 
-// FakeCacheServers implements CacheServerInterface
-type FakeCacheServers struct {
+// fakeCacheServers implements CacheServerInterface
+type fakeCacheServers struct {
+	*gentype.FakeClientWithList[*v1alpha1.CacheServer, *v1alpha1.CacheServerList]
 	Fake *FakeOperatorV1alpha1
-	ns   string
 }
 
-var cacheserversResource = v1alpha1.SchemeGroupVersion.WithResource("cacheservers")
-
-var cacheserversKind = v1alpha1.SchemeGroupVersion.WithKind("CacheServer")
-
-// Get takes name of the cacheServer, and returns the corresponding cacheServer object, and an error if there is any.
-func (c *FakeCacheServers) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.CacheServer, err error) {
-	emptyResult := &v1alpha1.CacheServer{}
-	obj, err := c.Fake.
-		Invokes(testing.NewGetActionWithOptions(cacheserversResource, c.ns, name, options), emptyResult)
-
-	if obj == nil {
-		return emptyResult, err
+func newFakeCacheServers(fake *FakeOperatorV1alpha1, namespace string) operatorv1alpha1.CacheServerInterface {
+	return &fakeCacheServers{
+		gentype.NewFakeClientWithList[*v1alpha1.CacheServer, *v1alpha1.CacheServerList](
+			fake.Fake,
+			namespace,
+			v1alpha1.SchemeGroupVersion.WithResource("cacheservers"),
+			v1alpha1.SchemeGroupVersion.WithKind("CacheServer"),
+			func() *v1alpha1.CacheServer { return &v1alpha1.CacheServer{} },
+			func() *v1alpha1.CacheServerList { return &v1alpha1.CacheServerList{} },
+			func(dst, src *v1alpha1.CacheServerList) { dst.ListMeta = src.ListMeta },
+			func(list *v1alpha1.CacheServerList) []*v1alpha1.CacheServer {
+				return gentype.ToPointerSlice(list.Items)
+			},
+			func(list *v1alpha1.CacheServerList, items []*v1alpha1.CacheServer) {
+				list.Items = gentype.FromPointerSlice(items)
+			},
+		),
+		fake,
 	}
-	return obj.(*v1alpha1.CacheServer), err
-}
-
-// List takes label and field selectors, and returns the list of CacheServers that match those selectors.
-func (c *FakeCacheServers) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.CacheServerList, err error) {
-	emptyResult := &v1alpha1.CacheServerList{}
-	obj, err := c.Fake.
-		Invokes(testing.NewListActionWithOptions(cacheserversResource, cacheserversKind, c.ns, opts), emptyResult)
-
-	if obj == nil {
-		return emptyResult, err
-	}
-
-	label, _, _ := testing.ExtractFromListOptions(opts)
-	if label == nil {
-		label = labels.Everything()
-	}
-	list := &v1alpha1.CacheServerList{ListMeta: obj.(*v1alpha1.CacheServerList).ListMeta}
-	for _, item := range obj.(*v1alpha1.CacheServerList).Items {
-		if label.Matches(labels.Set(item.Labels)) {
-			list.Items = append(list.Items, item)
-		}
-	}
-	return list, err
-}
-
-// Watch returns a watch.Interface that watches the requested cacheServers.
-func (c *FakeCacheServers) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
-	return c.Fake.
-		InvokesWatch(testing.NewWatchActionWithOptions(cacheserversResource, c.ns, opts))
-
-}
-
-// Create takes the representation of a cacheServer and creates it.  Returns the server's representation of the cacheServer, and an error, if there is any.
-func (c *FakeCacheServers) Create(ctx context.Context, cacheServer *v1alpha1.CacheServer, opts v1.CreateOptions) (result *v1alpha1.CacheServer, err error) {
-	emptyResult := &v1alpha1.CacheServer{}
-	obj, err := c.Fake.
-		Invokes(testing.NewCreateActionWithOptions(cacheserversResource, c.ns, cacheServer, opts), emptyResult)
-
-	if obj == nil {
-		return emptyResult, err
-	}
-	return obj.(*v1alpha1.CacheServer), err
-}
-
-// Update takes the representation of a cacheServer and updates it. Returns the server's representation of the cacheServer, and an error, if there is any.
-func (c *FakeCacheServers) Update(ctx context.Context, cacheServer *v1alpha1.CacheServer, opts v1.UpdateOptions) (result *v1alpha1.CacheServer, err error) {
-	emptyResult := &v1alpha1.CacheServer{}
-	obj, err := c.Fake.
-		Invokes(testing.NewUpdateActionWithOptions(cacheserversResource, c.ns, cacheServer, opts), emptyResult)
-
-	if obj == nil {
-		return emptyResult, err
-	}
-	return obj.(*v1alpha1.CacheServer), err
-}
-
-// UpdateStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeCacheServers) UpdateStatus(ctx context.Context, cacheServer *v1alpha1.CacheServer, opts v1.UpdateOptions) (result *v1alpha1.CacheServer, err error) {
-	emptyResult := &v1alpha1.CacheServer{}
-	obj, err := c.Fake.
-		Invokes(testing.NewUpdateSubresourceActionWithOptions(cacheserversResource, "status", c.ns, cacheServer, opts), emptyResult)
-
-	if obj == nil {
-		return emptyResult, err
-	}
-	return obj.(*v1alpha1.CacheServer), err
-}
-
-// Delete takes name of the cacheServer and deletes it. Returns an error if one occurs.
-func (c *FakeCacheServers) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
-	_, err := c.Fake.
-		Invokes(testing.NewDeleteActionWithOptions(cacheserversResource, c.ns, name, opts), &v1alpha1.CacheServer{})
-
-	return err
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *FakeCacheServers) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	action := testing.NewDeleteCollectionActionWithOptions(cacheserversResource, c.ns, opts, listOpts)
-
-	_, err := c.Fake.Invokes(action, &v1alpha1.CacheServerList{})
-	return err
-}
-
-// Patch applies the patch and returns the patched cacheServer.
-func (c *FakeCacheServers) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.CacheServer, err error) {
-	emptyResult := &v1alpha1.CacheServer{}
-	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceActionWithOptions(cacheserversResource, c.ns, name, pt, data, opts, subresources...), emptyResult)
-
-	if obj == nil {
-		return emptyResult, err
-	}
-	return obj.(*v1alpha1.CacheServer), err
 }

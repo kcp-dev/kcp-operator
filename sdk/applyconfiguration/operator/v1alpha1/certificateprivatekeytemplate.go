@@ -19,16 +19,16 @@ limitations under the License.
 package v1alpha1
 
 import (
-	v1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
+	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
 // CertificatePrivateKeyTemplateApplyConfiguration represents a declarative configuration of the CertificatePrivateKeyTemplate type for use
 // with apply.
 type CertificatePrivateKeyTemplateApplyConfiguration struct {
-	RotationPolicy *v1alpha1.PrivateKeyRotationPolicy `json:"rotationPolicy,omitempty"`
-	Encoding       *v1alpha1.PrivateKeyEncoding       `json:"encoding,omitempty"`
-	Algorithm      *v1alpha1.PrivateKeyAlgorithm      `json:"algorithm,omitempty"`
-	Size           *int                               `json:"size,omitempty"`
+	RotationPolicy *operatorv1alpha1.PrivateKeyRotationPolicy `json:"rotationPolicy,omitempty"`
+	Encoding       *operatorv1alpha1.PrivateKeyEncoding       `json:"encoding,omitempty"`
+	Algorithm      *operatorv1alpha1.PrivateKeyAlgorithm      `json:"algorithm,omitempty"`
+	Size           *int                                       `json:"size,omitempty"`
 }
 
 // CertificatePrivateKeyTemplateApplyConfiguration constructs a declarative configuration of the CertificatePrivateKeyTemplate type for use with
@@ -40,7 +40,7 @@ func CertificatePrivateKeyTemplate() *CertificatePrivateKeyTemplateApplyConfigur
 // WithRotationPolicy sets the RotationPolicy field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the RotationPolicy field is set to the value of the last call.
-func (b *CertificatePrivateKeyTemplateApplyConfiguration) WithRotationPolicy(value v1alpha1.PrivateKeyRotationPolicy) *CertificatePrivateKeyTemplateApplyConfiguration {
+func (b *CertificatePrivateKeyTemplateApplyConfiguration) WithRotationPolicy(value operatorv1alpha1.PrivateKeyRotationPolicy) *CertificatePrivateKeyTemplateApplyConfiguration {
 	b.RotationPolicy = &value
 	return b
 }
@@ -48,7 +48,7 @@ func (b *CertificatePrivateKeyTemplateApplyConfiguration) WithRotationPolicy(val
 // WithEncoding sets the Encoding field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Encoding field is set to the value of the last call.
-func (b *CertificatePrivateKeyTemplateApplyConfiguration) WithEncoding(value v1alpha1.PrivateKeyEncoding) *CertificatePrivateKeyTemplateApplyConfiguration {
+func (b *CertificatePrivateKeyTemplateApplyConfiguration) WithEncoding(value operatorv1alpha1.PrivateKeyEncoding) *CertificatePrivateKeyTemplateApplyConfiguration {
 	b.Encoding = &value
 	return b
 }
@@ -56,7 +56,7 @@ func (b *CertificatePrivateKeyTemplateApplyConfiguration) WithEncoding(value v1a
 // WithAlgorithm sets the Algorithm field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Algorithm field is set to the value of the last call.
-func (b *CertificatePrivateKeyTemplateApplyConfiguration) WithAlgorithm(value v1alpha1.PrivateKeyAlgorithm) *CertificatePrivateKeyTemplateApplyConfiguration {
+func (b *CertificatePrivateKeyTemplateApplyConfiguration) WithAlgorithm(value operatorv1alpha1.PrivateKeyAlgorithm) *CertificatePrivateKeyTemplateApplyConfiguration {
 	b.Algorithm = &value
 	return b
 }

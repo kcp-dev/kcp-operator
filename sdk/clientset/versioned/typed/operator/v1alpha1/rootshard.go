@@ -19,14 +19,14 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"context"
+	context "context"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	gentype "k8s.io/client-go/gentype"
 
-	v1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
+	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 	scheme "github.com/kcp-dev/kcp-operator/sdk/clientset/versioned/scheme"
 )
 
@@ -38,33 +38,34 @@ type RootShardsGetter interface {
 
 // RootShardInterface has methods to work with RootShard resources.
 type RootShardInterface interface {
-	Create(ctx context.Context, rootShard *v1alpha1.RootShard, opts v1.CreateOptions) (*v1alpha1.RootShard, error)
-	Update(ctx context.Context, rootShard *v1alpha1.RootShard, opts v1.UpdateOptions) (*v1alpha1.RootShard, error)
+	Create(ctx context.Context, rootShard *operatorv1alpha1.RootShard, opts v1.CreateOptions) (*operatorv1alpha1.RootShard, error)
+	Update(ctx context.Context, rootShard *operatorv1alpha1.RootShard, opts v1.UpdateOptions) (*operatorv1alpha1.RootShard, error)
 	// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-	UpdateStatus(ctx context.Context, rootShard *v1alpha1.RootShard, opts v1.UpdateOptions) (*v1alpha1.RootShard, error)
+	UpdateStatus(ctx context.Context, rootShard *operatorv1alpha1.RootShard, opts v1.UpdateOptions) (*operatorv1alpha1.RootShard, error)
 	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
-	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha1.RootShard, error)
-	List(ctx context.Context, opts v1.ListOptions) (*v1alpha1.RootShardList, error)
+	Get(ctx context.Context, name string, opts v1.GetOptions) (*operatorv1alpha1.RootShard, error)
+	List(ctx context.Context, opts v1.ListOptions) (*operatorv1alpha1.RootShardList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
-	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.RootShard, err error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *operatorv1alpha1.RootShard, err error)
 	RootShardExpansion
 }
 
 // rootShards implements RootShardInterface
 type rootShards struct {
-	*gentype.ClientWithList[*v1alpha1.RootShard, *v1alpha1.RootShardList]
+	*gentype.ClientWithList[*operatorv1alpha1.RootShard, *operatorv1alpha1.RootShardList]
 }
 
 // newRootShards returns a RootShards
 func newRootShards(c *OperatorV1alpha1Client, namespace string) *rootShards {
 	return &rootShards{
-		gentype.NewClientWithList[*v1alpha1.RootShard, *v1alpha1.RootShardList](
+		gentype.NewClientWithList[*operatorv1alpha1.RootShard, *operatorv1alpha1.RootShardList](
 			"rootshards",
 			c.RESTClient(),
 			scheme.ParameterCodec,
 			namespace,
-			func() *v1alpha1.RootShard { return &v1alpha1.RootShard{} },
-			func() *v1alpha1.RootShardList { return &v1alpha1.RootShardList{} }),
+			func() *operatorv1alpha1.RootShard { return &operatorv1alpha1.RootShard{} },
+			func() *operatorv1alpha1.RootShardList { return &operatorv1alpha1.RootShardList{} },
+		),
 	}
 }
