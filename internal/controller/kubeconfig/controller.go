@@ -83,6 +83,7 @@ func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	rootShard := &operatorv1alpha1.RootShard{}
 	shard := &operatorv1alpha1.Shard{}
+	var frontProxy operatorv1alpha1.FrontProxy
 	var caBundle *corev1.Secret
 
 	var (
@@ -117,7 +118,6 @@ func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		serverCA = resources.GetRootShardCAName(rootShard, operatorv1alpha1.ServerCA)
 
 	case kc.Spec.Target.FrontProxyRef != nil:
-		var frontProxy operatorv1alpha1.FrontProxy
 		if err := r.Get(ctx, types.NamespacedName{Name: kc.Spec.Target.FrontProxyRef.Name, Namespace: req.Namespace}, &frontProxy); err != nil {
 			return ctrl.Result{}, fmt.Errorf("referenced FrontProxy '%s' does not exist", kc.Spec.Target.FrontProxyRef.Name)
 		}
@@ -166,7 +166,7 @@ func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{RequeueAfter: time.Second * 5}, nil
 	}
 
-	reconciler, err := kubeconfig.KubeconfigSecretReconciler(&kc, rootShard, shard, serverCASecret, clientCertSecret, caBundle)
+	reconciler, err := kubeconfig.KubeconfigSecretReconciler(&kc, rootShard, shard, frontProxy, serverCASecret, clientCertSecret, caBundle)
 	if err != nil {
 		return ctrl.Result{}, err
 	}

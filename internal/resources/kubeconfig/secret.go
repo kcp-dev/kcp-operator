@@ -41,6 +41,7 @@ func KubeconfigSecretReconciler(
 	kubeconfig *operatorv1alpha1.Kubeconfig,
 	rootShard *operatorv1alpha1.RootShard,
 	shard *operatorv1alpha1.Shard,
+	frontProxy operatorv1alpha1.FrontProxy,
 	caSecret *corev1.Secret,
 	certSecret *corev1.Secret,
 	caBundle *corev1.Secret, // can be nil
@@ -120,7 +121,15 @@ func KubeconfigSecretReconciler(
 			panic("RootShard must be provided when kubeconfig targets a FrontProxy.")
 		}
 
-		serverURL := fmt.Sprintf("https://%s:6443", rootShard.Spec.External.Hostname)
+		var serverURL string
+		// New flow:
+		if frontProxy.Spec.External.Hostname != "" {
+			serverURL = fmt.Sprintf("https://%s:%d", frontProxy.Spec.External.Hostname, frontProxy.Spec.External.Port)
+		} else {
+			// Old flow:
+			serverURL = fmt.Sprintf("https://%s:%d", rootShard.Spec.External.Hostname, rootShard.Spec.External.Port)
+		}
+
 		defaultURL, err := url.JoinPath(serverURL, "clusters", "root")
 		if err != nil {
 			return nil, err

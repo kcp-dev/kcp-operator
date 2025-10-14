@@ -66,6 +66,21 @@ type ExternalConfig struct {
 	// record pointing to the kcp-front-proxy Service's external IP address.
 	Hostname string `json:"hostname"`
 	Port     uint32 `json:"port"`
+
+	// Optional: PrivateHostname is an optional hostname that should be used to
+	// access internal front-proxy services, e.g. by other kcp components. This is helpful
+	// if you don't want to use the public hostname for internal communication, e.g.
+	// You have a DNS configuration, where DNS is re-encrypted for external access, but
+	// internal components can access the front-proxy directly. If not set, the value of `hostname` is used.
+	// +optional
+	PrivateHostname string `json:"privateHostname,omitempty"`
+
+	// Optional: PrivatePort is an optional port that should be used to
+	// access internal front-proxy services, e.g. by other kcp components. This is helpful
+	// if you don't want to use the public port for internal communication, e.g.
+	// because it is firewalled. If not set, the value of `port` is used.
+	// +optional
+	PrivatePort *uint32 `json:"privatePort,omitempty"`
 }
 
 // Certificates configures how certificates for kcp should be created.

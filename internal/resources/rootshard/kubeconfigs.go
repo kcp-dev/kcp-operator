@@ -101,7 +101,7 @@ func ExternalLogicalClusterAdminKubeconfigReconciler(rootShard *operatorv1alpha1
 				Clusters: map[string]*clientcmdapi.Cluster{
 					serverName: {
 						// This has to point to a front-proxy, not the root shard itself.
-						Server: fmt.Sprintf("https://%s:%d", rootShard.Spec.External.Hostname, rootShard.Spec.External.Port),
+						// Server is populated from the external hostname and port below.
 						// CertificateAuthority will be populated below, depending on whether CABundle is specified or not.
 					},
 				},
@@ -118,6 +118,16 @@ func ExternalLogicalClusterAdminKubeconfigReconciler(rootShard *operatorv1alpha1
 					},
 				},
 				CurrentContext: contextName,
+			}
+
+			if rootShard.Spec.External.PrivateHostname != "" {
+				port := rootShard.Spec.External.Port
+				if rootShard.Spec.External.PrivatePort != nil {
+					port = *rootShard.Spec.External.PrivatePort
+				}
+				config.Clusters[serverName].Server = fmt.Sprintf("https://%s:%d", rootShard.Spec.External.PrivateHostname, port)
+			} else {
+				config.Clusters[serverName].Server = fmt.Sprintf("https://%s:%d", rootShard.Spec.External.Hostname, rootShard.Spec.External.Port)
 			}
 
 			if rootShard.Spec.CABundleSecretRef == nil {
