@@ -92,7 +92,7 @@ func (r *reconciler) serverCertificateReconciler() reconciling.NamedCertificateR
 		if r.frontProxy.Spec.ExternalHostname != "" {
 			dnsNames = append(dnsNames, r.frontProxy.Spec.ExternalHostname)
 		} else {
-			dnsNames = append(dnsNames, r.rootShard.Spec.External.Hostname)
+			dnsNames = append(dnsNames, r.frontProxy.Spec.External.Hostname)
 		}
 	}
 
