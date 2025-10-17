@@ -1595,6 +1595,12 @@ spec:
                 required:
                 - endpoints
                 type: object
+              extraArgs:
+                description: 'Optional: ExtraArgs defines additional command line
+                  arguments to pass to the shard container.'
+                items:
+                  type: string
+                type: array
               image:
                 description: ImageSpec defines settings for using a specific image
                   and overwriting the default images used.

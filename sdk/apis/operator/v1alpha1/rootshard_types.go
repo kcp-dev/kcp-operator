@@ -59,6 +59,9 @@ type RootShardProxySpec struct {
 	// CertificateTemplates allows to customize the properties on the generated
 	// certificates for this front-proxy.
 	CertificateTemplates CertificateTemplateMap `json:"certificateTemplates,omitempty"`
+
+	// Optional: ExtraArgs defines additional command line arguments to pass to the front-proxy container.
+	ExtraArgs []string `json:"extraArgs,omitempty"`
 }
 
 type ExternalConfig struct {

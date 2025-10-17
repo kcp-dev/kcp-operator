@@ -38,6 +38,7 @@ type FrontProxySpecApplyConfiguration struct {
 	DeploymentTemplate     *DeploymentTemplateApplyConfiguration    `json:"deploymentTemplate,omitempty"`
 	CertificateTemplates   *operatorv1alpha1.CertificateTemplateMap `json:"certificateTemplates,omitempty"`
 	CABundleSecretRef      *v1.LocalObjectReference                 `json:"caBundleSecretRef,omitempty"`
+	ExtraArgs              []string                                 `json:"extraArgs,omitempty"`
 }
 
 // FrontProxySpecApplyConfiguration constructs a declarative configuration of the FrontProxySpec type for use with
@@ -136,5 +137,15 @@ func (b *FrontProxySpecApplyConfiguration) WithCertificateTemplates(value operat
 // If called multiple times, the CABundleSecretRef field is set to the value of the last call.
 func (b *FrontProxySpecApplyConfiguration) WithCABundleSecretRef(value v1.LocalObjectReference) *FrontProxySpecApplyConfiguration {
 	b.CABundleSecretRef = &value
+	return b
+}
+
+// WithExtraArgs adds the given value to the ExtraArgs field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the ExtraArgs field.
+func (b *FrontProxySpecApplyConfiguration) WithExtraArgs(values ...string) *FrontProxySpecApplyConfiguration {
+	for i := range values {
+		b.ExtraArgs = append(b.ExtraArgs, values[i])
+	}
 	return b
 }

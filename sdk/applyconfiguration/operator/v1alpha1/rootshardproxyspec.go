@@ -33,6 +33,7 @@ type RootShardProxySpecApplyConfiguration struct {
 	ServiceTemplate      *ServiceTemplateApplyConfiguration       `json:"serviceTemplate,omitempty"`
 	DeploymentTemplate   *DeploymentTemplateApplyConfiguration    `json:"deploymentTemplate,omitempty"`
 	CertificateTemplates *operatorv1alpha1.CertificateTemplateMap `json:"certificateTemplates,omitempty"`
+	ExtraArgs            []string                                 `json:"extraArgs,omitempty"`
 }
 
 // RootShardProxySpecApplyConfiguration constructs a declarative configuration of the RootShardProxySpec type for use with
@@ -86,5 +87,15 @@ func (b *RootShardProxySpecApplyConfiguration) WithDeploymentTemplate(value *Dep
 // If called multiple times, the CertificateTemplates field is set to the value of the last call.
 func (b *RootShardProxySpecApplyConfiguration) WithCertificateTemplates(value operatorv1alpha1.CertificateTemplateMap) *RootShardProxySpecApplyConfiguration {
 	b.CertificateTemplates = &value
+	return b
+}
+
+// WithExtraArgs adds the given value to the ExtraArgs field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the ExtraArgs field.
+func (b *RootShardProxySpecApplyConfiguration) WithExtraArgs(values ...string) *RootShardProxySpecApplyConfiguration {
+	for i := range values {
+		b.ExtraArgs = append(b.ExtraArgs, values[i])
+	}
 	return b
 }
