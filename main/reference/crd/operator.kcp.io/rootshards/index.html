@@ -5511,6 +5511,49 @@ record pointing to the kcp-front-proxy Service&rsquo;s external IP address.</p>
 </div>
 </div>
 
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.external.privateHostname">.spec.external.privateHostname</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>Optional: PrivateHostname is an optional hostname that should be used to
+access internal front-proxy services, e.g. by other kcp components. This is helpful
+if you don&rsquo;t want to use the public hostname for internal communication, e.g.
+You have a DNS configuration, where DNS is re-encrypted for external access, but
+internal components can access the front-proxy directly. If not set, the value of <code>hostname</code> is used.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.external.privatePort">.spec.external.privatePort</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">integer</span>
+
+</div>
+
+<div class="property-description">
+<p>Optional: PrivatePort is an optional port that should be used to
+access internal front-proxy services, e.g. by other kcp components. This is helpful
+if you don&rsquo;t want to use the public port for internal communication, e.g.
+because it is firewalled. If not set, the value of <code>port</code> is used.</p>
+
+</div>
+
+</div>
+</div>
+
 <div class="property depth-1">
 <div class="property-header">
 <h3 class="property-path" id="v1alpha1-.spec.image">.spec.image</h3>
