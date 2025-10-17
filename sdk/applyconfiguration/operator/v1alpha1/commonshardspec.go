@@ -40,6 +40,7 @@ type CommonShardSpecApplyConfiguration struct {
 	ServiceTemplate      *ServiceTemplateApplyConfiguration       `json:"serviceTemplate,omitempty"`
 	DeploymentTemplate   *DeploymentTemplateApplyConfiguration    `json:"deploymentTemplate,omitempty"`
 	CABundleSecretRef    *v1.LocalObjectReference                 `json:"caBundleSecretRef,omitempty"`
+	ExtraArgs            []string                                 `json:"extraArgs,omitempty"`
 }
 
 // CommonShardSpecApplyConfiguration constructs a declarative configuration of the CommonShardSpec type for use with
@@ -149,5 +150,15 @@ func (b *CommonShardSpecApplyConfiguration) WithDeploymentTemplate(value *Deploy
 // If called multiple times, the CABundleSecretRef field is set to the value of the last call.
 func (b *CommonShardSpecApplyConfiguration) WithCABundleSecretRef(value v1.LocalObjectReference) *CommonShardSpecApplyConfiguration {
 	b.CABundleSecretRef = &value
+	return b
+}
+
+// WithExtraArgs adds the given value to the ExtraArgs field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the ExtraArgs field.
+func (b *CommonShardSpecApplyConfiguration) WithExtraArgs(values ...string) *CommonShardSpecApplyConfiguration {
+	for i := range values {
+		b.ExtraArgs = append(b.ExtraArgs, values[i])
+	}
 	return b
 }

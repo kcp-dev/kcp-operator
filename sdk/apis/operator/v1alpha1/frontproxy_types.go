@@ -63,6 +63,9 @@ type FrontProxySpec struct {
 	// It will NOT be used to configure the API server's own TLS certificate or any other component.
 	// +optional
 	CABundleSecretRef *corev1.LocalObjectReference `json:"caBundleSecretRef,omitempty"`
+
+	// Optional: ExtraArgs defines additional command line arguments to pass to the front-proxy container.
+	ExtraArgs []string `json:"extraArgs,omitempty"`
 }
 
 type AuthSpec struct {

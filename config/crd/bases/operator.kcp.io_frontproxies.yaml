@@ -1524,6 +1524,12 @@ spec:
                   Optional: ExternalHostname under which the FrontProxy can be reached. If empty, the RootShard's external hostname will be used only.
                   Deprecated: use spec.External for configuration of external access instead.
                 type: string
+              extraArgs:
+                description: 'Optional: ExtraArgs defines additional command line
+                  arguments to pass to the front-proxy container.'
+                items:
+                  type: string
+                type: array
               image:
                 description: 'Optional: Image defines the image to use. Defaults to
                   the latest versioned image during the release of kcp-operator.'
