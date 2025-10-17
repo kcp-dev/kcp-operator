@@ -22,6 +22,7 @@ import (
 )
 
 // FrontProxySpec defines the desired state of FrontProxy.
+// +kubebuilder:validation:XValidation:rule="!(has(self.externalHostname) && has(self.external.hostname))",message="Cannot set both ExternalHostname (deprecated) and External.hostname. Use External.hostname only."
 type FrontProxySpec struct {
 	// RootShard configures the kcp root shard that this front-proxy instance should connect to.
 	RootShard RootShardConfig `json:"rootShard"`
@@ -38,7 +39,11 @@ type FrontProxySpec struct {
 	// Optional: Image defines the image to use. Defaults to the latest versioned image during the release of kcp-operator.
 	Image *ImageSpec `json:"image,omitempty"`
 	// Optional: ExternalHostname under which the FrontProxy can be reached. If empty, the RootShard's external hostname will be used only.
+	// Deprecated: use spec.External for configuration of external access instead.
 	ExternalHostname string `json:"externalHostname,omitempty"`
+
+	// Optional: External configures how this front-proxy should be exposed to the outside world.  If empty, the RootShard's external hostname will be used only.
+	External ExternalConfig `json:"external,omitempty"`
 
 	// Optional: ServiceTemplate configures the Kubernetes Service created for this front-proxy instance.
 	ServiceTemplate *ServiceTemplate `json:"serviceTemplate,omitempty"`

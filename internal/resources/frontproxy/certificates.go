@@ -83,9 +83,16 @@ func (r *reconciler) serverCertificateReconciler() reconciling.NamedCertificateR
 	if r.frontProxy != nil {
 		// only add the external hostname if this is not reconciling the rootshard-internal-only proxy
 		dnsNames = append(dnsNames, r.rootShard.Spec.External.Hostname)
+		if r.rootShard.Spec.External.PrivateHostname != "" {
+			dnsNames = append(dnsNames, r.rootShard.Spec.External.PrivateHostname)
+		}
 
+		// DEPRECATED: keep support for the deprecated ExternalHostname field for now
+		// to not break existing front-proxy installations.
 		if r.frontProxy.Spec.ExternalHostname != "" {
 			dnsNames = append(dnsNames, r.frontProxy.Spec.ExternalHostname)
+		} else {
+			dnsNames = append(dnsNames, r.frontProxy.Spec.External.Hostname)
 		}
 	}
 

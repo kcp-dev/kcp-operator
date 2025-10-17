@@ -34,6 +34,7 @@ type FrontProxySpecApplyConfiguration struct {
 	AdditionalPathMappings []PathMappingEntryApplyConfiguration     `json:"additionalPathMappings,omitempty"`
 	Image                  *ImageSpecApplyConfiguration             `json:"image,omitempty"`
 	ExternalHostname       *string                                  `json:"externalHostname,omitempty"`
+	External               *ExternalConfigApplyConfiguration        `json:"external,omitempty"`
 	ServiceTemplate        *ServiceTemplateApplyConfiguration       `json:"serviceTemplate,omitempty"`
 	DeploymentTemplate     *DeploymentTemplateApplyConfiguration    `json:"deploymentTemplate,omitempty"`
 	CertificateTemplates   *operatorv1alpha1.CertificateTemplateMap `json:"certificateTemplates,omitempty"`
@@ -104,6 +105,14 @@ func (b *FrontProxySpecApplyConfiguration) WithImage(value *ImageSpecApplyConfig
 // If called multiple times, the ExternalHostname field is set to the value of the last call.
 func (b *FrontProxySpecApplyConfiguration) WithExternalHostname(value string) *FrontProxySpecApplyConfiguration {
 	b.ExternalHostname = &value
+	return b
+}
+
+// WithExternal sets the External field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the External field is set to the value of the last call.
+func (b *FrontProxySpecApplyConfiguration) WithExternal(value *ExternalConfigApplyConfiguration) *FrontProxySpecApplyConfiguration {
+	b.External = value
 	return b
 }
 

@@ -92,6 +92,7 @@ _build/manager \
   -zap-log-level debug \
   -zap-encoder console \
   -zap-time-encoding iso8601 \
+  -health-probe-bind-address="" \
   >"$DATA_DIR/kcp-operator.log" 2>&1 &
 OPERATOR_PID=$!
 echo "Running as process $OPERATOR_PID."
