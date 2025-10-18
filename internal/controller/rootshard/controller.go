@@ -132,6 +132,16 @@ func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operator
 		return conditions, nil
 	}
 
+	if err := util.ValidateEtcdTLSConfig(ctx, r.Client, rootShard.Spec.Etcd, rootShard.Namespace); err != nil {
+		conditions = append(conditions, metav1.Condition{
+			Type:    string(operatorv1alpha1.ConditionTypeAvailable),
+			Status:  metav1.ConditionFalse,
+			Reason:  "EtcdTLSConfigInvalid",
+			Message: err.Error(),
+		})
+		return conditions, err
+	}
+
 	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*metav1.NewControllerRef(rootShard, operatorv1alpha1.SchemeGroupVersion.WithKind("RootShard")))
 
 	issuerReconcilers := []reconciling.NamedIssuerReconcilerFactory{

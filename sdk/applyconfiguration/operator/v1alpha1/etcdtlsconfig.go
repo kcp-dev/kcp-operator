@@ -25,7 +25,7 @@ import (
 // EtcdTLSConfigApplyConfiguration represents a declarative configuration of the EtcdTLSConfig type for use
 // with apply.
 type EtcdTLSConfigApplyConfiguration struct {
-	SecretRef *v1.LocalObjectReference `json:"secretRef,omitempty"`
+	SecretRef *v1.SecretReference `json:"secretRef,omitempty"`
 }
 
 // EtcdTLSConfigApplyConfiguration constructs a declarative configuration of the EtcdTLSConfig type for use with
@@ -37,7 +37,7 @@ func EtcdTLSConfig() *EtcdTLSConfigApplyConfiguration {
 // WithSecretRef sets the SecretRef field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the SecretRef field is set to the value of the last call.
-func (b *EtcdTLSConfigApplyConfiguration) WithSecretRef(value v1.LocalObjectReference) *EtcdTLSConfigApplyConfiguration {
+func (b *EtcdTLSConfigApplyConfiguration) WithSecretRef(value v1.SecretReference) *EtcdTLSConfigApplyConfiguration {
 	b.SecretRef = &value
 	return b
 }

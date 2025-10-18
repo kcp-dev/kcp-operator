@@ -55,7 +55,7 @@ type EtcdConfig struct {
 
 type EtcdTLSConfig struct {
 	// SecretRef is the reference to a v1.Secret object that contains the TLS certificate.
-	SecretRef corev1.LocalObjectReference `json:"secretRef"`
+	SecretRef *corev1.SecretReference `json:"secretRef"`
 }
 
 // ObjectReference is a reference to an object with a given name, kind and group.
