@@ -12,6 +12,8 @@ spec:
   rootShard:
     ref:
       name: shard-sample
+  logLevel:
+    verbosityLevel: 4
   deploymentTemplate:
     spec:
       template:

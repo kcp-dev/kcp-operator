@@ -91,6 +91,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &operatorv1alpha1.KubeconfigSpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("KubeconfigTarget"):
 		return &operatorv1alpha1.KubeconfigTargetApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("LogLevelSpec"):
+		return &operatorv1alpha1.LogLevelSpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ObjectReference"):
 		return &operatorv1alpha1.ObjectReferenceApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("OIDCCAFileRef"):

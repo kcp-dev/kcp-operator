@@ -41,6 +41,7 @@ type CommonShardSpecApplyConfiguration struct {
 	DeploymentTemplate   *DeploymentTemplateApplyConfiguration    `json:"deploymentTemplate,omitempty"`
 	CABundleSecretRef    *v1.LocalObjectReference                 `json:"caBundleSecretRef,omitempty"`
 	ExtraArgs            []string                                 `json:"extraArgs,omitempty"`
+	LogLevel             *LogLevelSpecApplyConfiguration          `json:"logLevel,omitempty"`
 }
 
 // CommonShardSpecApplyConfiguration constructs a declarative configuration of the CommonShardSpec type for use with
@@ -160,5 +161,13 @@ func (b *CommonShardSpecApplyConfiguration) WithExtraArgs(values ...string) *Com
 	for i := range values {
 		b.ExtraArgs = append(b.ExtraArgs, values[i])
 	}
+	return b
+}
+
+// WithLogLevel sets the LogLevel field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the LogLevel field is set to the value of the last call.
+func (b *CommonShardSpecApplyConfiguration) WithLogLevel(value *LogLevelSpecApplyConfiguration) *CommonShardSpecApplyConfiguration {
+	b.LogLevel = value
 	return b
 }

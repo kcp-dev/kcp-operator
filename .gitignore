@@ -30,3 +30,4 @@ go.work.sum
 
 # e2e test logs and artifacts
 /.e2e-*
+.vscode
