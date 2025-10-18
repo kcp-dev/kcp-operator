@@ -1,8 +1,8 @@
 ## Append samples of your project ##
 resources:
-- v1alpha1_kcpinstance.yaml
-- v1alpha1_frontproxy.yaml
-- v1alpha1_shard.yaml
-- v1alpha1_cacheserver.yaml
-- v1alpha1_kubeconfig.yaml
+  - v1alpha1_kcpinstance.yaml
+  - v1alpha1_frontproxy.yaml
+  - v1alpha1_shard.yaml
+  - v1alpha1_cacheserver.yaml
+  - v1alpha1_kubeconfig.yaml
 # +kubebuilder:scaffold:manifestskustomizesamples
