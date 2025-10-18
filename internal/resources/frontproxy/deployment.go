@@ -246,6 +246,9 @@ func (r *reconciler) getArgs() []string {
 			args = append(args, fmt.Sprintf("--authentication-pass-on-groups=%q", strings.Join(auth.PassOnGroups, ",")))
 		}
 	}
+
+	args = append(args, utils.GetLogLevelArgs(r.frontProxy.Spec.LogLevel)...)
+
 	if r.frontProxy.Spec.ExtraArgs != nil {
 		args = append(args, r.frontProxy.Spec.ExtraArgs...)
 	}

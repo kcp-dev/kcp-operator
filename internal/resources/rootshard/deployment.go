@@ -192,6 +192,9 @@ func getArgs(rootShard *operatorv1alpha1.RootShard) []string {
 		"--enable-leader-election=true",
 		"--logging-format=json",
 	}
+
+	args = append(args, utils.GetLogLevelArgs(rootShard.Spec.LogLevel)...)
+
 	if rootShard.Spec.ExtraArgs != nil {
 		args = append(args, rootShard.Spec.ExtraArgs...)
 	}

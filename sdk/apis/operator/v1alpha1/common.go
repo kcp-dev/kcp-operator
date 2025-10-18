@@ -373,6 +373,17 @@ type PodSpecTemplate struct {
 	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
 }
 
+// LogLevelSpec defines the logging configuration for KCP components.
+type LogLevelSpec struct {
+	// VerbosityLevel sets the verbosity level for the component. Higher values mean more verbose logging.
+	// This corresponds to the -v flag in KCP components.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=10
+	// +kubebuilder:default=0
+	VerbosityLevel *int32 `json:"verbosityLevel,omitempty"`
+}
+
 type OIDCConfiguration struct {
 	// IssuerURL is used for the OIDC issuer URL. Only https URLs will be accepted.
 	IssuerURL string `json:"issuerURL"`

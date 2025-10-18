@@ -1635,6 +1635,20 @@ spec:
                       Defaults to the latest kcp release that the operator supports.
                     type: string
                 type: object
+              logLevel:
+                description: 'Optional: LogLevel configures the logging verbosity
+                  for this shard.'
+                properties:
+                  verbosityLevel:
+                    default: 0
+                    description: |-
+                      VerbosityLevel sets the verbosity level for the component. Higher values mean more verbose logging.
+                      This corresponds to the -v flag in KCP components.
+                    format: int32
+                    maximum: 10
+                    minimum: 0
+                    type: integer
+                type: object
               replicas:
                 description: Replicas configures how many instances of this shard
                   run in parallel. Defaults to 2 if not set.

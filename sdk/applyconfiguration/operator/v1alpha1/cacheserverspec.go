@@ -21,8 +21,9 @@ package v1alpha1
 // CacheServerSpecApplyConfiguration represents a declarative configuration of the CacheServerSpec type for use
 // with apply.
 type CacheServerSpecApplyConfiguration struct {
-	Etcd  *EtcdConfigApplyConfiguration `json:"etcd,omitempty"`
-	Image *ImageSpecApplyConfiguration  `json:"image,omitempty"`
+	Etcd     *EtcdConfigApplyConfiguration   `json:"etcd,omitempty"`
+	Image    *ImageSpecApplyConfiguration    `json:"image,omitempty"`
+	LogLevel *LogLevelSpecApplyConfiguration `json:"logLevel,omitempty"`
 }
 
 // CacheServerSpecApplyConfiguration constructs a declarative configuration of the CacheServerSpec type for use with
@@ -44,5 +45,13 @@ func (b *CacheServerSpecApplyConfiguration) WithEtcd(value *EtcdConfigApplyConfi
 // If called multiple times, the Image field is set to the value of the last call.
 func (b *CacheServerSpecApplyConfiguration) WithImage(value *ImageSpecApplyConfiguration) *CacheServerSpecApplyConfiguration {
 	b.Image = value
+	return b
+}
+
+// WithLogLevel sets the LogLevel field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the LogLevel field is set to the value of the last call.
+func (b *CacheServerSpecApplyConfiguration) WithLogLevel(value *LogLevelSpecApplyConfiguration) *CacheServerSpecApplyConfiguration {
+	b.LogLevel = value
 	return b
 }
