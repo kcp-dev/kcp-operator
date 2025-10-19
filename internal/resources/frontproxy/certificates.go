@@ -91,7 +91,7 @@ func (r *reconciler) serverCertificateReconciler() reconciling.NamedCertificateR
 		// to not break existing front-proxy installations.
 		if r.frontProxy.Spec.ExternalHostname != "" {
 			dnsNames = append(dnsNames, r.frontProxy.Spec.ExternalHostname)
-		} else {
+		} else if r.frontProxy.Spec.External.Hostname != "" {
 			dnsNames = append(dnsNames, r.frontProxy.Spec.External.Hostname)
 		}
 	}
