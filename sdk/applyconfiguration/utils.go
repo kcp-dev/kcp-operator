@@ -89,6 +89,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &operatorv1alpha1.KubeconfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("KubeconfigAuthorization"):
 		return &operatorv1alpha1.KubeconfigAuthorizationApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("KubeconfigAuthorizationStatus"):
+		return &operatorv1alpha1.KubeconfigAuthorizationStatusApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("KubeconfigClusterRoleBindings"):
 		return &operatorv1alpha1.KubeconfigClusterRoleBindingsApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("KubeconfigSpec"):
