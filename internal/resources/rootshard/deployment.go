@@ -193,7 +193,7 @@ func getArgs(rootShard *operatorv1alpha1.RootShard) []string {
 		"--logging-format=json",
 	}
 
-	args = append(args, utils.GetLogLevelArgs(rootShard.Spec.LogLevel)...)
+	args = append(args, utils.GetLoggingArgs(rootShard.Spec.Logging)...)
 
 	if rootShard.Spec.ExtraArgs != nil {
 		args = append(args, rootShard.Spec.ExtraArgs...)

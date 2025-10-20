@@ -38,7 +38,7 @@ go run sigs.k8s.io/controller-tools/cmd/controller-gen \
   output:crd:artifacts:config=config/crd/bases
 
 # generate SDK
-rm -rf -- "$SDK_DIR/{applyconfiguration,clientset,informers,listers}"
+rm -rf -- $SDK_DIR/{applyconfiguration,clientset,informers,listers}
 
 go run k8s.io/code-generator/cmd/applyconfiguration-gen \
   --go-header-file "$BOILERPLATE_HEADER" \

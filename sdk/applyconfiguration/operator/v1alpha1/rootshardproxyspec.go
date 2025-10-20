@@ -34,7 +34,7 @@ type RootShardProxySpecApplyConfiguration struct {
 	DeploymentTemplate   *DeploymentTemplateApplyConfiguration    `json:"deploymentTemplate,omitempty"`
 	CertificateTemplates *operatorv1alpha1.CertificateTemplateMap `json:"certificateTemplates,omitempty"`
 	ExtraArgs            []string                                 `json:"extraArgs,omitempty"`
-	LogLevel             *LogLevelSpecApplyConfiguration          `json:"logLevel,omitempty"`
+	Logging              *LoggingSpecApplyConfiguration           `json:"logging,omitempty"`
 }
 
 // RootShardProxySpecApplyConfiguration constructs a declarative configuration of the RootShardProxySpec type for use with
@@ -101,10 +101,10 @@ func (b *RootShardProxySpecApplyConfiguration) WithExtraArgs(values ...string) *
 	return b
 }
 
-// WithLogLevel sets the LogLevel field in the declarative configuration to the given value
+// WithLogging sets the Logging field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the LogLevel field is set to the value of the last call.
-func (b *RootShardProxySpecApplyConfiguration) WithLogLevel(value *LogLevelSpecApplyConfiguration) *RootShardProxySpecApplyConfiguration {
-	b.LogLevel = value
+// If called multiple times, the Logging field is set to the value of the last call.
+func (b *RootShardProxySpecApplyConfiguration) WithLogging(value *LoggingSpecApplyConfiguration) *RootShardProxySpecApplyConfiguration {
+	b.Logging = value
 	return b
 }
