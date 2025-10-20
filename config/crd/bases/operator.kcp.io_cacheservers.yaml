@@ -108,16 +108,14 @@ spec:
                       Defaults to the latest kcp release that the operator supports.
                     type: string
                 type: object
-              logLevel:
-                description: 'Optional: LogLevel configures the logging verbosity
-                  for this cache server.'
+              logging:
+                description: 'Optional: Logging configures the logging settings for
+                  the cache server.'
                 properties:
-                  verbosityLevel:
-                    default: 0
+                  level:
                     description: |-
-                      VerbosityLevel sets the verbosity level for the component. Higher values mean more verbose logging.
-                      This corresponds to the -v flag in KCP components.
-                    format: int32
+                      Level sets the verbosity level for the component. Higher values mean more verbose logging.
+                      This corresponds to the -v flag in kcp components.
                     maximum: 10
                     minimum: 0
                     type: integer

@@ -247,7 +247,7 @@ func (r *reconciler) getArgs() []string {
 		}
 	}
 
-	args = append(args, utils.GetLogLevelArgs(r.frontProxy.Spec.LogLevel)...)
+	args = append(args, utils.GetLoggingArgs(r.frontProxy.Spec.Logging)...)
 
 	if r.frontProxy.Spec.ExtraArgs != nil {
 		args = append(args, r.frontProxy.Spec.ExtraArgs...)

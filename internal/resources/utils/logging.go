@@ -22,18 +22,16 @@ import (
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
-// GetLogLevelArgs returns the command line arguments for log level configuration.
-// If logLevel is nil or verbosityLevel is nil, returns an empty slice.
-// Otherwise, returns a slice containing the -v flag with the specified verbosity level.
-func GetLogLevelArgs(logLevel *operatorv1alpha1.LogLevelSpec) []string {
-	if logLevel == nil || logLevel.VerbosityLevel == nil {
-		return []string{}
+// GetLoggingArgs returns the command line arguments for logging configuration.
+func GetLoggingArgs(spec *operatorv1alpha1.LoggingSpec) []string {
+	if spec == nil {
+		return nil
 	}
 
-	verbosity := *logLevel.VerbosityLevel
-	if verbosity == 0 {
-		return []string{}
+	var args []string
+	if spec.Level != 0 {
+		args = append(args, fmt.Sprintf("-v=%d", spec.Level))
 	}
 
-	return []string{fmt.Sprintf("-v=%d", verbosity)}
+	return args
 }

@@ -28,8 +28,8 @@ type CacheServerSpec struct {
 	// Optional: Image overwrites the container image used to deploy the cache server.
 	Image *ImageSpec `json:"image,omitempty"`
 
-	// Optional: LogLevel configures the logging verbosity for this cache server.
-	LogLevel *LogLevelSpec `json:"logLevel,omitempty"`
+	// Optional: Logging configures the logging settings for the cache server.
+	Logging *LoggingSpec `json:"logging,omitempty"`
 }
 
 // CacheServerStatus defines the observed state of CacheServer

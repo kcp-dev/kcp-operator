@@ -25,42 +25,40 @@ import (
 func TestGetLogLevelArgs(t *testing.T) {
 	tests := []struct {
 		name     string
-		logLevel *operatorv1alpha1.LogLevelSpec
+		logging  *operatorv1alpha1.LoggingSpec
 		expected []string
 	}{
 		{
-			name: "nil verbosityLevel",
-			logLevel: &operatorv1alpha1.LogLevelSpec{
-				VerbosityLevel: nil,
-			},
+			name:     "no config at alll",
+			logging:  nil,
 			expected: []string{},
 		},
 		{
 			name: "verbosityLevel 0",
-			logLevel: &operatorv1alpha1.LogLevelSpec{
-				VerbosityLevel: func() *int32 { v := int32(0); return &v }(),
+			logging: &operatorv1alpha1.LoggingSpec{
+				Level: 0,
 			},
 			expected: []string{},
 		},
 		{
-			name: "verbosityLevel 1",
-			logLevel: &operatorv1alpha1.LogLevelSpec{
-				VerbosityLevel: func() *int32 { v := int32(1); return &v }(),
+			name: "verbosityLevel 2",
+			logging: &operatorv1alpha1.LoggingSpec{
+				Level: 2,
 			},
-			expected: []string{"-v=1"},
+			expected: []string{"-v=2"},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := GetLogLevelArgs(tt.logLevel)
+			result := GetLoggingArgs(tt.logging)
 			if len(result) != len(tt.expected) {
-				t.Errorf("GetLogLevelArgs() returned %d arguments, expected %d", len(result), len(tt.expected))
-				return
+				t.Fatalf("Expected %d arguments, got %d.", len(tt.expected), len(result))
 			}
+
 			for i, arg := range result {
 				if arg != tt.expected[i] {
-					t.Errorf("GetLogLevelArgs() argument %d = %v, expected %v", i, arg, tt.expected[i])
+					t.Errorf("Expected args.#%d to be %q, got %q.", i, tt.expected[i], arg)
 				}
 			}
 		})

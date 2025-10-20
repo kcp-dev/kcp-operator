@@ -154,11 +154,11 @@ func (b *RootShardSpecApplyConfiguration) WithExtraArgs(values ...string) *RootS
 	return b
 }
 
-// WithLogLevel sets the LogLevel field in the declarative configuration to the given value
+// WithLogging sets the Logging field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the LogLevel field is set to the value of the last call.
-func (b *RootShardSpecApplyConfiguration) WithLogLevel(value *LogLevelSpecApplyConfiguration) *RootShardSpecApplyConfiguration {
-	b.CommonShardSpecApplyConfiguration.LogLevel = value
+// If called multiple times, the Logging field is set to the value of the last call.
+func (b *RootShardSpecApplyConfiguration) WithLogging(value *LoggingSpecApplyConfiguration) *RootShardSpecApplyConfiguration {
+	b.CommonShardSpecApplyConfiguration.Logging = value
 	return b
 }
 

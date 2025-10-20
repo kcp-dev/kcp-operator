@@ -18,22 +18,22 @@ limitations under the License.
 
 package v1alpha1
 
-// LogLevelSpecApplyConfiguration represents a declarative configuration of the LogLevelSpec type for use
+// LoggingSpecApplyConfiguration represents a declarative configuration of the LoggingSpec type for use
 // with apply.
-type LogLevelSpecApplyConfiguration struct {
-	VerbosityLevel *int32 `json:"verbosityLevel,omitempty"`
+type LoggingSpecApplyConfiguration struct {
+	Level *int `json:"level,omitempty"`
 }
 
-// LogLevelSpecApplyConfiguration constructs a declarative configuration of the LogLevelSpec type for use with
+// LoggingSpecApplyConfiguration constructs a declarative configuration of the LoggingSpec type for use with
 // apply.
-func LogLevelSpec() *LogLevelSpecApplyConfiguration {
-	return &LogLevelSpecApplyConfiguration{}
+func LoggingSpec() *LoggingSpecApplyConfiguration {
+	return &LoggingSpecApplyConfiguration{}
 }
 
-// WithVerbosityLevel sets the VerbosityLevel field in the declarative configuration to the given value
+// WithLevel sets the Level field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the VerbosityLevel field is set to the value of the last call.
-func (b *LogLevelSpecApplyConfiguration) WithVerbosityLevel(value int32) *LogLevelSpecApplyConfiguration {
-	b.VerbosityLevel = &value
+// If called multiple times, the Level field is set to the value of the last call.
+func (b *LoggingSpecApplyConfiguration) WithLevel(value int) *LoggingSpecApplyConfiguration {
+	b.Level = &value
 	return b
 }

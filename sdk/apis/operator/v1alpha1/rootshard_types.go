@@ -63,8 +63,8 @@ type RootShardProxySpec struct {
 	// Optional: ExtraArgs defines additional command line arguments to pass to the front-proxy container.
 	ExtraArgs []string `json:"extraArgs,omitempty"`
 
-	// Optional: LogLevel configures the logging verbosity for this proxy.
-	LogLevel *LogLevelSpec `json:"logLevel,omitempty"`
+	// Optional: Logging configures the logging settings for the root shard.
+	Logging *LoggingSpec `json:"logging,omitempty"`
 }
 
 type ExternalConfig struct {
