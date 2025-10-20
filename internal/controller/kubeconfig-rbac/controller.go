@@ -53,6 +53,7 @@ func (r *KubeconfigRBACReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=kubeconfigs,verbs=get;update;patch
+// +kubebuilder:rbac:groups=operator.kcp.io,resources=kubeconfigs/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=kubeconfigs/finalizers,verbs=update
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
@@ -171,26 +172,37 @@ func (r *KubeconfigRBACReconciler) handleDeletion(ctx context.Context, kc *opera
 		return nil
 	}
 
-	targetClient, err := client.NewInternalKubeconfigClient(ctx, r.Client, kc, logicalcluster.Name(kc.Spec.Authorization.ClusterRoleBindings.Cluster), nil)
-	if err != nil {
-		return fmt.Errorf("failed to create client to kubeconfig target: %w", err)
-	}
+	// This should always be true, unless cleanup succeeded but removing the finalizer failed in a
+	// previous reconcile cycle.
+	if cluster := kc.Status.Authorization.ProvisionedCluster; cluster != "" {
+		targetClient, err := client.NewInternalKubeconfigClient(ctx, r.Client, kc, logicalcluster.Name(cluster), nil)
+		if err != nil {
+			return fmt.Errorf("failed to create client to kubeconfig target: %w", err)
+		}
 
-	// find all existing bindings
-	ownerLabels := kubeconfig.OwnerLabels(kc)
-	crbList := &rbacv1.ClusterRoleBindingList{}
-	if err := targetClient.List(ctx, crbList, ctrlruntimeclient.MatchingLabels(ownerLabels)); err != nil {
-		return fmt.Errorf("failed to list existing ClusterRoleBindings: %w", err)
-	}
+		// find all existing bindings
+		ownerLabels := kubeconfig.OwnerLabels(kc)
+		crbList := &rbacv1.ClusterRoleBindingList{}
+		if err := targetClient.List(ctx, crbList, ctrlruntimeclient.MatchingLabels(ownerLabels)); err != nil {
+			return fmt.Errorf("failed to list existing ClusterRoleBindings: %w", err)
+		}
 
-	// delete all of them
-	logger := log.FromContext(ctx)
+		// delete all of them
+		logger := log.FromContext(ctx)
 
-	for _, crb := range crbList.Items {
-		logger.V(2).WithValues("name", crb.Name).Info("Deleting ClusterRoleBinding")
+		for _, crb := range crbList.Items {
+			logger.V(2).WithValues("name", crb.Name).Info("Deleting ClusterRoleBinding")
 
-		if err := targetClient.Delete(ctx, &crb); err != nil {
-			return fmt.Errorf("failed to delete ClusterRoleBinding %s: %w", crb.Name, err)
+			if err := targetClient.Delete(ctx, &crb); err != nil {
+				return fmt.Errorf("failed to delete ClusterRoleBinding %s: %w", crb.Name, err)
+			}
+		}
+
+		// clean status
+		oldKubeconfig := kc.DeepCopy()
+		kc.Status.Authorization.ProvisionedCluster = ""
+		if err := r.Status().Patch(ctx, kc, ctrlruntimeclient.MergeFrom(oldKubeconfig)); err != nil {
+			return fmt.Errorf("failed to finish cleanup by updating status: %w", err)
 		}
 	}
 
