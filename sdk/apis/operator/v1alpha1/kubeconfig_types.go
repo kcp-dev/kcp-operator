@@ -50,16 +50,33 @@ type KubeconfigTarget struct {
 	FrontProxyRef *corev1.LocalObjectReference `json:"frontProxyRef,omitempty"`
 }
 
+type KubeconfigPhase string
+
+const (
+	KubeconfigPhaseProvisioning KubeconfigPhase = "Provisioning"
+	KubeconfigPhaseReady        KubeconfigPhase = "Ready"
+	KubeconfigPhaseFailed       KubeconfigPhase = "Failed"
+)
+
 // KubeconfigStatus defines the observed state of Kubeconfig
 type KubeconfigStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// Phase represents the current phase of kubeconfig lifecycle.
+	Phase KubeconfigPhase `json:"phase,omitempty"`
+
+	// TargetName represents the name of the target resource (RootShard, Shard, or FrontProxy).
+	TargetName string `json:"targetName,omitempty"`
+
+	// +listType=map
+	// +listMapKey=type
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 // +genclient
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-
+// +kubebuilder:printcolumn:JSONPath=".status.targetName",name="Target",type="string"
+// +kubebuilder:printcolumn:JSONPath=".status.phase",name="Phase",type="string"
+// +kubebuilder:printcolumn:JSONPath=".metadata.creationTimestamp",name="Age",type="date"
 // Kubeconfig is the Schema for the kubeconfigs API
 type Kubeconfig struct {
 	metav1.TypeMeta   `json:",inline"`
