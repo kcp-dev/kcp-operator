@@ -5700,6 +5700,43 @@ More info: <a href="https://kubernetes.io/docs/concepts/overview/working-with-ob
 
 <div class="property depth-1">
 <div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.logLevel">.spec.logLevel</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+<div class="property-description">
+<p>Optional: LogLevel configures the logging verbosity for this shard.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.logLevel.verbosityLevel">.spec.logLevel.verbosityLevel</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">integer</span>
+
+</div>
+
+<div class="property-description">
+<p>VerbosityLevel sets the verbosity level for the component. Higher values mean more verbose logging.
+This corresponds to the -v flag in KCP components.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-1">
+<div class="property-header">
 <h3 class="property-path" id="v1alpha1-.spec.proxy">.spec.proxy</h3>
 </div>
 <div class="property-body">
@@ -8968,6 +9005,43 @@ More info: <a href="https://kubernetes.io/docs/concepts/overview/working-with-ob
 
 <div class="property-description">
 <p>Tag is the container image tag to use for KCP containers. Defaults to the latest kcp release that the operator supports.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.proxy.logLevel">.spec.proxy.logLevel</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+<div class="property-description">
+<p>Optional: LogLevel configures the logging verbosity for this proxy.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.proxy.logLevel.verbosityLevel">.spec.proxy.logLevel.verbosityLevel</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">integer</span>
+
+</div>
+
+<div class="property-description">
+<p>VerbosityLevel sets the verbosity level for the component. Higher values mean more verbose logging.
+This corresponds to the -v flag in KCP components.</p>
 
 </div>
 
