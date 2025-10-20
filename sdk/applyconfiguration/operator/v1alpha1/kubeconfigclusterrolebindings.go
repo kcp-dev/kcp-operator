@@ -21,8 +21,8 @@ package v1alpha1
 // KubeconfigClusterRoleBindingsApplyConfiguration represents a declarative configuration of the KubeconfigClusterRoleBindings type for use
 // with apply.
 type KubeconfigClusterRoleBindingsApplyConfiguration struct {
-	WorkspacePath *string  `json:"workspacePath,omitempty"`
-	ClusterRoles  []string `json:"clusterRoles,omitempty"`
+	Cluster      *string  `json:"cluster,omitempty"`
+	ClusterRoles []string `json:"clusterRoles,omitempty"`
 }
 
 // KubeconfigClusterRoleBindingsApplyConfiguration constructs a declarative configuration of the KubeconfigClusterRoleBindings type for use with
@@ -31,11 +31,11 @@ func KubeconfigClusterRoleBindings() *KubeconfigClusterRoleBindingsApplyConfigur
 	return &KubeconfigClusterRoleBindingsApplyConfiguration{}
 }
 
-// WithWorkspacePath sets the WorkspacePath field in the declarative configuration to the given value
+// WithCluster sets the Cluster field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the WorkspacePath field is set to the value of the last call.
-func (b *KubeconfigClusterRoleBindingsApplyConfiguration) WithWorkspacePath(value string) *KubeconfigClusterRoleBindingsApplyConfiguration {
-	b.WorkspacePath = &value
+// If called multiple times, the Cluster field is set to the value of the last call.
+func (b *KubeconfigClusterRoleBindingsApplyConfiguration) WithCluster(value string) *KubeconfigClusterRoleBindingsApplyConfiguration {
+	b.Cluster = &value
 	return b
 }
 

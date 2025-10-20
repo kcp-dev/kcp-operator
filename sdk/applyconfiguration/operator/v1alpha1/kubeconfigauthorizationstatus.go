@@ -21,7 +21,7 @@ package v1alpha1
 // KubeconfigAuthorizationStatusApplyConfiguration represents a declarative configuration of the KubeconfigAuthorizationStatus type for use
 // with apply.
 type KubeconfigAuthorizationStatusApplyConfiguration struct {
-	ProvisionedWorkspace *string `json:"provisionedWorkspace,omitempty"`
+	ProvisionedCluster *string `json:"provisionedCluster,omitempty"`
 }
 
 // KubeconfigAuthorizationStatusApplyConfiguration constructs a declarative configuration of the KubeconfigAuthorizationStatus type for use with
@@ -30,10 +30,10 @@ func KubeconfigAuthorizationStatus() *KubeconfigAuthorizationStatusApplyConfigur
 	return &KubeconfigAuthorizationStatusApplyConfiguration{}
 }
 
-// WithProvisionedWorkspace sets the ProvisionedWorkspace field in the declarative configuration to the given value
+// WithProvisionedCluster sets the ProvisionedCluster field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the ProvisionedWorkspace field is set to the value of the last call.
-func (b *KubeconfigAuthorizationStatusApplyConfiguration) WithProvisionedWorkspace(value string) *KubeconfigAuthorizationStatusApplyConfiguration {
-	b.ProvisionedWorkspace = &value
+// If called multiple times, the ProvisionedCluster field is set to the value of the last call.
+func (b *KubeconfigAuthorizationStatusApplyConfiguration) WithProvisionedCluster(value string) *KubeconfigAuthorizationStatusApplyConfiguration {
+	b.ProvisionedCluster = &value
 	return b
 }

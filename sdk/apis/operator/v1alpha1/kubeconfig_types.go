@@ -58,8 +58,9 @@ type KubeconfigAuthorization struct {
 }
 
 type KubeconfigClusterRoleBindings struct {
-	WorkspacePath string   `json:"workspacePath"`
-	ClusterRoles  []string `json:"clusterRoles"`
+	// Cluster can be either a cluster name or a workspace path.
+	Cluster      string   `json:"cluster"`
+	ClusterRoles []string `json:"clusterRoles"`
 }
 
 type KubeconfigPhase string
@@ -86,7 +87,7 @@ type KubeconfigStatus struct {
 }
 
 type KubeconfigAuthorizationStatus struct {
-	ProvisionedWorkspace string `json:"provisionedWorkspace"`
+	ProvisionedCluster string `json:"provisionedCluster"`
 }
 
 // +genclient
