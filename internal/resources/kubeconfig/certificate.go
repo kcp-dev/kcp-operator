@@ -19,6 +19,7 @@ package kubeconfig
 import (
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	certmanagermetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"

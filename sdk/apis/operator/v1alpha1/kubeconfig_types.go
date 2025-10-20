@@ -78,9 +78,15 @@ type KubeconfigStatus struct {
 	// TargetName represents the name of the target resource (RootShard, Shard, or FrontProxy).
 	TargetName string `json:"targetName,omitempty"`
 
+	Authorization *KubeconfigAuthorizationStatus `json:"authorization,omitempty"`
+
 	// +listType=map
 	// +listMapKey=type
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
+}
+
+type KubeconfigAuthorizationStatus struct {
+	ProvisionedWorkspace string `json:"provisionedWorkspace"`
 }
 
 // +genclient
