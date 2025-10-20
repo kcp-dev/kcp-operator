@@ -22,8 +22,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
-
-	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
 // KubeconfigApplyConfiguration represents a declarative configuration of the Kubeconfig type for use
@@ -31,8 +29,8 @@ import (
 type KubeconfigApplyConfiguration struct {
 	v1.TypeMetaApplyConfiguration    `json:",inline"`
 	*v1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
-	Spec                             *KubeconfigSpecApplyConfiguration  `json:"spec,omitempty"`
-	Status                           *operatorv1alpha1.KubeconfigStatus `json:"status,omitempty"`
+	Spec                             *KubeconfigSpecApplyConfiguration   `json:"spec,omitempty"`
+	Status                           *KubeconfigStatusApplyConfiguration `json:"status,omitempty"`
 }
 
 // Kubeconfig constructs a declarative configuration of the Kubeconfig type for use with
@@ -215,8 +213,8 @@ func (b *KubeconfigApplyConfiguration) WithSpec(value *KubeconfigSpecApplyConfig
 // WithStatus sets the Status field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Status field is set to the value of the last call.
-func (b *KubeconfigApplyConfiguration) WithStatus(value operatorv1alpha1.KubeconfigStatus) *KubeconfigApplyConfiguration {
-	b.Status = &value
+func (b *KubeconfigApplyConfiguration) WithStatus(value *KubeconfigStatusApplyConfiguration) *KubeconfigApplyConfiguration {
+	b.Status = value
 	return b
 }
 

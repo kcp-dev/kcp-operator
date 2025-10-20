@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	"github.com/kcp-dev/logicalcluster/v3"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -81,7 +82,7 @@ func TestCreateFrontProxy(t *testing.T) {
 
 	// verify that we can use frontproxy kubeconfig to access rootshard workspaces
 	t.Log("Connecting to FrontProxy...")
-	kcpClient := utils.ConnectWithKubeconfig(t, ctx, client, namespace.Name, fpConfig.Name)
+	kcpClient := utils.ConnectWithKubeconfig(t, ctx, client, namespace.Name, fpConfig.Name, logicalcluster.None)
 	// proof of life: list something every logicalcluster in kcp has
 	t.Log("Should be able to list Secrets.")
 	secrets := &corev1.SecretList{}

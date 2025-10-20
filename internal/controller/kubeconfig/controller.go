@@ -49,6 +49,7 @@ type KubeconfigReconciler struct {
 // SetupWithManager sets up the controller with the Manager.
 func (r *KubeconfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
+		Named("kubeconfig").
 		For(&operatorv1alpha1.Kubeconfig{}).
 		Owns(&corev1.Secret{}).
 		Owns(&certmanagerv1.Certificate{}).

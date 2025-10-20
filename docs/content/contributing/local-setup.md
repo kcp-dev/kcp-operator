@@ -58,19 +58,20 @@ run the operator as a binary.
 Build the image:
 
 ```sh
-make docker-build IMG=ghcr.io/kcp-dev/kcp-operator:1
+export IMG=ghcr.io/kcp-dev/kcp-operator:local
+make docker-build
 ```
 
 Load the image into the kind cluster:
 
 ```sh
-kind load docker-image ghcr.io/kcp-dev/kcp-operator:1
+kind load docker-image "$IMG"
 ```
 
 Deploy the operator manifests into the cluster:
 
 ```sh
-make deploy IMG=ghcr.io/kcp-dev/kcp-operator:1
+make deploy
 ```
 
 ### Option 2: Run Operator Directly
@@ -87,12 +88,12 @@ Then start the operator via `go run`:
 go run ./cmd/main.go
 ```
 
-## Create kcp Instance 
+## Create kcp Instance
 
 Now you can create a root shard:
 
 ```sh
-kubectl apply -f config/samples/operator.kcp.io_v1alpha1_rootshard.yaml       
+kubectl apply -f config/samples/operator.kcp.io_v1alpha1_rootshard.yaml
 ```
 
 Create the additional shard:
