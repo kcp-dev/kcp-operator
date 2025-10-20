@@ -76,6 +76,9 @@ type CommonShardSpec struct {
 
 	// Optional: ExtraArgs defines additional command line arguments to pass to the shard container.
 	ExtraArgs []string `json:"extraArgs,omitempty"`
+
+	// Optional: LogLevel configures the logging verbosity for this shard.
+	LogLevel *LogLevelSpec `json:"logLevel,omitempty"`
 }
 
 type AuditSpec struct {

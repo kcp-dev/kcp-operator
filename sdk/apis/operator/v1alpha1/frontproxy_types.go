@@ -66,6 +66,9 @@ type FrontProxySpec struct {
 
 	// Optional: ExtraArgs defines additional command line arguments to pass to the front-proxy container.
 	ExtraArgs []string `json:"extraArgs,omitempty"`
+
+	// Optional: LogLevel configures the logging verbosity for this front-proxy.
+	LogLevel *LogLevelSpec `json:"logLevel,omitempty"`
 }
 
 type AuthSpec struct {
