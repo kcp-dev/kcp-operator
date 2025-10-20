@@ -89,6 +89,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &operatorv1alpha1.KubeconfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("KubeconfigSpec"):
 		return &operatorv1alpha1.KubeconfigSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("KubeconfigStatus"):
+		return &operatorv1alpha1.KubeconfigStatusApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("KubeconfigTarget"):
 		return &operatorv1alpha1.KubeconfigTargetApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("LoggingSpec"):

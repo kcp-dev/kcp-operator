@@ -88,6 +88,7 @@ func TestReconciling(t *testing.T) {
 				NewClientBuilder().
 				WithScheme(scheme).
 				WithStatusSubresource(testcase.rootShard).
+				WithStatusSubresource(testcase.kubeConfig).
 				WithObjects(testcase.rootShard, testcase.kubeConfig).
 				Build()
 
