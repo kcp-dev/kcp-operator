@@ -114,7 +114,7 @@ func (r *KubeconfigRBACReconciler) reconcile(ctx context.Context, config *operat
 }
 
 func (r *KubeconfigRBACReconciler) reconcileBindings(ctx context.Context, kc *operatorv1alpha1.Kubeconfig) error {
-	targetClient, err := client.NewInternalKubeconfigClient(ctx, r.Client, kc, logicalcluster.Name(kc.Spec.Authorization.ClusterRoleBindings.WorkspacePath), nil)
+	targetClient, err := client.NewInternalKubeconfigClient(ctx, r.Client, kc, logicalcluster.Name(kc.Spec.Authorization.ClusterRoleBindings.Cluster), nil)
 	if err != nil {
 		return fmt.Errorf("failed to create client to kubeconfig target: %w", err)
 	}
@@ -171,7 +171,7 @@ func (r *KubeconfigRBACReconciler) handleDeletion(ctx context.Context, kc *opera
 		return nil
 	}
 
-	targetClient, err := client.NewInternalKubeconfigClient(ctx, r.Client, kc, logicalcluster.Name(kc.Spec.Authorization.ClusterRoleBindings.WorkspacePath), nil)
+	targetClient, err := client.NewInternalKubeconfigClient(ctx, r.Client, kc, logicalcluster.Name(kc.Spec.Authorization.ClusterRoleBindings.Cluster), nil)
 	if err != nil {
 		return fmt.Errorf("failed to create client to kubeconfig target: %w", err)
 	}
