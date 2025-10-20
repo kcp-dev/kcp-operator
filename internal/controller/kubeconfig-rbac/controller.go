@@ -77,38 +77,50 @@ func (r *KubeconfigRBACReconciler) reconcile(ctx context.Context, config *operat
 		return r.handleDeletion(ctx, config)
 	}
 
-	// NB: Reconciling a Kubeconfig assumes that the authz settings are immutable, i.e. it is not
-	// possible to first configure RBAC for workspace A and then update the Kubeconfig to mean workspace B.
+	oldCluster := config.Status.Authorization.ProvisionedCluster
+	newCluster := ""
+	if auth := config.Spec.Authorization; auth != nil {
+		newCluster = auth.ClusterRoleBindings.Cluster
+	}
 
-	// No auth configured right now and since there is no finalizer, we also have nothing to
-	// potentially clean up, hence we're done here.
-	if config.Spec.Authorization == nil && !slices.Contains(config.Finalizers, cleanupFinalizer) {
+	// All `return nil` here are because the Kubeconfig has been modified and will be requeued anyway.
+
+	// If there was something provisioned, but the spec changed, we have to unprovision first.
+	if oldCluster != "" && newCluster != oldCluster {
+		if err := r.unprovisionCluster(ctx, config); err != nil {
+			return err
+		}
+
 		return nil
 	}
 
-	// If there is any kind of authorization configured, first we ensure our own finalizer.
-	if config.Spec.Authorization != nil {
-		updated, err := r.ensureFinalizer(ctx, config)
-		if err != nil {
-			return fmt.Errorf("failed to ensure cleanup finalizer: %w", err)
+	// If nothing is configured (anymore), allwe have to do is get rid of the finalizer
+	if newCluster == "" {
+		if err := r.removeFinalizer(ctx, config); err != nil {
+			return fmt.Errorf("failed to remove cleanup finalizer: %w", err)
 		}
 
-		if updated {
-			return nil // will requeue because we changed the object
-		}
+		return nil
+	}
+
+	// Otherwise we ensure the finalizer exists, because we will soon ensure the bindings.
+	if updated, err := r.ensureFinalizer(ctx, config); err != nil {
+		return fmt.Errorf("failed to ensure cleanup finalizer: %w", err)
+	} else if updated {
+		return nil
+	}
+
+	// Before we actually create anything, remember the cluster so if something happens,
+	// we can properly cleanup any leftovers.
+	if updated, err := r.patchProvisionedCluster(ctx, config, newCluster); err != nil {
+		return fmt.Errorf("failed to update status: %w", err)
+	} else if updated {
+		return nil
 	}
 
 	// Make sure whatever is in the workspace matches what is configured in the Kubeconfig
 	if err := r.reconcileBindings(ctx, config); err != nil {
 		return fmt.Errorf("failed to ensure ClusterRoleBindings: %w", err)
-	}
-
-	// If nothing is configured, now it the perfect time to remove our finalizer again
-	// so that for future reconciliations, we quickly know that we can ignore this Kubeconfig.
-	if config.Spec.Authorization == nil {
-		if err := r.removeFinalizer(ctx, config); err != nil {
-			return fmt.Errorf("failed to remove cleanup finalizer: %w", err)
-		}
 	}
 
 	return nil
@@ -172,38 +184,8 @@ func (r *KubeconfigRBACReconciler) handleDeletion(ctx context.Context, kc *opera
 		return nil
 	}
 
-	// This should always be true, unless cleanup succeeded but removing the finalizer failed in a
-	// previous reconcile cycle.
-	if cluster := kc.Status.Authorization.ProvisionedCluster; cluster != "" {
-		targetClient, err := client.NewInternalKubeconfigClient(ctx, r.Client, kc, logicalcluster.Name(cluster), nil)
-		if err != nil {
-			return fmt.Errorf("failed to create client to kubeconfig target: %w", err)
-		}
-
-		// find all existing bindings
-		ownerLabels := kubeconfig.OwnerLabels(kc)
-		crbList := &rbacv1.ClusterRoleBindingList{}
-		if err := targetClient.List(ctx, crbList, ctrlruntimeclient.MatchingLabels(ownerLabels)); err != nil {
-			return fmt.Errorf("failed to list existing ClusterRoleBindings: %w", err)
-		}
-
-		// delete all of them
-		logger := log.FromContext(ctx)
-
-		for _, crb := range crbList.Items {
-			logger.V(2).WithValues("name", crb.Name).Info("Deleting ClusterRoleBinding")
-
-			if err := targetClient.Delete(ctx, &crb); err != nil {
-				return fmt.Errorf("failed to delete ClusterRoleBinding %s: %w", crb.Name, err)
-			}
-		}
-
-		// clean status
-		oldKubeconfig := kc.DeepCopy()
-		kc.Status.Authorization.ProvisionedCluster = ""
-		if err := r.Status().Patch(ctx, kc, ctrlruntimeclient.MergeFrom(oldKubeconfig)); err != nil {
-			return fmt.Errorf("failed to finish cleanup by updating status: %w", err)
-		}
+	if err := r.unprovisionCluster(ctx, kc); err != nil {
+		return err
 	}
 
 	// when all are gone, remove the finalizer
@@ -212,6 +194,54 @@ func (r *KubeconfigRBACReconciler) handleDeletion(ctx context.Context, kc *opera
 	}
 
 	return nil
+}
+
+func (r *KubeconfigRBACReconciler) unprovisionCluster(ctx context.Context, kc *operatorv1alpha1.Kubeconfig) error {
+	cluster := kc.Status.Authorization.ProvisionedCluster
+	if cluster == "" {
+		return nil
+	}
+
+	targetClient, err := client.NewInternalKubeconfigClient(ctx, r.Client, kc, logicalcluster.Name(cluster), nil)
+	if err != nil {
+		return fmt.Errorf("failed to create client to kubeconfig target: %w", err)
+	}
+
+	// find all existing bindings
+	ownerLabels := kubeconfig.OwnerLabels(kc)
+	crbList := &rbacv1.ClusterRoleBindingList{}
+	if err := targetClient.List(ctx, crbList, ctrlruntimeclient.MatchingLabels(ownerLabels)); err != nil {
+		return fmt.Errorf("failed to list existing ClusterRoleBindings: %w", err)
+	}
+
+	// delete all of them
+	logger := log.FromContext(ctx)
+
+	for _, crb := range crbList.Items {
+		logger.V(2).WithValues("name", crb.Name).Info("Deleting ClusterRoleBinding")
+
+		if err := targetClient.Delete(ctx, &crb); err != nil {
+			return fmt.Errorf("failed to delete ClusterRoleBinding %s: %w", crb.Name, err)
+		}
+	}
+
+	// clean status
+	if _, err := r.patchProvisionedCluster(ctx, kc, ""); err != nil {
+		return fmt.Errorf("failed to finish unprovisioning: %w", err)
+	}
+
+	return nil
+}
+
+func (r *KubeconfigRBACReconciler) patchProvisionedCluster(ctx context.Context, kc *operatorv1alpha1.Kubeconfig, newValue string) (updated bool, err error) {
+	if newValue == kc.Status.Authorization.ProvisionedCluster {
+		return false, nil
+	}
+
+	oldKubeconfig := kc.DeepCopy()
+	kc.Status.Authorization.ProvisionedCluster = newValue
+
+	return true, r.Status().Patch(ctx, kc, ctrlruntimeclient.MergeFrom(oldKubeconfig))
 }
 
 func (r *KubeconfigRBACReconciler) ensureFinalizer(ctx context.Context, config *operatorv1alpha1.Kubeconfig) (updated bool, err error) {
