@@ -64,8 +64,11 @@ type KubeconfigClusterRoleBindings struct {
 
 // KubeconfigStatus defines the observed state of Kubeconfig
 type KubeconfigStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	Authorization *KubeconfigAuthorizationStatus `json:"authorization,omitempty"`
+}
+
+type KubeconfigAuthorizationStatus struct {
+	ProvisionedWorkspace string `json:"provisionedWorkspace"`
 }
 
 // +genclient
