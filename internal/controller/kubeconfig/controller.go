@@ -28,12 +28,14 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/kcp-dev/kcp-operator/internal/metrics"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
 	"github.com/kcp-dev/kcp-operator/internal/resources/kubeconfig"
@@ -65,6 +67,12 @@ func (r *KubeconfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	startTime := time.Now()
+	defer func() {
+		duration := time.Since(startTime)
+		metrics.RecordReconciliationMetrics("kubeconfig", duration.Seconds(), nil)
+	}()
+
 	logger := log.FromContext(ctx)
 	logger.V(4).Info("Reconciling")
 
@@ -74,12 +82,21 @@ func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		if apierrors.IsNotFound(err) {
 			return ctrl.Result{}, nil
 		}
+		metrics.RecordReconciliationError("kubeconfig", err.Error())
 		return ctrl.Result{}, err
 	}
 
 	if kc.DeletionTimestamp != nil {
 		return ctrl.Result{}, nil
 	}
+
+	metrics.RecordObjectMetrics(
+		"kubeconfig",
+		kc.Name,
+		req.Namespace,
+		"",
+		[]metav1.Condition{},
+	)
 
 	rootShard := &operatorv1alpha1.RootShard{}
 	shard := &operatorv1alpha1.Shard{}
