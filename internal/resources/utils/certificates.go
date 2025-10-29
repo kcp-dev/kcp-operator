@@ -71,10 +71,10 @@ func applyCertificateSpecTemplate(cert *certmanagerv1.Certificate, tpl *operator
 		return cert
 	}
 
-	// If DNSNames is provided in the template and issuer is overrided,
+	// If DNSNames is provided in the template and issuer is overridden,
 	// it will replace any existing DNSNames.
 	// We don't merge as we don't know if issuer supports our default names.
-	// Its users responsibility to add them back if needed.
+	// It's user responsibility to add them back if needed.
 	if len(tpl.DNSNames) > 0 && tpl.IssuerRef != nil {
 		cert.Spec.DNSNames = tpl.DNSNames
 	} else if len(tpl.DNSNames) > 0 {
