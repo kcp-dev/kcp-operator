@@ -121,10 +121,14 @@ func TestProvisionFrontProxyRBAC(t *testing.T) {
 	}
 
 	// Now we extend the Kubeconfig with additional permissions.
+	if err := client.Get(ctx, ctrlruntimeclient.ObjectKeyFromObject(&fpConfig), &fpConfig); err != nil {
+		t.Fatal(err)
+	}
+
 	fpConfig.Spec.Authorization = &operatorv1alpha1.KubeconfigAuthorization{
 		ClusterRoleBindings: operatorv1alpha1.KubeconfigClusterRoleBindings{
-			WorkspacePath: dummyCluster.String(),
-			ClusterRoles:  []string{"cluster-admin"},
+			Cluster:      dummyCluster.String(),
+			ClusterRoles: []string{"cluster-admin"},
 		},
 	}
 
