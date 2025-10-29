@@ -20,7 +20,6 @@ package frontproxies
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -37,8 +36,6 @@ import (
 )
 
 func TestCreateFrontProxy(t *testing.T) {
-	fmt.Println()
-
 	ctrlruntime.SetLogger(logr.Discard())
 
 	client := utils.GetKubeClient(t)
