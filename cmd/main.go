@@ -41,6 +41,7 @@ import (
 	"github.com/kcp-dev/kcp-operator/internal/controller/kubeconfig"
 	"github.com/kcp-dev/kcp-operator/internal/controller/rootshard"
 	"github.com/kcp-dev/kcp-operator/internal/controller/shard"
+	"github.com/kcp-dev/kcp-operator/internal/metrics"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
@@ -190,6 +191,12 @@ func main() {
 	}
 	// +kubebuilder:scaffold:builder
 
+	metrics.RegisterMetrics()
+
+	metricsCollector := metrics.NewMetricsCollector(mgr.GetClient())
+	ctx := ctrl.SetupSignalHandler()
+	go metricsCollector.Start(ctx)
+
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up health check")
 		os.Exit(1)
@@ -200,7 +207,7 @@ func main() {
 	}
 
 	setupLog.Info("starting manager")
-	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+	if err := mgr.Start(ctx); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
