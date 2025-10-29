@@ -77,8 +77,13 @@ func (r *KubeconfigRBACReconciler) reconcile(ctx context.Context, config *operat
 		return r.handleDeletion(ctx, config)
 	}
 
-	oldCluster := config.Status.Authorization.ProvisionedCluster
-	newCluster := ""
+	var (
+		oldCluster, newCluster string
+	)
+
+	if auth := config.Status.Authorization; auth != nil {
+		oldCluster = auth.ProvisionedCluster
+	}
 	if auth := config.Spec.Authorization; auth != nil {
 		newCluster = auth.ClusterRoleBindings.Cluster
 	}
@@ -234,11 +239,15 @@ func (r *KubeconfigRBACReconciler) unprovisionCluster(ctx context.Context, kc *o
 }
 
 func (r *KubeconfigRBACReconciler) patchProvisionedCluster(ctx context.Context, kc *operatorv1alpha1.Kubeconfig, newValue string) (updated bool, err error) {
-	if newValue == kc.Status.Authorization.ProvisionedCluster {
+	if auth := kc.Status.Authorization; auth != nil && auth.ProvisionedCluster == newValue {
 		return false, nil
 	}
 
 	oldKubeconfig := kc.DeepCopy()
+
+	if kc.Status.Authorization == nil {
+		kc.Status.Authorization = &operatorv1alpha1.KubeconfigAuthorizationStatus{}
+	}
 	kc.Status.Authorization.ProvisionedCluster = newValue
 
 	return true, r.Status().Patch(ctx, kc, ctrlruntimeclient.MergeFrom(oldKubeconfig))
