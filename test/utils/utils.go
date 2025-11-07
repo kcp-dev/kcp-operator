@@ -30,6 +30,7 @@ import (
 
 	kcpcorev1alpha1 "github.com/kcp-dev/kcp/sdk/apis/core/v1alpha1"
 	kcptenancyv1alpha1 "github.com/kcp-dev/kcp/sdk/apis/tenancy/v1alpha1"
+	"github.com/kcp-dev/kcp/sdk/testing/server"
 	"github.com/kcp-dev/logicalcluster/v3"
 
 	corev1 "k8s.io/api/core/v1"
@@ -155,13 +156,18 @@ func SelfDestuctingPortForward(
 	})
 }
 
-var currentPort = 56029
+func getPort(t *testing.T) int {
+	port, err := server.GetFreePort(t)
+	if err != nil {
+		t.Fatalf("Failed to get free port: %v", err)
+	}
 
-func getPort() int {
-	port := currentPort
-	currentPort++
+	portNum, err := strconv.Atoi(port)
+	if err != nil {
+		t.Fatalf("Failed to parse port %q as number: %v", port, err)
+	}
 
-	return port
+	return portNum
 }
 
 func ConnectWithKubeconfig(
@@ -214,7 +220,7 @@ func ConnectWithKubeconfig(
 	}
 
 	// start a port forwarding
-	localPort := getPort()
+	localPort := getPort(t)
 	SelfDestuctingPortForward(t, ctx, namespace, "svc/"+serviceName, int(portNum), localPort)
 
 	// patch the target server
@@ -256,7 +262,7 @@ func ConnectWithRootShardProxy(
 	}
 
 	// start a port forwarding
-	localPort := getPort()
+	localPort := getPort(t)
 	servicePort := 6443
 	serviceName := resources.GetRootShardProxyServiceName(rootShard)
 
