@@ -39,6 +39,7 @@ type OperatorV1alpha1ClusterInterface interface {
 	KubeconfigsClusterGetter
 	RootShardsClusterGetter
 	ShardsClusterGetter
+	WorkspaceObjectsClusterGetter
 }
 
 type OperatorV1alpha1ClusterScoper interface {
@@ -74,6 +75,10 @@ func (c *OperatorV1alpha1ClusterClient) RootShards() RootShardClusterInterface {
 
 func (c *OperatorV1alpha1ClusterClient) Shards() ShardClusterInterface {
 	return &shardsClusterInterface{clientCache: c.clientCache}
+}
+
+func (c *OperatorV1alpha1ClusterClient) WorkspaceObjects() WorkspaceObjectClusterInterface {
+	return &workspaceObjectsClusterInterface{clientCache: c.clientCache}
 }
 
 // NewForConfig creates a new OperatorV1alpha1ClusterClient for the given config.

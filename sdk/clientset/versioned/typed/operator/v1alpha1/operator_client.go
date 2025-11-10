@@ -34,6 +34,7 @@ type OperatorV1alpha1Interface interface {
 	KubeconfigsGetter
 	RootShardsGetter
 	ShardsGetter
+	WorkspaceObjectsGetter
 }
 
 // OperatorV1alpha1Client is used to interact with features provided by the operator.kcp.io group.
@@ -59,6 +60,10 @@ func (c *OperatorV1alpha1Client) RootShards(namespace string) RootShardInterface
 
 func (c *OperatorV1alpha1Client) Shards(namespace string) ShardInterface {
 	return newShards(c, namespace)
+}
+
+func (c *OperatorV1alpha1Client) WorkspaceObjects(namespace string) WorkspaceObjectInterface {
+	return newWorkspaceObjects(c, namespace)
 }
 
 // NewForConfig creates a new OperatorV1alpha1Client for the given config.

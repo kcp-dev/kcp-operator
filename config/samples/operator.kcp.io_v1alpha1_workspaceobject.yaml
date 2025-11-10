@@ -1,0 +1,21 @@
+apiVersion: operator.kcp.io/v1alpha1
+kind: WorkspaceObject
+metadata:
+  labels:
+    app.kubernetes.io/name: kcp-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: object.workspace.custom
+  namespace: kcp
+spec:
+  rootShard:
+    ref:
+      # name: shard-sample
+      name: root
+  workspace:
+    path: root
+  manifest:
+    apiVersion: tenancy.kcp.io/v1alpha1
+    kind: Workspace
+    metadata:
+      name: test
+    spec: {}

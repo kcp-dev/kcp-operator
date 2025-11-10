@@ -64,6 +64,10 @@ func (c *OperatorV1alpha1ClusterClient) Shards() kcpoperatorv1alpha1.ShardCluste
 	return &shardsClusterClient{Fake: c.Fake}
 }
 
+func (c *OperatorV1alpha1ClusterClient) WorkspaceObjects() kcpoperatorv1alpha1.WorkspaceObjectClusterInterface {
+	return &workspaceObjectsClusterClient{Fake: c.Fake}
+}
+
 var _ operatorv1alpha1.OperatorV1alpha1Interface = (*OperatorV1alpha1Client)(nil)
 
 type OperatorV1alpha1Client struct {
@@ -94,4 +98,8 @@ func (c *OperatorV1alpha1Client) RootShards(namespace string) operatorv1alpha1.R
 
 func (c *OperatorV1alpha1Client) Shards(namespace string) operatorv1alpha1.ShardInterface {
 	return &shardsClient{Fake: c.Fake, ClusterPath: c.ClusterPath, Namespace: namespace}
+}
+
+func (c *OperatorV1alpha1Client) WorkspaceObjects(namespace string) operatorv1alpha1.WorkspaceObjectInterface {
+	return &workspaceObjectsClient{Fake: c.Fake, ClusterPath: c.ClusterPath, Namespace: namespace}
 }
