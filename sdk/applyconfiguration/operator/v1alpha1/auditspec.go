@@ -22,6 +22,7 @@ package v1alpha1
 // with apply.
 type AuditSpecApplyConfiguration struct {
 	Webhook *AuditWebhookSpecApplyConfiguration `json:"webhook,omitempty"`
+	Policy  *AuditPolicySpecApplyConfiguration  `json:"policy,omitempty"`
 }
 
 // AuditSpecApplyConfiguration constructs a declarative configuration of the AuditSpec type for use with
@@ -35,5 +36,13 @@ func AuditSpec() *AuditSpecApplyConfiguration {
 // If called multiple times, the Webhook field is set to the value of the last call.
 func (b *AuditSpecApplyConfiguration) WithWebhook(value *AuditWebhookSpecApplyConfiguration) *AuditSpecApplyConfiguration {
 	b.Webhook = value
+	return b
+}
+
+// WithPolicy sets the Policy field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Policy field is set to the value of the last call.
+func (b *AuditSpecApplyConfiguration) WithPolicy(value *AuditPolicySpecApplyConfiguration) *AuditSpecApplyConfiguration {
+	b.Policy = value
 	return b
 }
