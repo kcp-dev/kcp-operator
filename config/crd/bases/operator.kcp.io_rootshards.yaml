@@ -51,6 +51,25 @@ spec:
             properties:
               audit:
                 properties:
+                  policy:
+                    description: Audit policy configuration.
+                    properties:
+                      configMap:
+                        description: |-
+                          ConfigMap is a reference to the ConfigMap containing the audit policy
+                          file which is mounted into the container.
+                        properties:
+                          key:
+                            description: Key in the data.
+                            type: string
+                          name:
+                            description: Name of the object.
+                            type: string
+                        required:
+                        - key
+                        - name
+                        type: object
+                    type: object
                   webhook:
                     properties:
                       batchBufferSize:
