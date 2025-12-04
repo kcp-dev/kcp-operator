@@ -23,6 +23,7 @@ The table below marks known support of a kcp version in kcp-operator versions.
 | kcp    | `main`             | 0.1.x              |
 | ------ | ------------------ | ------------------ |
 | `main` | :warning:          | :question:         |
+| 0.29.x | :white_check_mark: | :question:         |
 | 0.28.x | :white_check_mark: | :question:         |
 | 0.27.x | :question:         | :white_check_mark: |
 

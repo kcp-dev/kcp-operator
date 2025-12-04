@@ -77,7 +77,30 @@ presubmits:
               memory: 4Gi
               cpu: 2
 
-  - name: pull-kcp-operator-test-e2e
+  - name: pull-kcp-operator-test-e2e-0.28
+    decorate: true
+    run_if_changed: "(Dockerfile|Makefile|.prow.yaml|go.mod|go.sum|cmd|internal|sdk|hack|test)"
+    optional: false
+    clone_uri: "https://github.com/kcp-dev/kcp-operator"
+    labels:
+      preset-goproxy: "true"
+    spec:
+      containers:
+        - image: ghcr.io/kcp-dev/infra/build:1.24.9-1
+          command:
+            - hack/ci/run-e2e-tests.sh
+          env:
+            - name: KCP_TAG
+              value: release-0.28
+          resources:
+            requests:
+              memory: 4Gi
+              cpu: 2
+          # docker-in-docker needs privileged mode
+          securityContext:
+            privileged: true
+
+  - name: pull-kcp-operator-test-e2e-default
     decorate: true
     run_if_changed: "(Dockerfile|Makefile|.prow.yaml|go.mod|go.sum|cmd|internal|sdk|hack|test)"
     optional: false
