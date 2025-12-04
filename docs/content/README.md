@@ -20,6 +20,8 @@ kcp-operator is a Kubernetes operator to deploy and run [kcp](https://github.com
 
 The table below marks known support of a kcp version in kcp-operator versions.
 
+<!-- The same table is in the global README.md, make sure to keep them in-sync. -->
+
 | kcp    | `main`             | 0.1.x              |
 | ------ | ------------------ | ------------------ |
 | `main` | :warning:          | :question:         |
