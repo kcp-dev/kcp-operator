@@ -96,7 +96,7 @@ vet: ## Run go vet against code.
 
 .PHONY: test
 test: fmt vet ## Run tests.
-	go test $$(go list ./... | grep -v /e2e) -coverprofile cover.out
+	go test ./... -coverprofile cover.out
 
 # Utilize Kind or modify the e2e tests to load the image locally, enabling compatibility with other vendors.
 .PHONY: test-e2e  # Run the e2e tests against a kind k8s instance that is already spun up.
