@@ -135,6 +135,14 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &operatorv1alpha1.ShardSpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ShardStatus"):
 		return &operatorv1alpha1.ShardStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("WorkspaceConfig"):
+		return &operatorv1alpha1.WorkspaceConfigApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("WorkspaceObject"):
+		return &operatorv1alpha1.WorkspaceObjectApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("WorkspaceObjectSpec"):
+		return &operatorv1alpha1.WorkspaceObjectSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("WorkspaceObjectStatus"):
+		return &operatorv1alpha1.WorkspaceObjectStatusApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("X509Subject"):
 		return &operatorv1alpha1.X509SubjectApplyConfiguration{}
 

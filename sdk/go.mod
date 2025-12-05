@@ -7,6 +7,7 @@ require (
 	github.com/kcp-dev/client-go v0.0.0-20250223133118-3dea338dc267
 	github.com/kcp-dev/logicalcluster/v3 v3.0.5
 	k8s.io/api v0.32.0
+	k8s.io/apiextensions-apiserver v0.32.0
 	k8s.io/apimachinery v0.32.0
 	k8s.io/client-go v0.32.0
 	sigs.k8s.io/structured-merge-diff/v4 v4.5.0

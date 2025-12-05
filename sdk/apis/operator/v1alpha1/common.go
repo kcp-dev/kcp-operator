@@ -45,6 +45,11 @@ type RootShardConfig struct {
 	Reference *corev1.LocalObjectReference `json:"ref,omitempty"`
 }
 
+type WorkspaceConfig struct {
+	// Path is the path of the workspace inside kcp.
+	Path string `json:"path"`
+}
+
 type EtcdConfig struct {
 	// Endpoints is a list of http urls at which etcd nodes are available. The expected format is "https://etcd-hostname:2379".
 	Endpoints []string `json:"endpoints"`

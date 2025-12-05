@@ -97,6 +97,8 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericClusterInformer{resource: resource.GroupResource(), informer: f.Operator().V1alpha1().RootShards().Informer()}, nil
 	case operatorv1alpha1.SchemeGroupVersion.WithResource("shards"):
 		return &genericClusterInformer{resource: resource.GroupResource(), informer: f.Operator().V1alpha1().Shards().Informer()}, nil
+	case operatorv1alpha1.SchemeGroupVersion.WithResource("workspaceobjects"):
+		return &genericClusterInformer{resource: resource.GroupResource(), informer: f.Operator().V1alpha1().WorkspaceObjects().Informer()}, nil
 	}
 
 	return nil, fmt.Errorf("no informer found for %v", resource)
@@ -121,6 +123,9 @@ func (f *sharedScopedInformerFactory) ForResource(resource schema.GroupVersionRe
 		return &genericInformer{lister: cache.NewGenericLister(informer.GetIndexer(), resource.GroupResource()), informer: informer}, nil
 	case operatorv1alpha1.SchemeGroupVersion.WithResource("shards"):
 		informer := f.Operator().V1alpha1().Shards().Informer()
+		return &genericInformer{lister: cache.NewGenericLister(informer.GetIndexer(), resource.GroupResource()), informer: informer}, nil
+	case operatorv1alpha1.SchemeGroupVersion.WithResource("workspaceobjects"):
+		informer := f.Operator().V1alpha1().WorkspaceObjects().Informer()
 		return &genericInformer{lister: cache.NewGenericLister(informer.GetIndexer(), resource.GroupResource()), informer: informer}, nil
 	}
 

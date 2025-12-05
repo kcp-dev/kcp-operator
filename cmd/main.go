@@ -41,6 +41,7 @@ import (
 	"github.com/kcp-dev/kcp-operator/internal/controller/kubeconfig"
 	"github.com/kcp-dev/kcp-operator/internal/controller/rootshard"
 	"github.com/kcp-dev/kcp-operator/internal/controller/shard"
+	"github.com/kcp-dev/kcp-operator/internal/controller/workspaceobject"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
@@ -186,6 +187,13 @@ func main() {
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Kubeconfig")
+		os.Exit(1)
+	}
+	if err = (&workspaceobject.WorkspaceObjectReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "WorkspaceObject")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder
