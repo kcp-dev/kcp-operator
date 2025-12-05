@@ -40,6 +40,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kcp-dev/kcp-operator/internal/controller/util"
+	"github.com/kcp-dev/kcp-operator/internal/metrics"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
 	"github.com/kcp-dev/kcp-operator/internal/resources/kubeconfig"
@@ -74,6 +75,12 @@ func (r *KubeconfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	startTime := time.Now()
+	defer func() {
+		duration := time.Since(startTime)
+		metrics.RecordReconciliationMetrics(metrics.KubeconfigResourceType, duration.Seconds(), nil)
+	}()
+
 	logger := log.FromContext(ctx)
 	logger.V(4).Info("Reconciling")
 
@@ -83,6 +90,7 @@ func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		if apierrors.IsNotFound(err) {
 			return ctrl.Result{}, nil
 		}
+		metrics.RecordReconciliationError(metrics.KubeconfigResourceType, err.Error())
 		return ctrl.Result{}, err
 	}
 
@@ -112,6 +120,14 @@ func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	if err := r.reconcileStatus(ctx, &kc, kcCopy, conditions); err != nil {
 		recErr = kerrors.NewAggregate([]error{recErr, err})
 	}
+
+	metrics.RecordObjectMetrics(
+		metrics.KubeconfigResourceType,
+		kc.Name,
+		req.Namespace,
+		string(kc.Status.Phase),
+		kc.Status.Conditions,
+	)
 
 	return ctrl.Result{}, recErr
 }

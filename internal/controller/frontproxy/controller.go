@@ -19,6 +19,7 @@ package frontproxy
 import (
 	"context"
 	"fmt"
+	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 
@@ -38,6 +39,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/kcp-dev/kcp-operator/internal/controller/util"
+	"github.com/kcp-dev/kcp-operator/internal/metrics"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
 	"github.com/kcp-dev/kcp-operator/internal/resources/frontproxy"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
@@ -89,12 +91,19 @@ func (r *FrontProxyReconciler) SetupWithManager(mgr ctrl.Manager) error {
 // +kubebuilder:rbac:groups=core,resources=services;configmaps;secrets,verbs=get;list;watch;create;update;patch;delete
 
 func (r *FrontProxyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, recErr error) {
+	startTime := time.Now()
+	defer func() {
+		duration := time.Since(startTime)
+		metrics.RecordReconciliationMetrics(metrics.FrontProxyResourceType, duration.Seconds(), recErr)
+	}()
+
 	logger := log.FromContext(ctx)
 	logger.V(4).Info("Reconciling")
 
 	var frontProxy operatorv1alpha1.FrontProxy
 	if err := r.Get(ctx, req.NamespacedName, &frontProxy); err != nil {
 		if ctrlruntimeclient.IgnoreNotFound(err) != nil {
+			metrics.RecordReconciliationError(metrics.FrontProxyResourceType, err.Error())
 			return ctrl.Result{}, fmt.Errorf("failed to get FrontProxy object: %w", err)
 		}
 
@@ -107,6 +116,14 @@ func (r *FrontProxyReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	if err := r.reconcileStatus(ctx, &frontProxy, conditions); err != nil {
 		recErr = kerrors.NewAggregate([]error{recErr, err})
 	}
+
+	metrics.RecordObjectMetrics(
+		metrics.FrontProxyResourceType,
+		frontProxy.Name,
+		req.Namespace,
+		string(frontProxy.Status.Phase),
+		frontProxy.Status.Conditions,
+	)
 
 	return ctrl.Result{}, recErr
 }
