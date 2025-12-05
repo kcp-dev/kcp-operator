@@ -67,7 +67,7 @@ test: fmt vet ## Run tests.
 # Utilize Kind or modify the e2e tests to load the image locally, enabling compatibility with other vendors.
 .PHONY: test-e2e  # Run the e2e tests against a kind k8s instance that is already spun up.
 test-e2e:
-	go test ./test/e2e/ -v
+	go test ./test/e2e/... -v
 
 # Creates a kind cluster and runs the e2e tests in them. The kind cluster is destroyed after the tests.
 .PHONY: test-e2e-with-kind  # Run the e2e tests against a temporary kind cluster.
@@ -127,6 +127,12 @@ build-installer: manifests generate kustomize ## Generate a consolidated YAML wi
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/default > dist/install.yaml
 
+KIND_CLUSTER_NAME ?= kind
+
+.PHONY: kind-load
+kind-load: ## Loads the docker image into a local kind cluster.
+	kind load docker-image ${IMG} --name "$(KIND_CLUSTER_NAME)"
+
 ##@ Deployment
 
 ifndef ignore-not-found
@@ -134,20 +140,20 @@ ifndef ignore-not-found
 endif
 
 .PHONY: install
-install: kubectl kustomize ## Install CRDs into the K8s cluster specified in ~/.kube/config.
+install: kubectl kustomize ## Install CRDs into the K8s cluster specified by $KUBECONFIG.
 	$(KUSTOMIZE) build config/crd | $(KUBECTL) apply -f -
 
 .PHONY: uninstall
-uninstall: kubectl kustomize ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
+uninstall: kubectl kustomize ## Uninstall CRDs from the K8s cluster specified by $KUBECONFIG. Call with ignore-not-found=true to ignore resource not found errors during deletion.
 	$(KUSTOMIZE) build config/crd | $(KUBECTL) delete --ignore-not-found=$(ignore-not-found) -f -
 
 .PHONY: deploy
-deploy: kubectl kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
+deploy: kubectl kustomize ## Deploy controller to the K8s cluster specified by $KUBECONFIG.
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/default | $(KUBECTL) apply -f -
 
 .PHONY: undeploy
-undeploy: kubectl kustomize ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
+undeploy: kubectl kustomize ## Undeploy controller from the K8s cluster specified by $KUBECONFIG. Call with ignore-not-found=true to ignore resource not found errors during deletion.
 	$(KUSTOMIZE) build config/default | $(KUBECTL) delete --ignore-not-found=$(ignore-not-found) -f -
 
 ##@ Dependencies

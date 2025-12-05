@@ -42,12 +42,25 @@ type KubeconfigSpec struct {
 	// CertificateTemplate allows to customize the properties on the generated
 	// certificate for this kubeconfig.
 	CertificateTemplate *CertificateTemplate `json:"certificateTemplate,omitempty"`
+
+	// Authorization allows to provision permissions for this kubeconfig.
+	Authorization *KubeconfigAuthorization `json:"authorization,omitempty"`
 }
 
 type KubeconfigTarget struct {
 	RootShardRef  *corev1.LocalObjectReference `json:"rootShardRef,omitempty"`
 	ShardRef      *corev1.LocalObjectReference `json:"shardRef,omitempty"`
 	FrontProxyRef *corev1.LocalObjectReference `json:"frontProxyRef,omitempty"`
+}
+
+type KubeconfigAuthorization struct {
+	ClusterRoleBindings KubeconfigClusterRoleBindings `json:"clusterRoleBindings"`
+}
+
+type KubeconfigClusterRoleBindings struct {
+	// Cluster can be either a cluster name or a workspace path.
+	Cluster      string   `json:"cluster"`
+	ClusterRoles []string `json:"clusterRoles"`
 }
 
 type KubeconfigPhase string
@@ -66,9 +79,15 @@ type KubeconfigStatus struct {
 	// TargetName represents the name of the target resource (RootShard, Shard, or FrontProxy).
 	TargetName string `json:"targetName,omitempty"`
 
+	Authorization *KubeconfigAuthorizationStatus `json:"authorization,omitempty"`
+
 	// +listType=map
 	// +listMapKey=type
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
+}
+
+type KubeconfigAuthorizationStatus struct {
+	ProvisionedCluster string `json:"provisionedCluster"`
 }
 
 // +genclient
