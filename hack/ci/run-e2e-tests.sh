@@ -65,16 +65,17 @@ chmod 600 "$KUBECONFIG"
 
 # apply kernel limits job first and wait for completion
 echo "Applying kernel limits job…"
-kubectl apply --filename hack/ci/kernel.yaml
-kubectl wait --for=condition=Complete job/kernel-limits --timeout=300s
+KUBECTL="$(UGET_PRINT_PATH=absolute make --no-print-directory install-kubectl)"
+"$KUBECTL" apply --filename hack/ci/kernel.yaml
+"$KUBECTL" wait --for=condition=Complete job/kernel-limits --timeout=300s
 echo "Kernel limits job completed."
 
 # store logs as artifacts
-make protokol
-_tools/protokol --output "$ARTIFACTS/logs" --namespace 'kcp-*' --namespace 'e2e-*' >/dev/null 2>&1 &
+PROTOKOL="$(UGET_PRINT_PATH=absolute make --no-print-directory install-protokol)"
+"$PROTOKOL" --output "$ARTIFACTS/logs" --namespace 'kcp-*' --namespace 'e2e-*' >/dev/null 2>&1 &
 
 # need Helm to setup etcd
-make helm
+HELM="$(UGET_PRINT_PATH=absolute make --no-print-directory install-helm)"
 
 # load the operator image into the kind cluster
 image="ghcr.io/kcp-dev/kcp-operator:$IMAGE_TAG"
@@ -86,17 +87,17 @@ kind load image-archive "$archive" --name "$KIND_CLUSTER_NAME"
 
 # deploy the operator
 echo "Deploying operator..."
-kubectl kustomize hack/ci/testdata | kubectl apply --filename -
-kubectl --namespace kcp-operator-system wait deployment kcp-operator-controller-manager --for condition=Available
-kubectl --namespace kcp-operator-system wait pod --all --for condition=Ready
+"$KUBECTL" kustomize hack/ci/testdata | "$KUBECTL" apply --filename -
+"$KUBECTL" --namespace kcp-operator-system wait deployment kcp-operator-controller-manager --for condition=Available
+"$KUBECTL" --namespace kcp-operator-system wait pod --all --for condition=Ready
 
 # deploying cert-manager
 echo "Deploying cert-manager..."
 
-_tools/helm repo add jetstack https://charts.jetstack.io --force-update
-_tools/helm repo update
+"$HELM" repo add jetstack https://charts.jetstack.io --force-update
+"$HELM" repo update
 
-_tools/helm upgrade \
+"$HELM" upgrade \
   --install \
   --namespace cert-manager \
   --create-namespace \
@@ -104,11 +105,11 @@ _tools/helm upgrade \
   --set crds.enabled=true \
   cert-manager jetstack/cert-manager
 
-kubectl apply --filename hack/ci/testdata/clusterissuer.yaml
+"$KUBECTL" apply --filename hack/ci/testdata/clusterissuer.yaml
 
 echo "Running e2e tests..."
 
-export HELM_BINARY="$(realpath _tools/helm)"
+export HELM_BINARY="$HELM"
 export ETCD_HELM_CHART="$(realpath hack/ci/testdata/etcd)"
 
 WHAT="${WHAT:-./test/e2e/...}"

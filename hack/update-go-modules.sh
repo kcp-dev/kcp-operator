@@ -26,5 +26,5 @@ mapfile -t DIRS < <(find "${REPO_ROOT}" -name go.mod -print0 | xargs -0 dirname)
 
 for dir in "${DIRS[@]}"; do
   echo "Tidying ${dir}"
-  go mod tidy
+  (cd "$dir"; go mod tidy)
 done
