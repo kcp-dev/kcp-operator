@@ -3,7 +3,7 @@
 # SPDX-FileCopyrightText: 2025 Christoph Mewes, https://codeberg.org/xrstf/uget
 # SPDX-License-Identifier: MIT
 #
-# µget 0.4.0 – your friendly downloader
+# µget 0.5.0 – your friendly downloader
 # -------------------------------------
 #
 # µget can download software as binaries, archives or Go modules.
@@ -23,6 +23,12 @@ set -eu
 # URL and version as a dependency and then go build the desired binary. Note
 # that Go modules do not use checksums by default, see $UGET_GO_CHECKSUMS.
 GO_MODULE=${GO_MODULE:-false}
+
+# GO_EXTRA_DEPS is an optional, space-separated list of additional dependencies
+# that should be added to the temporary Go module before the actual dependency
+# is added and built. This can be used to override/upgrade individual dependencies
+# when needed.
+GO_EXTRA_DEPS="${GO_EXTRA_DEPS:-}"
 
 # UNCOMPRESSED can be set to true if the downloaded file is not an archive,
 # but the binary itself and doesn't need decompressing.
@@ -65,8 +71,13 @@ UGET_TEMPDIR="${UGET_TEMPDIR:-/tmp}"
 # effectively cached by Go itself.
 UGET_CACHE="${UGET_CACHE:-}"
 
+# UGET_CACHE_SYMLINK can be set to true to create a symlink between the cached
+# file and the local copy in $UGET_DIRECTORY. If left on false, µget will instead
+# copy the file from the cache.
+UGET_CACHE_SYMLINK=${UGET_CACHE_SYMLINK:-false}
+
 # UGET_PRINT_PATH can be set to "relative" to make µget only omit log output
-# and only print the relative path to the binary, and set to "absolute" to
+# and only print the relative path to the binary, or set to "absolute" to
 # output the absolute path.
 UGET_PRINT_PATH="${UGET_PRINT_PATH:-no}"
 
@@ -215,16 +226,41 @@ uget_checksum_write() {
   fi
 }
 
+uget_begins_with() {
+  case $2 in
+    "$1"*) true ;;
+    *)     false ;;
+  esac
+}
+
+uget_trim_env_prefix() {
+  set -e
+
+  echo "${1#ENV:}"
+}
+
 uget_url_placeholder() {
   set -e
 
-  case "$1" in
-    GOARCH) go env GOARCH ;;
-    GOOS)   go env GOOS ;;
-    UARCH)  uname -m | uget_lowercase ;;
-    UOS)    uname -s | uget_lowercase ;;
-    *)      uget_error "Unexpected placeholder $1."; return 1 ;;
-  esac
+  # trim potential "ENV:" prefix
+  local envName
+  envName="$(uget_trim_env_prefix "$1")"
+
+  if [ "$envName" != "$1" ]; then
+    if ! printenv "$envName"; then
+      uget_error "Unexpected placeholder, environment variable $envName is not set."
+      return 1
+    fi
+  else
+    # built-in, default placeholders
+    case "$1" in
+      GOARCH) go env GOARCH ;;
+      GOOS)   go env GOOS ;;
+      UARCH)  uname -m | uget_lowercase ;;
+      UOS)    uname -s | uget_lowercase ;;
+      *)      uget_error "Unexpected placeholder $1."; return 1 ;;
+    esac
+  fi
 }
 
 # valueFromPair returns "foo" for "myvalue=foo;myothervalue=bar" when called with
@@ -267,7 +303,7 @@ uget_url_findPlaceholders() {
   # then remove braces and
   # finally turn into a singleline string
   echo "$1" |
-    grep -oE '\{[A-Z0-9_]+\}' |
+    grep -oE '\{(ENV:)?[A-Z0-9_]+\}' |
     sort -u |
     tr -d '{}' |
     awk '{printf("%s ", $0)}'
@@ -290,6 +326,7 @@ uget_url_replaceLive() {
     urlPattern="$(echo "$urlPattern" | sed "s|{$placeholder}|$replacement|g")"
 
     # remember this placeholder and its value
+    placeholder="$(uget_trim_env_prefix "$placeholder")"
     usedPlaceholders="$usedPlaceholders;$placeholder=$replacement"
   done
 
@@ -312,6 +349,8 @@ uget_url_replaceWithArgs() {
   for placeholder in $(uget_url_findPlaceholders "$urlPattern"); do
     # version is treated specially
     [ "$placeholder" = "VERSION" ] && continue
+
+    placeholder="$(uget_trim_env_prefix "$placeholder")"
 
     local replacement
     replacement="$(uget_url_valueFromPair "$kvString" "$placeholder")"
@@ -387,9 +426,11 @@ uget_go_install() {
 
   go mod init temp 2>/dev/null
 
-  # kcp-operator hack: force a newer version of x/tools to make the old kcp code-generator v2
-  # compile on Go 1.25+. This must happen before we go-get the actual module to build.
-  go get golang.org/x/tools@v0.39.0
+  if [ -n "$GO_EXTRA_DEPS" ]; then
+    for dependency in $GO_EXTRA_DEPS; do
+      go get "$dependency"
+    done
+  fi
 
   go get "$url@$VERSION"
 
@@ -463,8 +504,13 @@ uget_download() {
     cacheFile="$UGET_CACHE/$IDENTIFIER-$VERSION-$urlHash"
 
     if uget_cache_enabled && [ -f "$cacheFile" ]; then
-      cp "$cacheFile" "$destinationDir/$BINARY"
-      uget_log "Copied $BINARY from µget cache."
+      if $UGET_CACHE_SYMLINK; then
+        ln -s "$cacheFile" "$destinationDir/$BINARY"
+        uget_log "Symlinked $BINARY from µget cache."
+      else
+        cp "$cacheFile" "$destinationDir/$BINARY"
+        uget_log "Copied $BINARY from µget cache."
+      fi
     else
       uget_http_download "$url"
 

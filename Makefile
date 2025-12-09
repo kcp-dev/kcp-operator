@@ -225,6 +225,10 @@ install-applyconfiguration-gen: ## Download applyconfiguration-gen locally if ne
 install-client-gen: ## Download client-gen locally if necessary.
 	@GO_MODULE=true hack/uget.sh k8s.io/code-generator/cmd/client-gen client-gen $(CLIENT_GEN_VERSION)
 
+# make controller-gen and kcp-codegen compile on Go 1.25;
+# this can be removed once they have been updated to more recent versions.
+export GO_EXTRA_DEPS=golang.org/x/tools@v0.39.0
+
 .PHONY: install-controller-gen
 install-controller-gen: ## Download controller-gen locally if necessary.
 	@GO_MODULE=true hack/uget.sh sigs.k8s.io/controller-tools/cmd/controller-gen controller-gen $(CONTROLLER_GEN_VERSION)
