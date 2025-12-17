@@ -194,7 +194,7 @@ func (r *ShardReconciler) reconcileStatus(ctx context.Context, oldShard *operato
 
 	availableCond := apimeta.FindStatusCondition(newShard.Status.Conditions, string(operatorv1alpha1.ConditionTypeAvailable))
 	switch {
-	case availableCond.Status == metav1.ConditionTrue:
+	case availableCond != nil && availableCond.Status == metav1.ConditionTrue:
 		newShard.Status.Phase = operatorv1alpha1.ShardPhaseRunning
 
 	case newShard.DeletionTimestamp != nil:
