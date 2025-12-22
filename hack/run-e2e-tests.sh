@@ -58,23 +58,27 @@ fi
 
 echo "Kubeconfig is in $KUBECONFIG."
 
+KUBECTL="$(UGET_PRINT_PATH=absolute make --no-print-directory install-kubectl)"
+HELM="$(UGET_PRINT_PATH=absolute make --no-print-directory install-helm)"
+PROTOKOL="$(UGET_PRINT_PATH=absolute make --no-print-directory install-protokol)"
+
 # apply kernel limits job first and wait for completion
 echo "Applying kernel limits job…"
-kubectl apply --filename hack/ci/kernel.yaml
-kubectl wait --for=condition=Complete job/kernel-limits --timeout=300s
+"$KUBECTL" apply --filename hack/ci/kernel.yaml
+"$KUBECTL" wait --for=condition=Complete job/kernel-limits --timeout=300s
 echo "Kernel limits job completed."
 
 # deploying operator CRDs
 echo "Deploying operator CRDs..."
-kubectl apply --kustomize config/crd
+"$KUBECTL" apply --kustomize config/crd
 
 # deploying cert-manager
 echo "Deploying cert-manager..."
 
-_tools/helm repo add jetstack https://charts.jetstack.io --force-update
-_tools/helm repo update
+"$HELM" repo add jetstack https://charts.jetstack.io --force-update
+"$HELM" repo update
 
-_tools/helm upgrade \
+"$HELM" upgrade \
   --install \
   --namespace cert-manager \
   --create-namespace \
@@ -83,7 +87,7 @@ _tools/helm upgrade \
   --atomic \
   cert-manager jetstack/cert-manager
 
-kubectl apply --filename hack/ci/testdata/clusterissuer.yaml
+"$KUBECTL" apply --filename hack/ci/testdata/clusterissuer.yaml
 
 # start the operator locally
 echo "Starting kcp-operator..."
@@ -97,17 +101,12 @@ _build/manager \
 OPERATOR_PID=$!
 echo "Running as process $OPERATOR_PID."
 
-if command -v protokol &> /dev/null; then
-  protokol --namespace 'e2e-*' --output "$DATA_DIR/kind-logs" 2>/dev/null &
-  PROTOKOL_PID=$!
-else
-  echo "Install https://codeberg.org/xrstf/protokol to automatically"
-  echo "collect logs from the kind cluster."
-fi
+"$PROTOKOL" --namespace 'e2e-*' --output "$DATA_DIR/kind-logs" 2>/dev/null &
+PROTOKOL_PID=$!
 
 echo "Running e2e tests..."
 
-export HELM_BINARY="$(realpath _tools/helm)"
+export HELM_BINARY="$HELM"
 export ETCD_HELM_CHART="$(realpath hack/ci/testdata/etcd)"
 
 WHAT="${WHAT:-./test/e2e/...}"
