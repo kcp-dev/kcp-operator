@@ -61,6 +61,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&ShardList{},
 		&Kubeconfig{},
 		&KubeconfigList{},
+		&WorkspaceObject{},
+		&WorkspaceObjectList{},
 	)
 
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
