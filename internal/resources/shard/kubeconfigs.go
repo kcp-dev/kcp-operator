@@ -149,8 +149,8 @@ func ExternalLogicalClusterAdminKubeconfigReconciler(shard *operatorv1alpha1.Sha
 			config = &clientcmdapi.Config{
 				Clusters: map[string]*clientcmdapi.Cluster{
 					serverName: {
-						Server:               fmt.Sprintf("https://%s:%d", rootShard.Spec.External.Hostname, rootShard.Spec.External.Port),
-						CertificateAuthority: getCAMountPath(operatorv1alpha1.ServerCA) + "/tls.crt",
+						Server: fmt.Sprintf("https://%s:%d", rootShard.Spec.External.Hostname, rootShard.Spec.External.Port),
+						// CertificateAuthority will be configured below to respect CABundleSecretRef property in the shard spec
 					},
 				},
 				Contexts: map[string]*clientcmdapi.Context{
@@ -166,6 +166,12 @@ func ExternalLogicalClusterAdminKubeconfigReconciler(shard *operatorv1alpha1.Sha
 					},
 				},
 				CurrentContext: contextName,
+			}
+
+			if shard.Spec.CABundleSecretRef == nil {
+				config.Clusters[serverName].CertificateAuthority = getCAMountPath(operatorv1alpha1.ServerCA) + "/tls.crt"
+			} else {
+				config.Clusters[serverName].CertificateAuthority = getCAMountPath(operatorv1alpha1.CABundleCA) + "/tls.crt"
 			}
 
 			data, err := clientcmd.Write(*config)
