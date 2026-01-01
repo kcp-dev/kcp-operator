@@ -78,6 +78,13 @@ func ApplyResources(container corev1.Container, resources *corev1.ResourceRequir
 		return container
 	}
 
+	if container.Resources.Limits == nil {
+		container.Resources.Limits = make(corev1.ResourceList)
+	}
+	if container.Resources.Requests == nil {
+		container.Resources.Requests = make(corev1.ResourceList)
+	}
+
 	maps.Copy(container.Resources.Limits, resources.Limits)
 	maps.Copy(container.Resources.Requests, resources.Requests)
 
