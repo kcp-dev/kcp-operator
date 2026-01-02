@@ -402,6 +402,7 @@ type LoggingSpec struct {
 	Level int `json:"level,omitempty"`
 }
 
+// +kubebuilder:validation:XValidation:rule="!(has(self.clientSecret) && has(self.clientSecretRef))",message="Cannot set both clientSecret (deprecated) and clientSecretRef. Use clientSecretRef only."
 type OIDCConfiguration struct {
 	// IssuerURL is used for the OIDC issuer URL. Only https URLs will be accepted.
 	IssuerURL string `json:"issuerURL"`
@@ -410,7 +411,14 @@ type OIDCConfiguration struct {
 
 	// Optionally provide the client secret for the OIDC client. This is not used by kcp itself, but is used to generate
 	// a OIDC kubeconfig that can be shared with users to log in via the OIDC provider.
+
+	// Deprecated: use clientSecretRef instead.
+	// +optional
 	ClientSecret string `json:"clientSecret,omitempty"`
+
+	// ClientSecretRef references a secret that contains the OIDC client secret.
+	// +optional
+	ClientSecretRef *LocalDataKeyReference `json:"clientSecretRef,omitempty"`
 
 	// Experimental: Optionally provides a custom claim for fetching groups. The claim must be a string or an array of strings.
 	GroupsClaim string `json:"groupsClaim,omitempty"`
@@ -426,13 +434,5 @@ type OIDCConfiguration struct {
 
 	// Optionally provides a reference to a secret that contains a CA bundle for the OIDC issuer. This is useful when
 	// the OIDC issuer is not publicly trusted.
-	CAFileRef *OIDCCAFileRef `json:"caFileRef,omitempty"`
-}
-
-type OIDCCAFileRef struct {
-	// Name is the name of the secret that contains the CA file.
-	Name string `json:"name"`
-	// Key is the key in the secret that contains the CA file. Defaults to "ca.crt".
-	// +optional
-	Key string `json:"key,omitempty"`
+	CAFileRef *LocalDataKeyReference `json:"caFileRef,omitempty"`
 }
