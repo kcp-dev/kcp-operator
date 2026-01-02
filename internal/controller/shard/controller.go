@@ -19,6 +19,7 @@ package shard
 import (
 	"context"
 	"fmt"
+	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	k8creconciling "k8c.io/reconciler/pkg/reconciling"
@@ -39,6 +40,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/kcp-dev/kcp-operator/internal/controller/util"
+	"github.com/kcp-dev/kcp-operator/internal/metrics"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
 	"github.com/kcp-dev/kcp-operator/internal/resources/shard"
@@ -90,12 +92,19 @@ func (r *ShardReconciler) SetupWithManager(mgr ctrl.Manager) error {
 // +kubebuilder:rbac:groups=core,resources=secrets;services,verbs=get;list;watch;create;update;patch;delete
 
 func (r *ShardReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, recErr error) {
+	startTime := time.Now()
+	defer func() {
+		duration := time.Since(startTime)
+		metrics.RecordReconciliationMetrics(metrics.ShardResourceType, duration.Seconds(), recErr)
+	}()
+
 	logger := log.FromContext(ctx)
 	logger.V(4).Info("Reconciling Shard object")
 
 	var s operatorv1alpha1.Shard
 	if err := r.Get(ctx, req.NamespacedName, &s); err != nil {
 		if ctrlruntimeclient.IgnoreNotFound(err) != nil {
+			metrics.RecordReconciliationError(metrics.ShardResourceType, err.Error())
 			return ctrl.Result{}, fmt.Errorf("failed to get shard: %w", err)
 		}
 
@@ -107,6 +116,14 @@ func (r *ShardReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res 
 	if err := r.reconcileStatus(ctx, &s, conditions); err != nil {
 		recErr = kerrors.NewAggregate([]error{recErr, err})
 	}
+
+	metrics.RecordObjectMetrics(
+		metrics.ShardResourceType,
+		s.Name,
+		req.Namespace,
+		string(s.Status.Phase),
+		s.Status.Conditions,
+	)
 
 	return ctrl.Result{}, recErr
 }

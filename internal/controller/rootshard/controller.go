@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	k8creconciling "k8c.io/reconciler/pkg/reconciling"
@@ -40,6 +41,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/kcp-dev/kcp-operator/internal/controller/util"
+	"github.com/kcp-dev/kcp-operator/internal/metrics"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
 	"github.com/kcp-dev/kcp-operator/internal/resources/frontproxy"
@@ -99,12 +101,19 @@ func (r *RootShardReconciler) SetupWithManager(mgr ctrl.Manager) error {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.19.0/pkg/reconcile
 func (r *RootShardReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, recErr error) {
+	startTime := time.Now()
+	defer func() {
+		duration := time.Since(startTime)
+		metrics.RecordReconciliationMetrics(metrics.RootShardResourceType, duration.Seconds(), recErr)
+	}()
+
 	logger := log.FromContext(ctx)
 	logger.V(4).Info("Reconciling")
 
 	var rootShard operatorv1alpha1.RootShard
 	if err := r.Get(ctx, req.NamespacedName, &rootShard); err != nil {
 		if ctrlruntimeclient.IgnoreNotFound(err) != nil {
+			metrics.RecordReconciliationError(metrics.RootShardResourceType, err.Error())
 			return ctrl.Result{}, fmt.Errorf("failed to find %s/%s: %w", req.Namespace, req.Name, err)
 		}
 
@@ -117,6 +126,14 @@ func (r *RootShardReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	if err := r.reconcileStatus(ctx, &rootShard, conditions); err != nil {
 		recErr = kerrors.NewAggregate([]error{recErr, err})
 	}
+
+	metrics.RecordObjectMetrics(
+		metrics.RootShardResourceType,
+		rootShard.Name,
+		req.Namespace,
+		string(rootShard.Status.Phase),
+		rootShard.Status.Conditions,
+	)
 
 	return ctrl.Result{}, recErr
 }
