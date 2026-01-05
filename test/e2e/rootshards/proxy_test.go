@@ -45,10 +45,9 @@ func TestRootShardProxy(t *testing.T) {
 
 	client := utils.GetKubeClient(t)
 	ctx := context.Background()
-	namespaceSuffix := "rootshard-proxy"
 
-	namespace := utils.CreateSelfDestructingNamespace(t, ctx, client, namespaceSuffix)
-	externalHostname := fmt.Sprintf("front-proxy-front-proxy.e2e-%s.svc.cluster.local", namespaceSuffix)
+	namespace := utils.CreateSelfDestructingNamespace(t, ctx, client, "rootshard-proxy")
+	externalHostname := fmt.Sprintf("front-proxy-front-proxy.%s.svc.cluster.local", namespace.Name)
 
 	// deploy a root shard incl. etcd
 	rootShard := utils.DeployRootShard(ctx, t, client, namespace.Name, externalHostname)
@@ -87,7 +86,7 @@ func TestRootShardProxy(t *testing.T) {
 	utils.WaitForObject(t, ctx, client, &corev1.Secret{}, types.NamespacedName{Namespace: rsConfig.Namespace, Name: rsConfig.Spec.SecretRef.Name})
 
 	t.Log("Connecting to RootShard...")
-	rootShardClient := utils.ConnectWithKubeconfig(t, ctx, client, namespace.Name, rsConfig.Name)
+	rootShardClient := utils.ConnectWithKubeconfig(t, ctx, client, namespace.Name, rsConfig.Name, logicalcluster.None)
 
 	// wait until the 2nd shard has registered itself successfully at the root shard
 	shardKey := types.NamespacedName{Name: shardName}
@@ -131,9 +130,6 @@ func TestRootShardProxy(t *testing.T) {
 
 	// build a client through the proxy to the new workspace
 	proxyClient := utils.ConnectWithRootShardProxy(t, ctx, client, &rootShard, logicalcluster.NewPath("root").Join(workspace.Name))
-	if err != nil {
-		t.Fatalf("Failed to create root shard proxy client: %v", err)
-	}
 
 	// proof of life: list something every logicalcluster in kcp has
 	t.Log("Should be able to list Secrets in the new workspace.")

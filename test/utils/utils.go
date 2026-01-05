@@ -22,6 +22,7 @@ import (
 	"net"
 	"net/url"
 	"os/exec"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -29,6 +30,7 @@ import (
 
 	kcpcorev1alpha1 "github.com/kcp-dev/kcp/sdk/apis/core/v1alpha1"
 	kcptenancyv1alpha1 "github.com/kcp-dev/kcp/sdk/apis/tenancy/v1alpha1"
+	"github.com/kcp-dev/kcp/sdk/testing/server"
 	"github.com/kcp-dev/logicalcluster/v3"
 
 	corev1 "k8s.io/api/core/v1"
@@ -154,13 +156,18 @@ func SelfDestuctingPortForward(
 	})
 }
 
-var currentPort = 56029
+func getPort(t *testing.T) int {
+	port, err := server.GetFreePort(t)
+	if err != nil {
+		t.Fatalf("Failed to get free port: %v", err)
+	}
 
-func getPort() int {
-	port := currentPort
-	currentPort++
+	portNum, err := strconv.Atoi(port)
+	if err != nil {
+		t.Fatalf("Failed to parse port %q as number: %v", port, err)
+	}
 
-	return port
+	return portNum
 }
 
 func ConnectWithKubeconfig(
@@ -169,6 +176,7 @@ func ConnectWithKubeconfig(
 	client ctrlruntimeclient.Client,
 	namespace string,
 	kubeconfigName string,
+	cluster logicalcluster.Path,
 ) ctrlruntimeclient.Client {
 	t.Helper()
 
@@ -212,12 +220,17 @@ func ConnectWithKubeconfig(
 	}
 
 	// start a port forwarding
-	localPort := getPort()
+	localPort := getPort(t)
 	SelfDestuctingPortForward(t, ctx, namespace, "svc/"+serviceName, int(portNum), localPort)
 
 	// patch the target server
 	parsed.Host = net.JoinHostPort("localhost", fmt.Sprintf("%d", localPort))
 	clientConfig.Host = parsed.String()
+
+	// switch to another workspace is desired
+	if !cluster.Empty() {
+		clientConfig.Host = changeClusterInURL(clientConfig.Host, cluster)
+	}
 
 	// create a client through the tunnel
 	kcpClient, err := ctrlruntimeclient.New(clientConfig, ctrlruntimeclient.Options{Scheme: NewScheme(t)})
@@ -249,7 +262,7 @@ func ConnectWithRootShardProxy(
 	}
 
 	// start a port forwarding
-	localPort := getPort()
+	localPort := getPort(t)
 	servicePort := 6443
 	serviceName := resources.GetRootShardProxyServiceName(rootShard)
 
@@ -259,7 +272,7 @@ func ConnectWithRootShardProxy(
 	proxyUrl := fmt.Sprintf("https://%s", net.JoinHostPort("localhost", fmt.Sprintf("%d", localPort)))
 
 	if !cluster.Empty() {
-		proxyUrl = fmt.Sprintf("%s/clusters/%s", proxyUrl, cluster.String())
+		proxyUrl = changeClusterInURL(proxyUrl, cluster)
 	}
 
 	cfg := &rest.Config{
@@ -278,4 +291,20 @@ func ConnectWithRootShardProxy(
 	}
 
 	return kcpClient
+}
+
+var clusterRegexp = regexp.MustCompile(`/clusters/([^/]+)`)
+
+func changeClusterInURL(u string, newCluster logicalcluster.Path) string {
+	newPath := fmt.Sprintf("/clusters/%s", newCluster)
+
+	matches := clusterRegexp.FindAllString(u, 1)
+	if len(matches) == 0 {
+		return u + newPath
+	}
+
+	// make sure that if a URL is "/clusters/root/apis/example.com/v1/namespaces/bla/clusters/mycluster",
+	// we only replace the first match, especially important if the URL was "/clusters/X/apis/example.com/v1/clusters/X"
+	// (i.e. accessing the cluster resource X in the kcp cluster also called X)
+	return strings.Replace(u, matches[0], newPath, 1)
 }

@@ -119,6 +119,12 @@ E2E_PARALLELISM=${E2E_PARALLELISM:-2}
 # Increase file descriptor limit for CI environments
 ulimit -n 65536
 
+# -parallel will only control how many tests run in parallel *within a single test package.*
+# We however need to limit the overall amount of tests that can run at the same time, since
+# the kind cluster does not have infinite capacity. The only way to tell Go to please not
+# run all packages at the same time is setting GOMAXPROCS.
+export GOMAXPROCS=$E2E_PARALLELISM
+
 (set -x; go test -tags e2e -parallel $E2E_PARALLELISM $TEST_ARGS "$WHAT")
 
 echo "Done. :-)"

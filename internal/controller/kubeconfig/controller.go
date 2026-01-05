@@ -56,6 +56,7 @@ type KubeconfigReconciler struct {
 // SetupWithManager sets up the controller with the Manager.
 func (r *KubeconfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
+		Named("kubeconfig").
 		For(&operatorv1alpha1.Kubeconfig{}).
 		Watches(&operatorv1alpha1.RootShard{}, handler.EnqueueRequestsFromMapFunc(r.mapRootShardToKubeconfigs)).
 		Watches(&operatorv1alpha1.Shard{}, handler.EnqueueRequestsFromMapFunc(r.mapShardToKubeconfigs)).
