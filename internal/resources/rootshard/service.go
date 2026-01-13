@@ -33,6 +33,8 @@ func ServiceReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.NamedS
 		return resources.GetRootShardServiceName(rootShard), func(svc *corev1.Service) (*corev1.Service, error) {
 			labels := resources.GetRootShardResourceLabels(rootShard)
 			svc.SetLabels(labels)
+			svc.Labels[resources.RootShardLabel] = rootShard.Name
+
 			svc.Spec.Type = corev1.ServiceTypeClusterIP
 			svc.Spec.Ports = []corev1.ServicePort{
 				{

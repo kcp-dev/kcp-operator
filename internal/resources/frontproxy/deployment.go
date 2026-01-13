@@ -61,9 +61,19 @@ func (r *reconciler) deploymentReconciler() reconciling.NamedDeploymentReconcile
 
 	return func() (string, reconciling.DeploymentReconciler) {
 		return name, func(dep *appsv1.Deployment) (*appsv1.Deployment, error) {
-			dep.SetLabels(r.resourceLabels)
-			dep.Spec.Selector = &metav1.LabelSelector{
-				MatchLabels: r.resourceLabels,
+			// Create a copy of resourceLabels to avoid modifying the shared map
+			labels := make(map[string]string, len(r.resourceLabels)+1)
+			for k, v := range r.resourceLabels {
+				labels[k] = v
+			}
+			dep.SetLabels(labels)
+			labels[resources.FrontProxyLabel] = name
+
+			// Only set the selector on creation, as it's immutable
+			if dep.Spec.Selector == nil {
+				dep.Spec.Selector = &metav1.LabelSelector{
+					MatchLabels: r.resourceLabels,
+				}
 			}
 			dep.Spec.Template.SetLabels(r.resourceLabels)
 
@@ -209,6 +219,32 @@ func (r *reconciler) deploymentReconciler() reconciling.NamedDeploymentReconcile
 
 			if r.frontProxy != nil {
 				dep = utils.ApplyFrontProxyAuthConfiguration(dep, r.frontProxy.Spec.Auth, r.rootShard)
+
+				// If frontproxy has bundle annotation, store desired replicas in annotation then scale deployment to 0 locally
+				if r.frontProxy.Annotations != nil && r.frontProxy.Annotations[resources.BundleAnnotation] != "" {
+					// Store the desired replicas in an annotation so bundle can capture the correct value
+					if dep.Spec.Replicas != nil && *dep.Spec.Replicas > 0 {
+						if dep.Annotations == nil {
+							dep.Annotations = make(map[string]string)
+						}
+						dep.Annotations[resources.BundleDesiredReplicasAnnotation] = fmt.Sprintf("%d", *dep.Spec.Replicas)
+					}
+					// Scale to 0 locally
+					dep.Spec.Replicas = ptr.To(int32(0))
+				}
+			} else if r.rootShard != nil {
+				// If rootshard has bundle annotation, store desired replicas in annotation then scale proxy deployment to 0 locally
+				if r.rootShard.Annotations != nil && r.rootShard.Annotations[resources.BundleAnnotation] != "" {
+					// Store the desired replicas in an annotation so bundle can capture the correct value
+					if dep.Spec.Replicas != nil && *dep.Spec.Replicas > 0 {
+						if dep.Annotations == nil {
+							dep.Annotations = make(map[string]string)
+						}
+						dep.Annotations[resources.BundleDesiredReplicasAnnotation] = fmt.Sprintf("%d", *dep.Spec.Replicas)
+					}
+					// Scale to 0 locally
+					dep.Spec.Replicas = ptr.To(int32(0))
+				}
 			}
 
 			return dep, nil

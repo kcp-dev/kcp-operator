@@ -40,6 +40,12 @@ const (
 	FrontProxyLabel = "operator.kcp.io/front-proxy"
 	KubeconfigLabel = "operator.kcp.io/kubeconfig"
 
+	// BundleAnnotation is placed on RootShard, Shard, or FrontProxy objects to trigger automatic Bundle creation
+	BundleAnnotation = "operator.kcp.io/bundle"
+
+	// BundleDesiredReplicasAnnotation is placed on deployments to store the desired replica count before scaling to 0 for bundling
+	BundleDesiredReplicasAnnotation = "operator.kcp.io/bundle-desired-replicas"
+
 	// OperatorUsername is the common name embedded in the operator's admin certificate
 	// that is created for each RootShard. This name alone has no special meaning, as
 	// the certificate also has system:masters as an organization, which is what ultimately
@@ -192,4 +198,8 @@ func GetFrontProxyServiceName(f *operatorv1alpha1.FrontProxy) string {
 
 func GetRootShardProxyServiceName(r *operatorv1alpha1.RootShard) string {
 	return fmt.Sprintf("%s-proxy", r.Name)
+}
+
+func GetBundleName(ownerName string) string {
+	return fmt.Sprintf("%s-bundle", ownerName)
 }

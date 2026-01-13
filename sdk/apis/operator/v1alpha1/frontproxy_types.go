@@ -106,6 +106,7 @@ type FrontProxyPhase string
 const (
 	FrontProxyPhaseProvisioning FrontProxyPhase = "Provisioning"
 	FrontProxyPhaseRunning      FrontProxyPhase = "Running"
+	FrontProxyPhaseBundled      FrontProxyPhase = "Bundled"
 	FrontProxyPhaseDeleting     FrontProxyPhase = "Deleting"
 )
 

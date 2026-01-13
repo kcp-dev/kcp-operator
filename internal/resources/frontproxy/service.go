@@ -48,6 +48,7 @@ func (r *reconciler) serviceReconciler() reconciling.NamedServiceReconcilerFacto
 	return func() (string, reconciling.ServiceReconciler) {
 		return r.serviceName(), func(svc *corev1.Service) (*corev1.Service, error) {
 			svc.SetLabels(r.resourceLabels)
+
 			svc.Spec.Type = corev1.ServiceTypeClusterIP
 
 			var port corev1.ServicePort

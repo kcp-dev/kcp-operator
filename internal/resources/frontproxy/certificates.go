@@ -98,7 +98,11 @@ func (r *reconciler) serverCertificateReconciler() reconciling.NamedCertificateR
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
-			cert.SetLabels(r.resourceLabels)
+			labels := make(map[string]string)
+			for k, v := range r.resourceLabels {
+				labels[k] = v
+			}
+			cert.SetLabels(labels)
 			cert.Spec = certmanagerv1.CertificateSpec{
 				SecretName: name,
 				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
@@ -139,7 +143,11 @@ func (r *reconciler) adminKubeconfigCertificateReconciler() reconciling.NamedCer
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
-			cert.SetLabels(r.resourceLabels)
+			labels := make(map[string]string)
+			for k, v := range r.resourceLabels {
+				labels[k] = v
+			}
+			cert.SetLabels(labels)
 			cert.Spec = certmanagerv1.CertificateSpec{
 				SecretName: name,
 				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
@@ -183,7 +191,11 @@ func (r *reconciler) kubeconfigCertificateReconciler() reconciling.NamedCertific
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
-			cert.SetLabels(r.resourceLabels)
+			labels := make(map[string]string)
+			for k, v := range r.resourceLabels {
+				labels[k] = v
+			}
+			cert.SetLabels(labels)
 			cert.Spec = certmanagerv1.CertificateSpec{
 				SecretName: name,
 				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
@@ -227,7 +239,11 @@ func (r *reconciler) requestHeaderCertificateReconciler() reconciling.NamedCerti
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
-			cert.SetLabels(r.resourceLabels)
+			labels := make(map[string]string)
+			for k, v := range r.resourceLabels {
+				labels[k] = v
+			}
+			cert.SetLabels(labels)
 			cert.Spec = certmanagerv1.CertificateSpec{
 				SecretName: name,
 				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{

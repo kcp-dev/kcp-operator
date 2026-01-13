@@ -47,7 +47,11 @@ func RootCACertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconcil
 					Labels: map[string]string{
 						resources.RootShardLabel: rootShard.Name,
 					},
+					Annotations: map[string]string{
+						resources.BundleAnnotation: "",
+					},
 				},
+
 				Duration:    &operatorv1alpha1.DefaultCADuration,
 				RenewBefore: &operatorv1alpha1.DefaultCARenewal,
 
@@ -82,6 +86,9 @@ func CACertificateReconciler(rootShard *operatorv1alpha1.RootShard, ca operatorv
 				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
 					Labels: map[string]string{
 						resources.RootShardLabel: rootShard.Name,
+					},
+					Annotations: map[string]string{
+						resources.BundleAnnotation: "",
 					},
 				},
 				Duration:    &operatorv1alpha1.DefaultCADuration,

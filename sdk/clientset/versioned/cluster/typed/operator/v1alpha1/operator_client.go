@@ -34,6 +34,7 @@ import (
 
 type OperatorV1alpha1ClusterInterface interface {
 	OperatorV1alpha1ClusterScoper
+	BundlesClusterGetter
 	CacheServersClusterGetter
 	FrontProxiesClusterGetter
 	KubeconfigsClusterGetter
@@ -54,6 +55,10 @@ func (c *OperatorV1alpha1ClusterClient) Cluster(clusterPath logicalcluster.Path)
 		panic("A specific cluster must be provided when scoping, not the wildcard.")
 	}
 	return c.clientCache.ClusterOrDie(clusterPath)
+}
+
+func (c *OperatorV1alpha1ClusterClient) Bundles() BundleClusterInterface {
+	return &bundlesClusterInterface{clientCache: c.clientCache}
 }
 
 func (c *OperatorV1alpha1ClusterClient) CacheServers() CacheServerClusterInterface {
