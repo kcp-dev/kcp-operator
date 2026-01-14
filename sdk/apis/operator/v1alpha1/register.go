@@ -41,6 +41,42 @@ var (
 
 	// SchemeGroupVersion is group version used to register these objects.
 	SchemeGroupVersion = schema.GroupVersion{Group: GroupName, Version: GroupVersion}
+
+	RootShardKind   = "RootShard"
+	FrontProxyKind  = "FrontProxy"
+	ShardKind       = "Shard"
+	CacheServerKind = "CacheServer"
+	KubeconfigKind  = "Kubeconfig"
+
+	RootShardGroupVersionKind = schema.GroupVersionKind{
+		Group:   GroupName,
+		Version: GroupVersion,
+		Kind:    RootShardKind,
+	}
+
+	FrontProxyGroupVersionKind = schema.GroupVersionKind{
+		Group:   GroupName,
+		Version: GroupVersion,
+		Kind:    FrontProxyKind,
+	}
+
+	ShardGroupVersionKind = schema.GroupVersionKind{
+		Group:   GroupName,
+		Version: GroupVersion,
+		Kind:    ShardKind,
+	}
+
+	CacheServerGroupVersionKind = schema.GroupVersionKind{
+		Group:   GroupName,
+		Version: GroupVersion,
+		Kind:    CacheServerKind,
+	}
+
+	KubeconfigGroupVersionKind = schema.GroupVersionKind{
+		Group:   GroupName,
+		Version: GroupVersion,
+		Kind:    KubeconfigKind,
+	}
 )
 
 // Resource takes an unqualified resource and returns a Group qualified GroupResource.
@@ -61,6 +97,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&ShardList{},
 		&Kubeconfig{},
 		&KubeconfigList{},
+		&Bundle{},
+		&BundleList{},
 	)
 
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)

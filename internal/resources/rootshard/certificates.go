@@ -34,7 +34,9 @@ func ServerCertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconcil
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
-			cert.SetLabels(resources.GetRootShardResourceLabels(rootShard))
+			labels := resources.GetRootShardResourceLabels(rootShard)
+			labels[resources.RootShardLabel] = rootShard.Name
+			cert.SetLabels(labels)
 			cert.Spec = certmanagerv1.CertificateSpec{
 				SecretName: name,
 				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
@@ -79,7 +81,8 @@ func VirtualWorkspacesCertificateReconciler(rootShard *operatorv1alpha1.RootShar
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
-			cert.SetLabels(resources.GetRootShardResourceLabels(rootShard))
+			labels := resources.GetRootShardResourceLabels(rootShard)
+			cert.SetLabels(labels)
 			cert.Spec = certmanagerv1.CertificateSpec{
 				SecretName: name,
 				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
@@ -123,7 +126,8 @@ func ServiceAccountCertificateReconciler(rootShard *operatorv1alpha1.RootShard) 
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
-			cert.SetLabels(resources.GetRootShardResourceLabels(rootShard))
+			labels := resources.GetRootShardResourceLabels(rootShard)
+			cert.SetLabels(labels)
 			cert.Spec = certmanagerv1.CertificateSpec{
 				CommonName: name,
 				SecretName: name,
@@ -160,7 +164,9 @@ func LogicalClusterAdminCertificateReconciler(rootShard *operatorv1alpha1.RootSh
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
-			cert.SetLabels(resources.GetRootShardResourceLabels(rootShard))
+			labels := resources.GetRootShardResourceLabels(rootShard)
+			labels[resources.RootShardLabel] = rootShard.Name
+			cert.SetLabels(labels)
 			cert.Spec = certmanagerv1.CertificateSpec{
 				CommonName:  "logical-cluster-admin",
 				SecretName:  name,
@@ -200,7 +206,9 @@ func ExternalLogicalClusterAdminCertificateReconciler(rootShard *operatorv1alpha
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
-			cert.SetLabels(resources.GetRootShardResourceLabels(rootShard))
+			labels := resources.GetRootShardResourceLabels(rootShard)
+			labels[resources.RootShardLabel] = rootShard.Name
+			cert.SetLabels(labels)
 			cert.Spec = certmanagerv1.CertificateSpec{
 				CommonName:  "external-logical-cluster-admin",
 				SecretName:  name,
@@ -240,7 +248,9 @@ func OperatorClientCertificateReconciler(rootShard *operatorv1alpha1.RootShard) 
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
-			cert.SetLabels(resources.GetRootShardResourceLabels(rootShard))
+			labels := resources.GetRootShardResourceLabels(rootShard)
+			labels[resources.RootShardLabel] = rootShard.Name
+			cert.SetLabels(labels)
 			cert.Spec = certmanagerv1.CertificateSpec{
 				CommonName:  resources.OperatorUsername,
 				SecretName:  name,

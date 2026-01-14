@@ -44,6 +44,11 @@ func RootShardClientKubeconfigReconciler(shard *operatorv1alpha1.Shard, rootShar
 		return kubeconfigSecret(shard, operatorv1alpha1.ClientCertificate), func(secret *corev1.Secret) (*corev1.Secret, error) {
 			var config *clientcmdapi.Config
 
+			if secret.Labels == nil {
+				secret.Labels = make(map[string]string)
+			}
+			secret.Labels[resources.ShardLabel] = shard.Name
+
 			if secret.Data == nil {
 				secret.Data = make(map[string][]byte)
 			}
@@ -92,6 +97,11 @@ func LogicalClusterAdminKubeconfigReconciler(shard *operatorv1alpha1.Shard, root
 	return func() (string, k8creconciling.SecretReconciler) {
 		return kubeconfigSecret(shard, operatorv1alpha1.LogicalClusterAdminCertificate), func(secret *corev1.Secret) (*corev1.Secret, error) {
 			var config *clientcmdapi.Config
+
+			if secret.Labels == nil {
+				secret.Labels = make(map[string]string)
+			}
+			secret.Labels[resources.ShardLabel] = shard.Name
 
 			if secret.Data == nil {
 				secret.Data = make(map[string][]byte)
@@ -142,6 +152,11 @@ func ExternalLogicalClusterAdminKubeconfigReconciler(shard *operatorv1alpha1.Sha
 		return kubeconfigSecret(shard, operatorv1alpha1.ExternalLogicalClusterAdminCertificate), func(secret *corev1.Secret) (*corev1.Secret, error) {
 			var config *clientcmdapi.Config
 
+			if secret.Labels == nil {
+				secret.Labels = make(map[string]string)
+			}
+			secret.Labels[resources.ShardLabel] = shard.Name
+
 			if secret.Data == nil {
 				secret.Data = make(map[string][]byte)
 			}
@@ -149,8 +164,9 @@ func ExternalLogicalClusterAdminKubeconfigReconciler(shard *operatorv1alpha1.Sha
 			config = &clientcmdapi.Config{
 				Clusters: map[string]*clientcmdapi.Cluster{
 					serverName: {
-						Server: fmt.Sprintf("https://%s:%d", rootShard.Spec.External.Hostname, rootShard.Spec.External.Port),
-						// CertificateAuthority will be configured below to respect CABundleSecretRef property in the shard spec
+						// This has to point to a front-proxy, not the root shard itself.
+						// Server is populated from the external hostname and port below.
+						// CertificateAuthority will be populated below, depending on whether CABundle is specified or not.
 					},
 				},
 				Contexts: map[string]*clientcmdapi.Context{
@@ -168,9 +184,21 @@ func ExternalLogicalClusterAdminKubeconfigReconciler(shard *operatorv1alpha1.Sha
 				CurrentContext: contextName,
 			}
 
+			if rootShard.Spec.External.PrivateHostname != "" {
+				port := rootShard.Spec.External.Port
+				if rootShard.Spec.External.PrivatePort != nil {
+					port = *rootShard.Spec.External.PrivatePort
+				}
+				config.Clusters[serverName].Server = fmt.Sprintf("https://%s:%d", rootShard.Spec.External.PrivateHostname, port)
+			} else {
+				config.Clusters[serverName].Server = fmt.Sprintf("https://%s:%d", rootShard.Spec.External.Hostname, rootShard.Spec.External.Port)
+			}
+
 			if shard.Spec.CABundleSecretRef == nil {
 				config.Clusters[serverName].CertificateAuthority = getCAMountPath(operatorv1alpha1.ServerCA) + "/tls.crt"
 			} else {
+				// If CABundle is specified, it will be mounted to pod by deployment so we can use it file path
+				// Secret data is merged by operator by creating dedicate CA bundle secret.
 				config.Clusters[serverName].CertificateAuthority = getCAMountPath(operatorv1alpha1.CABundleCA) + "/tls.crt"
 			}
 

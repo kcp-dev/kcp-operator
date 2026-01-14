@@ -63,13 +63,17 @@ func getKubeconfigMountPath(certName operatorv1alpha1.Certificate) string {
 }
 
 func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.NamedDeploymentReconcilerFactory {
-
 	return func() (string, reconciling.DeploymentReconciler) {
 		return resources.GetRootShardDeploymentName(rootShard), func(dep *appsv1.Deployment) (*appsv1.Deployment, error) {
 			labels := resources.GetRootShardResourceLabels(rootShard)
 			dep.SetLabels(labels)
-			dep.Spec.Selector = &metav1.LabelSelector{
-				MatchLabels: labels,
+			dep.Labels[resources.RootShardLabel] = rootShard.Name // Ensure the RootShardLabel is set but not used in selector
+
+			// Only set the selector on creation, as it's immutable
+			if dep.Spec.Selector == nil {
+				dep.Spec.Selector = &metav1.LabelSelector{
+					MatchLabels: labels,
+				}
 			}
 			dep.Spec.Template.SetLabels(labels)
 
@@ -157,6 +161,19 @@ func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.Nam
 			dep = utils.ApplyCommonShardConfig(dep, &rootShard.Spec.CommonShardSpec)
 			dep = utils.ApplyDeploymentTemplate(dep, rootShard.Spec.DeploymentTemplate)
 			dep = utils.ApplyAuthConfiguration(dep, rootShard.Spec.Auth)
+
+			// If rootshard has bundle annotation, store desired replicas in annotation then scale deployment to 0 locally
+			if rootShard.Annotations != nil && rootShard.Annotations[resources.BundleAnnotation] != "" {
+				// Store the desired replicas in an annotation so bundle can capture the correct value
+				if dep.Spec.Replicas != nil && *dep.Spec.Replicas > 0 {
+					if dep.Annotations == nil {
+						dep.Annotations = make(map[string]string)
+					}
+					dep.Annotations[resources.BundleDesiredReplicasAnnotation] = fmt.Sprintf("%d", *dep.Spec.Replicas)
+				}
+				// Scale to 0 locally
+				dep.Spec.Replicas = ptr.To(int32(0))
+			}
 
 			return dep, nil
 		}

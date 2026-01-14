@@ -84,9 +84,9 @@ func LogicalClusterAdminKubeconfigReconciler(rootShard *operatorv1alpha1.RootSha
 
 func ExternalLogicalClusterAdminKubeconfigReconciler(rootShard *operatorv1alpha1.RootShard) k8creconciling.NamedSecretReconcilerFactory {
 	const (
-		serverName   = "root-shard"
-		contextName  = "shard-base" // hardcoded in kcp
-		authInfoName = "shard"
+		serverName   = "external-logical-cluster:admin"
+		contextName  = "external-logical-cluster"
+		authInfoName = "external-logical-cluster-admin"
 	)
 
 	return func() (string, k8creconciling.SecretReconciler) {

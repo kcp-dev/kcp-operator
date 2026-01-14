@@ -137,6 +137,7 @@ type RootShardPhase string
 const (
 	RootShardPhaseProvisioning RootShardPhase = "Provisioning"
 	RootShardPhaseRunning      RootShardPhase = "Running"
+	RootShardPhaseBundled      RootShardPhase = "Bundled"
 	RootShardPhaseDeleting     RootShardPhase = "Deleting"
 )
 

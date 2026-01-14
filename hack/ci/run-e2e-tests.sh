@@ -36,7 +36,7 @@ if [ -n "${KCP_TAG:-}" ]; then
     KCP_TAG="${KCP_TAG:0:9}"
   fi
 
-  echo "kcp image tag.......: $KCP_TAG"
+  echo "kcp image tag...: $KCP_TAG"
 fi
 
 if [ -z "${PULL_BASE_REF:-}" ]; then

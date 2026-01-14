@@ -46,11 +46,11 @@ rules:
 - apiGroups:
   - operator.kcp.io
   resources:
-  - cacheservers
-  - frontproxies
+  - bundles
+  - kubeconfigs
+  - rootshards
+  - shards
   verbs:
-  - create
-  - delete
   - get
   - list
   - patch
@@ -59,6 +59,7 @@ rules:
 - apiGroups:
   - operator.kcp.io
   resources:
+  - bundles/finalizers
   - cacheservers/finalizers
   - frontproxies/finalizers
   - kubeconfigs/finalizers
@@ -69,6 +70,7 @@ rules:
 - apiGroups:
   - operator.kcp.io
   resources:
+  - bundles/status
   - cacheservers/status
   - frontproxies/status
   - kubeconfigs/status
@@ -81,10 +83,11 @@ rules:
 - apiGroups:
   - operator.kcp.io
   resources:
-  - kubeconfigs
-  - rootshards
-  - shards
+  - cacheservers
+  - frontproxies
   verbs:
+  - create
+  - delete
   - get
   - list
   - patch

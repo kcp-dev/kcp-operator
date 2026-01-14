@@ -36,6 +36,13 @@ GOTOOLFLAGS ?= $(GOBUILDFLAGS) -ldflags '$(LDFLAGS) $(LDFLAGS_EXTRA)' $(GOTOOLFL
 # Image URL to use all building/pushing image targets
 IMG ?= ghcr.io/kcp-dev/kcp-operator
 
+# Architecture to build for (amd64 or arm64)
+ARCH ?= $(shell go env GOARCH)
+# Target OS for builds (defaults to linux for containers)
+TARGETOS ?= linux
+
+TOOLS_DIR = $(shell pwd)/_tools
+
 GOIMPORTS_VERSION ?= c72f1dc2e3aacfa00aece3391d938c9bc734e791
 GOLANGCI_LINT_VERSION ?= 2.1.6
 HELM_VERSION ?= 3.18.6
@@ -146,22 +153,26 @@ clean-tools: ## Remove all downloaded tools.
 
 .PHONY: build
 build: ## Build manager binary.
-	go build $(GOTOOLFLAGS) -o $(BUILD_DEST)/manager cmd/main.go
+	go build $(GOTOOLFLAGS) -o $(BUILD_DEST)/manager cmd/operator/main.go
 
 .PHONY: run
 run: fmt vet ## Run a controller from your host.
-	go run ./cmd/main.go
+	go run ./cmd/operator/main.go
 
 # If you wish to build the manager image targeting other platforms you can use the --platform flag.
 # (i.e. docker build --platform linux/arm64). However, you must enable docker buildKit for it.
 # More info: https://docs.docker.com/develop/develop-images/build_enhancements/
 .PHONY: docker-build
 docker-build: ## Build docker image with the manager.
-	$(CONTAINER_TOOL) build -t ${IMG} .
+	$(CONTAINER_TOOL) build --platform $(TARGETOS)/$(ARCH) -t ${IMG} .
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
 	$(CONTAINER_TOOL) push ${IMG}
+
+.PHONY: docker-buildx
+docker-buildx: ## Build and push docker image for multiple architectures (amd64,arm64).
+	$(CONTAINER_TOOL) buildx build --platform linux/amd64,linux/arm64 -t ${IMG} --push .
 
 KUSTOMIZE = $(abspath .)/$(UGET_DIRECTORY)/kustommize-$(KUSTOMIZE_VERSION)
 KUBECTL = $(abspath .)/$(UGET_DIRECTORY)/kubectl-$(KUBECTL_VERSION)
