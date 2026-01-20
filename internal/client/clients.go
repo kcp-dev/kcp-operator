@@ -32,37 +32,33 @@ import (
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
+// NewRootShardClient returns a new client for talking to the kcp root shard service directly.
 func NewRootShardClient(ctx context.Context, c ctrlruntimeclient.Client, rootShard *operatorv1alpha1.RootShard, cluster logicalcluster.Name, scheme *runtime.Scheme) (ctrlruntimeclient.Client, error) {
-	if rootShard == nil {
-		panic("No rootShard provided.")
-	}
-
 	baseUrl := fmt.Sprintf("https://%s.%s.svc.cluster.local:6443", resources.GetRootShardServiceName(rootShard), rootShard.Namespace)
 
 	if !cluster.Empty() {
 		baseUrl = fmt.Sprintf("%s/clusters/%s", baseUrl, cluster.String())
 	}
 
-	return newClient(ctx, c, baseUrl, scheme, rootShard, nil, nil)
+	return newClient(ctx, c, baseUrl, scheme, rootShard)
 }
 
+// NewRootShardClient returns a new client that connects to the operator's internal front-proxy.
 func NewRootShardProxyClient(ctx context.Context, c ctrlruntimeclient.Client, rootShard *operatorv1alpha1.RootShard, cluster logicalcluster.Name, scheme *runtime.Scheme) (ctrlruntimeclient.Client, error) {
-	if rootShard == nil {
-		panic("No rootShard provided.")
-	}
-
 	baseUrl := fmt.Sprintf("https://%s.%s.svc.cluster.local:6443", resources.GetRootShardProxyServiceName(rootShard), rootShard.Namespace)
 
 	if !cluster.Empty() {
 		baseUrl = fmt.Sprintf("%s/clusters/%s", baseUrl, cluster.String())
 	}
 
-	return newClient(ctx, c, baseUrl, scheme, rootShard, nil, nil)
+	return newClient(ctx, c, baseUrl, scheme, rootShard)
 }
 
+// NewShardClient returns a new client for talking to a kcp shard service directly.
 func NewShardClient(ctx context.Context, c ctrlruntimeclient.Client, shard *operatorv1alpha1.Shard, cluster logicalcluster.Name, scheme *runtime.Scheme) (ctrlruntimeclient.Client, error) {
-	if shard == nil {
-		panic("No shard provided.")
+	rootShard, err := getRootShardForShard(ctx, c, shard)
+	if err != nil {
+		return nil, fmt.Errorf("failed to determine effective RootShard: %w", err)
 	}
 
 	baseUrl := fmt.Sprintf("https://%s.%s.svc.cluster.local:6443", resources.GetShardServiceName(shard), shard.Namespace)
@@ -71,7 +67,7 @@ func NewShardClient(ctx context.Context, c ctrlruntimeclient.Client, shard *oper
 		baseUrl = fmt.Sprintf("%s/clusters/%s", baseUrl, cluster.String())
 	}
 
-	return newClient(ctx, c, baseUrl, scheme, nil, shard, nil)
+	return newClient(ctx, c, baseUrl, scheme, rootShard)
 }
 
 func newClient(
@@ -79,12 +75,9 @@ func newClient(
 	c ctrlruntimeclient.Client,
 	url string,
 	scheme *runtime.Scheme,
-	// only one of these three should be provided, the others nil
 	rootShard *operatorv1alpha1.RootShard,
-	shard *operatorv1alpha1.Shard,
-	frontProxy *operatorv1alpha1.FrontProxy,
 ) (ctrlruntimeclient.Client, error) {
-	tlsConfig, err := getTLSConfig(ctx, c, rootShard, shard, frontProxy)
+	tlsConfig, err := getTLSConfig(ctx, c, rootShard)
 	if err != nil {
 		return nil, fmt.Errorf("failed to determine TLS settings: %w", err)
 	}
@@ -99,12 +92,8 @@ func newClient(
 
 // +kubebuilder:rbac:groups=core,resources=secrets,verbs=get
 
-func getTLSConfig(ctx context.Context, c ctrlruntimeclient.Client, rootShard *operatorv1alpha1.RootShard, shard *operatorv1alpha1.Shard, frontProxy *operatorv1alpha1.FrontProxy) (rest.TLSClientConfig, error) {
-	rootShard, err := getRootShard(ctx, c, rootShard, shard, frontProxy)
-	if err != nil {
-		return rest.TLSClientConfig{}, fmt.Errorf("failed to determine effective RootShard: %w", err)
-	}
-
+// getTLSConfig returns the CA and serving certificate for a RootShard.
+func getTLSConfig(ctx context.Context, c ctrlruntimeclient.Client, rootShard *operatorv1alpha1.RootShard) (rest.TLSClientConfig, error) {
 	// get the secret for the kcp-operator client cert
 	key := types.NamespacedName{
 		Namespace: rootShard.Namespace,
@@ -125,26 +114,9 @@ func getTLSConfig(ctx context.Context, c ctrlruntimeclient.Client, rootShard *op
 
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=rootshards,verbs=get
 
-func getRootShard(ctx context.Context, c ctrlruntimeclient.Client, rootShard *operatorv1alpha1.RootShard, shard *operatorv1alpha1.Shard, frontProxy *operatorv1alpha1.FrontProxy) (*operatorv1alpha1.RootShard, error) {
-	if rootShard != nil {
-		return rootShard, nil
-	}
-
-	var ref *corev1.LocalObjectReference
-
-	switch {
-	case shard != nil:
-		ref = shard.Spec.RootShard.Reference
-
-	case frontProxy != nil:
-		ref = frontProxy.Spec.RootShard.Reference
-
-	default:
-		panic("Must be called with either RootShard, Shard or FrontProxy.")
-	}
-
-	rootShard = &operatorv1alpha1.RootShard{}
-	if err := c.Get(ctx, types.NamespacedName{Namespace: rootShard.Namespace, Name: ref.Name}, rootShard); err != nil {
+func getRootShardForShard(ctx context.Context, c ctrlruntimeclient.Client, shard *operatorv1alpha1.Shard) (*operatorv1alpha1.RootShard, error) {
+	rootShard := &operatorv1alpha1.RootShard{}
+	if err := c.Get(ctx, types.NamespacedName{Namespace: shard.Namespace, Name: shard.Spec.RootShard.Reference.Name}, rootShard); err != nil {
 		return nil, fmt.Errorf("failed to get RootShard: %w", err)
 	}
 

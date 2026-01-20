@@ -32,6 +32,11 @@ import (
 
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=rootshards;shards;frontproxies,verbs=get
 
+// NewInternalKubeconfigClient returns a kube client for a Kubeconfig that allows the kcp-operator
+// to access the backend with elevated permissions. For Kubeconfigs pointing directly towards any
+// type of shard, the client will also directly connect to that shard, but for Kubeconfigs using
+// a FrontProxy, the client will instead use the operator-internal front-proxy (which specifically
+// does not drop groups/permissions).
 func NewInternalKubeconfigClient(ctx context.Context, c ctrlruntimeclient.Client, kubeconfig *operatorv1alpha1.Kubeconfig, cluster logicalcluster.Name, scheme *runtime.Scheme) (ctrlruntimeclient.Client, error) {
 	target := kubeconfig.Spec.Target
 
