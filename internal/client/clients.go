@@ -33,6 +33,10 @@ import (
 )
 
 func NewRootShardClient(ctx context.Context, c ctrlruntimeclient.Client, rootShard *operatorv1alpha1.RootShard, cluster logicalcluster.Name, scheme *runtime.Scheme) (ctrlruntimeclient.Client, error) {
+	if rootShard == nil {
+		panic("No rootShard provided.")
+	}
+
 	baseUrl := fmt.Sprintf("https://%s.%s.svc.cluster.local:6443", resources.GetRootShardServiceName(rootShard), rootShard.Namespace)
 
 	if !cluster.Empty() {
@@ -43,6 +47,10 @@ func NewRootShardClient(ctx context.Context, c ctrlruntimeclient.Client, rootSha
 }
 
 func NewRootShardProxyClient(ctx context.Context, c ctrlruntimeclient.Client, rootShard *operatorv1alpha1.RootShard, cluster logicalcluster.Name, scheme *runtime.Scheme) (ctrlruntimeclient.Client, error) {
+	if rootShard == nil {
+		panic("No rootShard provided.")
+	}
+
 	baseUrl := fmt.Sprintf("https://%s.%s.svc.cluster.local:6443", resources.GetRootShardProxyServiceName(rootShard), rootShard.Namespace)
 
 	if !cluster.Empty() {
@@ -53,6 +61,10 @@ func NewRootShardProxyClient(ctx context.Context, c ctrlruntimeclient.Client, ro
 }
 
 func NewShardClient(ctx context.Context, c ctrlruntimeclient.Client, shard *operatorv1alpha1.Shard, cluster logicalcluster.Name, scheme *runtime.Scheme) (ctrlruntimeclient.Client, error) {
+	if shard == nil {
+		panic("No shard provided.")
+	}
+
 	baseUrl := fmt.Sprintf("https://%s.%s.svc.cluster.local:6443", resources.GetShardServiceName(shard), shard.Namespace)
 
 	if !cluster.Empty() {
