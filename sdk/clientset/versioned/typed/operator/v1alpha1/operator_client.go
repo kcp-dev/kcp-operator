@@ -29,6 +29,7 @@ import (
 
 type OperatorV1alpha1Interface interface {
 	RESTClient() rest.Interface
+	BundlesGetter
 	CacheServersGetter
 	FrontProxiesGetter
 	KubeconfigsGetter
@@ -39,6 +40,10 @@ type OperatorV1alpha1Interface interface {
 // OperatorV1alpha1Client is used to interact with features provided by the operator.kcp.io group.
 type OperatorV1alpha1Client struct {
 	restClient rest.Interface
+}
+
+func (c *OperatorV1alpha1Client) Bundles(namespace string) BundleInterface {
+	return newBundles(c, namespace)
 }
 
 func (c *OperatorV1alpha1Client) CacheServers(namespace string) CacheServerInterface {

@@ -260,8 +260,11 @@ type ConditionType string
 
 const (
 	ConditionTypeAvailable      ConditionType = "Available"
+	ConditionTypeReady          ConditionType = "Ready"
 	ConditionTypeRootShard      ConditionType = "RootShard"
 	ConditionTypeReferenceValid ConditionType = "ReferenceValid"
+	ConditionTypeBundle         ConditionType = "Bundle"
+	ConditionTypeObjectsCreated ConditionType = "ObjectsCreated"
 )
 
 type ConditionReason string

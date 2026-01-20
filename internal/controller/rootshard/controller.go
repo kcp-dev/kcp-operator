@@ -40,6 +40,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	bundlehelper "github.com/kcp-dev/kcp-operator/internal/controller/bundle"
 	"github.com/kcp-dev/kcp-operator/internal/controller/util"
 	"github.com/kcp-dev/kcp-operator/internal/metrics"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
@@ -150,6 +151,11 @@ func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operator
 		return conditions, nil
 	}
 
+	// Ensure Bundle object exists if annotation is present
+	if _, err := bundlehelper.EnsureBundleForOwner(ctx, r.Client, r.Scheme, rootShard); err != nil {
+		errs = append(errs, fmt.Errorf("failed to ensure bundle: %w", err))
+	}
+
 	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*metav1.NewControllerRef(rootShard, operatorv1alpha1.SchemeGroupVersion.WithKind("RootShard")))
 
 	issuerReconcilers := []reconciling.NamedIssuerReconcilerFactory{
@@ -205,6 +211,7 @@ func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operator
 		errs = append(errs, err)
 	}
 
+	// Deployment will be scaled to 0 if bundle annotation is present
 	if err := k8creconciling.ReconcileDeployments(ctx, []k8creconciling.NamedDeploymentReconcilerFactory{
 		rootshard.DeploymentReconciler(rootShard),
 	}, rootShard.Namespace, r.Client, ownerRefWrapper); err != nil {
@@ -229,12 +236,22 @@ func (r *RootShardReconciler) reconcileStatus(ctx context.Context, oldRootShard 
 	rootShard := oldRootShard.DeepCopy()
 	var errs []error
 
-	depKey := types.NamespacedName{Namespace: rootShard.Namespace, Name: resources.GetRootShardDeploymentName(rootShard)}
-	cond, err := util.GetDeploymentAvailableCondition(ctx, r.Client, depKey)
-	if err != nil {
-		errs = append(errs, err)
-	} else {
-		conditions = append(conditions, cond)
+	// Add Bundle condition
+	bundleCond := bundlehelper.GetBundleReadyCondition(ctx, r.Client, rootShard, rootShard.Generation)
+	conditions = append(conditions, bundleCond)
+
+	// Check if rootshard is bundled (has bundle annotation with Ready bundle)
+	isBundled := bundleCond.Status == metav1.ConditionTrue && bundleCond.Reason == "BundleReady"
+
+	// Only check deployment status if not bundled
+	if !isBundled {
+		depKey := types.NamespacedName{Namespace: rootShard.Namespace, Name: resources.GetRootShardDeploymentName(rootShard)}
+		cond, err := util.GetDeploymentAvailableCondition(ctx, r.Client, depKey)
+		if err != nil {
+			errs = append(errs, err)
+		} else {
+			conditions = append(conditions, cond)
+		}
 	}
 
 	for _, condition := range conditions {
@@ -246,9 +263,20 @@ func (r *RootShardReconciler) reconcileStatus(ctx context.Context, oldRootShard 
 		rootShard.Status.Phase = operatorv1alpha1.RootShardPhaseDeleting
 	} else {
 		availableCond := apimeta.FindStatusCondition(rootShard.Status.Conditions, string(operatorv1alpha1.ConditionTypeAvailable))
-		if availableCond != nil && availableCond.Status == metav1.ConditionTrue {
+		bundleStatusCond := apimeta.FindStatusCondition(rootShard.Status.Conditions, string(operatorv1alpha1.ConditionTypeBundle))
+
+		switch {
+		case isBundled:
+			// RootShard is bundled, deployment scaled to 0, resources exported via bundle
+			rootShard.Status.Phase = operatorv1alpha1.RootShardPhaseBundled
+
+		case bundleStatusCond != nil && bundleStatusCond.Status != metav1.ConditionTrue:
+			rootShard.Status.Phase = operatorv1alpha1.RootShardPhaseProvisioning
+
+		case availableCond != nil && availableCond.Status == metav1.ConditionTrue:
 			rootShard.Status.Phase = operatorv1alpha1.RootShardPhaseRunning
-		} else {
+
+		default:
 			rootShard.Status.Phase = operatorv1alpha1.RootShardPhaseProvisioning
 		}
 	}

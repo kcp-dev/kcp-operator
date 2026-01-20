@@ -50,7 +50,7 @@ func ApplyCommonShardConfig(deployment *appsv1.Deployment, spec *operatorv1alpha
 	// override default resource requirements
 	container = ApplyResources(container, spec.Resources)
 
-	// explicitly set the replicas if it is configured in the RootShard
+	// explicitly set the replicas if it is configured in the spec object
 	// object or if the existing Deployment object doesn't have replicas
 	// configured. This will allow a HPA to interact with the replica
 	// count.

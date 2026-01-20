@@ -44,6 +44,10 @@ func (c *OperatorV1alpha1ClusterClient) Cluster(clusterPath logicalcluster.Path)
 	return &OperatorV1alpha1Client{Fake: c.Fake, ClusterPath: clusterPath}
 }
 
+func (c *OperatorV1alpha1ClusterClient) Bundles() kcpoperatorv1alpha1.BundleClusterInterface {
+	return &bundlesClusterClient{Fake: c.Fake}
+}
+
 func (c *OperatorV1alpha1ClusterClient) CacheServers() kcpoperatorv1alpha1.CacheServerClusterInterface {
 	return &cacheServersClusterClient{Fake: c.Fake}
 }
@@ -74,6 +78,10 @@ type OperatorV1alpha1Client struct {
 func (c *OperatorV1alpha1Client) RESTClient() rest.Interface {
 	var ret *rest.RESTClient
 	return ret
+}
+
+func (c *OperatorV1alpha1Client) Bundles(namespace string) operatorv1alpha1.BundleInterface {
+	return &bundlesClient{Fake: c.Fake, ClusterPath: c.ClusterPath, Namespace: namespace}
 }
 
 func (c *OperatorV1alpha1Client) CacheServers(namespace string) operatorv1alpha1.CacheServerInterface {
