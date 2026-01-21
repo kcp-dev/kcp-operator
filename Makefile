@@ -167,7 +167,7 @@ KUSTOMIZE = $(abspath .)/$(UGET_DIRECTORY)/kustomize-$(KUSTOMIZE_VERSION)
 KUBECTL = $(abspath .)/$(UGET_DIRECTORY)/kubectl-$(KUBECTL_VERSION)
 
 .PHONY: build-installer
-build-installer: manifests generate install-kustomize ## Generate a consolidated YAML with CRDs and deployment.
+build-installer: codegen install-kustomize ## Generate a consolidated YAML with CRDs and deployment.
 	mkdir -p dist
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/default > dist/install.yaml
