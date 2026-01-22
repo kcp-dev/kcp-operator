@@ -496,6 +496,8 @@
       
         
       
+        
+      
     
     
       
@@ -572,6 +574,27 @@
   
   <span class="md-ellipsis">
     kcp front-proxy
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/kubeconfig/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Kubeconfigs
   </span>
   
 
@@ -1294,13 +1317,14 @@ the built container image behaves as intended (e.g. has the necessary RBAC, etc)
 run the operator as a binary.</p>
 <h3 id="option-1-deploy-operator">Option 1: Deploy Operator</h3>
 <p>Build the image:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>make<span class="w"> </span>docker-build<span class="w"> </span><span class="nv">IMG</span><span class="o">=</span>ghcr.io/kcp-dev/kcp-operator:1
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">IMG</span><span class="o">=</span>ghcr.io/kcp-dev/kcp-operator:local
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>make<span class="w"> </span>docker-build
 </code></pre></div>
 <p>Load the image into the kind cluster:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>kind<span class="w"> </span>load<span class="w"> </span>docker-image<span class="w"> </span>ghcr.io/kcp-dev/kcp-operator:1
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>kind<span class="w"> </span>load<span class="w"> </span>docker-image<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$IMG</span><span class="s2">&quot;</span>
 </code></pre></div>
 <p>Deploy the operator manifests into the cluster:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>make<span class="w"> </span>deploy<span class="w"> </span><span class="nv">IMG</span><span class="o">=</span>ghcr.io/kcp-dev/kcp-operator:1
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>make<span class="w"> </span>deploy
 </code></pre></div>
 <h3 id="option-2-run-operator-directly">Option 2: Run Operator Directly</h3>
 <p>Alternatively, apply the CRDs to the cluster:</p>
@@ -1311,7 +1335,7 @@ run the operator as a binary.</p>
 </code></pre></div>
 <h2 id="create-kcp-instance">Create kcp Instance</h2>
 <p>Now you can create a root shard:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>config/samples/operator.kcp.io_v1alpha1_rootshard.yaml<span class="w">       </span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>config/samples/operator.kcp.io_v1alpha1_rootshard.yaml
 </code></pre></div>
 <p>Create the additional shard:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>config/samples/operator.kcp.io_v1alpha1_shard.yaml

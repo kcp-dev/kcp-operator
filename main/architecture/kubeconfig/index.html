@@ -6,18 +6,18 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="The release process for cutting new minor and patch releases.
+        <meta name="description" content="Shows how `Kubeconfig` objects can be used to provide credentials to kcp.
 ">
       
       
       
-        <link rel="canonical" href="https://docs.kcp.io/kcp-operator/main/contributing/releasing/">
+        <link rel="canonical" href="https://docs.kcp.io/kcp-operator/main/architecture/kubeconfig/">
       
       
-        <link rel="prev" href="../local-setup/">
+        <link rel="prev" href="../front-proxy/">
       
       
-        <link rel="next" href="../continuous-integration/">
+        <link rel="next" href="../pki/">
       
       
       <link rel="icon" href="../../favicons/favicon.ico">
@@ -25,7 +25,7 @@
     
     
       
-        <title>Release Process - kcp-operator</title>
+        <title>Kubeconfigs - kcp-operator</title>
       
     
     
@@ -79,7 +79,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#release-process" class="md-skip">
+        <a href="#kubeconfigs" class="md-skip">
           Skip to content
         </a>
       
@@ -116,7 +116,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Release Process
+              Kubeconfigs
             
           </span>
         </div>
@@ -268,11 +268,13 @@
         
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../architecture/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
           
   
     
@@ -308,13 +310,11 @@
         
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../contributing/" class="md-tabs__link">
           
   
     
@@ -481,6 +481,8 @@
       
   
   
+    
+  
   
   
     
@@ -501,21 +503,22 @@
     
     
       
+        
+        
+      
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../architecture/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -526,13 +529,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             Architecture
@@ -548,7 +551,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../architecture/basics/" class="md-nav__link">
+      <a href="../basics/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -569,7 +572,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../architecture/front-proxy/" class="md-nav__link">
+      <a href="../front-proxy/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -587,10 +590,30 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../architecture/kubeconfig/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Kubeconfigs
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -599,6 +622,44 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#basics" class="md-nav__link">
+    <span class="md-ellipsis">
+      Basics
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#authorization" class="md-nav__link">
+    <span class="md-ellipsis">
+      Authorization
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -611,7 +672,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../architecture/pki/" class="md-nav__link">
+      <a href="../pki/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -895,8 +956,6 @@
       
   
   
-    
-  
   
   
     
@@ -915,22 +974,21 @@
     
     
       
-        
-        
-      
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
         
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../../contributing/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -941,13 +999,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="">
+              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             Contributing
@@ -963,7 +1021,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../local-setup/" class="md-nav__link">
+      <a href="../../contributing/local-setup/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -981,30 +1039,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    Release Process
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../contributing/releasing/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1013,53 +1051,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#prerequisites" class="md-nav__link">
-    <span class="md-ellipsis">
-      Prerequisites
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#minor-release" class="md-nav__link">
-    <span class="md-ellipsis">
-      Minor Release
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#patch-releases" class="md-nav__link">
-    <span class="md-ellipsis">
-      Patch Releases
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1095,7 +1086,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../continuous-integration/" class="md-nav__link ">
+            <a href="../../contributing/continuous-integration/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -1158,27 +1149,18 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#prerequisites" class="md-nav__link">
+  <a href="#basics" class="md-nav__link">
     <span class="md-ellipsis">
-      Prerequisites
+      Basics
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#minor-release" class="md-nav__link">
+  <a href="#authorization" class="md-nav__link">
     <span class="md-ellipsis">
-      Minor Release
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#patch-releases" class="md-nav__link">
-    <span class="md-ellipsis">
-      Patch Releases
+      Authorization
     </span>
   </a>
   
@@ -1202,40 +1184,71 @@
   
 
 
-<h1 id="release-process">Release Process</h1>
-<p>The guide describes how to release a new version of the kcp-operator.</p>
-<h2 id="prerequisites">Prerequisites</h2>
-<ol>
-<li>Have all desired changes merged and/or cherrypicked into the appropriate
-   release branch.</li>
-</ol>
-<h2 id="minor-release">Minor Release</h2>
-<p>Minor releases (0.x) are tagged directly on the <code>main</code> branch and the <code>v0.X.0</code>
-tag represents where the corresponding <code>release/v0.X</code> branch branches off.</p>
-<ol>
-<li>Checkout the desired <code>main</code> branch commit.</li>
-<li>Tag the main module: <code>git tag -m "version 0.X" v0.X.0</code></li>
-<li>Tag the SDK module: <code>git tag -m "SDK version 0.X" sdk/v0.X.0</code></li>
-<li>Push the tags: <code>git push upstream v0.X.0 sdk/v0.X.0</code></li>
-<li>Create the release branch: <code>git checkout -B release-0.X</code></li>
-<li>Push the release branch: <code>git push -u upstream release-0.X</code></li>
-</ol>
-<p>Once the tag and branch have been pushed, the documentation has to be manually
-updated to include the new minor release.</p>
-<ol>
-<li>Navigate to https://github.com/kcp-dev/kcp-operator/actions/workflows/docs-gen-and-push.yaml</li>
-<li>Run the workflow manually on the new release branch.</li>
-</ol>
-<p>Within a few minutes of the action finishing, the new branch should show up on
-https://docs.kcp.io/kcp-operator/.</p>
-<h2 id="patch-releases">Patch Releases</h2>
-<p>Patch releases (v0.x.y) are tagged with in a release branch.</p>
-<ol>
-<li>Checkout the desired <code>release/v0.X</code> branch commit.</li>
-<li>Tag the main module: <code>git tag -m "version 0.X.Y" v0.X.Y</code></li>
-<li>Tag the SDK module: <code>git tag -m "SDK version 0.X.Y" sdk/v0.X.Y</code></li>
-<li>Push the tags: <code>git push upstream v0.X.Y sdk/v0.X.Y</code></li>
-</ol>
+<h1 id="kubeconfigs">Kubeconfigs</h1>
+<p>Besides provisioning kcp itself, the kcp-operator can also provide <a href="https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/">kubeconfigs</a> to access kcp. Each kubeconfig will internally be backed by a dedicated client certificate.</p>
+<h2 id="basics">Basics</h2>
+<p>A minimal <code>Kubeconfig</code> object typically looks like this:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">operator.kcp.io/v1alpha1</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Kubeconfig</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">susan</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-kcp</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="nt">spec</span><span class="p">:</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">  </span><span class="c1"># Required: the username inside Kubernetes;</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">  </span><span class="c1"># this will be the client certificate&#39;s common name.</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">  </span><span class="nt">username</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">susan</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">  </span><span class="c1"># required: groups to attach to the user;</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">  </span><span class="c1"># this will be the organizations in the client cert.</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">  </span><span class="nt">groups</span><span class="p">:</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">system:kcp:admin</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">  </span><span class="c1"># Required: in what Secret the generated kubeconfig should be stored.</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">  </span><span class="nt">secretRef</span><span class="p">:</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">susan-kubeconfig</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="w">  </span><span class="c1"># Required: a Kubeconfig must target either a FrontProxy, Shard or RootShard.</span>
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="w">  </span><span class="nt">target</span><span class="p">:</span>
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="w">    </span><span class="nt">frontProxyRef</span><span class="p">:</span>
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-front-proxy</span>
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="w">  </span><span class="c1"># Required: how long the certificate should be valid for;</span>
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="w">  </span><span class="c1"># the operator will automatically renew the certificate, after which the</span>
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a><span class="w">  </span><span class="c1"># Secret will be renewed and have to be re-downloaded.</span>
+<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a><span class="w">  </span><span class="nt">validity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8766h</span>
+</code></pre></div>
+<p><code>Kubeconfig</code> objects must exist in the same namespace as the kcp installation they are meant for.</p>
+<p>Once the <code>Kubeconfig</code> has been created, you can observe its status to wait for it to be ready. After that, retrieve the Secret mentioned in the <code>secretRef</code> to find the finished kubeconfig, ready to use.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Deleting a <code>Kubeconfig</code> will also delete the underlying Secret from the hosting cluster, however this will not invalidate the existing certificate that is embedded in the kubeconfig. This means anyone with a copy of the kubeconfig can keep using it until the certificate expires.</p>
+<p>To disarm an old kubeconfig, make sure to revoke any permissions granted through RBAC for the user and/or their groups.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code>Kubeconfig</code>'s name is embedded into the certificate in form of a group (organization) named <code>kubeconfig:&lt;name&gt;</code>. This is to allow a unique mapping from RBAC rules to <code>Kubeconfig</code> objects for the authorization (see further down). Take note that this means the <code>Kubeconfig</code>' name is leaked to whoever gets the kubeconfig.</p>
+</div>
+<h2 id="authorization">Authorization</h2>
+<p>Without any further configuration than shown in the basics section above, the created identity (username + groups) will not get any permissions in kcp. So while the kubeconfig is valid and allows proper authentication, pretty much no actions will be permitted yet.</p>
+<p>The administrator has to either rely on externally-managed RBAC rules to provide permissions, or use the kcp-operator to provision such RBAC in a workspace.</p>
+<p>To make the kcp-operator manage RBAC, use <code>spec.authorization</code> inside a <code>Kubeconfig</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">operator.kcp.io/v1alpha1</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Kubeconfig</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">susan</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-kcp</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="nt">spec</span><span class="p">:</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">  </span><span class="c1">#...snip...</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">  </span><span class="nt">authorization</span><span class="p">:</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">    </span><span class="nt">clusterRoleBindings</span><span class="p">:</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">      </span><span class="c1"># This can be a workspace path (root:something) or a cluster name (ID).</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">      </span><span class="nt">cluster</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">root:initech:teamgibbons</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">      </span><span class="nt">clusterRoles</span><span class="p">:</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster-admin</span>
+</code></pre></div>
+<p>This configuration would bind the group <code>kubeconfig:susan</code> to the ClusterRole <code>cluster-admin</code> inside the given workspace. Note that this is specifically not bound to the user (common name), so that two <code>Kubeconfig</code> objects that both have the same <code>spec.name</code> to not have colliding RBAC.</p>
+<p>When deleting a <code>Kubeconfig</code> with authorization settings, the kcp-operator will first unprovision (delete) the <code>ClusterRoleBindings</code> before the <code>Kubeconfig</code> can be deleted.</p>
 
 
 

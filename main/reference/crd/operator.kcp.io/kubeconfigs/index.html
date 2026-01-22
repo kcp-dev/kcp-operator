@@ -496,6 +496,8 @@
       
         
       
+        
+      
     
     
       
@@ -572,6 +574,27 @@
   
   <span class="md-ellipsis">
     kcp front-proxy
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/kubeconfig/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Kubeconfigs
   </span>
   
 
@@ -1264,6 +1287,81 @@ More info: <a href="https://git.k8s.io/community/contributors/devel/sig-architec
 
 <div class="property depth-1">
 <div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.authorization">.spec.authorization</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+<div class="property-description">
+<p>Authorization allows to provision permissions for this kubeconfig.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.authorization.clusterRoleBindings">.spec.authorization.clusterRoleBindings</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+<span class="property-required">Required</span>
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.authorization.clusterRoleBindings.cluster">.spec.authorization.clusterRoleBindings.cluster</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>Cluster can be either a cluster name or a workspace path.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.authorization.clusterRoleBindings.clusterRoles">.spec.authorization.clusterRoleBindings.clusterRoles</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">array</span>
+<span class="property-required">Required</span>
+</div>
+
+</div>
+</div>
+
+<div class="property depth-4">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.authorization.clusterRoleBindings.clusterRoles[*]">.spec.authorization.clusterRoleBindings.clusterRoles[*]</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-1">
+<div class="property-header">
 <h3 class="property-path" id="v1alpha1-.spec.certificateTemplate">.spec.certificateTemplate</h3>
 </div>
 <div class="property-body">
@@ -1358,7 +1456,7 @@ certificate for this kubeconfig.</p>
 DNS names determined automatically by the kcp-operator.
 If DNSNames is used together with IssuerRef, DNSNames will be uses as-is and not merged.
 If IssuerRef is not set, DNSNames will be merged with the defaults. This is to avoid
-trying to guess what DNSNames configued issuer might support.</p>
+trying to guess what DNSNames configured issuer might support.</p>
 
 </div>
 
@@ -2229,6 +2327,32 @@ More info: <a href="https://kubernetes.io/docs/concepts/overview/working-with-ob
 <div class="property-description">
 <p>KubeconfigStatus defines the observed state of Kubeconfig</p>
 
+</div>
+
+</div>
+</div>
+
+<div class="property depth-1">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.status.authorization">.status.authorization</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.status.authorization.provisionedCluster">.status.authorization.provisionedCluster</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
 </div>
 
 </div>
