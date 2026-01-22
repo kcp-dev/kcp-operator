@@ -75,6 +75,7 @@ func (r *ShardReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	})
 
 	return ctrl.NewControllerManagedBy(mgr).
+		Named("shard").
 		For(&operatorv1alpha1.Shard{}).
 		Owns(&appsv1.Deployment{}).
 		Owns(&corev1.Secret{}).

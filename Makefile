@@ -163,7 +163,7 @@ docker-build: ## Build docker image with the manager.
 docker-push: ## Push docker image with the manager.
 	$(CONTAINER_TOOL) push ${IMG}
 
-KUSTOMIZE = $(abspath .)/$(UGET_DIRECTORY)/kustommize-$(KUSTOMIZE_VERSION)
+KUSTOMIZE = $(abspath .)/$(UGET_DIRECTORY)/kustomize-$(KUSTOMIZE_VERSION)
 KUBECTL = $(abspath .)/$(UGET_DIRECTORY)/kubectl-$(KUBECTL_VERSION)
 
 .PHONY: build-installer
@@ -172,6 +172,12 @@ build-installer: manifests generate install-kustomize ## Generate a consolidated
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/default > dist/install.yaml
 
+KIND_CLUSTER_NAME ?= kind
+
+.PHONY: kind-load
+kind-load: ## Loads the docker image into a local kind cluster.
+	kind load docker-image ${IMG} --name "$(KIND_CLUSTER_NAME)"
+
 ##@ Deployment
 
 ifndef ignore-not-found
@@ -179,20 +185,20 @@ ifndef ignore-not-found
 endif
 
 .PHONY: install
-install: kubectl install-kustomize install-kubectl ## Install CRDs into the K8s cluster specified in ~/.kube/config.
+install: install-kustomize install-kubectl ## Install CRDs into the K8s cluster specified in $KUBECONFIG.
 	$(KUSTOMIZE) build config/crd | $(KUBECTL) apply -f -
 
 .PHONY: uninstall
-uninstall: kubectl install-kustomize install-kubectl ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
+uninstall: install-kustomize install-kubectl ## Uninstall CRDs from the K8s cluster specified in $KUBECONFIG. Call with ignore-not-found=true to ignore resource not found errors during deletion.
 	$(KUSTOMIZE) build config/crd | $(KUBECTL) delete --ignore-not-found=$(ignore-not-found) -f -
 
 .PHONY: deploy
-deploy: kubectl install-kustomize install-kubectl ## Deploy controller to the K8s cluster specified in ~/.kube/config.
+deploy: install-kustomize install-kubectl ## Deploy controller to the K8s cluster specified in $KUBECONFIG.
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/default | $(KUBECTL) apply -f -
 
 .PHONY: undeploy
-undeploy: kubectl install-kustomize install-kubectl ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
+undeploy: install-kustomize install-kubectl ## Undeploy controller from the K8s cluster specified in $KUBECONFIG. Call with ignore-not-found=true to ignore resource not found errors during deletion.
 	$(KUSTOMIZE) build config/default | $(KUBECTL) delete --ignore-not-found=$(ignore-not-found) -f -
 
 ##@ Dependencies

@@ -146,7 +146,7 @@ type CertificateSpecTemplate struct {
 	// DNS names determined automatically by the kcp-operator.
 	// If DNSNames is used together with IssuerRef, DNSNames will be uses as-is and not merged.
 	// If IssuerRef is not set, DNSNames will be merged with the defaults. This is to avoid
-	// trying to guess what DNSNames configued issuer might support.
+	// trying to guess what DNSNames configured issuer might support.
 	//
 	// +optional
 	DNSNames []string `json:"dnsNames,omitempty"`

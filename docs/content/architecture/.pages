@@ -2,4 +2,5 @@ nav:
   - index.md
   - basics.md
   - front-proxy.md
+  - kubeconfig.md
   - Certificate Management: pki.md

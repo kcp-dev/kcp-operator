@@ -27,9 +27,10 @@ import (
 // KubeconfigStatusApplyConfiguration represents a declarative configuration of the KubeconfigStatus type for use
 // with apply.
 type KubeconfigStatusApplyConfiguration struct {
-	Phase      *operatorv1alpha1.KubeconfigPhase `json:"phase,omitempty"`
-	TargetName *string                           `json:"targetName,omitempty"`
-	Conditions []v1.ConditionApplyConfiguration  `json:"conditions,omitempty"`
+	Phase         *operatorv1alpha1.KubeconfigPhase                `json:"phase,omitempty"`
+	TargetName    *string                                          `json:"targetName,omitempty"`
+	Authorization *KubeconfigAuthorizationStatusApplyConfiguration `json:"authorization,omitempty"`
+	Conditions    []v1.ConditionApplyConfiguration                 `json:"conditions,omitempty"`
 }
 
 // KubeconfigStatusApplyConfiguration constructs a declarative configuration of the KubeconfigStatus type for use with
@@ -51,6 +52,14 @@ func (b *KubeconfigStatusApplyConfiguration) WithPhase(value operatorv1alpha1.Ku
 // If called multiple times, the TargetName field is set to the value of the last call.
 func (b *KubeconfigStatusApplyConfiguration) WithTargetName(value string) *KubeconfigStatusApplyConfiguration {
 	b.TargetName = &value
+	return b
+}
+
+// WithAuthorization sets the Authorization field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Authorization field is set to the value of the last call.
+func (b *KubeconfigStatusApplyConfiguration) WithAuthorization(value *KubeconfigAuthorizationStatusApplyConfiguration) *KubeconfigStatusApplyConfiguration {
+	b.Authorization = value
 	return b
 }
 

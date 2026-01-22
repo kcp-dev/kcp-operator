@@ -29,7 +29,7 @@ func TestGetLogLevelArgs(t *testing.T) {
 		expected []string
 	}{
 		{
-			name:     "no config at alll",
+			name:     "no config at all",
 			logging:  nil,
 			expected: []string{},
 		},

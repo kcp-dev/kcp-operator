@@ -20,6 +20,8 @@ import (
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	certmanagermetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 
+	"k8s.io/apimachinery/pkg/util/sets"
+
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
 	"github.com/kcp-dev/kcp-operator/internal/resources/utils"
@@ -27,6 +29,9 @@ import (
 )
 
 func ClientCertificateReconciler(kubeConfig *operatorv1alpha1.Kubeconfig, issuerName string) reconciling.NamedCertificateReconcilerFactory {
+	orgs := sets.New(kubeConfig.Spec.Groups...)
+	orgs.Insert(KubeconfigGroup(kubeConfig))
+
 	return func() (string, reconciling.CertificateReconciler) {
 		return kubeConfig.GetCertificateName(), func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
 			cert.SetLabels(kubeConfig.Labels)
@@ -50,7 +55,7 @@ func ClientCertificateReconciler(kubeConfig *operatorv1alpha1.Kubeconfig, issuer
 
 				CommonName: kubeConfig.Spec.Username,
 				Subject: &certmanagerv1.X509Subject{
-					Organizations: kubeConfig.Spec.Groups,
+					Organizations: sets.List(orgs),
 				},
 
 				IssuerRef: certmanagermetav1.ObjectReference{
