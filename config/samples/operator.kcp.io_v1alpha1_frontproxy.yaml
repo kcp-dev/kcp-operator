@@ -14,6 +14,8 @@ spec:
       name: shard-sample
   serviceTemplate:
     spec:
+      # use type LoadBalancer for external access.
+      type: LoadBalancer
       # hard code a specific cluster IP, e.g. for a kind setup.
       clusterIP: 10.96.100.100
   certificateTemplates:

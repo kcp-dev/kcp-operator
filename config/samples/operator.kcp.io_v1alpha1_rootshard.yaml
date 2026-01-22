@@ -6,6 +6,12 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
   name: shard-sample
 spec:
+  # if APIExportEndpointSlices should provide publicly accessible shard endpoints
+  # (like the api endpoint described by field external, they require a public
+  # DNS name. These fields  must be set in secondary shards, also.
+  shardBaseURL: https://root.shard.example.operator.kcp.io:6443
+  # here, the external publicly accessible endpoint for kcp users is described.
+  # it is used for the frontproxy.
   external:
     hostname: example.operator.kcp.io
     port: 6443
@@ -14,12 +20,31 @@ spec:
       group: cert-manager.io
       kind: Issuer
       name: selfsigned
+  # if an external root shard DNS name is configured, it must be covered by the
+  # server certificate (in secondary shards, similarly).
+  certificateTemplates:
+    server:
+      spec:
+        dnsNames:
+        - root.shard.example.operator.kcp.io
+
+  # if the root shard should be externally available, the service requires a load-balancer.
+  # (in secondary shards, similarly)
+  serviceTemplate:
+    spec:
+      type: LoadBalancer
+
   cache:
     embedded:
       enabled: true
   etcd:
     endpoints:
       - http://etcd.default.svc.cluster.local:2379
+    # if https should be used the tlsSecret must be configured using the client secret
+    # from etcd (in secondary shards, similarly).
+    #tlsConfig;
+    #  secretRef:
+    #    name: etcd-client
   deploymentTemplate:
     spec:
       template:
