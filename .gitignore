@@ -27,7 +27,9 @@ go.work.sum
 # Downloaded and built binaries
 /_build/
 /_tools/
+/dist/
 
 # e2e test logs and artifacts
 /.e2e-*
 .vscode
+.idea
