@@ -38,6 +38,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	bundlehelper "github.com/kcp-dev/kcp-operator/internal/controller/bundle"
 	"github.com/kcp-dev/kcp-operator/internal/controller/util"
 	"github.com/kcp-dev/kcp-operator/internal/metrics"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
@@ -130,10 +131,18 @@ func (r *FrontProxyReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 }
 
 func (r *FrontProxyReconciler) reconcile(ctx context.Context, frontProxy *operatorv1alpha1.FrontProxy) ([]metav1.Condition, error) {
-	var conditions []metav1.Condition
+	var (
+		conditions []metav1.Condition
+		errs       []error
+	)
 
 	if frontProxy.DeletionTimestamp != nil {
 		return conditions, nil
+	}
+
+	// Ensure Bundle object exists if annotation is present
+	if _, err := bundlehelper.EnsureBundleForOwner(ctx, r.Client, r.Scheme, frontProxy); err != nil {
+		errs = append(errs, fmt.Errorf("failed to ensure bundle: %w", err))
 	}
 
 	cond, rootShard := util.FetchRootShard(ctx, r.Client, frontProxy.Namespace, frontProxy.Spec.RootShard.Reference)
@@ -145,23 +154,34 @@ func (r *FrontProxyReconciler) reconcile(ctx context.Context, frontProxy *operat
 
 	fpReconciler := frontproxy.NewFrontProxy(frontProxy, rootShard)
 
+	// Deployment will be scaled to 0 if bundle annotation is present
 	if err := fpReconciler.Reconcile(ctx, r.Client, frontProxy.Namespace); err != nil {
-		return conditions, fmt.Errorf("failed to reconcile: %w", err)
+		errs = append(errs, fmt.Errorf("failed to reconcile: %w", err))
 	}
 
-	return conditions, nil
+	return conditions, kerrors.NewAggregate(errs)
 }
 
 func (r *FrontProxyReconciler) reconcileStatus(ctx context.Context, oldFrontProxy *operatorv1alpha1.FrontProxy, conditions []metav1.Condition) error {
 	frontProxy := oldFrontProxy.DeepCopy()
 	var errs []error
 
-	depKey := types.NamespacedName{Namespace: frontProxy.Namespace, Name: resources.GetFrontProxyDeploymentName(frontProxy)}
-	cond, err := util.GetDeploymentAvailableCondition(ctx, r.Client, depKey)
-	if err != nil {
-		errs = append(errs, err)
-	} else {
-		conditions = append(conditions, cond)
+	// Add Bundle condition
+	bundleCond := bundlehelper.GetBundleReadyCondition(ctx, r.Client, frontProxy, frontProxy.Generation)
+	conditions = append(conditions, bundleCond)
+
+	// Check if frontproxy is bundled (has bundle annotation with Ready bundle)
+	isBundled := bundleCond.Status == metav1.ConditionTrue && bundleCond.Reason == "BundleReady"
+
+	// Only check deployment status if not bundled
+	if !isBundled {
+		depKey := types.NamespacedName{Namespace: frontProxy.Namespace, Name: resources.GetFrontProxyDeploymentName(frontProxy)}
+		cond, err := util.GetDeploymentAvailableCondition(ctx, r.Client, depKey)
+		if err != nil {
+			errs = append(errs, err)
+		} else {
+			conditions = append(conditions, cond)
+		}
 	}
 
 	for _, condition := range conditions {
@@ -173,9 +193,20 @@ func (r *FrontProxyReconciler) reconcileStatus(ctx context.Context, oldFrontProx
 		frontProxy.Status.Phase = operatorv1alpha1.FrontProxyPhaseDeleting
 	} else {
 		availableCond := apimeta.FindStatusCondition(frontProxy.Status.Conditions, string(operatorv1alpha1.ConditionTypeAvailable))
-		if availableCond != nil && availableCond.Status == metav1.ConditionTrue {
+		bundleStatusCond := apimeta.FindStatusCondition(frontProxy.Status.Conditions, string(operatorv1alpha1.ConditionTypeBundle))
+
+		switch {
+		case isBundled:
+			// FrontProxy is bundled, deployment scaled to 0, resources exported via bundle
+			frontProxy.Status.Phase = operatorv1alpha1.FrontProxyPhaseBundled
+
+		case bundleStatusCond != nil && bundleStatusCond.Status != metav1.ConditionTrue:
+			frontProxy.Status.Phase = operatorv1alpha1.FrontProxyPhaseProvisioning
+
+		case availableCond != nil && availableCond.Status == metav1.ConditionTrue:
 			frontProxy.Status.Phase = operatorv1alpha1.FrontProxyPhaseRunning
-		} else {
+
+		default:
 			frontProxy.Status.Phase = operatorv1alpha1.FrontProxyPhaseProvisioning
 		}
 	}

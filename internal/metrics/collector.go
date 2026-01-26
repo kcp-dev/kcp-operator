@@ -41,7 +41,6 @@ func NewMetricsCollector(client ctrlruntimeclient.Client) *MetricsCollector {
 
 func (mc *MetricsCollector) Start(ctx context.Context) {
 	ticker := time.NewTicker(30 * time.Second)
-	defer ticker.Stop()
 
 	mc.updateObjectCounts(ctx)
 

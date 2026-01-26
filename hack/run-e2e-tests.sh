@@ -21,18 +21,29 @@ DATA_DIR=".e2e-$KIND_CLUSTER_NAME"
 OPERATOR_PID=0
 PROTOKOL_PID=0
 NO_TEARDOWN=${NO_TEARDOWN:-false}
+USE_EXISTING_CLUSTER=${USE_EXISTING_CLUSTER:-false}
 
 mkdir -p "$DATA_DIR"
 rm -rf "$DATA_DIR/kind-logs"
 echo "Logs are stored in $DATA_DIR/."
 DATA_DIR="$(realpath "$DATA_DIR")"
 
-# create a local kind cluster
-
-export KUBECONFIG="$DATA_DIR/kind.kubeconfig"
-echo "Creating kind cluster $KIND_CLUSTER_NAME..."
-kind create cluster --name "$KIND_CLUSTER_NAME"
-chmod 600 "$KUBECONFIG"
+# create a local kind cluster or use existing one
+if $USE_EXISTING_CLUSTER; then
+  echo "Using existing cluster (USE_EXISTING_CLUSTER=true)..."
+  if [[ -z "${KUBECONFIG:-}" ]]; then
+    echo "ERROR: KUBECONFIG must be set when USE_EXISTING_CLUSTER=true"
+    exit 1
+  fi
+  # Convert to absolute path if relative
+  export KUBECONFIG="$(realpath "$KUBECONFIG")"
+  echo "Using KUBECONFIG: $KUBECONFIG"
+else
+  export KUBECONFIG="$DATA_DIR/kind.kubeconfig"
+  echo "Creating kind cluster $KIND_CLUSTER_NAME (set \$USE_EXISTING_CLUSTER to true to use your own)"
+  kind create cluster --name "$KIND_CLUSTER_NAME"
+  chmod 600 "$KUBECONFIG"
+fi
 
 teardown_kind() {
   if [[ $PROTOKOL_PID -gt 0 ]]; then
@@ -41,12 +52,18 @@ teardown_kind() {
     # no wait because protokol ends quickly and wait would fail
   fi
 
-  kind delete cluster --name "$KIND_CLUSTER_NAME"
-  rm "$KUBECONFIG"
+  if ! $USE_EXISTING_CLUSTER; then
+    kind delete cluster --name "$KIND_CLUSTER_NAME"
+    rm "$KUBECONFIG"
+  fi
 }
 
 if ! $NO_TEARDOWN; then
-  echo "Will tear down kind cluster once the script has finished."
+  if $USE_EXISTING_CLUSTER; then
+    echo "Will stop operator and protokol once the script has finished (keeping existing cluster)."
+  else
+    echo "Will tear down kind cluster once the script has finished."
+  fi
   trap teardown_kind EXIT
 fi
 
@@ -99,7 +116,7 @@ export ETCD_HELM_CHART="$(realpath hack/ci/testdata/etcd)"
 
 WHAT="${WHAT:-./test/e2e/...}"
 TEST_ARGS="${TEST_ARGS:--timeout 2h -v}"
-E2E_PARALLELISM=${E2E_PARALLELISM:-2}
+E2E_PARALLELISM=${E2E_PARALLELISM:-1}
 
 # -parallel will only control how many tests run in parallel *within a single test package.*
 # We however need to limit the overall amount of tests that can run at the same time, since

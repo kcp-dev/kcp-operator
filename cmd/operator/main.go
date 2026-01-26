@@ -17,12 +17,15 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"flag"
+	"fmt"
 	"os"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/go-logr/zapr"
+	"github.com/spf13/pflag"
 	"go.uber.org/zap/zapcore"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -36,6 +39,8 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	"github.com/kcp-dev/kcp-operator/internal/config"
+	"github.com/kcp-dev/kcp-operator/internal/controller/bundle"
 	"github.com/kcp-dev/kcp-operator/internal/controller/cacheserver"
 	"github.com/kcp-dev/kcp-operator/internal/controller/frontproxy"
 	"github.com/kcp-dev/kcp-operator/internal/controller/kubeconfig"
@@ -61,28 +66,54 @@ func init() {
 }
 
 func main() {
+	ctx := ctrl.SetupSignalHandler()
+	err := run(ctx)
+	if err != nil {
+		setupLog.Error(err, "problem running manager")
+		os.Exit(1)
+	}
+}
+
+func run(ctx context.Context) error {
 	var (
 		metricsAddr, probeAddr                           string
 		enableLeaderElection, secureMetrics, enableHTTP2 bool
 		tlsOpts                                          []func(*tls.Config)
 	)
 
-	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metrics endpoint binds to. "+
+	// Create pflag set and bind to standard flag set
+	fs := pflag.NewFlagSet("kcp-operator", pflag.ExitOnError)
+
+	fs.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metrics endpoint binds to. "+
 		"Use :8443 for HTTPS or :8080 for HTTP, or leave as 0 to disable the metrics service.")
-	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
-	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
+	fs.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
+	fs.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
-	flag.BoolVar(&secureMetrics, "metrics-secure", true,
+	fs.BoolVar(&secureMetrics, "metrics-secure", true,
 		"If set, the metrics endpoint is served securely via HTTPS. Use --metrics-secure=false to use HTTP instead.")
-	flag.BoolVar(&enableHTTP2, "enable-http2", false,
+	fs.BoolVar(&enableHTTP2, "enable-http2", false,
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
+
+	// Add feature gates flag
+	config.DefaultMutableFeatureGate.AddFlag(fs)
+
 	opts := zap.Options{
 		Development:     true,
 		StacktraceLevel: zapcore.PanicLevel,
 	}
+
+	// Bind zap flags to Go flag set, then add to pflag
 	opts.BindFlags(flag.CommandLine)
-	flag.Parse()
+	fs.AddGoFlagSet(flag.CommandLine)
+
+	err := fs.Parse(os.Args[1:])
+	if err != nil {
+		return fmt.Errorf("failed to parse flags: %v", err)
+	}
+
+	// Log enabled feature gates
+	setupLog.Info("Feature gates", "gates", config.DefaultFeatureGate)
 
 	log := zap.NewRaw(zap.UseFlagOptions(&opts))
 	ctrl.SetLogger(zapr.NewLogger(log))
@@ -151,44 +182,48 @@ func main() {
 		// LeaderElectionReleaseOnCancel: true,
 	})
 	if err != nil {
-		setupLog.Error(err, "unable to start manager")
-		os.Exit(1)
+		return fmt.Errorf("unable to start manager: %w", err)
 	}
 
+	client := mgr.GetClient()
+
 	if err = (&rootshard.RootShardReconciler{
-		Client: mgr.GetClient(),
+		Client: client,
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "KCPInstance")
-		os.Exit(1)
+		return fmt.Errorf("unable to create controller %s: %w", "RootShard", err)
 	}
 	if err = (&frontproxy.FrontProxyReconciler{
-		Client: mgr.GetClient(),
+		Client: client,
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "FrontProxy")
-		os.Exit(1)
+		return fmt.Errorf("unable to create controller %s: %w", "FrontProxy", err)
 	}
 	if err = (&shard.ShardReconciler{
-		Client: mgr.GetClient(),
+		Client: client,
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Shard")
-		os.Exit(1)
+		return fmt.Errorf("unable to create controller %s: %w", "Shard", err)
 	}
 	if err = (&cacheserver.CacheServerReconciler{
-		Client: mgr.GetClient(),
+		Client: client,
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "CacheServer")
-		os.Exit(1)
+		return fmt.Errorf("unable to create controller %s: %w", "CacheServer", err)
 	}
 	if err = (&kubeconfig.KubeconfigReconciler{
-		Client: mgr.GetClient(),
+		Client: client,
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Kubeconfig")
-		os.Exit(1)
+		return fmt.Errorf("unable to create controller %s: %w", "Kubeconfig", err)
+	}
+	if config.Enabled(config.ConfigurationBundle) {
+		if err = (&bundle.BundleReconciler{
+			Client: client,
+			Scheme: mgr.GetScheme(),
+		}).SetupWithManager(mgr); err != nil {
+			return fmt.Errorf("unable to create controller %s: %w", "Bundle", err)
+		}
 	}
 	if err = (&kubeconfigrbac.KubeconfigRBACReconciler{
 		Client: mgr.GetClient(),
@@ -202,21 +237,15 @@ func main() {
 	metrics.RegisterMetrics()
 
 	metricsCollector := metrics.NewMetricsCollector(mgr.GetClient())
-	ctx := ctrl.SetupSignalHandler()
 	go metricsCollector.Start(ctx)
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
-		setupLog.Error(err, "unable to set up health check")
-		os.Exit(1)
+		return fmt.Errorf("unable to set up health check: %w", err)
 	}
 	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
-		setupLog.Error(err, "unable to set up ready check")
-		os.Exit(1)
+		return fmt.Errorf("unable to set up ready check: %w", err)
 	}
 
 	setupLog.Info("starting manager")
-	if err := mgr.Start(ctx); err != nil {
-		setupLog.Error(err, "problem running manager")
-		os.Exit(1)
-	}
+	return mgr.Start(ctx)
 }

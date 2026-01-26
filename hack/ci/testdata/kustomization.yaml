@@ -5,3 +5,12 @@ resources:
 images:
   - name: ghcr.io/kcp-dev/kcp-operator
     newTag: local
+patches:
+  - patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --feature-gates=ConfigurationBundle=true
+    target:
+      kind: Deployment
+      name: controller-manager
+      namespace: kcp-operator-system

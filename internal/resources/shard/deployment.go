@@ -70,6 +70,7 @@ func DeploymentReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1al
 			dep.Spec.Selector = &metav1.LabelSelector{
 				MatchLabels: labels,
 			}
+
 			dep.Spec.Template.SetLabels(labels)
 
 			secretMounts := []utils.SecretMount{{
@@ -158,6 +159,19 @@ func DeploymentReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1al
 			dep = utils.ApplyCommonShardConfig(dep, &shard.Spec.CommonShardSpec)
 			dep = utils.ApplyDeploymentTemplate(dep, shard.Spec.DeploymentTemplate)
 			dep = utils.ApplyAuthConfiguration(dep, shard.Spec.Auth)
+
+			// If shard has bundle annotation, store desired replicas in annotation then scale deployment to 0 locally
+			if shard.Annotations != nil && shard.Annotations[resources.BundleAnnotation] != "" {
+				// Store the desired replicas in an annotation so bundle can capture the correct value
+				if dep.Spec.Replicas != nil && *dep.Spec.Replicas > 0 {
+					if dep.Annotations == nil {
+						dep.Annotations = make(map[string]string)
+					}
+					dep.Annotations[resources.BundleDesiredReplicasAnnotation] = fmt.Sprintf("%d", *dep.Spec.Replicas)
+				}
+				// Scale to 0 locally
+				dep.Spec.Replicas = ptr.To(int32(0))
+			}
 
 			return dep, nil
 		}

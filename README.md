@@ -33,6 +33,30 @@ The table below marks known support of a kcp version in kcp-operator versions.
 
 [^1]: While we try to support kcp's `main` branch, this support is best effort and should not be used for deploying actual kcp instances.
 
+## Feature Gates
+
+kcp-operator supports Kubernetes-style feature gates to enable or disable experimental features. Feature gates can be configured using the `--feature-gates` flag when starting the operator.
+
+### Available Feature Gates
+
+| Feature | Default | Stage | Description |
+|---------|---------|-------|-------------|
+| `ConfigurationBundle` | `false` | Alpha | Enable the configuration bundle feature for managing bundled KCP configurations and resources |
+
+### Usage
+
+Enable feature gates when starting the operator:
+
+```bash
+# Enable a single feature
+./operator --feature-gates=ConfigurationBundle=true
+
+# Enable multiple features
+./operator --feature-gates=ConfigurationBundle=true,AnotherFeature=true
+```
+
+For more details on feature gates, see the [feature gates documentation](internal/config/README.md).
+
 ## Contributing
 
 Thanks for taking the time to start contributing! Please check out our [contributor documentation](https://docs.kcp.io/kcp-operator/main/contributing).

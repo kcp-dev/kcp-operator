@@ -7,6 +7,7 @@ resources:
 - bases/operator.kcp.io_shards.yaml
 - bases/operator.kcp.io_cacheservers.yaml
 - bases/operator.kcp.io_kubeconfigs.yaml
+- bases/operator.kcp.io_bundles.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patches: []

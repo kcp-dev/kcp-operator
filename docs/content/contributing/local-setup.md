@@ -85,7 +85,7 @@ kubectl apply -k ./config/crd/
 Then start the operator via `go run`:
 
 ```sh
-go run ./cmd/main.go
+go run ./cmd/operator/
 ```
 
 ## Create kcp Instance
