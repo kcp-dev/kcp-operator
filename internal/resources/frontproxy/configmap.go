@@ -61,18 +61,24 @@ func (r *reconciler) pathMappingConfigMapReconciler() reconciling.NamedConfigMap
 func (r *reconciler) defaultPathMappings() []operatorv1alpha1.PathMappingEntry {
 	url := resources.GetRootShardBaseURL(r.rootShard)
 
+	// Determine CA path based on CABundleSecretRef
+	backendCA := kcpBasepath + "/tls/ca/tls.crt"
+	if r.getCABundleSecretRef() != nil {
+		backendCA = getCAMountPath(operatorv1alpha1.CABundleCA) + "/tls.crt"
+	}
+
 	return []operatorv1alpha1.PathMappingEntry{
 		{
 			Path:            "/clusters/",
 			Backend:         url,
-			BackendServerCA: "/etc/kcp/tls/ca/tls.crt",
+			BackendServerCA: backendCA,
 			ProxyClientCert: "/etc/kcp-front-proxy/requestheader-client/tls.crt",
 			ProxyClientKey:  "/etc/kcp-front-proxy/requestheader-client/tls.key",
 		},
 		{
 			Path:            "/services/",
 			Backend:         url,
-			BackendServerCA: "/etc/kcp/tls/ca/tls.crt",
+			BackendServerCA: backendCA,
 			ProxyClientCert: "/etc/kcp-front-proxy/requestheader-client/tls.crt",
 			ProxyClientKey:  "/etc/kcp-front-proxy/requestheader-client/tls.key",
 		},

@@ -16,7 +16,17 @@ limitations under the License.
 
 package frontproxy
 
+import (
+	"fmt"
+
+	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
+)
+
 const (
 	frontProxyBasepath = "/etc/kcp-front-proxy"
 	kcpBasepath        = "/etc/kcp"
 )
+
+func getCAMountPath(caName operatorv1alpha1.CA) string {
+	return fmt.Sprintf("%s/tls/ca/%s", kcpBasepath, caName)
+}

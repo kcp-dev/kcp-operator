@@ -161,6 +161,12 @@ func (r *reconciler) deploymentReconciler() reconciling.NamedDeploymentReconcile
 			// kcp rootshard root ca
 			mountSecret(resources.GetRootShardCAName(r.rootShard, operatorv1alpha1.RootCA), kcpBasepath+"/tls/ca", true)
 
+			// If caBundleSecretRef is specified, mount the merged CA bundle secret.
+			// This secret contains both kcp root CA and user-provided CA bundle merged together.
+			if r.getCABundleSecretRef() != nil {
+				mountSecret(r.mergedCABundleSecretName(), getCAMountPath(operatorv1alpha1.CABundleCA), true)
+			}
+
 			// Regular front-proxies use a dedicated client CA. However the internal rootshard proxy
 			// uses the internal client CA instead to make it easier for the kcp-operator to just use
 			// a single certificate to access all components.
