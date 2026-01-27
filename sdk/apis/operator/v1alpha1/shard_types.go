@@ -83,6 +83,15 @@ type CommonShardSpec struct {
 
 type AuditSpec struct {
 	Webhook *AuditWebhookSpec `json:"webhook,omitempty"`
+
+	// Audit policy configuration.
+	Policy *AuditPolicySpec `json:"policy,omitempty"`
+}
+
+type AuditPolicySpec struct {
+	// ConfigMap is a reference to the ConfigMap containing the audit policy
+	// file which is mounted into the container.
+	ConfigMap *LocalDataKeyReference `json:"configMap,omitempty"`
 }
 
 // +kubebuilder:validation:Enum="";batch;blocking;blocking-strict

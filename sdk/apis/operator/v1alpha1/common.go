@@ -70,6 +70,16 @@ type ObjectReference struct {
 	Group string `json:"group,omitempty"`
 }
 
+// LocalDataKeyReference is a reference to a namespace-local object storing
+// key-value data, i.e. ConfigMap or Secret.
+type LocalDataKeyReference struct {
+	// Name of the object.
+	Name string `json:"name"`
+
+	// Key in the data.
+	Key string `json:"key"`
+}
+
 type Certificate string
 
 const (
