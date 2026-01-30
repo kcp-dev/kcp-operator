@@ -29,6 +29,10 @@ type FakeOperatorV1alpha1 struct {
 	*testing.Fake
 }
 
+func (c *FakeOperatorV1alpha1) Bundles(namespace string) v1alpha1.BundleInterface {
+	return newFakeBundles(c, namespace)
+}
+
 func (c *FakeOperatorV1alpha1) CacheServers(namespace string) v1alpha1.CacheServerInterface {
 	return newFakeCacheServers(c, namespace)
 }

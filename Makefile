@@ -36,6 +36,11 @@ GOTOOLFLAGS ?= $(GOBUILDFLAGS) -ldflags '$(LDFLAGS) $(LDFLAGS_EXTRA)' $(GOTOOLFL
 # Image URL to use all building/pushing image targets
 IMG ?= ghcr.io/kcp-dev/kcp-operator
 
+# Architecture to build for (amd64 or arm64)
+TARGET_ARCH ?= $(shell go env GOARCH)
+# Target OS for builds (defaults to linux for containers)
+TARGET_OS ?= linux
+
 GOIMPORTS_VERSION ?= c72f1dc2e3aacfa00aece3391d938c9bc734e791
 GOLANGCI_LINT_VERSION ?= 2.1.6
 HELM_VERSION ?= 3.18.6
@@ -100,13 +105,14 @@ test: fmt vet ## Run tests.
 
 # Utilize Kind or modify the e2e tests to load the image locally, enabling compatibility with other vendors.
 .PHONY: test-e2e  # Run the e2e tests against a kind k8s instance that is already spun up.
-test-e2e:
-	go test -v -tags e2e ./test/e2e/...
+test-e2e: build ## Run e2e tests using existing cluster, bootstrap prerequisites and run tests. Use WHAT= to specify test path.
+	USE_EXISTING_CLUSTER=true NO_TEARDOWN=true WHAT=$(WHAT) hack/run-e2e-tests.sh
 
 # Creates a kind cluster and runs the e2e tests in them. The kind cluster is destroyed after the tests.
+# Example: USE_EXISTING_CLUSTER=true NO_TEARDOWN=true make test-e2e WHAT=./test/e2e/shards TEST_ARGS="-timeout 2h -v -run TestShardBundleAnnotation -count=1" 
 .PHONY: test-e2e-with-kind  # Run the e2e tests against a temporary kind cluster.
-test-e2e-with-kind:
-	@hack/run-e2e-tests.sh
+test-e2e-with-kind: ## Run e2e tests in temporary kind cluster. Use WHAT= to specify test path.
+	@WHAT=$(WHAT) hack/run-e2e-tests.sh
 
 GOLANGCI_LINT = $(UGET_DIRECTORY)/golangci-lint-$(GOLANGCI_LINT_VERSION)
 
@@ -146,22 +152,27 @@ clean-tools: ## Remove all downloaded tools.
 
 .PHONY: build
 build: ## Build manager binary.
-	go build $(GOTOOLFLAGS) -o $(BUILD_DEST)/manager cmd/main.go
+	go build $(GOTOOLFLAGS) -o $(BUILD_DEST)/manager cmd/operator/main.go
+	go build $(GOTOOLFLAGS) -o $(BUILD_DEST)/bundler cmd/bundle/main.go
 
 .PHONY: run
 run: fmt vet ## Run a controller from your host.
-	go run ./cmd/main.go
+	go run ./cmd/operator/main.go
 
 # If you wish to build the manager image targeting other platforms you can use the --platform flag.
 # (i.e. docker build --platform linux/arm64). However, you must enable docker buildKit for it.
 # More info: https://docs.docker.com/develop/develop-images/build_enhancements/
 .PHONY: docker-build
 docker-build: ## Build docker image with the manager.
-	$(CONTAINER_TOOL) build -t ${IMG} .
+	$(CONTAINER_TOOL) build --platform $(TARGET_OS)/$(TARGET_ARCH) -t ${IMG} .
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
 	$(CONTAINER_TOOL) push ${IMG}
+
+.PHONY: docker-buildx
+docker-buildx: ## Build and push docker image for multiple architectures (amd64,arm64).
+	$(CONTAINER_TOOL) buildx build --platform linux/amd64,linux/arm64 -t ${IMG} --push .
 
 KUSTOMIZE = $(abspath .)/$(UGET_DIRECTORY)/kustomize-$(KUSTOMIZE_VERSION)
 KUBECTL = $(abspath .)/$(UGET_DIRECTORY)/kubectl-$(KUBECTL_VERSION)
