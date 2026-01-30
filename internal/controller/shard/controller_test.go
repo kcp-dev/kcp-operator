@@ -217,7 +217,14 @@ func TestReconciling(t *testing.T) {
 				Scheme: client.Scheme(),
 			}
 
+			// First reconcile adds finalizer and returns early
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
+				NamespacedName: ctrlruntimeclient.ObjectKeyFromObject(testcase.shard),
+			})
+			require.NoError(t, err)
+
+			// Second reconcile performs actual reconciliation
+			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{
 				NamespacedName: ctrlruntimeclient.ObjectKeyFromObject(testcase.shard),
 			})
 			require.NoError(t, err)
