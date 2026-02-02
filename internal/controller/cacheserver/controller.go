@@ -86,6 +86,12 @@ func (r *CacheServerReconciler) reconcile(ctx context.Context, server *operatorv
 		return err
 	}
 
+	if err := reconciling.ReconcileIssuers(ctx, []reconciling.NamedIssuerReconcilerFactory{
+		cacheserver.RootCAIssuerReconciler(server),
+	}, server.Namespace, r.Client); err != nil {
+		return err
+	}
+
 	if err := k8creconciling.ReconcileDeployments(ctx, []k8creconciling.NamedDeploymentReconcilerFactory{
 		cacheserver.DeploymentReconciler(server),
 	}, server.Namespace, r.Client); err != nil {
