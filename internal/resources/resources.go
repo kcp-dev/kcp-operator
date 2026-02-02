@@ -26,7 +26,7 @@ import (
 
 const (
 	ImageRepository = "ghcr.io/kcp-dev/kcp"
-	ImageTag        = "v0.29.0"
+	ImageTag        = "v0.30.0"
 
 	appNameLabel      = "app.kubernetes.io/name"
 	appInstanceLabel  = "app.kubernetes.io/instance"

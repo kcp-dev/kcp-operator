@@ -28,10 +28,10 @@ import (
 	"testing"
 	"time"
 
-	kcpcorev1alpha1 "github.com/kcp-dev/kcp/sdk/apis/core/v1alpha1"
-	kcptenancyv1alpha1 "github.com/kcp-dev/kcp/sdk/apis/tenancy/v1alpha1"
-	"github.com/kcp-dev/kcp/sdk/testing/server"
 	"github.com/kcp-dev/logicalcluster/v3"
+	kcpcorev1alpha1 "github.com/kcp-dev/sdk/apis/core/v1alpha1"
+	kcptenancyv1alpha1 "github.com/kcp-dev/sdk/apis/tenancy/v1alpha1"
+	"github.com/kcp-dev/sdk/testing/server"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
