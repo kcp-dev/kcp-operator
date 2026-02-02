@@ -62,7 +62,7 @@ func TestProvisionFrontProxyRBAC(t *testing.T) {
 			Name: "test",
 		},
 		Spec: kcptenancyv1alpha1.WorkspaceSpec{
-			Type: kcptenancyv1alpha1.WorkspaceTypeReference{
+			Type: &kcptenancyv1alpha1.WorkspaceTypeReference{
 				Name: "universal",
 			},
 		},
