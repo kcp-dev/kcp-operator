@@ -24,6 +24,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrlruntime "sigs.k8s.io/controller-runtime"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -79,34 +80,36 @@ func (r *CacheServerReconciler) Reconcile(ctx context.Context, req ctrlruntime.R
 }
 
 func (r *CacheServerReconciler) reconcile(ctx context.Context, server *operatorv1alpha1.CacheServer) error {
+	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*metav1.NewControllerRef(server, operatorv1alpha1.SchemeGroupVersion.WithKind("CacheServer")))
+
 	if err := reconciling.ReconcileCertificates(ctx, []reconciling.NamedCertificateReconcilerFactory{
 		cacheserver.RootCACertificateReconciler(server),
 		cacheserver.ServerCertificateReconciler(server),
-	}, server.Namespace, r.Client); err != nil {
+	}, server.Namespace, r.Client, ownerRefWrapper); err != nil {
 		return err
 	}
 
 	if err := reconciling.ReconcileIssuers(ctx, []reconciling.NamedIssuerReconcilerFactory{
 		cacheserver.RootCAIssuerReconciler(server),
-	}, server.Namespace, r.Client); err != nil {
+	}, server.Namespace, r.Client, ownerRefWrapper); err != nil {
 		return err
 	}
 
 	if err := k8creconciling.ReconcileDeployments(ctx, []k8creconciling.NamedDeploymentReconcilerFactory{
 		cacheserver.DeploymentReconciler(server),
-	}, server.Namespace, r.Client); err != nil {
+	}, server.Namespace, r.Client, ownerRefWrapper); err != nil {
 		return err
 	}
 
 	if err := k8creconciling.ReconcileSecrets(ctx, []k8creconciling.NamedSecretReconcilerFactory{
 		cacheserver.KubeconfigReconciler(server),
-	}, server.Namespace, r.Client); err != nil {
+	}, server.Namespace, r.Client, ownerRefWrapper); err != nil {
 		return err
 	}
 
 	if err := k8creconciling.ReconcileServices(ctx, []k8creconciling.NamedServiceReconcilerFactory{
 		cacheserver.ServiceReconciler(server),
-	}, server.Namespace, r.Client); err != nil {
+	}, server.Namespace, r.Client, ownerRefWrapper); err != nil {
 		return err
 	}
 
