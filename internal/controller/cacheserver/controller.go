@@ -19,11 +19,18 @@ package cacheserver
 import (
 	"context"
 
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	k8creconciling "k8c.io/reconciler/pkg/reconciling"
+
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	ctrl "sigs.k8s.io/controller-runtime"
+	ctrlruntime "sigs.k8s.io/controller-runtime"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/kcp-dev/kcp-operator/internal/reconciling"
+	"github.com/kcp-dev/kcp-operator/internal/resources/cacheserver"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -33,31 +40,69 @@ type CacheServerReconciler struct {
 	Scheme *runtime.Scheme
 }
 
+func (r *CacheServerReconciler) SetupWithManager(mgr ctrlruntime.Manager) error {
+	return ctrlruntime.NewControllerManagedBy(mgr).
+		Named("cache-server").
+		For(&operatorv1alpha1.CacheServer{}).
+		Owns(&appsv1.Deployment{}).
+		Owns(&corev1.Secret{}).
+		Owns(&corev1.Service{}).
+		Owns(&certmanagerv1.Certificate{}).
+		Complete(r)
+}
+
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=cacheservers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=cacheservers/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=cacheservers/finalizers,verbs=update
+// +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 
-// Reconcile is part of the main kubernetes reconciliation loop which aims to
-// move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the CacheServer object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
-//
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.19.0/pkg/reconcile
-func (r *CacheServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+func (r *CacheServerReconciler) Reconcile(ctx context.Context, req ctrlruntime.Request) (ctrlruntime.Result, error) {
+	logger := log.FromContext(ctx)
+	logger.V(4).Info("Reconciling")
 
-	// TODO(user): your logic here
+	server := &operatorv1alpha1.CacheServer{}
+	if err := r.Get(ctx, req.NamespacedName, server); err != nil {
+		return ctrlruntime.Result{}, ctrlruntimeclient.IgnoreNotFound(err)
+	}
 
-	return ctrl.Result{}, nil
+	if server.DeletionTimestamp != nil {
+		return ctrlruntime.Result{}, nil
+	}
+
+	if err := r.reconcile(ctx, server); err != nil {
+		return ctrlruntime.Result{}, err
+	}
+
+	return ctrlruntime.Result{}, nil
 }
 
-// SetupWithManager sets up the controller with the Manager.
-func (r *CacheServerReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		Named("cacheserver").
-		For(&operatorv1alpha1.CacheServer{}).
-		Complete(r)
+func (r *CacheServerReconciler) reconcile(ctx context.Context, server *operatorv1alpha1.CacheServer) error {
+	if err := reconciling.ReconcileCertificates(ctx, []reconciling.NamedCertificateReconcilerFactory{
+		cacheserver.RootCACertificateReconciler(server),
+		cacheserver.ServerCertificateReconciler(server),
+	}, server.Namespace, r.Client); err != nil {
+		return err
+	}
+
+	if err := k8creconciling.ReconcileDeployments(ctx, []k8creconciling.NamedDeploymentReconcilerFactory{
+		cacheserver.DeploymentReconciler(server),
+	}, server.Namespace, r.Client); err != nil {
+		return err
+	}
+
+	if err := k8creconciling.ReconcileSecrets(ctx, []k8creconciling.NamedSecretReconcilerFactory{
+		cacheserver.KubeconfigReconciler(server),
+	}, server.Namespace, r.Client); err != nil {
+		return err
+	}
+
+	if err := k8creconciling.ReconcileServices(ctx, []k8creconciling.NamedServiceReconcilerFactory{
+		cacheserver.ServiceReconciler(server),
+	}, server.Namespace, r.Client); err != nil {
+		return err
+	}
+
+	return nil
 }
