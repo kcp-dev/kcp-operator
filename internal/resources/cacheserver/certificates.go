@@ -28,7 +28,7 @@ import (
 
 // RootCACertificateReconciler creates a standalone CA just for a single cache-server.
 func RootCACertificateReconciler(server *operatorv1alpha1.CacheServer) reconciling.NamedCertificateReconcilerFactory {
-	name := resources.GetCacheServerCAName(server, operatorv1alpha1.RootCA)
+	name := resources.GetCacheServerCAName(server.Name, operatorv1alpha1.RootCA)
 	template := server.Spec.CertificateTemplates.CATemplate(operatorv1alpha1.RootCA)
 
 	if server.Spec.Certificates.IssuerRef == nil {
@@ -97,7 +97,7 @@ func ServerCertificateReconciler(server *operatorv1alpha1.CacheServer) reconcili
 				},
 
 				IssuerRef: certmanagermetav1.ObjectReference{
-					Name:  resources.GetCacheServerCAName(server, operatorv1alpha1.RootCA),
+					Name:  resources.GetCacheServerCAName(server.Name, operatorv1alpha1.RootCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},

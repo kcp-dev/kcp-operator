@@ -194,11 +194,11 @@ func GetRootShardCAName(r *operatorv1alpha1.RootShard, caName operatorv1alpha1.C
 	return fmt.Sprintf("%s-%s-ca", r.Name, caName)
 }
 
-func GetCacheServerCAName(s *operatorv1alpha1.CacheServer, caName operatorv1alpha1.CA) string {
+func GetCacheServerCAName(cacheServerName string, caName operatorv1alpha1.CA) string {
 	if caName == operatorv1alpha1.RootCA {
-		return fmt.Sprintf("%s-ca", s.Name)
+		return fmt.Sprintf("%s-ca", cacheServerName)
 	}
-	return fmt.Sprintf("%s-%s-ca", s.Name, caName)
+	return fmt.Sprintf("%s-%s-ca", cacheServerName, caName)
 }
 
 func GetFrontProxyResourceLabels(f *operatorv1alpha1.FrontProxy) map[string]string {
@@ -219,6 +219,10 @@ func GetRootShardProxyDynamicKubeconfigName(r *operatorv1alpha1.RootShard) strin
 
 func GetFrontProxyDynamicKubeconfigName(r *operatorv1alpha1.RootShard, f *operatorv1alpha1.FrontProxy) string {
 	return fmt.Sprintf("%s-%s-dynamic-kubeconfig", r.Name, f.Name)
+}
+
+func GetCacheServerKubeconfigName(cacheServerName string) string {
+	return fmt.Sprintf("%s-kubeconfig", cacheServerName)
 }
 
 func GetRootShardProxyConfigName(r *operatorv1alpha1.RootShard) string {

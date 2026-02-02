@@ -25,7 +25,7 @@ import (
 )
 
 func RootCAIssuerReconciler(server *operatorv1alpha1.CacheServer) reconciling.NamedIssuerReconcilerFactory {
-	name := resources.GetCacheServerCAName(server, operatorv1alpha1.RootCA)
+	name := resources.GetCacheServerCAName(server.Name, operatorv1alpha1.RootCA)
 
 	secretName := name
 	if server.Spec.Certificates.CASecretRef != nil {

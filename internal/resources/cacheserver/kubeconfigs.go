@@ -17,8 +17,6 @@ limitations under the License.
 package cacheserver
 
 import (
-	"fmt"
-
 	k8creconciling "k8c.io/reconciler/pkg/reconciling"
 
 	corev1 "k8s.io/api/core/v1"
@@ -29,10 +27,6 @@ import (
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
-func kubeconfigSecret(server *operatorv1alpha1.CacheServer) string {
-	return fmt.Sprintf("%s-kubeconfig", server.Name)
-}
-
 func KubeconfigReconciler(server *operatorv1alpha1.CacheServer) k8creconciling.NamedSecretReconcilerFactory {
 	const (
 		serverName  = "cache"
@@ -40,7 +34,7 @@ func KubeconfigReconciler(server *operatorv1alpha1.CacheServer) k8creconciling.N
 	)
 
 	return func() (string, k8creconciling.SecretReconciler) {
-		return kubeconfigSecret(server), func(secret *corev1.Secret) (*corev1.Secret, error) {
+		return resources.GetCacheServerKubeconfigName(server.Name), func(secret *corev1.Secret) (*corev1.Secret, error) {
 			var config *clientcmdapi.Config
 			if secret.Data == nil {
 				secret.Data = make(map[string][]byte)
