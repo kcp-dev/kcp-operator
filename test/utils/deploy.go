@@ -139,11 +139,6 @@ func DeployRootShard(ctx context.Context, t *testing.T, client ctrlruntimeclient
 			Hostname: externalHostname,
 			Port:     6443,
 		},
-		Cache: operatorv1alpha1.CacheConfig{
-			Embedded: &operatorv1alpha1.EmbeddedCacheConfiguration{
-				Enabled: true,
-			},
-		},
 		Certificates: operatorv1alpha1.Certificates{
 			IssuerRef: GetSelfSignedIssuerRef(),
 		},
