@@ -46,8 +46,12 @@ func TestReconciling(t *testing.T) {
 					Namespace: namespace,
 				},
 				Spec: operatorv1alpha1.CacheServerSpec{
-					Etcd: operatorv1alpha1.EtcdConfig{
-						Endpoints: []string{"https://localhost:2379"},
+					Certificates: operatorv1alpha1.Certificates{
+						IssuerRef: &operatorv1alpha1.ObjectReference{
+							Group: "cert-manager.io",
+							Kind:  "Issuer",
+							Name:  "test",
+						},
 					},
 				},
 			},
