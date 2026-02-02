@@ -66,6 +66,8 @@ func getCAMountPath(caName operatorv1alpha1.CA) string {
 }
 
 func DeploymentReconciler(server *operatorv1alpha1.CacheServer) reconciling.NamedDeploymentReconcilerFactory {
+	const etcdScratchVolume = "etcd-scratch"
+
 	return func() (string, reconciling.DeploymentReconciler) {
 		return resources.GetCacheServerDeploymentName(server), func(dep *appsv1.Deployment) (*appsv1.Deployment, error) {
 			labels := resources.GetCacheServerResourceLabels(server)
@@ -91,8 +93,16 @@ func DeploymentReconciler(server *operatorv1alpha1.CacheServer) reconciling.Name
 			image, _ := resources.GetImageSettings(server.Spec.Image)
 
 			args := getArgs(server)
-			volumes := []corev1.Volume{}
-			volumeMounts := []corev1.VolumeMount{}
+			volumes := []corev1.Volume{{
+				Name: etcdScratchVolume,
+				VolumeSource: corev1.VolumeSource{
+					EmptyDir: &corev1.EmptyDirVolumeSource{},
+				},
+			}}
+			volumeMounts := []corev1.VolumeMount{{
+				Name:      etcdScratchVolume,
+				MountPath: embeddedEtcdStoragePath,
+			}}
 
 			for _, sm := range secretMounts {
 				v, vm := sm.Build()
