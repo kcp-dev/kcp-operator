@@ -35,10 +35,11 @@ const (
 
 	// RootShardLabel is placed on Secrets created for Certificates so that
 	// the Secrets can be more easily mapped to their RootShards.
-	RootShardLabel  = "operator.kcp.io/rootshard"
-	ShardLabel      = "operator.kcp.io/shard"
-	FrontProxyLabel = "operator.kcp.io/front-proxy"
-	KubeconfigLabel = "operator.kcp.io/kubeconfig"
+	RootShardLabel   = "operator.kcp.io/rootshard"
+	ShardLabel       = "operator.kcp.io/shard"
+	FrontProxyLabel  = "operator.kcp.io/front-proxy"
+	KubeconfigLabel  = "operator.kcp.io/kubeconfig"
+	CacheServerLabel = "operator.kcp.io/cache-server"
 
 	// BundleAnnotation is placed on RootShard, Shard, or FrontProxy objects to trigger automatic Bundle creation
 	BundleAnnotation = "operator.kcp.io/bundle"
@@ -84,12 +85,20 @@ func GetShardDeploymentName(s *operatorv1alpha1.Shard) string {
 	return fmt.Sprintf("%s-shard-kcp", s.Name)
 }
 
+func GetCacheServerDeploymentName(s *operatorv1alpha1.CacheServer) string {
+	return fmt.Sprintf("%s-cache-server", s.Name)
+}
+
 func GetRootShardServiceName(r *operatorv1alpha1.RootShard) string {
 	return fmt.Sprintf("%s-kcp", r.Name)
 }
 
 func GetShardServiceName(s *operatorv1alpha1.Shard) string {
 	return fmt.Sprintf("%s-shard-kcp", s.Name)
+}
+
+func GetCacheServerServiceName(s *operatorv1alpha1.CacheServer) string {
+	return fmt.Sprintf("%s-cache-server", s.Name)
 }
 
 func getResourceLabels(instance, component string) map[string]string {
@@ -111,6 +120,10 @@ func GetRootShardProxyResourceLabels(r *operatorv1alpha1.RootShard) map[string]s
 
 func GetShardResourceLabels(s *operatorv1alpha1.Shard) map[string]string {
 	return getResourceLabels(s.Name, "shard")
+}
+
+func GetCacheServerResourceLabels(s *operatorv1alpha1.CacheServer) map[string]string {
+	return getResourceLabels(s.Name, "cache-server")
 }
 
 func GetRootShardBaseHost(r *operatorv1alpha1.RootShard) string {
@@ -145,6 +158,19 @@ func GetShardBaseURL(s *operatorv1alpha1.Shard) string {
 	return fmt.Sprintf("https://%s:6443", GetShardBaseHost(s))
 }
 
+func GetCacheServerBaseHost(s *operatorv1alpha1.CacheServer) string {
+	clusterDomain := s.Spec.ClusterDomain
+	if clusterDomain == "" {
+		clusterDomain = "cluster.local"
+	}
+
+	return fmt.Sprintf("%s-cache-server.%s.svc.%s", s.Name, s.Namespace, clusterDomain)
+}
+
+func GetCacheServerBaseURL(s *operatorv1alpha1.CacheServer) string {
+	return fmt.Sprintf("https://%s:6443", GetCacheServerBaseHost(s))
+}
+
 func GetRootShardCertificateName(r *operatorv1alpha1.RootShard, certName operatorv1alpha1.Certificate) string {
 	return fmt.Sprintf("%s-%s", r.Name, certName)
 }
@@ -157,11 +183,22 @@ func GetShardCertificateName(s *operatorv1alpha1.Shard, certName operatorv1alpha
 	return fmt.Sprintf("%s-%s", s.Name, certName)
 }
 
+func GetCacheServerCertificateName(s *operatorv1alpha1.CacheServer, certName operatorv1alpha1.Certificate) string {
+	return fmt.Sprintf("%s-%s", s.Name, certName)
+}
+
 func GetRootShardCAName(r *operatorv1alpha1.RootShard, caName operatorv1alpha1.CA) string {
 	if caName == operatorv1alpha1.RootCA {
 		return fmt.Sprintf("%s-ca", r.Name)
 	}
 	return fmt.Sprintf("%s-%s-ca", r.Name, caName)
+}
+
+func GetCacheServerCAName(s *operatorv1alpha1.CacheServer, caName operatorv1alpha1.CA) string {
+	if caName == operatorv1alpha1.RootCA {
+		return fmt.Sprintf("%s-ca", s.Name)
+	}
+	return fmt.Sprintf("%s-%s-ca", s.Name, caName)
 }
 
 func GetFrontProxyResourceLabels(f *operatorv1alpha1.FrontProxy) map[string]string {

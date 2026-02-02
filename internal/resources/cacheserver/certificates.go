@@ -1,5 +1,5 @@
 /*
-Copyright 2025 The KCP Authors.
+Copyright 2026 The KCP Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package rootshard
+package cacheserver
 
 import (
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -26,18 +26,18 @@ import (
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
-// RootCACertificateReconciler creates the central CA used for the kcp setup around a specific RootShard. This shouldn't be called if the RootShard is configured to use a BYO CA certificate.
-func RootCACertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
-	name := resources.GetRootShardCAName(rootShard, operatorv1alpha1.RootCA)
-	template := rootShard.Spec.CertificateTemplates.CATemplate(operatorv1alpha1.RootCA)
+// RootCACertificateReconciler creates a standalone CA just for a single cache-server.
+func RootCACertificateReconciler(server *operatorv1alpha1.CacheServer) reconciling.NamedCertificateReconcilerFactory {
+	name := resources.GetCacheServerCAName(server, operatorv1alpha1.RootCA)
+	template := server.Spec.CertificateTemplates.CATemplate(operatorv1alpha1.RootCA)
 
-	if rootShard.Spec.Certificates.IssuerRef == nil {
+	if server.Spec.Certificates.IssuerRef == nil {
 		panic("RootCACertificateReconciler must not be called if no issuerRef is specified.")
 	}
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
-			cert.SetLabels(resources.GetRootShardResourceLabels(rootShard))
+			cert.SetLabels(resources.GetCacheServerResourceLabels(server))
 
 			cert.Spec = certmanagerv1.CertificateSpec{
 				IsCA:       true,
@@ -45,7 +45,7 @@ func RootCACertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconcil
 				SecretName: name,
 				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
 					Labels: map[string]string{
-						resources.RootShardLabel: rootShard.Name,
+						resources.CacheServerLabel: server.Name,
 					},
 				},
 				Duration:    &operatorv1alpha1.DefaultCADuration,
@@ -57,9 +57,9 @@ func RootCACertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconcil
 				},
 
 				IssuerRef: certmanagermetav1.ObjectReference{
-					Name:  rootShard.Spec.Certificates.IssuerRef.Name,
-					Kind:  rootShard.Spec.Certificates.IssuerRef.Kind,
-					Group: rootShard.Spec.Certificates.IssuerRef.Group,
+					Name:  server.Spec.Certificates.IssuerRef.Name,
+					Kind:  server.Spec.Certificates.IssuerRef.Kind,
+					Group: server.Spec.Certificates.IssuerRef.Group,
 				},
 			}
 
@@ -68,32 +68,36 @@ func RootCACertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconcil
 	}
 }
 
-func CACertificateReconciler(rootShard *operatorv1alpha1.RootShard, ca operatorv1alpha1.CA) reconciling.NamedCertificateReconcilerFactory {
-	name := resources.GetRootShardCAName(rootShard, ca)
-	template := rootShard.Spec.CertificateTemplates.CATemplate(ca)
+func ServerCertificateReconciler(server *operatorv1alpha1.CacheServer) reconciling.NamedCertificateReconcilerFactory {
+	const certKind = operatorv1alpha1.ServerCertificate
+
+	name := resources.GetCacheServerCertificateName(server, certKind)
+	template := server.Spec.CertificateTemplates.CertificateTemplate(certKind)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
-			cert.SetLabels(resources.GetRootShardResourceLabels(rootShard))
+			cert.SetLabels(resources.GetCacheServerResourceLabels(server))
 			cert.Spec = certmanagerv1.CertificateSpec{
-				IsCA:       true,
-				CommonName: name,
-				SecretName: name,
-				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
-					Labels: map[string]string{
-						resources.RootShardLabel: rootShard.Name,
-					},
-				},
-				Duration:    &operatorv1alpha1.DefaultCADuration,
-				RenewBefore: &operatorv1alpha1.DefaultCARenewal,
+				SecretName:  name,
+				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
+				RenewBefore: &operatorv1alpha1.DefaultCertificateRenewal,
 
 				PrivateKey: &certmanagerv1.CertificatePrivateKey{
 					Algorithm: certmanagerv1.RSAKeyAlgorithm,
 					Size:      4096,
 				},
 
+				Usages: []certmanagerv1.KeyUsage{
+					certmanagerv1.UsageServerAuth,
+				},
+
+				DNSNames: []string{
+					"localhost",
+					resources.GetCacheServerBaseHost(server),
+				},
+
 				IssuerRef: certmanagermetav1.ObjectReference{
-					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.RootCA),
+					Name:  resources.GetCacheServerCAName(server, operatorv1alpha1.RootCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},

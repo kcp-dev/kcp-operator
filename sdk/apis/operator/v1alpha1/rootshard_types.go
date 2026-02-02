@@ -96,7 +96,7 @@ type Certificates struct {
 	IssuerRef *ObjectReference `json:"issuerRef,omitempty"`
 
 	// CASecretRef can be used as an alternative to the IssuerRef: This field allows to configure
-	// a pre-existing CA certificate that should be used as sign kcp certificates.
+	// a pre-existing CA certificate that should be used to sign kcp certificates.
 	// This Secret must contain both the certificate and the private key so that new sub certificates
 	// can be signed and created from this CA. This field is mutually exclusive with issuerRef.
 	CASecretRef *corev1.LocalObjectReference `json:"caSecretRef,omitempty"`
