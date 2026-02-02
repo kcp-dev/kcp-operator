@@ -26,9 +26,6 @@ type CacheServerSpec struct {
 	// +optional
 	ClusterDomain string `json:"clusterDomain,omitempty"`
 
-	// Etcd configures the etcd cluster that this cache server should be using.
-	Etcd EtcdConfig `json:"etcd"`
-
 	// Optional: Image overwrites the container image used to deploy the cache server.
 	Image *ImageSpec `json:"image,omitempty"`
 

@@ -1386,41 +1386,6 @@ spec:
                         type: object
                     type: object
                 type: object
-              etcd:
-                description: Etcd configures the etcd cluster that this cache server
-                  should be using.
-                properties:
-                  endpoints:
-                    description: Endpoints is a list of http urls at which etcd nodes
-                      are available. The expected format is "https://etcd-hostname:2379".
-                    items:
-                      type: string
-                    type: array
-                  tlsConfig:
-                    description: ClientCert configures the client certificate used
-                      to access etcd.
-                    properties:
-                      secretRef:
-                        description: SecretRef is the reference to a v1.Secret object
-                          that contains the TLS certificate.
-                        properties:
-                          name:
-                            default: ""
-                            description: |-
-                              Name of the referent.
-                              This field is effectively required, but due to backwards compatibility is
-                              allowed to be empty. Instances of this type with an empty value here are
-                              almost certainly wrong.
-                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                            type: string
-                        type: object
-                        x-kubernetes-map-type: atomic
-                    required:
-                    - secretRef
-                    type: object
-                required:
-                - endpoints
-                type: object
               image:
                 description: 'Optional: Image overwrites the container image used
                   to deploy the cache server.'
@@ -1501,7 +1466,6 @@ spec:
                 type: object
             required:
             - certificates
-            - etcd
             type: object
           status:
             description: CacheServerStatus defines the observed state of CacheServer
