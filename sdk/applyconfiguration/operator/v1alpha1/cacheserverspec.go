@@ -26,7 +26,6 @@ import (
 // with apply.
 type CacheServerSpecApplyConfiguration struct {
 	ClusterDomain        *string                                  `json:"clusterDomain,omitempty"`
-	Etcd                 *EtcdConfigApplyConfiguration            `json:"etcd,omitempty"`
 	Image                *ImageSpecApplyConfiguration             `json:"image,omitempty"`
 	Logging              *LoggingSpecApplyConfiguration           `json:"logging,omitempty"`
 	Certificates         *CertificatesApplyConfiguration          `json:"certificates,omitempty"`
@@ -46,14 +45,6 @@ func CacheServerSpec() *CacheServerSpecApplyConfiguration {
 // If called multiple times, the ClusterDomain field is set to the value of the last call.
 func (b *CacheServerSpecApplyConfiguration) WithClusterDomain(value string) *CacheServerSpecApplyConfiguration {
 	b.ClusterDomain = &value
-	return b
-}
-
-// WithEtcd sets the Etcd field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Etcd field is set to the value of the last call.
-func (b *CacheServerSpecApplyConfiguration) WithEtcd(value *EtcdConfigApplyConfiguration) *CacheServerSpecApplyConfiguration {
-	b.Etcd = value
 	return b
 }
 
