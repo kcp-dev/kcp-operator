@@ -33,7 +33,7 @@ func kubeconfigSecret(server *operatorv1alpha1.CacheServer) string {
 	return fmt.Sprintf("%s-kubeconfig", server.Name)
 }
 
-func RootShardClientKubeconfigReconciler(server *operatorv1alpha1.CacheServer) k8creconciling.NamedSecretReconcilerFactory {
+func KubeconfigReconciler(server *operatorv1alpha1.CacheServer) k8creconciling.NamedSecretReconcilerFactory {
 	const (
 		serverName  = "cache"
 		contextName = "cache"
