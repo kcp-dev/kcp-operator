@@ -26,6 +26,10 @@ type ShardSpec struct {
 	CommonShardSpec `json:",inline"`
 
 	RootShard RootShardConfig `json:"rootShard"`
+
+	// Optional: Configure an external cache server for this shard. If not configured, the cache
+	// settings of the RootShard will be used.
+	Cache *ShardCacheConfig `json:"cache,omitempty"`
 }
 
 type CommonShardSpec struct {
@@ -83,6 +87,11 @@ type CommonShardSpec struct {
 
 type AuditSpec struct {
 	Webhook *AuditWebhookSpec `json:"webhook,omitempty"`
+}
+
+type ShardCacheConfig struct {
+	// Reference references a local CacheServer object.
+	Reference *corev1.LocalObjectReference `json:"ref,omitempty"`
 }
 
 // +kubebuilder:validation:Enum="";batch;blocking;blocking-strict
