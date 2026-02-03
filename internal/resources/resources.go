@@ -52,6 +52,8 @@ const (
 	// the certificate also has system:masters as an organization, which is what ultimately
 	// grants the operator its permissions.
 	OperatorUsername = "system:kcp-operator"
+
+	defaultClusterDomain = "cluster.local"
 )
 
 func GetImageSettings(imageSpec *operatorv1alpha1.ImageSpec) (string, []corev1.LocalObjectReference) {
@@ -129,7 +131,7 @@ func GetCacheServerResourceLabels(s *operatorv1alpha1.CacheServer) map[string]st
 func GetRootShardBaseHost(r *operatorv1alpha1.RootShard) string {
 	clusterDomain := r.Spec.ClusterDomain
 	if clusterDomain == "" {
-		clusterDomain = "cluster.local"
+		clusterDomain = defaultClusterDomain
 	}
 
 	return fmt.Sprintf("%s-kcp.%s.svc.%s", r.Name, r.Namespace, clusterDomain)
@@ -145,7 +147,7 @@ func GetRootShardBaseURL(r *operatorv1alpha1.RootShard) string {
 func GetShardBaseHost(s *operatorv1alpha1.Shard) string {
 	clusterDomain := s.Spec.ClusterDomain
 	if clusterDomain == "" {
-		clusterDomain = "cluster.local"
+		clusterDomain = defaultClusterDomain
 	}
 
 	return fmt.Sprintf("%s-shard-kcp.%s.svc.%s", s.Name, s.Namespace, clusterDomain)
@@ -161,7 +163,7 @@ func GetShardBaseURL(s *operatorv1alpha1.Shard) string {
 func GetCacheServerBaseHost(s *operatorv1alpha1.CacheServer) string {
 	clusterDomain := s.Spec.ClusterDomain
 	if clusterDomain == "" {
-		clusterDomain = "cluster.local"
+		clusterDomain = defaultClusterDomain
 	}
 
 	return fmt.Sprintf("%s-cache-server.%s.svc.%s", s.Name, s.Namespace, clusterDomain)
