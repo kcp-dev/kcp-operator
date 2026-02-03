@@ -25,9 +25,9 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	kcpcorev1alpha1 "github.com/kcp-dev/kcp/sdk/apis/core/v1alpha1"
-	kcptenancyv1alpha1 "github.com/kcp-dev/kcp/sdk/apis/tenancy/v1alpha1"
 	"github.com/kcp-dev/logicalcluster/v3"
+	kcpcorev1alpha1 "github.com/kcp-dev/sdk/apis/core/v1alpha1"
+	kcptenancyv1alpha1 "github.com/kcp-dev/sdk/apis/tenancy/v1alpha1"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -100,7 +100,7 @@ func TestRootShardProxy(t *testing.T) {
 			Name: "test",
 		},
 		Spec: kcptenancyv1alpha1.WorkspaceSpec{
-			Type: kcptenancyv1alpha1.WorkspaceTypeReference{
+			Type: &kcptenancyv1alpha1.WorkspaceTypeReference{
 				Name: "universal",
 			},
 			Location: &kcptenancyv1alpha1.WorkspaceLocation{
