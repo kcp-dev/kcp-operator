@@ -162,8 +162,13 @@ func LogicalClusterAdminCertificateReconciler(rootShard *operatorv1alpha1.RootSh
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
 			cert.SetLabels(resources.GetRootShardResourceLabels(rootShard))
 			cert.Spec = certmanagerv1.CertificateSpec{
-				CommonName:  "logical-cluster-admin",
-				SecretName:  name,
+				CommonName: "logical-cluster-admin",
+				SecretName: name,
+				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
+					Labels: map[string]string{
+						resources.RootShardLabel: rootShard.Name,
+					},
+				},
 				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
 				RenewBefore: &operatorv1alpha1.DefaultCertificateRenewal,
 
@@ -202,8 +207,13 @@ func ExternalLogicalClusterAdminCertificateReconciler(rootShard *operatorv1alpha
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
 			cert.SetLabels(resources.GetRootShardResourceLabels(rootShard))
 			cert.Spec = certmanagerv1.CertificateSpec{
-				CommonName:  "external-logical-cluster-admin",
-				SecretName:  name,
+				CommonName: "external-logical-cluster-admin",
+				SecretName: name,
+				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
+					Labels: map[string]string{
+						resources.RootShardLabel: rootShard.Name,
+					},
+				},
 				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
 				RenewBefore: &operatorv1alpha1.DefaultCertificateRenewal,
 
@@ -242,8 +252,13 @@ func OperatorClientCertificateReconciler(rootShard *operatorv1alpha1.RootShard) 
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
 			cert.SetLabels(resources.GetRootShardResourceLabels(rootShard))
 			cert.Spec = certmanagerv1.CertificateSpec{
-				CommonName:  resources.OperatorUsername,
-				SecretName:  name,
+				CommonName: resources.OperatorUsername,
+				SecretName: name,
+				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
+					Labels: map[string]string{
+						resources.RootShardLabel: rootShard.Name,
+					},
+				},
 				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
 				RenewBefore: &operatorv1alpha1.DefaultCertificateRenewal,
 
