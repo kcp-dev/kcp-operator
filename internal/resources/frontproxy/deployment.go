@@ -81,6 +81,13 @@ func (r *reconciler) deploymentReconciler() reconciling.NamedDeploymentReconcile
 					SeccompProfile: &corev1.SeccompProfile{
 						Type: corev1.SeccompProfileTypeRuntimeDefault,
 					},
+					ReadOnlyRootFilesystem:   ptr.To(true),
+					AllowPrivilegeEscalation: ptr.To(false),
+					Capabilities: &corev1.Capabilities{
+						Drop: []corev1.Capability{
+							corev1.Capability("ALL"),
+						},
+					},
 				},
 				Ports: []corev1.ContainerPort{
 					{
