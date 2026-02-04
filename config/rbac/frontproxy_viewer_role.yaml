@@ -1,0 +1,23 @@
+# permissions for end users to view frontproxies.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: kcp-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: frontproxy-viewer-role
+rules:
+- apiGroups:
+  - operator.kcp.io
+  resources:
+  - frontproxies
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - operator.kcp.io
+  resources:
+  - frontproxies/status
+  verbs:
+  - get
