@@ -97,7 +97,7 @@ func (r *reconciler) deploymentReconciler() reconciling.NamedDeploymentReconcile
 					TimeoutSeconds:      10,
 					ProbeHandler: corev1.ProbeHandler{
 						HTTPGet: &corev1.HTTPGetAction{
-							Path:   "/livez",
+							Path:   "/readyz",
 							Port:   intstr.FromString("https"),
 							Scheme: corev1.URISchemeHTTPS,
 						},
@@ -111,7 +111,7 @@ func (r *reconciler) deploymentReconciler() reconciling.NamedDeploymentReconcile
 					TimeoutSeconds:      10,
 					ProbeHandler: corev1.ProbeHandler{
 						HTTPGet: &corev1.HTTPGetAction{
-							Path:   "/readyz",
+							Path:   "/livez",
 							Port:   intstr.FromString("https"),
 							Scheme: corev1.URISchemeHTTPS,
 						},
