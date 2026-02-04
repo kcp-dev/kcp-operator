@@ -52,6 +52,8 @@ func ServerCertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconcil
 
 				Usages: []certmanagerv1.KeyUsage{
 					certmanagerv1.UsageServerAuth,
+					certmanagerv1.UsageKeyEncipherment,
+					certmanagerv1.UsageDigitalSignature,
 				},
 
 				DNSNames: []string{
@@ -134,6 +136,11 @@ func ServiceAccountCertificateReconciler(rootShard *operatorv1alpha1.RootShard) 
 				},
 				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
 				RenewBefore: &operatorv1alpha1.DefaultCertificateRenewal,
+
+				Usages: []certmanagerv1.KeyUsage{
+					certmanagerv1.UsageDigitalSignature,
+					certmanagerv1.UsageKeyEncipherment,
+				},
 
 				PrivateKey: &certmanagerv1.CertificatePrivateKey{
 					Algorithm: certmanagerv1.RSAKeyAlgorithm,
