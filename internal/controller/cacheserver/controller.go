@@ -55,9 +55,11 @@ func (r *CacheServerReconciler) SetupWithManager(mgr ctrlruntime.Manager) error 
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=cacheservers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=cacheservers/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=cacheservers/finalizers,verbs=update
-// +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;watch;create;update;patch
+// +kubebuilder:rbac:groups=cert-manager.io,resources=issuers,verbs=get;list;watch;create;update;patch
+// +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch
+// +kubebuilder:rbac:groups=core,resources=services,verbs=get;list;watch;create;update;patch
+// +kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch;create;update;patch
 
 func (r *CacheServerReconciler) Reconcile(ctx context.Context, req ctrlruntime.Request) (ctrlruntime.Result, error) {
 	logger := log.FromContext(ctx)
