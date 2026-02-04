@@ -79,7 +79,7 @@ presubmits:
 
   - name: pull-kcp-operator-test-e2e-0.28
     decorate: true
-    run_if_changed: "(Dockerfile|Makefile|.prow.yaml|go.mod|go.sum|cmd|internal|sdk|hack|test)"
+    run_if_changed: "(Dockerfile|Makefile|.prow.yaml|go.mod|go.sum|cmd|internal|sdk|hack|test|config)"
     optional: false
     clone_uri: "https://github.com/kcp-dev/kcp-operator"
     labels:
@@ -102,7 +102,7 @@ presubmits:
 
   - name: pull-kcp-operator-test-e2e-0.29
     decorate: true
-    run_if_changed: "(Dockerfile|Makefile|.prow.yaml|go.mod|go.sum|cmd|internal|sdk|hack|test)"
+    run_if_changed: "(Dockerfile|Makefile|.prow.yaml|go.mod|go.sum|cmd|internal|sdk|hack|test|config)"
     optional: false
     clone_uri: "https://github.com/kcp-dev/kcp-operator"
     labels:
@@ -125,7 +125,7 @@ presubmits:
 
   - name: pull-kcp-operator-test-e2e-default
     decorate: true
-    run_if_changed: "(Dockerfile|Makefile|.prow.yaml|go.mod|go.sum|cmd|internal|sdk|hack|test)"
+    run_if_changed: "(Dockerfile|Makefile|.prow.yaml|go.mod|go.sum|cmd|internal|sdk|hack|test|config)"
     optional: false
     clone_uri: "https://github.com/kcp-dev/kcp-operator"
     labels:
@@ -145,7 +145,7 @@ presubmits:
 
   - name: pull-kcp-operator-test-e2e-canary
     decorate: true
-    run_if_changed: "(Dockerfile|Makefile|.prow.yaml|go.mod|go.sum|cmd|internal|sdk|hack|test)"
+    run_if_changed: "(Dockerfile|Makefile|.prow.yaml|go.mod|go.sum|cmd|internal|sdk|hack|test|config)"
     optional: true
     clone_uri: "https://github.com/kcp-dev/kcp-operator"
     labels:
