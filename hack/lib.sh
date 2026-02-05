@@ -50,6 +50,9 @@ create_kind_cluster() {
     mkdir -p /mirror
     socat UNIX-LISTEN:/mirror/mirror.sock,fork,reuseaddr,unlink-early,mode=777 TCP4:$mirrorHost &
 
+    # socat needs to be killed explicitly, or else a failing test pod will just hang indefinitely
+    trap end_socat_processes EXIT
+
     cat << EOF > kind-config.yaml
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
@@ -70,4 +73,9 @@ EOF
 
     kind create cluster --config kind-config.yaml
   fi
+}
+
+end_socat_processes() {
+  echo "Killing socat docker registry mirror processes..."
+  pkill -e socat
 }
