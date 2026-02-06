@@ -92,12 +92,12 @@ func TestDeploymentReconciler(t *testing.T) {
 
 				// Check readiness probe
 				assert.NotNil(t, container.ReadinessProbe)
-				assert.Equal(t, "/livez", container.ReadinessProbe.HTTPGet.Path)
+				assert.Equal(t, "/readyz", container.ReadinessProbe.HTTPGet.Path)
 				assert.Equal(t, "https", container.ReadinessProbe.HTTPGet.Port.StrVal)
 
 				// Check liveness probe
 				assert.NotNil(t, container.LivenessProbe)
-				assert.Equal(t, "/readyz", container.LivenessProbe.HTTPGet.Path)
+				assert.Equal(t, "/livez", container.LivenessProbe.HTTPGet.Path)
 				assert.Equal(t, "https", container.LivenessProbe.HTTPGet.Port.StrVal)
 			},
 		},
