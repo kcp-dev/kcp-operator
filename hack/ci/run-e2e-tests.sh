@@ -16,6 +16,9 @@
 
 set -euo pipefail
 
+cd "$(dirname "$0")/../.."
+source hack/lib.sh
+
 # For periodics especially it's important that we output what versions exactly
 # we're testing against.
 if [ -n "${KCP_TAG:-}" ]; then
@@ -50,7 +53,7 @@ echo "Building container images..."
 ARCHITECTURES=arm64 DRY_RUN=yes ./hack/ci/build-image.sh
 
 # start docker so we can run kind
-start-docker.sh
+start_docker_daemon_ci
 
 # create a local kind cluster
 KIND_CLUSTER_NAME=e2e
@@ -60,7 +63,7 @@ docker load --input /kindest.tar
 
 export KUBECONFIG=$(mktemp)
 echo "Creating kind cluster $KIND_CLUSTER_NAME..."
-kind create cluster --name "$KIND_CLUSTER_NAME" --image kindest/node:v1.32.2
+create_kind_cluster "$KIND_CLUSTER_NAME" kindest/node:v1.32.2
 chmod 600 "$KUBECONFIG"
 
 # apply kernel limits job first and wait for completion
