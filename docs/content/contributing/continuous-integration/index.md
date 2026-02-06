@@ -13,6 +13,6 @@ Here are the most important links:
 In order to run the E2E tests locally, you will need to setup cert-manager with the sample clusterissuer:
 
 ```sh
-helm upgrade --install --namespace cert-manager --create-namespace --version v1.16.2 --set crds.enabled=true cert-manager jetstack/cert-manager
+helm upgrade --install --namespace cert-manager --create-namespace --version v1.19.3 --set crds.enabled=true cert-manager jetstack/cert-manager
 kubectl apply -n cert-manager --filename hack/ci/testdata/clusterissuer.yaml
 ```
