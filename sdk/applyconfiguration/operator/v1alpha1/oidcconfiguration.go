@@ -21,14 +21,15 @@ package v1alpha1
 // OIDCConfigurationApplyConfiguration represents a declarative configuration of the OIDCConfiguration type for use
 // with apply.
 type OIDCConfigurationApplyConfiguration struct {
-	IssuerURL      *string                          `json:"issuerURL,omitempty"`
-	ClientID       *string                          `json:"clientID,omitempty"`
-	ClientSecret   *string                          `json:"clientSecret,omitempty"`
-	GroupsClaim    *string                          `json:"groupsClaim,omitempty"`
-	UsernameClaim  *string                          `json:"usernameClaim,omitempty"`
-	GroupsPrefix   *string                          `json:"groupsPrefix,omitempty"`
-	UsernamePrefix *string                          `json:"usernamePrefix,omitempty"`
-	CAFileRef      *OIDCCAFileRefApplyConfiguration `json:"caFileRef,omitempty"`
+	IssuerURL       *string                          `json:"issuerURL,omitempty"`
+	ClientID        *string                          `json:"clientID,omitempty"`
+	ClientSecret    *string                          `json:"clientSecret,omitempty"`
+	ClientSecretRef *OIDCSecretRefApplyConfiguration `json:"clientSecretRef,omitempty"`
+	GroupsClaim     *string                          `json:"groupsClaim,omitempty"`
+	UsernameClaim   *string                          `json:"usernameClaim,omitempty"`
+	GroupsPrefix    *string                          `json:"groupsPrefix,omitempty"`
+	UsernamePrefix  *string                          `json:"usernamePrefix,omitempty"`
+	CAFileRef       *OIDCCAFileRefApplyConfiguration `json:"caFileRef,omitempty"`
 }
 
 // OIDCConfigurationApplyConfiguration constructs a declarative configuration of the OIDCConfiguration type for use with
@@ -58,6 +59,14 @@ func (b *OIDCConfigurationApplyConfiguration) WithClientID(value string) *OIDCCo
 // If called multiple times, the ClientSecret field is set to the value of the last call.
 func (b *OIDCConfigurationApplyConfiguration) WithClientSecret(value string) *OIDCConfigurationApplyConfiguration {
 	b.ClientSecret = &value
+	return b
+}
+
+// WithClientSecretRef sets the ClientSecretRef field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the ClientSecretRef field is set to the value of the last call.
+func (b *OIDCConfigurationApplyConfiguration) WithClientSecretRef(value *OIDCSecretRefApplyConfiguration) *OIDCConfigurationApplyConfiguration {
+	b.ClientSecretRef = value
 	return b
 }
 
