@@ -81,6 +81,13 @@ func (r *reconciler) deploymentReconciler() reconciling.NamedDeploymentReconcile
 					SeccompProfile: &corev1.SeccompProfile{
 						Type: corev1.SeccompProfileTypeRuntimeDefault,
 					},
+					ReadOnlyRootFilesystem:   ptr.To(true),
+					AllowPrivilegeEscalation: ptr.To(false),
+					Capabilities: &corev1.Capabilities{
+						Drop: []corev1.Capability{
+							corev1.Capability("ALL"),
+						},
+					},
 				},
 				Ports: []corev1.ContainerPort{
 					{
@@ -97,7 +104,7 @@ func (r *reconciler) deploymentReconciler() reconciling.NamedDeploymentReconcile
 					TimeoutSeconds:      10,
 					ProbeHandler: corev1.ProbeHandler{
 						HTTPGet: &corev1.HTTPGetAction{
-							Path:   "/livez",
+							Path:   "/readyz",
 							Port:   intstr.FromString("https"),
 							Scheme: corev1.URISchemeHTTPS,
 						},
@@ -111,7 +118,7 @@ func (r *reconciler) deploymentReconciler() reconciling.NamedDeploymentReconcile
 					TimeoutSeconds:      10,
 					ProbeHandler: corev1.ProbeHandler{
 						HTTPGet: &corev1.HTTPGetAction{
-							Path:   "/readyz",
+							Path:   "/livez",
 							Port:   intstr.FromString("https"),
 							Scheme: corev1.URISchemeHTTPS,
 						},

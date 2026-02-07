@@ -38,7 +38,14 @@ func ServerCertificateReconciler(shard *operatorv1alpha1.Shard, rootShard *opera
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
 			cert.SetLabels(resources.GetShardResourceLabels(shard))
 			cert.Spec = certmanagerv1.CertificateSpec{
-				SecretName:  name,
+				SecretName: name,
+				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
+					Labels: map[string]string{
+						resources.RootShardLabel: rootShard.Name,
+						resources.ShardLabel:     shard.Name,
+					},
+				},
+
 				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
 				RenewBefore: &operatorv1alpha1.DefaultCertificateRenewal,
 
@@ -49,6 +56,8 @@ func ServerCertificateReconciler(shard *operatorv1alpha1.Shard, rootShard *opera
 
 				Usages: []certmanagerv1.KeyUsage{
 					certmanagerv1.UsageServerAuth,
+					certmanagerv1.UsageKeyEncipherment,
+					certmanagerv1.UsageDigitalSignature,
 				},
 
 				DNSNames: []string{
@@ -78,7 +87,14 @@ func VirtualWorkspacesCertificateReconciler(shard *operatorv1alpha1.Shard, rootS
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
 			cert.SetLabels(resources.GetShardResourceLabels(shard))
 			cert.Spec = certmanagerv1.CertificateSpec{
-				SecretName:  name,
+				SecretName: name,
+				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
+					Labels: map[string]string{
+						resources.RootShardLabel: rootShard.Name,
+						resources.ShardLabel:     shard.Name,
+					},
+				},
+
 				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
 				RenewBefore: &operatorv1alpha1.DefaultCertificateRenewal,
 
@@ -117,10 +133,22 @@ func ServiceAccountCertificateReconciler(shard *operatorv1alpha1.Shard, rootShar
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
 			cert.SetLabels(resources.GetShardResourceLabels(shard))
 			cert.Spec = certmanagerv1.CertificateSpec{
+				SecretName: name,
+				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
+					Labels: map[string]string{
+						resources.RootShardLabel: rootShard.Name,
+						resources.ShardLabel:     shard.Name,
+					},
+				},
+
 				CommonName:  name,
-				SecretName:  name,
 				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
 				RenewBefore: &operatorv1alpha1.DefaultCertificateRenewal,
+
+				Usages: []certmanagerv1.KeyUsage{
+					certmanagerv1.UsageDigitalSignature,
+					certmanagerv1.UsageKeyEncipherment,
+				},
 
 				PrivateKey: &certmanagerv1.CertificatePrivateKey{
 					Algorithm: certmanagerv1.RSAKeyAlgorithm,
@@ -149,8 +177,15 @@ func RootShardClientCertificateReconciler(shard *operatorv1alpha1.Shard, rootSha
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
 			cert.SetLabels(resources.GetShardResourceLabels(shard))
 			cert.Spec = certmanagerv1.CertificateSpec{
+				SecretName: name,
+				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
+					Labels: map[string]string{
+						resources.RootShardLabel: rootShard.Name,
+						resources.ShardLabel:     shard.Name,
+					},
+				},
+
 				CommonName:  fmt.Sprintf("shard-%s", shard.Name),
-				SecretName:  name,
 				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
 				RenewBefore: &operatorv1alpha1.DefaultCertificateRenewal,
 
@@ -189,8 +224,15 @@ func LogicalClusterAdminCertificateReconciler(shard *operatorv1alpha1.Shard, roo
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
 			cert.SetLabels(resources.GetShardResourceLabels(shard))
 			cert.Spec = certmanagerv1.CertificateSpec{
+				SecretName: name,
+				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
+					Labels: map[string]string{
+						resources.RootShardLabel: rootShard.Name,
+						resources.ShardLabel:     shard.Name,
+					},
+				},
+
 				CommonName:  fmt.Sprintf("logical-cluster-admin-shard-%s", shard.Name),
-				SecretName:  name,
 				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
 				RenewBefore: &operatorv1alpha1.DefaultCertificateRenewal,
 
@@ -229,8 +271,15 @@ func ExternalLogicalClusterAdminCertificateReconciler(shard *operatorv1alpha1.Sh
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
 			cert.SetLabels(resources.GetShardResourceLabels(shard))
 			cert.Spec = certmanagerv1.CertificateSpec{
+				SecretName: name,
+				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
+					Labels: map[string]string{
+						resources.RootShardLabel: rootShard.Name,
+						resources.ShardLabel:     shard.Name,
+					},
+				},
+
 				CommonName:  fmt.Sprintf("external-logical-cluster-admin-shard-%s", shard.Name),
-				SecretName:  name,
 				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
 				RenewBefore: &operatorv1alpha1.DefaultCertificateRenewal,
 

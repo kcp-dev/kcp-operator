@@ -39,6 +39,7 @@ func (sm SecretMount) Build() (corev1.Volume, corev1.VolumeMount) {
 	volumeMount := corev1.VolumeMount{
 		Name:      sm.VolumeName,
 		MountPath: sm.MountPath,
+		ReadOnly:  true,
 	}
 
 	return volume, volumeMount

@@ -22,6 +22,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 
 	"github.com/kcp-dev/kcp-operator/internal/resources"
@@ -38,6 +39,84 @@ func GetShardBatteries(shard *operatorv1alpha1.Shard) []string {
 
 func GetRootShardBatteries(rootShard *operatorv1alpha1.RootShard) []string {
 	return getCommonShardBatteries()
+}
+
+func ApplyCommonShardDeploymentProperties(deployment *appsv1.Deployment) *appsv1.Deployment {
+	if len(deployment.Spec.Template.Spec.Containers) == 0 {
+		panic("Deployment does not contain any containers.")
+	}
+
+	container := deployment.Spec.Template.Spec.Containers[0]
+
+	container.Ports = []corev1.ContainerPort{
+		{
+			Name:          "https",
+			ContainerPort: 6443,
+			Protocol:      corev1.ProtocolTCP,
+		},
+	}
+
+	container.SecurityContext = &corev1.SecurityContext{
+		SeccompProfile: &corev1.SeccompProfile{
+			Type: corev1.SeccompProfileTypeRuntimeDefault,
+		},
+		ReadOnlyRootFilesystem:   ptr.To(true),
+		AllowPrivilegeEscalation: ptr.To(false),
+		Capabilities: &corev1.Capabilities{
+			Drop: []corev1.Capability{
+				corev1.Capability("ALL"),
+			},
+		},
+	}
+
+	container.StartupProbe = &corev1.Probe{
+		FailureThreshold:    60,
+		InitialDelaySeconds: 10,
+		PeriodSeconds:       5,
+		SuccessThreshold:    1,
+		TimeoutSeconds:      10,
+		ProbeHandler: corev1.ProbeHandler{
+			HTTPGet: &corev1.HTTPGetAction{
+				Path:   "/readyz",
+				Port:   intstr.FromString("https"),
+				Scheme: corev1.URISchemeHTTPS,
+			},
+		},
+	}
+
+	container.ReadinessProbe = &corev1.Probe{
+		FailureThreshold:    6,
+		InitialDelaySeconds: 10,
+		PeriodSeconds:       10,
+		SuccessThreshold:    1,
+		TimeoutSeconds:      10,
+		ProbeHandler: corev1.ProbeHandler{
+			HTTPGet: &corev1.HTTPGetAction{
+				Path:   "/readyz",
+				Port:   intstr.FromString("https"),
+				Scheme: corev1.URISchemeHTTPS,
+			},
+		},
+	}
+
+	container.LivenessProbe = &corev1.Probe{
+		FailureThreshold:    6,
+		InitialDelaySeconds: 10,
+		PeriodSeconds:       10,
+		SuccessThreshold:    1,
+		TimeoutSeconds:      10,
+		ProbeHandler: corev1.ProbeHandler{
+			HTTPGet: &corev1.HTTPGetAction{
+				Path:   "/livez",
+				Port:   intstr.FromString("https"),
+				Scheme: corev1.URISchemeHTTPS,
+			},
+		},
+	}
+
+	deployment.Spec.Template.Spec.Containers[0] = container
+
+	return deployment
 }
 
 func ApplyCommonShardConfig(deployment *appsv1.Deployment, spec *operatorv1alpha1.CommonShardSpec) *appsv1.Deployment {

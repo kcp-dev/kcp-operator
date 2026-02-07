@@ -149,13 +149,10 @@ func DeploymentReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1al
 				Args:         args,
 				VolumeMounts: volumeMounts,
 				Resources:    defaultResourceRequirements,
-				SecurityContext: &corev1.SecurityContext{
-					ReadOnlyRootFilesystem:   ptr.To(true),
-					AllowPrivilegeEscalation: ptr.To(false),
-				},
 			}}
 			dep.Spec.Template.Spec.Volumes = volumes
 
+			dep = utils.ApplyCommonShardDeploymentProperties(dep)
 			dep = utils.ApplyCommonShardConfig(dep, &shard.Spec.CommonShardSpec)
 			dep = utils.ApplyDeploymentTemplate(dep, shard.Spec.DeploymentTemplate)
 			dep = utils.ApplyAuthConfiguration(dep, shard.Spec.Auth)

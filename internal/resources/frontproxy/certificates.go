@@ -114,6 +114,8 @@ func (r *reconciler) serverCertificateReconciler() reconciling.NamedCertificateR
 
 				Usages: []certmanagerv1.KeyUsage{
 					certmanagerv1.UsageServerAuth,
+					certmanagerv1.UsageKeyEncipherment,
+					certmanagerv1.UsageDigitalSignature,
 				},
 
 				DNSNames: dnsNames,
