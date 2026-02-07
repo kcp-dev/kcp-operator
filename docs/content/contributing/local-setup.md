@@ -31,7 +31,7 @@ kind create cluster
 Install cert-manager, it is required to create kcp's PKI:
 
 ```sh
-kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.18.2/cert-manager.yaml
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.19.3/cert-manager.yaml
 ```
 
 Set up two etcd instances, one for the root shard and one for a supplementary shard:
