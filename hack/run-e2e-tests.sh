@@ -70,6 +70,7 @@ fi
 echo "Kubeconfig is in $KUBECONFIG."
 
 KUBECTL="$(UGET_PRINT_PATH=absolute make --no-print-directory install-kubectl)"
+KUSTOMIZE="$(UGET_PRINT_PATH=absolute make --no-print-directory install-kustomize)"
 HELM="$(UGET_PRINT_PATH=absolute make --no-print-directory install-helm)"
 PROTOKOL="$(UGET_PRINT_PATH=absolute make --no-print-directory install-protokol)"
 
@@ -100,14 +101,16 @@ echo "Deploying cert-manager..."
 
 "$KUBECTL" apply --filename hack/ci/testdata/clusterissuer.yaml
 
-# build operator image and deploy it into kind
-echo "Building and deploying kcp-operator..."
-export IMG="ghcr.io/kcp-dev/kcp-operator:e2e"
-make --no-print-directory docker-build kind-load deploy
+# build operator image it into kind
+echo "Building and loading kcp-operator..."
+export IMG="ghcr.io/kcp-dev/kcp-operator:local"
+make --no-print-directory docker-build kind-load
+
+echo "Deploying kcp-operator..."
+"$KUSTOMIZE" build hack/ci/testdata | "$KUBECTL" apply --filename -
 
 "$PROTOKOL" --namespace 'e2e-*' --namespace kcp-operator-system --output "$DATA_DIR/kind-logs" 2>/dev/null &
 PROTOKOL_PID=$!
-
 
 echo "Running e2e tests..."
 
