@@ -1122,7 +1122,7 @@ and <a href="https://github.com/kubernetes/test-infra/tree/master/prow">prow</a>
 </ul>
 <h2 id="running-e2e-tests-locally">Running E2E tests locally</h2>
 <p>In order to run the E2E tests locally, you will need to setup cert-manager with the sample clusterissuer:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>--install<span class="w"> </span>--namespace<span class="w"> </span>cert-manager<span class="w"> </span>--create-namespace<span class="w"> </span>--version<span class="w"> </span>v1.16.2<span class="w"> </span>--set<span class="w"> </span>crds.enabled<span class="o">=</span><span class="nb">true</span><span class="w"> </span>cert-manager<span class="w"> </span>jetstack/cert-manager
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>--install<span class="w"> </span>--namespace<span class="w"> </span>cert-manager<span class="w"> </span>--create-namespace<span class="w"> </span>--version<span class="w"> </span>v1.19.3<span class="w"> </span>--set<span class="w"> </span>crds.enabled<span class="o">=</span><span class="nb">true</span><span class="w"> </span>cert-manager<span class="w"> </span>jetstack/cert-manager
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-n<span class="w"> </span>cert-manager<span class="w"> </span>--filename<span class="w"> </span>hack/ci/testdata/clusterissuer.yaml
 </code></pre></div>
 
