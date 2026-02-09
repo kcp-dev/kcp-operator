@@ -22,6 +22,7 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -80,4 +81,22 @@ func WaitForObject(t *testing.T, ctx context.Context, client ctrlruntimeclient.C
 	}
 
 	t.Logf("%T is ready.", obj)
+}
+
+func WaitForObjectDeletion(t *testing.T, ctx context.Context, client ctrlruntimeclient.Client, obj ctrlruntimeclient.Object, key types.NamespacedName) {
+	t.Helper()
+	t.Logf("Waiting for %T to be deleted...", obj)
+
+	err := wait.PollUntilContextTimeout(ctx, 500*time.Millisecond, 5*time.Minute, false, func(ctx context.Context) (done bool, err error) {
+		err = client.Get(ctx, key, obj)
+		if apierrors.IsNotFound(err) {
+			return true, nil
+		}
+		return false, err
+	})
+	if err != nil {
+		t.Fatalf("Failed to wait for %T to be deleted: %v", obj, err)
+	}
+
+	t.Logf("%T has been deleted.", obj)
 }

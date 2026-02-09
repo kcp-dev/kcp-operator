@@ -125,6 +125,23 @@ func TestCreateShard(t *testing.T) {
 	if err := kcpClient.List(ctx, secrets); err != nil {
 		t.Fatalf("Failed to list secrets in kcp: %v", err)
 	}
+
+	// Test cleanup: delete the operator's Shard CR and verify the kcp Shard object is cleaned up
+	t.Log("Deleting operator Shard CR...")
+	shard := &operatorv1alpha1.Shard{}
+	if err := client.Get(ctx, types.NamespacedName{Namespace: namespace.Name, Name: shardName}, shard); err != nil {
+		t.Fatalf("Failed to get Shard: %v", err)
+	}
+	t.Logf("Shard finalizers before delete: %v", shard.Finalizers)
+	if err := client.Delete(ctx, shard); err != nil {
+		t.Fatalf("Failed to delete Shard: %v", err)
+	}
+
+	// Wait for the kcp Shard object to be deleted from the root shard.
+	// This proves the operator's cleanup finalizer ran successfully.
+	t.Log("Waiting for kcp Shard to be deleted from root shard...")
+	utils.WaitForObjectDeletion(t, ctx, rootShardClient, &kcpcorev1alpha1.Shard{}, shardKey)
+	t.Log("kcp Shard has been deleted from root shard, cleanup was successful.")
 }
 
 func TestShardBundleAnnotation(t *testing.T) {
