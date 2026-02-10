@@ -152,8 +152,8 @@ clean-tools: ## Remove all downloaded tools.
 
 .PHONY: build
 build: ## Build manager binary.
-	go build $(GOTOOLFLAGS) -o $(BUILD_DEST)/manager cmd/operator/main.go
-	go build $(GOTOOLFLAGS) -o $(BUILD_DEST)/bundler cmd/bundle/main.go
+	go build $(GOTOOLFLAGS) -o $(BUILD_DEST)/manager ./cmd/operator/
+	go build $(GOTOOLFLAGS) -o $(BUILD_DEST)/bundler ./cmd/bundle/
 
 .PHONY: run
 run: fmt vet ## Run a controller from your host.
