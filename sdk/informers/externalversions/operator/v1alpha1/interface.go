@@ -38,6 +38,8 @@ type ClusterInterface interface {
 	RootShards() RootShardClusterInformer
 	// Shards returns a ShardClusterInformer
 	Shards() ShardClusterInformer
+	// VirtualWorkspaces returns a VirtualWorkspaceClusterInformer
+	VirtualWorkspaces() VirtualWorkspaceClusterInformer
 }
 
 type version struct {
@@ -80,6 +82,11 @@ func (v *version) Shards() ShardClusterInformer {
 	return &shardClusterInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
+// VirtualWorkspaces returns a VirtualWorkspaceClusterInformer
+func (v *version) VirtualWorkspaces() VirtualWorkspaceClusterInformer {
+	return &virtualWorkspaceClusterInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+}
+
 type Interface interface {
 	// Bundles returns a BundleInformer
 	Bundles() BundleInformer
@@ -93,6 +100,8 @@ type Interface interface {
 	RootShards() RootShardInformer
 	// Shards returns a ShardInformer
 	Shards() ShardInformer
+	// VirtualWorkspaces returns a VirtualWorkspaceInformer
+	VirtualWorkspaces() VirtualWorkspaceInformer
 }
 
 type scopedVersion struct {
@@ -134,4 +143,9 @@ func (v *scopedVersion) RootShards() RootShardInformer {
 // Shards returns a ShardInformer
 func (v *scopedVersion) Shards() ShardInformer {
 	return &shardScopedInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// VirtualWorkspaces returns a VirtualWorkspaceInformer
+func (v *scopedVersion) VirtualWorkspaces() VirtualWorkspaceInformer {
+	return &virtualWorkspaceScopedInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

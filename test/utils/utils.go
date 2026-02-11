@@ -157,6 +157,27 @@ func SelfDestuctingPortForward(
 	})
 }
 
+func selfDesctructingUrlForward(t *testing.T, ctx context.Context, namespace string, parsed *url.URL) int {
+	hostname, portString, err := net.SplitHostPort(parsed.Host)
+	if err != nil {
+		t.Fatalf("Failed to parse host %q: %v", parsed.Host, err)
+	}
+
+	parts := strings.Split(hostname, ".")
+	serviceName := parts[0]
+
+	portNum, err := strconv.ParseInt(portString, 10, 32)
+	if err != nil {
+		t.Fatalf("Failed to parse port %q: %v", portString, err)
+	}
+
+	// start a port forwarding
+	localPort := getPort(t)
+	SelfDestuctingPortForward(t, ctx, namespace, "svc/"+serviceName, int(portNum), localPort)
+
+	return localPort
+}
+
 func getPort(t *testing.T) int {
 	port, err := server.GetFreePort(t)
 	if err != nil {
@@ -171,14 +192,7 @@ func getPort(t *testing.T) int {
 	return portNum
 }
 
-func ConnectWithKubeconfig(
-	t *testing.T,
-	ctx context.Context,
-	client ctrlruntimeclient.Client,
-	namespace string,
-	kubeconfigName string,
-	cluster logicalcluster.Path,
-) ctrlruntimeclient.Client {
+func getGeneratedKubeconfig(t *testing.T, ctx context.Context, client ctrlruntimeclient.Client, namespace string, kubeconfigName string) *rest.Config {
 	t.Helper()
 
 	// get kubeconfig
@@ -201,28 +215,30 @@ func ConnectWithKubeconfig(
 		t.Fatalf("Failed to parse kubeconfig: %v", err)
 	}
 
+	return clientConfig
+}
+
+func ConnectWithKubeconfig(
+	t *testing.T,
+	ctx context.Context,
+	client ctrlruntimeclient.Client,
+	namespace string,
+	kubeconfigName string,
+	cluster logicalcluster.Path,
+) ctrlruntimeclient.Client {
+	t.Helper()
+
+	// get kubeconfig
+	clientConfig := getGeneratedKubeconfig(t, ctx, client, namespace, kubeconfigName)
+
 	// deduce service name from the hostname
 	parsed, err := url.Parse(clientConfig.Host)
 	if err != nil {
 		t.Fatalf("Failed to parse kubeconfig's server %q: %v", clientConfig.Host, err)
 	}
 
-	hostname, portString, err := net.SplitHostPort(parsed.Host)
-	if err != nil {
-		t.Fatalf("Failed to parse kubeconfig's host %q: %v", parsed.Host, err)
-	}
-
-	parts := strings.Split(hostname, ".")
-	serviceName := parts[0]
-
-	portNum, err := strconv.ParseInt(portString, 10, 32)
-	if err != nil {
-		t.Fatalf("Failed to parse kubeconfig's port %q: %v", portString, err)
-	}
-
 	// start a port forwarding
-	localPort := getPort(t)
-	SelfDestuctingPortForward(t, ctx, namespace, "svc/"+serviceName, int(portNum), localPort)
+	localPort := selfDesctructingUrlForward(t, ctx, namespace, parsed)
 
 	// patch the target server
 	parsed.Host = net.JoinHostPort("localhost", fmt.Sprintf("%d", localPort))
@@ -240,6 +256,36 @@ func ConnectWithKubeconfig(
 	}
 
 	return kcpClient
+}
+
+func KubeconfigClusterClient(
+	t *testing.T,
+	ctx context.Context,
+	client ctrlruntimeclient.Client,
+	namespace string,
+	kubeconfigName string,
+) ClusterClient {
+	t.Helper()
+
+	// get kubeconfig
+	clientConfig := getGeneratedKubeconfig(t, ctx, client, namespace, kubeconfigName)
+
+	// deduce service name from the hostname
+	parsed, err := url.Parse(clientConfig.Host)
+	if err != nil {
+		t.Fatalf("Failed to parse kubeconfig's server %q: %v", clientConfig.Host, err)
+	}
+
+	// start a port forwarding
+	localPort := selfDesctructingUrlForward(t, ctx, namespace, parsed)
+
+	// patch the target server
+	parsed.Host = net.JoinHostPort("localhost", fmt.Sprintf("%d", localPort))
+	parsed.Path = ""
+	clientConfig.Host = parsed.String()
+
+	// create a client through the tunnel
+	return newClusterClient(clientConfig, ctrlruntimeclient.Options{Scheme: NewScheme(t)})
 }
 
 func ConnectWithRootShardProxy(

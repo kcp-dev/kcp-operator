@@ -49,7 +49,7 @@ func TestCacheWithRootShard(t *testing.T) {
 	cacheServer := utils.DeployCacheServer(ctx, t, client, namespace.Name)
 
 	// deploy a root shard that uses our cache
-	rootShard := utils.DeployRootShard(ctx, t, client, namespace.Name, "example.localhost", func(rs *operatorv1alpha1.RootShard) {
+	rootShard := utils.DeployRootShard(ctx, t, client, namespace.Name, "", func(rs *operatorv1alpha1.RootShard) {
 		rs.Spec.Cache.Reference = &corev1.LocalObjectReference{
 			Name: cacheServer.Name,
 		}
@@ -114,7 +114,7 @@ func TestCacheWithExternalEtcdAndRootShard(t *testing.T) {
 	cacheServer := utils.DeployCacheServerWithExternalEtcd(ctx, t, client, namespace.Name)
 
 	// deploy a root shard that uses our cache
-	rootShard := utils.DeployRootShard(ctx, t, client, namespace.Name, "example.localhost", func(rs *operatorv1alpha1.RootShard) {
+	rootShard := utils.DeployRootShard(ctx, t, client, namespace.Name, "", func(rs *operatorv1alpha1.RootShard) {
 		rs.Spec.Cache.Reference = &corev1.LocalObjectReference{
 			Name: cacheServer.Name,
 		}
@@ -171,7 +171,7 @@ func TestCacheWithMultipleExplicitShards(t *testing.T) {
 	cacheServer := utils.DeployCacheServer(ctx, t, client, namespace.Name)
 
 	// deploy a root shard that uses our cache
-	rootShard := utils.DeployRootShard(ctx, t, client, namespace.Name, "example.localhost", func(rs *operatorv1alpha1.RootShard) {
+	rootShard := utils.DeployRootShard(ctx, t, client, namespace.Name, "", func(rs *operatorv1alpha1.RootShard) {
 		rs.Spec.Cache.Reference = &corev1.LocalObjectReference{
 			Name: cacheServer.Name,
 		}
@@ -238,7 +238,7 @@ func TestCacheWithMultipleShardsInheritingConfig(t *testing.T) {
 	cacheServer := utils.DeployCacheServer(ctx, t, client, namespace.Name)
 
 	// deploy a root shard that uses our cache
-	rootShard := utils.DeployRootShard(ctx, t, client, namespace.Name, "example.localhost", func(rs *operatorv1alpha1.RootShard) {
+	rootShard := utils.DeployRootShard(ctx, t, client, namespace.Name, "", func(rs *operatorv1alpha1.RootShard) {
 		rs.Spec.Cache.Reference = &corev1.LocalObjectReference{
 			Name: cacheServer.Name,
 		}

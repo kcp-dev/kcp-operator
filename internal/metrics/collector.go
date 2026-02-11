@@ -70,6 +70,7 @@ func (mc *MetricsCollector) updateObjectCounts(ctx context.Context) {
 	mc.updateFrontProxyCounts(ctx)
 	mc.updateCacheServerCounts(ctx)
 	mc.updateKubeconfigCounts(ctx)
+	mc.updateVirtualWorkspaceCounts(ctx)
 }
 
 func (mc *MetricsCollector) updateRootShardCounts(ctx context.Context) {
@@ -194,5 +195,23 @@ func (mc *MetricsCollector) updateKubeconfigCounts(ctx context.Context) {
 
 	for namespace, count := range namespaceCounts {
 		KubeconfigCount.WithLabelValues(namespace).Set(float64(count))
+	}
+}
+
+func (mc *MetricsCollector) updateVirtualWorkspaceCounts(ctx context.Context) {
+	var virtualWorkspaces operatorv1alpha1.VirtualWorkspaceList
+	if err := mc.client.List(ctx, &virtualWorkspaces); err != nil {
+		return
+	}
+
+	VirtualWorkspaceCount.Reset()
+
+	namespaceCounts := make(map[string]int)
+	for _, vw := range virtualWorkspaces.Items {
+		namespaceCounts[vw.Namespace]++
+	}
+
+	for namespace, count := range namespaceCounts {
+		VirtualWorkspaceCount.WithLabelValues(namespace).Set(float64(count))
 	}
 }

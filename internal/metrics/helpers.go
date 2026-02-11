@@ -21,11 +21,12 @@ import (
 )
 
 const (
-	RootShardResourceType   = "rootshard"
-	ShardResourceType       = "shard"
-	FrontProxyResourceType  = "frontproxy"
-	CacheServerResourceType = "cacheserver"
-	KubeconfigResourceType  = "kubeconfig"
+	RootShardResourceType        = "rootshard"
+	ShardResourceType            = "shard"
+	FrontProxyResourceType       = "frontproxy"
+	CacheServerResourceType      = "cacheserver"
+	KubeconfigResourceType       = "kubeconfig"
+	VirtualWorkspaceResourceType = "virtualworkspace"
 )
 
 func statusToMetric(status metav1.ConditionStatus) float64 {

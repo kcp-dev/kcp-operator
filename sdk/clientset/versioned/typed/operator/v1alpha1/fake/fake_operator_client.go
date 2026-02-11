@@ -53,6 +53,10 @@ func (c *FakeOperatorV1alpha1) Shards(namespace string) v1alpha1.ShardInterface 
 	return newFakeShards(c, namespace)
 }
 
+func (c *FakeOperatorV1alpha1) VirtualWorkspaces(namespace string) v1alpha1.VirtualWorkspaceInterface {
+	return newFakeVirtualWorkspaces(c, namespace)
+}
+
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
 func (c *FakeOperatorV1alpha1) RESTClient() rest.Interface {

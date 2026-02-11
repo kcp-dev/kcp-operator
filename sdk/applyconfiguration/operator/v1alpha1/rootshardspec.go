@@ -112,6 +112,14 @@ func (b *RootShardSpecApplyConfiguration) WithAuth(value *AuthSpecApplyConfigura
 	return b
 }
 
+// WithKCPVirtualWorkspace sets the KCPVirtualWorkspace field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the KCPVirtualWorkspace field is set to the value of the last call.
+func (b *RootShardSpecApplyConfiguration) WithKCPVirtualWorkspace(value v1.LocalObjectReference) *RootShardSpecApplyConfiguration {
+	b.CommonShardSpecApplyConfiguration.KCPVirtualWorkspace = &value
+	return b
+}
+
 // WithCertificateTemplates sets the CertificateTemplates field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the CertificateTemplates field is set to the value of the last call.

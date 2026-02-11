@@ -47,6 +47,8 @@ func TestProvisionFrontProxyRBAC(t *testing.T) {
 
 	rootCluster := logicalcluster.NewPath("root")
 	namespace := utils.CreateSelfDestructingNamespace(t, ctx, client, "provision-frontproxy-rbac")
+
+	// externalHostname must match whatever DeployFrontProxy chooses as the name for the FrontProxy
 	externalHostname := fmt.Sprintf("front-proxy-front-proxy.%s.svc.cluster.local", namespace.Name)
 
 	// deploy rootshard

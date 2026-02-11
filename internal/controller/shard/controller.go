@@ -193,13 +193,30 @@ func (r *ShardReconciler) reconcile(ctx context.Context, s *operatorv1alpha1.Sha
 		}
 	}
 
+	// to correctly configure the cache settings, we need to find the (optional) external
+	// kcp virtual workspace
+	var kcpVW *operatorv1alpha1.VirtualWorkspace
+
+	vwConfigValid := true
+
+	if s.Spec.KCPVirtualWorkspace != nil {
+		kcpVW = &operatorv1alpha1.VirtualWorkspace{}
+		key := types.NamespacedName{Namespace: s.Namespace, Name: s.Spec.KCPVirtualWorkspace.Name}
+		if err := r.Get(ctx, key, kcpVW); err != nil {
+			errs = append(errs, fmt.Errorf("failed to find associated VirtualWorkspace %s: %w", key.Name, err))
+			vwConfigValid = false
+		}
+	}
+
 	// Deployment will be scaled to 0 if bundle annotation is present
-	if err := k8creconciling.ReconcileDeployments(ctx, []k8creconciling.NamedDeploymentReconcilerFactory{
-		shard.DeploymentReconciler(s, rootShard),
-	}, s.Namespace, r.Client, ownerRefWrapper, revisionLabels); err != nil {
-		// Swallow these errors and instead rely on us watching Secrets and re-reconciling whenever they change.
-		if !errors.Is(err, modifier.ErrMountNotFound) {
-			errs = append(errs, err)
+	if vwConfigValid {
+		if err := k8creconciling.ReconcileDeployments(ctx, []k8creconciling.NamedDeploymentReconcilerFactory{
+			shard.DeploymentReconciler(s, rootShard, kcpVW),
+		}, s.Namespace, r.Client, ownerRefWrapper, revisionLabels); err != nil {
+			// Swallow these errors and instead rely on us watching Secrets and re-reconciling whenever they change.
+			if !errors.Is(err, modifier.ErrMountNotFound) {
+				errs = append(errs, err)
+			}
 		}
 	}
 

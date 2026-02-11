@@ -77,6 +77,7 @@ rules:
   - kubeconfigs/status
   - rootshards/status
   - shards/status
+  - virtualworkspaces/status
   verbs:
   - get
   - patch
@@ -87,6 +88,7 @@ rules:
   - kubeconfigs
   - rootshards
   - shards
+  - virtualworkspaces
   verbs:
   - get
   - list

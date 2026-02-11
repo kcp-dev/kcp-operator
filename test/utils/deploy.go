@@ -134,6 +134,10 @@ func DeployRootShard(ctx context.Context, t *testing.T, client ctrlruntimeclient
 	rootShard.Name = "r00t"
 	rootShard.Namespace = namespace
 
+	if externalHostname == "" {
+		externalHostname = fmt.Sprintf("%s-root-shard.%s.svc.cluster.local", rootShard.Name, rootShard.Namespace)
+	}
+
 	rootShard.Spec = operatorv1alpha1.RootShardSpec{
 		External: operatorv1alpha1.ExternalConfig{
 			Hostname: externalHostname,
@@ -295,4 +299,48 @@ func DeployCacheServerWithExternalEtcd(ctx context.Context, t *testing.T, client
 			Endpoints: []string{etcd},
 		}
 	})...)
+}
+
+func DeployVirtualWorkspace(ctx context.Context, t *testing.T, client ctrlruntimeclient.Client, namespace, name string, waitForReady bool, patches ...func(*operatorv1alpha1.VirtualWorkspace)) operatorv1alpha1.VirtualWorkspace {
+	t.Helper()
+
+	vwHostname := fmt.Sprintf("%s-virtual-workspace.%s.svc.cluster.local", name, namespace)
+
+	vw := operatorv1alpha1.VirtualWorkspace{}
+	vw.Name = name
+	vw.Namespace = namespace
+	vw.Spec = operatorv1alpha1.VirtualWorkspaceSpec{
+		External: operatorv1alpha1.ExternalConfig{
+			Hostname: vwHostname,
+			Port:     6443,
+		},
+	}
+
+	if tag := getKcpTag(); tag != "" {
+		vw.Spec.Image = &operatorv1alpha1.ImageSpec{
+			Tag: tag,
+		}
+	}
+
+	for _, patch := range patches {
+		patch(&vw)
+	}
+
+	t.Logf("Creating VirtualWorkspace %s...", vw.Name)
+	if err := client.Create(ctx, &vw); err != nil {
+		t.Fatal(err)
+	}
+
+	if waitForReady {
+		opts := []ctrlruntimeclient.ListOption{
+			ctrlruntimeclient.InNamespace(vw.Namespace),
+			ctrlruntimeclient.MatchingLabels{
+				"app.kubernetes.io/component": "virtual-workspace",
+				"app.kubernetes.io/instance":  vw.Name,
+			},
+		}
+		WaitForPods(t, ctx, client, opts...)
+	}
+
+	return vw
 }

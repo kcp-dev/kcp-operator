@@ -73,6 +73,16 @@ var (
 		[]string{"namespace"},
 	)
 
+	// VirtualWorkspaceCount tracks the number of VirtualWorkspace objects by namespace.
+	// Labels: namespace
+	VirtualWorkspaceCount = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "kcp_operator_virtualworkspace_count",
+			Help: "Number of VirtualWorkspace objects by namespace",
+		},
+		[]string{"namespace"},
+	)
+
 	// ReconciliationDuration measures the time taken to reconcile kcp operator resources.
 	// Labels: controller (rootshard|shard|frontproxy|kubeconfig|cacheserver), result (success|error)
 	ReconciliationDuration = prometheus.NewHistogramVec(

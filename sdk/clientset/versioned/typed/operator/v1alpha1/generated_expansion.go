@@ -29,3 +29,5 @@ type KubeconfigExpansion interface{}
 type RootShardExpansion interface{}
 
 type ShardExpansion interface{}
+
+type VirtualWorkspaceExpansion interface{}
