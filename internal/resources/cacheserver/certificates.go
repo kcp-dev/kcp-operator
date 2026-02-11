@@ -78,7 +78,13 @@ func ServerCertificateReconciler(server *operatorv1alpha1.CacheServer) reconcili
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
 			cert.SetLabels(resources.GetCacheServerResourceLabels(server))
 			cert.Spec = certmanagerv1.CertificateSpec{
-				SecretName:  name,
+				SecretName: name,
+				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
+					Labels: map[string]string{
+						resources.CacheServerLabel: server.Name,
+					},
+				},
+
 				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
 				RenewBefore: &operatorv1alpha1.DefaultCertificateRenewal,
 
@@ -89,6 +95,8 @@ func ServerCertificateReconciler(server *operatorv1alpha1.CacheServer) reconcili
 
 				Usages: []certmanagerv1.KeyUsage{
 					certmanagerv1.UsageServerAuth,
+					certmanagerv1.UsageKeyEncipherment,
+					certmanagerv1.UsageDigitalSignature,
 				},
 
 				DNSNames: []string{

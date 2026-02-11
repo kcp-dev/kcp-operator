@@ -25,6 +25,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 
 	"github.com/kcp-dev/kcp-operator/internal/resources"
@@ -118,8 +119,51 @@ func DeploymentReconciler(server *operatorv1alpha1.CacheServer) reconciling.Name
 				VolumeMounts: volumeMounts,
 				Resources:    defaultResourceRequirements,
 				SecurityContext: &corev1.SecurityContext{
+					SeccompProfile: &corev1.SeccompProfile{
+						Type: corev1.SeccompProfileTypeRuntimeDefault,
+					},
 					ReadOnlyRootFilesystem:   ptr.To(true),
 					AllowPrivilegeEscalation: ptr.To(false),
+					Capabilities: &corev1.Capabilities{
+						Drop: []corev1.Capability{
+							corev1.Capability("ALL"),
+						},
+					},
+				},
+				Ports: []corev1.ContainerPort{
+					{
+						Name:          "https",
+						ContainerPort: 6443,
+						Protocol:      corev1.ProtocolTCP,
+					},
+				},
+				ReadinessProbe: &corev1.Probe{
+					FailureThreshold:    3,
+					InitialDelaySeconds: 15,
+					PeriodSeconds:       10,
+					SuccessThreshold:    1,
+					TimeoutSeconds:      10,
+					ProbeHandler: corev1.ProbeHandler{
+						HTTPGet: &corev1.HTTPGetAction{
+							Path:   "/readyz",
+							Port:   intstr.FromString("https"),
+							Scheme: corev1.URISchemeHTTPS,
+						},
+					},
+				},
+				LivenessProbe: &corev1.Probe{
+					FailureThreshold:    3,
+					InitialDelaySeconds: 15,
+					PeriodSeconds:       10,
+					SuccessThreshold:    1,
+					TimeoutSeconds:      10,
+					ProbeHandler: corev1.ProbeHandler{
+						HTTPGet: &corev1.HTTPGetAction{
+							Path:   "/livez",
+							Port:   intstr.FromString("https"),
+							Scheme: corev1.URISchemeHTTPS,
+						},
+					},
 				},
 			}}
 			dep.Spec.Template.Spec.Volumes = volumes
