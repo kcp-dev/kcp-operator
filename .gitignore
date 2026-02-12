@@ -33,3 +33,6 @@ go.work.sum
 /.e2e-*
 .vscode
 .idea
+
+# developer local files
+.pre-commit-config.yaml
