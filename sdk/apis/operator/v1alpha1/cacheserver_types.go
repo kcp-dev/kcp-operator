@@ -22,14 +22,29 @@ import (
 
 // CacheServerSpec defines the desired state of CacheServer.
 type CacheServerSpec struct {
-	// Etcd configures the etcd cluster that this cache server should be using.
-	Etcd EtcdConfig `json:"etcd"`
+	// ClusterDomain is the DNS domain for services in the cluster. Defaults to "cluster.local" if not set.
+	// +optional
+	ClusterDomain string `json:"clusterDomain,omitempty"`
 
 	// Optional: Image overwrites the container image used to deploy the cache server.
 	Image *ImageSpec `json:"image,omitempty"`
 
 	// Optional: Logging configures the logging settings for the cache server.
 	Logging *LoggingSpec `json:"logging,omitempty"`
+
+	// Certificates configures how the operator should create the kcp root CA, from which it will
+	// then create all other sub CAs and leaf certificates.
+	Certificates Certificates `json:"certificates"`
+
+	// CertificateTemplates allows to customize the properties on the generated
+	// certificates for this cache server.
+	CertificateTemplates CertificateTemplateMap `json:"certificateTemplates,omitempty"`
+
+	// Optional: ServiceTemplate configures the Kubernetes Service created for this cache server.
+	ServiceTemplate *ServiceTemplate `json:"serviceTemplate,omitempty"`
+
+	// Optional: DeploymentTemplate configures the Kubernetes Deployment created for this cache server.
+	DeploymentTemplate *DeploymentTemplate `json:"deploymentTemplate,omitempty"`
 }
 
 // CacheServerStatus defines the observed state of CacheServer

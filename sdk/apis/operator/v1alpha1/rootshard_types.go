@@ -28,7 +28,7 @@ type RootShardSpec struct {
 	External ExternalConfig `json:"external"`
 
 	// Cache configures the cache server (with a Kubernetes-like API) used by a sharded kcp instance.
-	Cache CacheConfig `json:"cache"`
+	Cache RootShardCacheConfig `json:"cache"`
 
 	// Proxy configures the internal front-proxy that is only (supposed to be) used by the kcp-operator
 	// to manage all shards belonging to a root shard instance. No external traffic should ever be
@@ -96,15 +96,21 @@ type Certificates struct {
 	IssuerRef *ObjectReference `json:"issuerRef,omitempty"`
 
 	// CASecretRef can be used as an alternative to the IssuerRef: This field allows to configure
-	// a pre-existing CA certificate that should be used as sign kcp certificates.
+	// a pre-existing CA certificate that should be used to sign kcp certificates.
 	// This Secret must contain both the certificate and the private key so that new sub certificates
 	// can be signed and created from this CA. This field is mutually exclusive with issuerRef.
 	CASecretRef *corev1.LocalObjectReference `json:"caSecretRef,omitempty"`
 }
 
-type CacheConfig struct {
+type RootShardCacheConfig struct {
 	// Embedded configures settings for starting the cache server embedded in the root shard.
+	//
+	// Deprecated: Embedded cache is always enabled unless a reference to an external cache is given.
 	Embedded *EmbeddedCacheConfiguration `json:"embedded,omitempty"`
+
+	// Reference references a local CacheServer object. If not configured, the embedded cache will be
+	// enabled by default instead.
+	Reference *corev1.LocalObjectReference `json:"ref,omitempty"`
 }
 
 type EmbeddedCacheConfiguration struct {

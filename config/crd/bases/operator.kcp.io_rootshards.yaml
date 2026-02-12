@@ -259,8 +259,10 @@ spec:
                   API) used by a sharded kcp instance.
                 properties:
                   embedded:
-                    description: Embedded configures settings for starting the cache
-                      server embedded in the root shard.
+                    description: |-
+                      Embedded configures settings for starting the cache server embedded in the root shard.
+
+                      Deprecated: Embedded cache is always enabled unless a reference to an external cache is given.
                     properties:
                       enabled:
                         description: Enabled enables or disables running the cache
@@ -269,6 +271,22 @@ spec:
                     required:
                     - enabled
                     type: object
+                  ref:
+                    description: |-
+                      Reference references a local CacheServer object. If not configured, the embedded cache will be
+                      enabled by default instead.
+                    properties:
+                      name:
+                        default: ""
+                        description: |-
+                          Name of the referent.
+                          This field is effectively required, but due to backwards compatibility is
+                          allowed to be empty. Instances of this type with an empty value here are
+                          almost certainly wrong.
+                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                        type: string
+                    type: object
+                    x-kubernetes-map-type: atomic
                 type: object
               certificateTemplates:
                 additionalProperties:
@@ -490,7 +508,7 @@ spec:
                   caSecretRef:
                     description: |-
                       CASecretRef can be used as an alternative to the IssuerRef: This field allows to configure
-                      a pre-existing CA certificate that should be used as sign kcp certificates.
+                      a pre-existing CA certificate that should be used to sign kcp certificates.
                       This Secret must contain both the certificate and the private key so that new sub certificates
                       can be signed and created from this CA. This field is mutually exclusive with issuerRef.
                     properties:

@@ -139,11 +139,6 @@ func DeployRootShard(ctx context.Context, t *testing.T, client ctrlruntimeclient
 			Hostname: externalHostname,
 			Port:     6443,
 		},
-		Cache: operatorv1alpha1.CacheConfig{
-			Embedded: &operatorv1alpha1.EmbeddedCacheConfiguration{
-				Enabled: true,
-			},
-		},
 		Certificates: operatorv1alpha1.Certificates{
 			IssuerRef: GetSelfSignedIssuerRef(),
 		},
@@ -248,4 +243,44 @@ func DeployFrontProxy(ctx context.Context, t *testing.T, client ctrlruntimeclien
 	WaitForPods(t, ctx, client, opts...)
 
 	return frontProxy
+}
+
+func DeployCacheServer(ctx context.Context, t *testing.T, client ctrlruntimeclient.Client, namespace string, patches ...func(*operatorv1alpha1.CacheServer)) operatorv1alpha1.CacheServer {
+	t.Helper()
+
+	server := operatorv1alpha1.CacheServer{}
+	server.Name = "kachy"
+	server.Namespace = namespace
+
+	server.Spec = operatorv1alpha1.CacheServerSpec{
+		Certificates: operatorv1alpha1.Certificates{
+			IssuerRef: GetSelfSignedIssuerRef(),
+		},
+	}
+
+	if tag := getKcpTag(); tag != "" {
+		server.Spec.Image = &operatorv1alpha1.ImageSpec{
+			Tag: tag,
+		}
+	}
+
+	for _, patch := range patches {
+		patch(&server)
+	}
+
+	t.Logf("Creating CacheServer %s...", server.Name)
+	if err := client.Create(ctx, &server); err != nil {
+		t.Fatal(err)
+	}
+
+	opts := []ctrlruntimeclient.ListOption{
+		ctrlruntimeclient.InNamespace(server.Namespace),
+		ctrlruntimeclient.MatchingLabels{
+			"app.kubernetes.io/component": "cache-server",
+			"app.kubernetes.io/instance":  server.Name,
+		},
+	}
+	WaitForPods(t, ctx, client, opts...)
+
+	return server
 }

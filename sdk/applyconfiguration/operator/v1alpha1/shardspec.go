@@ -28,7 +28,8 @@ import (
 // with apply.
 type ShardSpecApplyConfiguration struct {
 	CommonShardSpecApplyConfiguration `json:",inline"`
-	RootShard                         *RootShardConfigApplyConfiguration `json:"rootShard,omitempty"`
+	RootShard                         *RootShardConfigApplyConfiguration  `json:"rootShard,omitempty"`
+	Cache                             *ShardCacheConfigApplyConfiguration `json:"cache,omitempty"`
 }
 
 // ShardSpecApplyConfiguration constructs a declarative configuration of the ShardSpec type for use with
@@ -164,5 +165,13 @@ func (b *ShardSpecApplyConfiguration) WithLogging(value *LoggingSpecApplyConfigu
 // If called multiple times, the RootShard field is set to the value of the last call.
 func (b *ShardSpecApplyConfiguration) WithRootShard(value *RootShardConfigApplyConfiguration) *ShardSpecApplyConfiguration {
 	b.RootShard = value
+	return b
+}
+
+// WithCache sets the Cache field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Cache field is set to the value of the last call.
+func (b *ShardSpecApplyConfiguration) WithCache(value *ShardCacheConfigApplyConfiguration) *ShardSpecApplyConfiguration {
+	b.Cache = value
 	return b
 }

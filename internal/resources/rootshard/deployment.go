@@ -62,6 +62,15 @@ func getKubeconfigMountPath(certName operatorv1alpha1.Certificate) string {
 	return fmt.Sprintf("/etc/kcp/%s-kubeconfig", certName)
 }
 
+func getCacheServerKubeconfigMountPath() string {
+	return "/etc/cache-server/kubeconfig"
+}
+
+// getCacheServerCAMountPath has to match the code in the cacheserver package.
+func getCacheServerCAMountPath(caName operatorv1alpha1.CA) string {
+	return fmt.Sprintf("/etc/cache-server/tls/ca/%s", caName)
+}
+
 func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.NamedDeploymentReconcilerFactory {
 	return func() (string, reconciling.DeploymentReconciler) {
 		return resources.GetRootShardDeploymentName(rootShard), func(dep *appsv1.Deployment) (*appsv1.Deployment, error) {
@@ -129,6 +138,22 @@ func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.Nam
 					VolumeName: "ca-bundle",
 					SecretName: fmt.Sprintf("%s-merged-ca-bundle", rootShard.Name),
 					MountPath:  getCAMountPath(operatorv1alpha1.CABundleCA),
+				})
+			}
+
+			// If an external CacheServer is meant to be used, mount its kubeconfig and the
+			// certificate referenced in it.
+			if ref := rootShard.Spec.Cache.Reference; ref != nil {
+				secretMounts = append(secretMounts, utils.SecretMount{
+					VolumeName: "cache-server-kubeconfig",
+					SecretName: resources.GetCacheServerKubeconfigName(ref.Name),
+					MountPath:  getCacheServerKubeconfigMountPath(),
+				})
+
+				secretMounts = append(secretMounts, utils.SecretMount{
+					VolumeName: "cache-server-ca",
+					SecretName: resources.GetCacheServerCAName(ref.Name, operatorv1alpha1.RootCA),
+					MountPath:  getCacheServerCAMountPath(operatorv1alpha1.RootCA),
 				})
 			}
 
@@ -207,6 +232,10 @@ func getArgs(rootShard *operatorv1alpha1.RootShard) []string {
 
 	if rootShard.Spec.ExtraArgs != nil {
 		args = append(args, rootShard.Spec.ExtraArgs...)
+	}
+
+	if ref := rootShard.Spec.Cache.Reference; ref != nil {
+		args = append(args, fmt.Sprintf("--cache-kubeconfig=%s/kubeconfig", getCacheServerKubeconfigMountPath()))
 	}
 
 	return args

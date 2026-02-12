@@ -6,6 +6,7 @@ This section describes how the kcp-operator is designed and meant to be used.
 
 - [Basics](basics.md) – A general overview over the resources provided by the kcp-operator.
 - [front-proxy](front-proxy.md) – Explains how the kcp front-proxy can be used to ingest traffic.
+- [cache-server](cache-server.md) – Explains how to use an external cache server in a kcp installation.
 - [Certificate Management](pki.md) – This page describes the various CAs and certificates used in a kcp installation.
 - [Kubeconfig](kubeconfig.md) – Shows how `Kubeconfig` objects can be used to provide credentials to kcp.
 <!--

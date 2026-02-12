@@ -53,8 +53,6 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &operatorv1alpha1.BundleStatusApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("BundleTarget"):
 		return &operatorv1alpha1.BundleTargetApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("CacheConfig"):
-		return &operatorv1alpha1.CacheConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("CacheServer"):
 		return &operatorv1alpha1.CacheServerApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("CacheServerSpec"):
@@ -127,6 +125,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &operatorv1alpha1.PodTemplateSpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("RootShard"):
 		return &operatorv1alpha1.RootShardApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("RootShardCacheConfig"):
+		return &operatorv1alpha1.RootShardCacheConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("RootShardConfig"):
 		return &operatorv1alpha1.RootShardConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("RootShardProxySpec"):
@@ -145,6 +145,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &operatorv1alpha1.ServiceTemplateApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Shard"):
 		return &operatorv1alpha1.ShardApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ShardCacheConfig"):
+		return &operatorv1alpha1.ShardCacheConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ShardReference"):
 		return &operatorv1alpha1.ShardReferenceApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ShardSpec"):
