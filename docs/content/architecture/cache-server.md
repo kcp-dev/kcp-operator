@@ -22,8 +22,7 @@ all the kcp shards connect to it, in order to store their data on the cache. Thi
 conceptually very simple, since it all it needs to function is a TLS serving certificate.
 
 As of kcp 0.30, there is only a single cache server supported for a whole kcp installation
-consisting of multiple shads). Future kcp releases might extend this to allow multiple, geographically
-close, cache servers.
+consisting of multiple shads).
 
 ## Usage
 
@@ -44,12 +43,11 @@ spec:
 ```
 
 The kcp-operator will provision a root CA and a serving certificate for the cache server. For this,
-similar to how `RootShard` work, you need to configure either your desired `ClusterIssuer` or provide
-a pre-existing CA certificate/key as a `Secret`.
+similar to how `RootShards` work, you need to configure either your desired `ClusterIssuer` or provide
+a pre-existing CA certificate and key as a `Secret`.
 
-Once the `CacheServer` object is created and reconciled, you need to configure the `RootShard` and each
-`Shard` to make use of it, since by default the embedded cache would be enabled. To do so, refer to
-the new `CacheServer` object in your shard:
+The CacheServer must be referenced in the RootShard and Shard objects, otherwise the embedded cache
+is enabled:
 
 ```yaml
 apiVersion: operator.kcp.io/v1alpha1
