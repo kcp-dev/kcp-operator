@@ -498,6 +498,8 @@
       
         
       
+        
+      
     
     
       
@@ -574,6 +576,27 @@
   
   <span class="md-ellipsis">
     kcp front-proxy
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/cache-server/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    kcp cache-server
   </span>
   
 
@@ -2119,6 +2142,8 @@ More info: <a href="https://kubernetes.io/docs/concepts/overview/working-with-ob
 <div class="property-description">
 <p>Embedded configures settings for starting the cache server embedded in the root shard.</p>
 
+<p>Deprecated: Embedded cache is always enabled unless a reference to an external cache is given.</p>
+
 </div>
 
 </div>
@@ -2136,6 +2161,47 @@ More info: <a href="https://kubernetes.io/docs/concepts/overview/working-with-ob
 
 <div class="property-description">
 <p>Enabled enables or disables running the cache server as embedded.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.cache.ref">.spec.cache.ref</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+<div class="property-description">
+<p>Reference references a local CacheServer object. If not configured, the embedded cache will be
+enabled by default instead.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.cache.ref.name">.spec.cache.ref.name</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+More info: <a href="https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names">https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</a></p>
 
 </div>
 
@@ -2192,7 +2258,7 @@ then create all other sub CAs and leaf certificates.</p>
 
 <div class="property-description">
 <p>CASecretRef can be used as an alternative to the IssuerRef: This field allows to configure
-a pre-existing CA certificate that should be used as sign kcp certificates.
+a pre-existing CA certificate that should be used to sign kcp certificates.
 This Secret must contain both the certificate and the private key so that new sub certificates
 can be signed and created from this CA. This field is mutually exclusive with issuerRef.</p>
 
