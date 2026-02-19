@@ -99,7 +99,7 @@ func LogicalClusterAdminKubeconfigReconciler(shard *operatorv1alpha1.Shard, root
 			config = &clientcmdapi.Config{
 				Clusters: map[string]*clientcmdapi.Cluster{
 					serverName: {
-						Server:               resources.GetRootShardBaseURL(rootShard),
+						Server:               resources.GetShardBaseURL(shard),
 						CertificateAuthority: getCAMountPath(operatorv1alpha1.ServerCA) + "/tls.crt",
 					},
 				},
