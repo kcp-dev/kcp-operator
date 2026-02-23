@@ -127,8 +127,6 @@ func (r *ShardReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res 
 		recErr = kerrors.NewAggregate([]error{recErr, err})
 	}
 
-	metrics.RecordObjectMetrics(metrics.ShardResourceType, &s, s.Status.Conditions)
-
 	return ctrl.Result{}, recErr
 }
 

@@ -28,15 +28,6 @@ const (
 	KubeconfigResourceType  = "kubeconfig"
 )
 
-// RecordObjectMetrics records metrics for the conditions of a Kubernetes object.
-func RecordObjectMetrics(resourceType string, obj metav1.Object, conditions []metav1.Condition) {
-	for _, condition := range conditions {
-		ConditionStatus.
-			WithLabelValues(resourceType, obj.GetName(), obj.GetNamespace(), condition.Type).
-			Set(statusToMetric(condition.Status))
-	}
-}
-
 func statusToMetric(status metav1.ConditionStatus) float64 {
 	switch status {
 	case metav1.ConditionTrue:
