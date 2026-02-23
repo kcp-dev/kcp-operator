@@ -28,42 +28,25 @@ const (
 	KubeconfigResourceType  = "kubeconfig"
 )
 
-// RecordObjectMetrics records metrics for a Kubernetes object with phase and conditions
-func RecordObjectMetrics(resourceType, resourceName, namespace, phase string, conditions []metav1.Condition) {
-	if phase == "" {
-		phase = "Unknown"
-	}
-
-	switch resourceType {
-	case RootShardResourceType:
-		RootShardCount.WithLabelValues(phase, namespace).Set(1)
-	case ShardResourceType:
-		ShardCount.WithLabelValues(phase, namespace).Set(1)
-	case FrontProxyResourceType:
-		FrontProxyCount.WithLabelValues(phase, namespace).Set(1)
-	case CacheServerResourceType:
-		CacheServerCount.WithLabelValues(namespace).Set(1)
-	case KubeconfigResourceType:
-		KubeconfigCount.WithLabelValues(namespace).Set(1)
-	}
-
+// RecordObjectMetrics records metrics for the conditions of a Kubernetes object.
+func RecordObjectMetrics(resourceType string, obj metav1.Object, conditions []metav1.Condition) {
 	for _, condition := range conditions {
-		status := 0.0
-		switch condition.Status {
-		case metav1.ConditionTrue:
-			status = 1.0
-		case metav1.ConditionFalse:
-			status = 0.0
-		case metav1.ConditionUnknown:
-			status = -1.0
-		}
+		ConditionStatus.
+			WithLabelValues(resourceType, obj.GetName(), obj.GetNamespace(), condition.Type).
+			Set(statusToMetric(condition.Status))
+	}
+}
 
-		ConditionStatus.WithLabelValues(
-			resourceType,
-			resourceName,
-			namespace,
-			condition.Type,
-		).Set(status)
+func statusToMetric(status metav1.ConditionStatus) float64 {
+	switch status {
+	case metav1.ConditionTrue:
+		return 1
+	case metav1.ConditionFalse:
+		return 0
+	case metav1.ConditionUnknown:
+		return -1
+	default: // this should never happen
+		return -1
 	}
 }
 
