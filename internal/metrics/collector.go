@@ -20,6 +20,7 @@ import (
 	"context"
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
@@ -54,7 +55,16 @@ func (mc *MetricsCollector) Start(ctx context.Context) {
 	}
 }
 
+func recordConditionStatuses(resourceType, name, namespace string, conditions []metav1.Condition) {
+	for _, condition := range conditions {
+		ConditionStatus.
+			WithLabelValues(resourceType, name, namespace, condition.Type).
+			Set(statusToMetric(condition.Status))
+	}
+}
+
 func (mc *MetricsCollector) updateObjectCounts(ctx context.Context) {
+	ConditionStatus.Reset()
 	mc.updateRootShardCounts(ctx)
 	mc.updateShardCounts(ctx)
 	mc.updateFrontProxyCounts(ctx)
@@ -80,6 +90,8 @@ func (mc *MetricsCollector) updateRootShardCounts(ctx context.Context) {
 			phaseCounts[phase] = make(map[string]int)
 		}
 		phaseCounts[phase][rs.Namespace]++
+
+		recordConditionStatuses(RootShardResourceType, rs.Name, rs.Namespace, rs.Status.Conditions)
 	}
 
 	for phase, namespaceCounts := range phaseCounts {
@@ -107,6 +119,8 @@ func (mc *MetricsCollector) updateShardCounts(ctx context.Context) {
 			phaseCounts[phase] = make(map[string]int)
 		}
 		phaseCounts[phase][s.Namespace]++
+
+		recordConditionStatuses(ShardResourceType, s.Name, s.Namespace, s.Status.Conditions)
 	}
 
 	for phase, namespaceCounts := range phaseCounts {
@@ -134,6 +148,8 @@ func (mc *MetricsCollector) updateFrontProxyCounts(ctx context.Context) {
 			phaseCounts[phase] = make(map[string]int)
 		}
 		phaseCounts[phase][fp.Namespace]++
+
+		recordConditionStatuses(FrontProxyResourceType, fp.Name, fp.Namespace, fp.Status.Conditions)
 	}
 
 	for phase, namespaceCounts := range phaseCounts {
@@ -172,6 +188,8 @@ func (mc *MetricsCollector) updateKubeconfigCounts(ctx context.Context) {
 	namespaceCounts := make(map[string]int)
 	for _, kc := range kubeconfigs.Items {
 		namespaceCounts[kc.Namespace]++
+
+		recordConditionStatuses(KubeconfigResourceType, kc.Name, kc.Namespace, kc.Status.Conditions)
 	}
 
 	for namespace, count := range namespaceCounts {

@@ -119,14 +119,6 @@ func (r *FrontProxyReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		recErr = kerrors.NewAggregate([]error{recErr, err})
 	}
 
-	metrics.RecordObjectMetrics(
-		metrics.FrontProxyResourceType,
-		frontProxy.Name,
-		req.Namespace,
-		string(frontProxy.Status.Phase),
-		frontProxy.Status.Conditions,
-	)
-
 	return ctrl.Result{}, recErr
 }
 

@@ -122,14 +122,6 @@ func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		recErr = kerrors.NewAggregate([]error{recErr, err})
 	}
 
-	metrics.RecordObjectMetrics(
-		metrics.KubeconfigResourceType,
-		kc.Name,
-		req.Namespace,
-		string(kc.Status.Phase),
-		kc.Status.Conditions,
-	)
-
 	return ctrl.Result{}, recErr
 }
 
