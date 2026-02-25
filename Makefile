@@ -42,7 +42,7 @@ TARGET_ARCH ?= $(shell go env GOARCH)
 TARGET_OS ?= linux
 
 GOIMPORTS_VERSION ?= c72f1dc2e3aacfa00aece3391d938c9bc734e791
-GOLANGCI_LINT_VERSION ?= 2.1.6
+GOLANGCI_LINT_VERSION ?= 2.10.1
 HELM_VERSION ?= 3.18.6
 KUBECTL_VERSION ?= v1.32.0
 KUSTOMIZE_VERSION ?= v5.4.3
@@ -109,7 +109,7 @@ test-e2e: build ## Run e2e tests using existing cluster, bootstrap prerequisites
 	USE_EXISTING_CLUSTER=true NO_TEARDOWN=true WHAT=$(WHAT) hack/run-e2e-tests.sh
 
 # Creates a kind cluster and runs the e2e tests in them. The kind cluster is destroyed after the tests.
-# Example: USE_EXISTING_CLUSTER=true NO_TEARDOWN=true make test-e2e WHAT=./test/e2e/shards TEST_ARGS="-timeout 2h -v -run TestShardBundleAnnotation -count=1" 
+# Example: USE_EXISTING_CLUSTER=true NO_TEARDOWN=true make test-e2e WHAT=./test/e2e/shards TEST_ARGS="-timeout 2h -v -run TestShardBundleAnnotation -count=1"
 .PHONY: test-e2e-with-kind  # Run the e2e tests against a temporary kind cluster.
 test-e2e-with-kind: ## Run e2e tests in temporary kind cluster. Use WHAT= to specify test path.
 	@WHAT=$(WHAT) hack/run-e2e-tests.sh
