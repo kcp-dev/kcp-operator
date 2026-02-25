@@ -18,6 +18,7 @@ package frontproxy
 
 import (
 	"context"
+	"errors"
 
 	k8creconciling "k8c.io/reconciler/pkg/reconciling"
 
@@ -26,6 +27,7 @@ import (
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
+	"github.com/kcp-dev/kcp-operator/internal/reconciling/modifier"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
@@ -69,6 +71,7 @@ func (r *reconciler) Reconcile(ctx context.Context, client ctrlruntimeclient.Cli
 		ref = metav1.NewControllerRef(r.rootShard, operatorv1alpha1.SchemeGroupVersion.WithKind("RootShard"))
 	}
 	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*ref)
+	revisionLabels := modifier.RelatedRevisionsLabels(ctx, client)
 
 	configMapReconcilers := []k8creconciling.NamedConfigMapReconcilerFactory{
 		r.pathMappingConfigMapReconciler(),
@@ -108,8 +111,12 @@ func (r *reconciler) Reconcile(ctx context.Context, client ctrlruntimeclient.Cli
 		errs = append(errs, err)
 	}
 
-	if err := k8creconciling.ReconcileDeployments(ctx, deploymentReconcilers, namespace, client, ownerRefWrapper); err != nil {
-		errs = append(errs, err)
+	// must happen after the Secrets and Certificates have been reconciled, since it can fail as long as those do not exist
+	if err := k8creconciling.ReconcileDeployments(ctx, deploymentReconcilers, namespace, client, ownerRefWrapper, revisionLabels); err != nil {
+		// swallow errors and rely on the caller watching Secrets and re-reconciling whenever they change
+		if !errors.Is(err, modifier.ErrMountNotFound) {
+			errs = append(errs, err)
+		}
 	}
 
 	if err := k8creconciling.ReconcileServices(ctx, serviceReconcilers, namespace, client, ownerRefWrapper); err != nil {
