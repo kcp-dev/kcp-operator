@@ -1,5 +1,5 @@
 /*
-Copyright 2024 The KCP Authors.
+Copyright 2024 The kcp Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -32,9 +32,9 @@ var (
 
 // ImageSpec defines settings for using a specific image and overwriting the default images used.
 type ImageSpec struct {
-	// Repository is the container image repository to use for KCP containers. Defaults to `ghcr.io/kcp-dev/kcp`.
+	// Repository is the container image repository to use for kcp containers. Defaults to `ghcr.io/kcp-dev/kcp`.
 	Repository string `json:"repository,omitempty"`
-	// Tag is the container image tag to use for KCP containers. Defaults to the latest kcp release that the operator supports.
+	// Tag is the container image tag to use for kcp containers. Defaults to the latest kcp release that the operator supports.
 	Tag string `json:"tag,omitempty"`
 	// Optional: ImagePullSecrets is a list of secret references that should be used as image pull secrets (e.g. when a private registry is used).
 	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
@@ -395,10 +395,10 @@ type LoggingSpec struct {
 type OIDCConfiguration struct {
 	// IssuerURL is used for the OIDC issuer URL. Only https URLs will be accepted.
 	IssuerURL string `json:"issuerURL"`
-	// ClientID is the OIDC client ID configured on the issuer side for this KCP instance.
+	// ClientID is the OIDC client ID configured on the issuer side for this kcp instance.
 	ClientID string `json:"clientID"`
 
-	// Optionally provide the client secret for the OIDC client. This is not used by KCP itself, but is used to generate
+	// Optionally provide the client secret for the OIDC client. This is not used by kcp itself, but is used to generate
 	// a OIDC kubeconfig that can be shared with users to log in via the OIDC provider.
 	ClientSecret string `json:"clientSecret,omitempty"`
 
@@ -408,10 +408,10 @@ type OIDCConfiguration struct {
 	UsernameClaim string `json:"usernameClaim,omitempty"`
 
 	// Optionally sets a custom groups prefix. This defaults to "oidc:" if unset, which means a group called "group1"
-	// on the OIDC side will be recognised as "oidc:group1" in KCP.
+	// on the OIDC side will be recognised as "oidc:group1" in kcp.
 	GroupsPrefix string `json:"groupsPrefix,omitempty"`
 	// Optionally sets a custom username prefix. This defaults to "oidc:" if unset, which means a user called "user@example.com"
-	// on the OIDC side will be recognised as "oidc:user@example.com" in KCP.
+	// on the OIDC side will be recognised as "oidc:user@example.com" in kcp.
 	UsernamePrefix string `json:"usernamePrefix,omitempty"`
 
 	// Optionally provides a reference to a secret that contains a CA bundle for the OIDC issuer. This is useful when

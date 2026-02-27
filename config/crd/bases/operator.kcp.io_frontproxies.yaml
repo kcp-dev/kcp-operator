@@ -108,11 +108,11 @@ spec:
                         type: object
                       clientID:
                         description: ClientID is the OIDC client ID configured on
-                          the issuer side for this KCP instance.
+                          the issuer side for this kcp instance.
                         type: string
                       clientSecret:
                         description: |-
-                          Optionally provide the client secret for the OIDC client. This is not used by KCP itself, but is used to generate
+                          Optionally provide the client secret for the OIDC client. This is not used by kcp itself, but is used to generate
                           a OIDC kubeconfig that can be shared with users to log in via the OIDC provider.
                         type: string
                       groupsClaim:
@@ -123,7 +123,7 @@ spec:
                       groupsPrefix:
                         description: |-
                           Optionally sets a custom groups prefix. This defaults to "oidc:" if unset, which means a group called "group1"
-                          on the OIDC side will be recognised as "oidc:group1" in KCP.
+                          on the OIDC side will be recognised as "oidc:group1" in kcp.
                         type: string
                       issuerURL:
                         description: IssuerURL is used for the OIDC issuer URL. Only
@@ -136,7 +136,7 @@ spec:
                       usernamePrefix:
                         description: |-
                           Optionally sets a custom username prefix. This defaults to "oidc:" if unset, which means a user called "user@example.com"
-                          on the OIDC side will be recognised as "oidc:user@example.com" in KCP.
+                          on the OIDC side will be recognised as "oidc:user@example.com" in kcp.
                         type: string
                     required:
                     - clientID
@@ -1557,10 +1557,10 @@ spec:
                     type: array
                   repository:
                     description: Repository is the container image repository to use
-                      for KCP containers. Defaults to `ghcr.io/kcp-dev/kcp`.
+                      for kcp containers. Defaults to `ghcr.io/kcp-dev/kcp`.
                     type: string
                   tag:
-                    description: Tag is the container image tag to use for KCP containers.
+                    description: Tag is the container image tag to use for kcp containers.
                       Defaults to the latest kcp release that the operator supports.
                     type: string
                 type: object

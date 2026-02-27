@@ -14,6 +14,6 @@ Version: main.version{KubeBuilderVersion:"4.3.1", KubernetesVendor:"unknown", Gi
 The project has been initialised with:
 
 ```sh
-$ kubebuilder init --domain operator.kcp.io --owner "The KCP Authors" --project-name kcp-operator
+$ kubebuilder init --domain operator.kcp.io --owner "The kcp Authors" --project-name kcp-operator
 ```
 

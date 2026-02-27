@@ -1413,10 +1413,10 @@ spec:
                     type: array
                   repository:
                     description: Repository is the container image repository to use
-                      for KCP containers. Defaults to `ghcr.io/kcp-dev/kcp`.
+                      for kcp containers. Defaults to `ghcr.io/kcp-dev/kcp`.
                     type: string
                   tag:
-                    description: Tag is the container image tag to use for KCP containers.
+                    description: Tag is the container image tag to use for kcp containers.
                       Defaults to the latest kcp release that the operator supports.
                     type: string
                 type: object
