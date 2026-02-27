@@ -26,14 +26,55 @@ import (
 )
 
 func applyAuditConfiguration(deployment *appsv1.Deployment, config *operatorv1alpha1.AuditSpec) *appsv1.Deployment {
-	if config == nil || config.Webhook == nil {
+	if config == nil {
 		return deployment
 	}
 
-	return applyAuditWebhookConfiguration(deployment, *config.Webhook)
+	applyAuditPolicyConfiguration(deployment, config.Policy)
+	applyAuditWebhookConfiguration(deployment, config.Webhook)
+	return deployment
 }
 
-func applyAuditWebhookConfiguration(deployment *appsv1.Deployment, config operatorv1alpha1.AuditWebhookSpec) *appsv1.Deployment {
+func applyAuditPolicyConfiguration(deployment *appsv1.Deployment, config *operatorv1alpha1.AuditPolicySpec) {
+	if config == nil {
+		return
+	}
+
+	podSpec := deployment.Spec.Template.Spec
+
+	var extraArgs []string
+
+	if config.ConfigMap != nil {
+		volumeName := "audit-policy"
+		mountPath := "/etc/kcp/audit/policy"
+
+		podSpec.Volumes = append(podSpec.Volumes, corev1.Volume{
+			Name: volumeName,
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: config.ConfigMap.Name,
+					},
+				},
+			},
+		})
+		podSpec.Containers[0].VolumeMounts = append(podSpec.Containers[0].VolumeMounts, corev1.VolumeMount{
+			Name:      volumeName,
+			ReadOnly:  true,
+			MountPath: mountPath,
+		})
+		extraArgs = append(extraArgs, fmt.Sprintf("--audit-policy-file=%s/%s", mountPath, config.ConfigMap.Key))
+	}
+
+	podSpec.Containers[0].Args = append(podSpec.Containers[0].Args, extraArgs...)
+	deployment.Spec.Template.Spec = podSpec
+}
+
+func applyAuditWebhookConfiguration(deployment *appsv1.Deployment, config *operatorv1alpha1.AuditWebhookSpec) {
+	if config == nil {
+		return
+	}
+
 	podSpec := deployment.Spec.Template.Spec
 
 	var extraArgs []string
@@ -109,6 +150,4 @@ func applyAuditWebhookConfiguration(deployment *appsv1.Deployment, config operat
 
 	podSpec.Containers[0].Args = append(podSpec.Containers[0].Args, extraArgs...)
 	deployment.Spec.Template.Spec = podSpec
-
-	return deployment
 }
