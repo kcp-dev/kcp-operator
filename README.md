@@ -38,7 +38,7 @@ kcp-operator supports Kubernetes-style feature gates to enable or disable experi
 
 | Feature | Default | Stage | Description |
 |---------|---------|-------|-------------|
-| `ConfigurationBundle` | `false` | Alpha | Enable the configuration bundle feature for managing bundled KCP configurations and resources |
+| `ConfigurationBundle` | `false` | Alpha | Enable the configuration bundle feature for managing bundled kcp configurations and resources |
 
 ### Usage
 

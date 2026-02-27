@@ -1,5 +1,5 @@
 /*
-Copyright 2026 The KCP Authors.
+Copyright 2026 The kcp Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import (
 
 const (
 	// ConfigurationBundle enables the configuration bundle feature for managing
-	// bundled KCP configurations and resources.
+	// bundled kcp configurations and resources.
 	ConfigurationBundle featuregate.Feature = "ConfigurationBundle"
 )
 
@@ -37,7 +37,7 @@ var (
 	// DefaultFeatureGate is a shared global FeatureGate.
 	DefaultFeatureGate featuregate.FeatureGate = DefaultMutableFeatureGate
 
-	// defaultKCPOperatorFeatureGates consists of all known KCP operator-specific feature keys.
+	// defaultKCPOperatorFeatureGates consists of all known kcp-operator-specific feature keys.
 	// To add a new feature, define a key for it above and add it here.
 	defaultKCPOperatorFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
 		ConfigurationBundle: {Default: false, PreRelease: featuregate.Alpha},
