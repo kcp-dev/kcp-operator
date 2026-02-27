@@ -396,6 +396,60 @@ func TestDeploymentReconciler(t *testing.T) {
 				assert.True(t, foundShard2VolumeMount, "Shard 2 service account volume mount not found or incorrect")
 			},
 		},
+		{
+			name: "with CABundleSecretRef mounts ca-bundle volume",
+			frontProxy: &operatorv1alpha1.FrontProxy{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-front-proxy",
+				},
+				Spec: operatorv1alpha1.FrontProxySpec{
+					RootShard: operatorv1alpha1.RootShardConfig{
+						Reference: &corev1.LocalObjectReference{
+							Name: "test-root-shard",
+						},
+					},
+					CABundleSecretRef: &corev1.LocalObjectReference{
+						Name: "custom-ca-bundle",
+					},
+				},
+			},
+			rootShard: &operatorv1alpha1.RootShard{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-root-shard",
+				},
+			},
+			expectedName: resources.GetFrontProxyDeploymentName(&operatorv1alpha1.FrontProxy{
+				ObjectMeta: metav1.ObjectMeta{Name: "test-front-proxy"},
+			}),
+			validateDeploy: func(t *testing.T, dep *appsv1.Deployment) {
+				// Check ca-bundle volume exists
+				foundCABundleVolume := false
+				var caBundleSecretName string
+				for _, volume := range dep.Spec.Template.Spec.Volumes {
+					if volume.Name == "test-front-proxy-merged-ca-bundle" {
+						foundCABundleVolume = true
+						caBundleSecretName = volume.Secret.SecretName
+						break
+					}
+				}
+				require.True(t, foundCABundleVolume, "CA bundle volume not found")
+				require.Equal(t, "test-front-proxy-merged-ca-bundle", caBundleSecretName)
+
+				// Check ca-bundle volume mount exists
+				container := dep.Spec.Template.Spec.Containers[0]
+				foundCABundleMount := false
+				var caBundleMountPath string
+				for _, volumeMount := range container.VolumeMounts {
+					if volumeMount.Name == "test-front-proxy-merged-ca-bundle" {
+						foundCABundleMount = true
+						caBundleMountPath = volumeMount.MountPath
+						break
+					}
+				}
+				require.True(t, foundCABundleMount, "CA bundle volume mount not found")
+				require.Equal(t, "/etc/kcp/tls/ca/ca-bundle", caBundleMountPath)
+			},
+		},
 	}
 
 	for _, tt := range tests {
