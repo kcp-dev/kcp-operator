@@ -114,7 +114,29 @@ spec:
                         description: |-
                           Optionally provide the client secret for the OIDC client. This is not used by kcp itself, but is used to generate
                           a OIDC kubeconfig that can be shared with users to log in via the OIDC provider.
+                          Deprecated: use clientSecretRef instead.
                         type: string
+                      clientSecretRef:
+                        description: |-
+                          ClientSecretRef references a secret that contains the OIDC client secret.
+                          The secret must contain a key named "secret" (or the key specified in the key field).
+                        properties:
+                          key:
+                            description: Key is the key in the secret that contains
+                              the client secret. Defaults to "secret".
+                            type: string
+                          name:
+                            description: Name is the name of the secret that contains
+                              the client secret.
+                            type: string
+                          namespace:
+                            description: Namespace is the namespace of the secret.
+                              If not specified, the secret is assumed to be in the
+                              same namespace as the resource.
+                            type: string
+                        required:
+                        - name
+                        type: object
                       groupsClaim:
                         description: 'Experimental: Optionally provides a custom claim
                           for fetching groups. The claim must be a string or an array
@@ -142,6 +164,10 @@ spec:
                     - clientID
                     - issuerURL
                     type: object
+                    x-kubernetes-validations:
+                    - message: Cannot set both clientSecret (deprecated) and clientSecretRef.
+                        Use clientSecretRef only.
+                      rule: '!(has(self.clientSecret) && has(self.clientSecretRef))'
                   passOnGroups:
                     description: 'Optional: PassOnGroups configures groups to be passed
                       on before forwarding requests to Shards'

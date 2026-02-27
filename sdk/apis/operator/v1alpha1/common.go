@@ -392,6 +392,7 @@ type LoggingSpec struct {
 	Level int `json:"level,omitempty"`
 }
 
+// +kubebuilder:validation:XValidation:rule="!(has(self.clientSecret) && has(self.clientSecretRef))",message="Cannot set both clientSecret (deprecated) and clientSecretRef. Use clientSecretRef only."
 type OIDCConfiguration struct {
 	// IssuerURL is used for the OIDC issuer URL. Only https URLs will be accepted.
 	IssuerURL string `json:"issuerURL"`
@@ -400,7 +401,14 @@ type OIDCConfiguration struct {
 
 	// Optionally provide the client secret for the OIDC client. This is not used by kcp itself, but is used to generate
 	// a OIDC kubeconfig that can be shared with users to log in via the OIDC provider.
+	// Deprecated: use clientSecretRef instead.
+	// +optional
 	ClientSecret string `json:"clientSecret,omitempty"`
+
+	// ClientSecretRef references a secret that contains the OIDC client secret.
+	// The secret must contain a key named "secret" (or the key specified in the key field).
+	// +optional
+	ClientSecretRef *OIDCSecretRef `json:"clientSecretRef,omitempty"`
 
 	// Experimental: Optionally provides a custom claim for fetching groups. The claim must be a string or an array of strings.
 	GroupsClaim string `json:"groupsClaim,omitempty"`
@@ -423,6 +431,17 @@ type OIDCCAFileRef struct {
 	// Name is the name of the secret that contains the CA file.
 	Name string `json:"name"`
 	// Key is the key in the secret that contains the CA file. Defaults to "ca.crt".
+	// +optional
+	Key string `json:"key,omitempty"`
+}
+
+type OIDCSecretRef struct {
+	// Name is the name of the secret that contains the client secret.
+	Name string `json:"name"`
+	// Namespace is the namespace of the secret. If not specified, the secret is assumed to be in the same namespace as the resource.
+	// +optional
+	Namespace string `json:"namespace,omitempty"`
+	// Key is the key in the secret that contains the client secret. Defaults to "secret".
 	// +optional
 	Key string `json:"key,omitempty"`
 }

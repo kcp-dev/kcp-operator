@@ -115,6 +115,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &operatorv1alpha1.OIDCCAFileRefApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("OIDCConfiguration"):
 		return &operatorv1alpha1.OIDCConfigurationApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("OIDCSecretRef"):
+		return &operatorv1alpha1.OIDCSecretRefApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("PathMappingEntry"):
 		return &operatorv1alpha1.PathMappingEntryApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("PodMetadataTemplate"):
