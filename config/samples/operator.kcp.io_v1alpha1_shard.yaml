@@ -12,6 +12,11 @@ spec:
   rootShard:
     ref:
       name: shard-sample
+  auth:
+    serviceAccount:
+      # if you want controllers to access particular workspaces using service accounts
+      # serviceAccounts must be enabled, on all shards and the front-proxy.
+      enabled: true
   logLevel:
     verbosityLevel: 4
   deploymentTemplate:
