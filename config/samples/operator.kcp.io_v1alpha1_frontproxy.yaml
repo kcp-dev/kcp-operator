@@ -8,6 +8,8 @@ metadata:
 spec:
   auth:
     serviceAccount:
+      # if you want controllers to access particular workspaces using service accounts
+      # serviceAccounts must be enabled, on all shards and the front-proxy.
       enabled: true
   rootShard:
     ref:
@@ -18,6 +20,7 @@ spec:
       type: LoadBalancer
       # hard code a specific cluster IP, e.g. for a kind setup.
       clusterIP: 10.96.100.100
+
   certificateTemplates:
     server:
       spec:

@@ -34,6 +34,12 @@ spec:
     spec:
       type: LoadBalancer
 
+  auth:
+    serviceAccount:
+      # if you want controllers to access particular workspaces using service accounts
+      # serviceAccounts must be enabled, on all shards and the front-proxy.
+      enabled: true
+
   cache:
     embedded:
       enabled: true
