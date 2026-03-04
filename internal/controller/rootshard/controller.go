@@ -18,6 +18,7 @@ package rootshard
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"time"
@@ -44,6 +45,7 @@ import (
 	"github.com/kcp-dev/kcp-operator/internal/controller/util"
 	"github.com/kcp-dev/kcp-operator/internal/metrics"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
+	"github.com/kcp-dev/kcp-operator/internal/reconciling/modifier"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
 	"github.com/kcp-dev/kcp-operator/internal/resources/frontproxy"
 	"github.com/kcp-dev/kcp-operator/internal/resources/rootshard"
@@ -149,6 +151,7 @@ func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operator
 	}
 
 	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*metav1.NewControllerRef(rootShard, operatorv1alpha1.SchemeGroupVersion.WithKind("RootShard")))
+	revisionLabels := modifier.RelatedRevisionsLabels(ctx, r.Client)
 
 	issuerReconcilers := []reconciling.NamedIssuerReconcilerFactory{
 		rootshard.RootCAIssuerReconciler(rootShard),
@@ -206,8 +209,11 @@ func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operator
 	// Deployment will be scaled to 0 if bundle annotation is present
 	if err := k8creconciling.ReconcileDeployments(ctx, []k8creconciling.NamedDeploymentReconcilerFactory{
 		rootshard.DeploymentReconciler(rootShard),
-	}, rootShard.Namespace, r.Client, ownerRefWrapper); err != nil {
-		errs = append(errs, err)
+	}, rootShard.Namespace, r.Client, ownerRefWrapper, revisionLabels); err != nil {
+		// Swallow these errors and instead rely on us watching Secrets and re-reconciling whenever they change.
+		if !errors.Is(err, modifier.ErrMountNotFound) {
+			errs = append(errs, err)
+		}
 	}
 
 	if err := k8creconciling.ReconcileServices(ctx, []k8creconciling.NamedServiceReconcilerFactory{
