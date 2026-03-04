@@ -45,6 +45,10 @@ type CacheServerSpec struct {
 
 	// Optional: DeploymentTemplate configures the Kubernetes Deployment created for this cache server.
 	DeploymentTemplate *DeploymentTemplate `json:"deploymentTemplate,omitempty"`
+
+	// Optional: Etcd configures an external etcd connection for this cache server.
+	// If not provided, an embedded etcd is used.
+	Etcd *EtcdConfig `json:"etcd,omitempty"`
 }
 
 // CacheServerStatus defines the observed state of CacheServer

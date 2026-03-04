@@ -18,6 +18,7 @@ package cacheserver
 
 import (
 	"fmt"
+	"strings"
 
 	"k8c.io/reconciler/pkg/reconciling"
 
@@ -37,8 +38,7 @@ const (
 	ServerContainerName = "cache-server"
 
 	// embeddedEtcdStoragePath is the emptyDir path in the Deployment where the
-	// etcd data is temporarily stored. kcp's cache-server as of v0.30 does not
-	// support external etcd yet.
+	// embedded etcd data is temporarily stored.
 	embeddedEtcdStoragePath = "/var/etcd"
 )
 
@@ -62,13 +62,15 @@ func getCertificateMountPath(certName operatorv1alpha1.Certificate) string {
 	return fmt.Sprintf("/etc/cache-server/tls/%s", certName)
 }
 
+func getEtcdCertificateMountPath() string {
+	return "/etc/cache-server/etcd"
+}
+
 func getCAMountPath(caName operatorv1alpha1.CA) string {
 	return fmt.Sprintf("/etc/cache-server/tls/ca/%s", caName)
 }
 
 func DeploymentReconciler(server *operatorv1alpha1.CacheServer) reconciling.NamedDeploymentReconcilerFactory {
-	const etcdScratchVolume = "etcd-scratch"
-
 	return func() (string, reconciling.DeploymentReconciler) {
 		return resources.GetCacheServerDeploymentName(server), func(dep *appsv1.Deployment) (*appsv1.Deployment, error) {
 			labels := resources.GetCacheServerResourceLabels(server)
@@ -84,28 +86,12 @@ func DeploymentReconciler(server *operatorv1alpha1.CacheServer) reconciling.Name
 
 			dep.Spec.Template.SetLabels(labels)
 
-			secretMounts := []utils.SecretMount{{
-				VolumeName: "serving-cert",
-				SecretName: resources.GetCacheServerCertificateName(server, operatorv1alpha1.ServerCertificate),
-				MountPath:  getCertificateMountPath(operatorv1alpha1.ServerCertificate),
-			}}
-
 			// TODO: Why do we discard the imagePullSecrets?
 			image, _ := resources.GetImageSettings(server.Spec.Image)
 
-			args := getArgs(server)
-			volumes := []corev1.Volume{{
-				Name: etcdScratchVolume,
-				VolumeSource: corev1.VolumeSource{
-					EmptyDir: &corev1.EmptyDirVolumeSource{},
-				},
-			}}
-			volumeMounts := []corev1.VolumeMount{{
-				Name:      etcdScratchVolume,
-				MountPath: embeddedEtcdStoragePath,
-			}}
+			volumes, volumeMounts := getVolumeMounts(server)
 
-			for _, sm := range secretMounts {
+			for _, sm := range getSecretMounts(server) {
 				v, vm := sm.Build()
 				volumes = append(volumes, v)
 				volumeMounts = append(volumeMounts, vm)
@@ -115,7 +101,7 @@ func DeploymentReconciler(server *operatorv1alpha1.CacheServer) reconciling.Name
 				Name:         ServerContainerName,
 				Image:        image,
 				Command:      []string{"/cache-server"},
-				Args:         args,
+				Args:         getArgs(server),
 				VolumeMounts: volumeMounts,
 				Resources:    defaultResourceRequirements,
 				SecurityContext: &corev1.SecurityContext{
@@ -188,18 +174,72 @@ func DeploymentReconciler(server *operatorv1alpha1.CacheServer) reconciling.Name
 	}
 }
 
+func getVolumeMounts(server *operatorv1alpha1.CacheServer) (volumes []corev1.Volume, volumeMounts []corev1.VolumeMount) {
+	const etcdScratchVolume = "etcd-scratch"
+
+	if server.Spec.Etcd == nil {
+		volumes = []corev1.Volume{{
+			Name: etcdScratchVolume,
+			VolumeSource: corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{},
+			},
+		}}
+		volumeMounts = []corev1.VolumeMount{{
+			Name:      etcdScratchVolume,
+			MountPath: embeddedEtcdStoragePath,
+		}}
+	}
+
+	return
+}
+
 func getArgs(server *operatorv1alpha1.CacheServer) []string {
 	args := []string{
-		// Configure (lack of) persistence.
-		"--root-directory=",
-		fmt.Sprintf("--embedded-etcd-directory=%s", embeddedEtcdStoragePath),
-
 		// Certificate flags (server, service account signing).
 		fmt.Sprintf("--tls-cert-file=%s/tls.crt", getCertificateMountPath(operatorv1alpha1.ServerCertificate)),
 		fmt.Sprintf("--tls-private-key-file=%s/tls.key", getCertificateMountPath(operatorv1alpha1.ServerCertificate)),
+		// Configure (lack of) persistence.
+		"--root-directory=",
+	}
+
+	if server.Spec.Etcd == nil {
+		// The CacheServer is configured with an embedded etcd store.
+		args = append(args,
+			fmt.Sprintf("--embedded-etcd-directory=%s", embeddedEtcdStoragePath),
+		)
+	} else {
+		// The CacheServer is configured with a dedicated etcd store.
+		args = append(args,
+			fmt.Sprintf("--etcd-servers=%s", strings.Join(server.Spec.Etcd.Endpoints, ",")),
+		)
+		if server.Spec.Etcd.TLSConfig != nil {
+			args = append(args,
+				fmt.Sprintf("--etcd-cafile=%s/ca.crt", getEtcdCertificateMountPath()),
+				fmt.Sprintf("--etcd-certfile=%s/tls.crt", getEtcdCertificateMountPath()),
+				fmt.Sprintf("--etcd-keyfile=%s/tls.key", getEtcdCertificateMountPath()),
+			)
+		}
 	}
 
 	args = append(args, utils.GetLoggingArgs(server.Spec.Logging)...)
 
 	return args
+}
+
+func getSecretMounts(server *operatorv1alpha1.CacheServer) []utils.SecretMount {
+	secretMounts := []utils.SecretMount{{
+		VolumeName: "serving-cert",
+		SecretName: resources.GetCacheServerCertificateName(server, operatorv1alpha1.ServerCertificate),
+		MountPath:  getCertificateMountPath(operatorv1alpha1.ServerCertificate),
+	}}
+
+	if server.Spec.Etcd != nil && server.Spec.Etcd.TLSConfig != nil {
+		secretMounts = append(secretMounts, utils.SecretMount{
+			VolumeName: "etcd-cert",
+			SecretName: server.Spec.Etcd.TLSConfig.SecretRef.Name,
+			MountPath:  getEtcdCertificateMountPath(),
+		})
+	}
+
+	return secretMounts
 }
