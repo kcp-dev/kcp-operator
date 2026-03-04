@@ -22,6 +22,7 @@ import (
 
 	k8creconciling "k8c.io/reconciler/pkg/reconciling"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -57,6 +58,14 @@ func NewRootShardProxy(rootShard *operatorv1alpha1.RootShard) *reconciler {
 	}
 }
 
+// getCABundleSecretRef returns the CABundleSecretRef from either the FrontProxy or RootShard spec.
+func (r *reconciler) getCABundleSecretRef() *corev1.LocalObjectReference {
+	if r.frontProxy != nil {
+		return r.frontProxy.Spec.CABundleSecretRef
+	}
+	return r.rootShard.Spec.CABundleSecretRef
+}
+
 // +kubebuilder:rbac:groups=core,resources=configmaps;secrets;services,verbs=get;update;patch
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;update;patch
 // +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;update;patch
@@ -79,6 +88,10 @@ func (r *reconciler) Reconcile(ctx context.Context, client ctrlruntimeclient.Cli
 
 	secretReconcilers := []k8creconciling.NamedSecretReconcilerFactory{
 		r.dynamicKubeconfigSecretReconciler(),
+	}
+
+	if r.getCABundleSecretRef() != nil {
+		secretReconcilers = append(secretReconcilers, r.mergedCABundleSecretReconciler(ctx, client))
 	}
 
 	certReconcilers := []reconciling.NamedCertificateReconcilerFactory{
