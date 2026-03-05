@@ -19,6 +19,11 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 source hack/lib.sh
 
+# KCP_TAG (when coming from .prow.yaml) is set to release-* branch name.
+# We stash it into KCP_RELEASE because KCP_TAG is overridden later to a specific
+# git hash of that branch.
+export KCP_RELEASE="${KCP_TAG:-}"
+
 # For periodics especially it's important that we output what versions exactly
 # we're testing against.
 if [ -n "${KCP_TAG:-}" ]; then
