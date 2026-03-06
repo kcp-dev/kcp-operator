@@ -285,12 +285,18 @@ func DeployCacheServer(ctx context.Context, t *testing.T, client ctrlruntimeclie
 	return server
 }
 
-func DeployCacheServerWithExternalEtcd(ctx context.Context, t *testing.T, client ctrlruntimeclient.Client, namespace string, patches ...func(*operatorv1alpha1.CacheServer)) operatorv1alpha1.CacheServer {
+func DeployCacheServerWithExternalEtcd(ctx context.Context, t *testing.T, client ctrlruntimeclient.Client, namespace string, replicas int32, patches ...func(*operatorv1alpha1.CacheServer)) operatorv1alpha1.CacheServer {
 	t.Helper()
 
 	etcd := DeployEtcd(t, "kachy-etcd", namespace)
 
+	if replicas < 1 {
+		replicas = 1
+	}
+
 	return DeployCacheServer(ctx, t, client, namespace, append(patches, func(server *operatorv1alpha1.CacheServer) {
+		server.Spec.Replicas = &replicas
+
 		server.Spec.Etcd = &operatorv1alpha1.EtcdConfig{
 			Endpoints: []string{etcd},
 		}

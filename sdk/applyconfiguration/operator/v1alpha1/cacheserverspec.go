@@ -27,6 +27,7 @@ import (
 type CacheServerSpecApplyConfiguration struct {
 	ClusterDomain        *string                                  `json:"clusterDomain,omitempty"`
 	Image                *ImageSpecApplyConfiguration             `json:"image,omitempty"`
+	Replicas             *int32                                   `json:"replicas,omitempty"`
 	Logging              *LoggingSpecApplyConfiguration           `json:"logging,omitempty"`
 	Certificates         *CertificatesApplyConfiguration          `json:"certificates,omitempty"`
 	CertificateTemplates *operatorv1alpha1.CertificateTemplateMap `json:"certificateTemplates,omitempty"`
@@ -54,6 +55,14 @@ func (b *CacheServerSpecApplyConfiguration) WithClusterDomain(value string) *Cac
 // If called multiple times, the Image field is set to the value of the last call.
 func (b *CacheServerSpecApplyConfiguration) WithImage(value *ImageSpecApplyConfiguration) *CacheServerSpecApplyConfiguration {
 	b.Image = value
+	return b
+}
+
+// WithReplicas sets the Replicas field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Replicas field is set to the value of the last call.
+func (b *CacheServerSpecApplyConfiguration) WithReplicas(value int32) *CacheServerSpecApplyConfiguration {
+	b.Replicas = &value
 	return b
 }
 
