@@ -92,3 +92,68 @@ func TestCacheWithRootShard(t *testing.T) {
 		t.Fatalf("Failed to list secrets in kcp: %v", err)
 	}
 }
+
+func TestCacheWithExternalEtcdAndRootShard(t *testing.T) {
+	switch utils.GetKcpRelease() {
+	// We skip release "" because it currently points to kcp 0.30 which
+	// doesn't currently support cache-server with an external etcd cluster.
+	case "release-0.28", "release-0.29", "release-30", "": // TODO(gman0): remove the empty ("") kcp release!
+		t.Skip("running external etcd with cache-server is only supported with kcp >=0.31")
+		return
+	}
+
+	ctrlruntime.SetLogger(logr.Discard())
+
+	client := utils.GetKubeClient(t)
+	ctx := context.Background()
+
+	// create namespace
+	namespace := utils.CreateSelfDestructingNamespace(t, ctx, client, "cache-with-etcd-rootshard")
+
+	// deploy the cache server
+	cacheServer := utils.DeployCacheServerWithExternalEtcd(ctx, t, client, namespace.Name)
+
+	// deploy a root shard that uses our cache
+	rootShard := utils.DeployRootShard(ctx, t, client, namespace.Name, "example.localhost", func(rs *operatorv1alpha1.RootShard) {
+		rs.Spec.Cache.Reference = &corev1.LocalObjectReference{
+			Name: cacheServer.Name,
+		}
+	})
+
+	// create a kubeconfig to access the root shard
+	configSecretName := fmt.Sprintf("%s-shard-kubeconfig", rootShard.Name)
+
+	rsConfig := operatorv1alpha1.Kubeconfig{}
+	rsConfig.Name = configSecretName
+	rsConfig.Namespace = namespace.Name
+
+	rsConfig.Spec = operatorv1alpha1.KubeconfigSpec{
+		Target: operatorv1alpha1.KubeconfigTarget{
+			RootShardRef: &corev1.LocalObjectReference{
+				Name: rootShard.Name,
+			},
+		},
+		Username: "e2e",
+		Validity: metav1.Duration{Duration: 2 * time.Hour},
+		SecretRef: corev1.LocalObjectReference{
+			Name: configSecretName,
+		},
+		Groups: []string{"system:masters"},
+	}
+
+	t.Log("Creating kubeconfig for RootShard...")
+	if err := client.Create(ctx, &rsConfig); err != nil {
+		t.Fatal(err)
+	}
+	utils.WaitForObject(t, ctx, client, &corev1.Secret{}, types.NamespacedName{Namespace: rsConfig.Namespace, Name: rsConfig.Spec.SecretRef.Name})
+
+	t.Log("Connecting to RootShard...")
+	rootShardClient := utils.ConnectWithKubeconfig(t, ctx, client, namespace.Name, rsConfig.Name, logicalcluster.NewPath("root"))
+
+	// proof of life: list something every logicalcluster in kcp has
+	t.Log("Should be able to list Secrets.")
+	secrets := &corev1.SecretList{}
+	if err := rootShardClient.List(ctx, secrets); err != nil {
+		t.Fatalf("Failed to list secrets in kcp: %v", err)
+	}
+}

@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"os"
 	"os/exec"
 	"regexp"
 	"strconv"
@@ -307,4 +308,8 @@ func changeClusterInURL(u string, newCluster logicalcluster.Path) string {
 	// we only replace the first match, especially important if the URL was "/clusters/X/apis/example.com/v1/clusters/X"
 	// (i.e. accessing the cluster resource X in the kcp cluster also called X)
 	return strings.Replace(u, matches[0], newPath, 1)
+}
+
+func GetKcpRelease() string {
+	return os.Getenv("KCP_RELEASE")
 }

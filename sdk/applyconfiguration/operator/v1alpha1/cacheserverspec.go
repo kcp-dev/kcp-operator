@@ -32,6 +32,7 @@ type CacheServerSpecApplyConfiguration struct {
 	CertificateTemplates *operatorv1alpha1.CertificateTemplateMap `json:"certificateTemplates,omitempty"`
 	ServiceTemplate      *ServiceTemplateApplyConfiguration       `json:"serviceTemplate,omitempty"`
 	DeploymentTemplate   *DeploymentTemplateApplyConfiguration    `json:"deploymentTemplate,omitempty"`
+	Etcd                 *EtcdConfigApplyConfiguration            `json:"etcd,omitempty"`
 }
 
 // CacheServerSpecApplyConfiguration constructs a declarative configuration of the CacheServerSpec type for use with
@@ -93,5 +94,13 @@ func (b *CacheServerSpecApplyConfiguration) WithServiceTemplate(value *ServiceTe
 // If called multiple times, the DeploymentTemplate field is set to the value of the last call.
 func (b *CacheServerSpecApplyConfiguration) WithDeploymentTemplate(value *DeploymentTemplateApplyConfiguration) *CacheServerSpecApplyConfiguration {
 	b.DeploymentTemplate = value
+	return b
+}
+
+// WithEtcd sets the Etcd field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Etcd field is set to the value of the last call.
+func (b *CacheServerSpecApplyConfiguration) WithEtcd(value *EtcdConfigApplyConfiguration) *CacheServerSpecApplyConfiguration {
+	b.Etcd = value
 	return b
 }

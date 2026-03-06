@@ -284,3 +284,15 @@ func DeployCacheServer(ctx context.Context, t *testing.T, client ctrlruntimeclie
 
 	return server
 }
+
+func DeployCacheServerWithExternalEtcd(ctx context.Context, t *testing.T, client ctrlruntimeclient.Client, namespace string, patches ...func(*operatorv1alpha1.CacheServer)) operatorv1alpha1.CacheServer {
+	t.Helper()
+
+	etcd := DeployEtcd(t, "kachy-etcd", namespace)
+
+	return DeployCacheServer(ctx, t, client, namespace, append(patches, func(server *operatorv1alpha1.CacheServer) {
+		server.Spec.Etcd = &operatorv1alpha1.EtcdConfig{
+			Endpoints: []string{etcd},
+		}
+	})...)
+}
