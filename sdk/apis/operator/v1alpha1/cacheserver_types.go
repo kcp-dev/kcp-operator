@@ -31,8 +31,9 @@ type CacheServerSpec struct {
 	Image *ImageSpec `json:"image,omitempty"`
 
 	// Optional: Replicas configures the replica count for the cache-server Deployment.
-	// Defaults to a single replica. If configured with more than one replica,
-	// etcd must be configured too.
+	// With an embedded etcd, the replica count defafults to one, and users are not allowed
+	// to set the replica count to more than one.
+	// With an external etcd, the replica count defaults to two.
 	Replicas *int32 `json:"replicas,omitempty"`
 
 	// Optional: Logging configures the logging settings for the cache server.

@@ -85,7 +85,8 @@ func DeploymentReconciler(server *operatorv1alpha1.CacheServer) reconciling.Name
 					dep.Spec.Replicas = ptr.To(int32(1))
 				}
 			} else {
-				dep.Spec.Replicas = server.Spec.Replicas
+				// We are running with an external etcd. Default to 2 replicas.
+				dep.Spec.Replicas = ptr.To(ptr.Deref(server.Spec.Replicas, 2))
 			}
 
 			dep.Spec.Template.SetLabels(labels)
