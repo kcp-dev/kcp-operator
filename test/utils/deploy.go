@@ -290,13 +290,8 @@ func DeployCacheServerWithExternalEtcd(ctx context.Context, t *testing.T, client
 
 	etcd := DeployEtcd(t, "kachy-etcd", namespace)
 
-	if replicas < 1 {
-		replicas = 1
-	}
-
 	return DeployCacheServer(ctx, t, client, namespace, append(patches, func(server *operatorv1alpha1.CacheServer) {
 		server.Spec.Replicas = &replicas
-
 		server.Spec.Etcd = &operatorv1alpha1.EtcdConfig{
 			Endpoints: []string{etcd},
 		}
