@@ -246,3 +246,7 @@ func GetRootShardProxyServiceName(r *operatorv1alpha1.RootShard) string {
 func GetBundleName(ownerName string) string {
 	return fmt.Sprintf("%s-bundle", ownerName)
 }
+
+func GetMergedClientCAName(ownerName string) string {
+	return fmt.Sprintf("%s-merged-client-ca", ownerName)
+}
