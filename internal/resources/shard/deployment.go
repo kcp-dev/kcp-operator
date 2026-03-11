@@ -62,6 +62,27 @@ func getKubeconfigMountPath(certName operatorv1alpha1.Certificate) string {
 	return fmt.Sprintf("/etc/kcp/%s-kubeconfig", certName)
 }
 
+func getCacheServerKubeconfigMountPath() string {
+	return "/etc/cache-server/kubeconfig"
+}
+
+// getCacheServerCAMountPath has to match the code in the cacheserver package.
+func getCacheServerCAMountPath(caName operatorv1alpha1.CA) string {
+	return fmt.Sprintf("/etc/cache-server/tls/ca/%s", caName)
+}
+
+// getEffectiveCacheRef returns the cache server reference to use for this shard.
+// The shard's own cache config takes precedence over the rootShard's.
+func getEffectiveCacheRef(shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShard) string {
+	if shard.Spec.Cache != nil && shard.Spec.Cache.Reference != nil {
+		return shard.Spec.Cache.Reference.Name
+	}
+	if rootShard.Spec.Cache.Reference != nil {
+		return rootShard.Spec.Cache.Reference.Name
+	}
+	return ""
+}
+
 func DeploymentReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShard) reconciling.NamedDeploymentReconcilerFactory {
 	return func() (string, reconciling.DeploymentReconciler) {
 		return resources.GetShardDeploymentName(shard), func(dep *appsv1.Deployment) (*appsv1.Deployment, error) {
@@ -134,6 +155,21 @@ func DeploymentReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1al
 				})
 			}
 
+			// If a cache server is configured (shard-specific or inherited from rootShard), mount its kubeconfig.
+			if cacheRef := getEffectiveCacheRef(shard, rootShard); cacheRef != "" {
+				secretMounts = append(secretMounts,
+					utils.SecretMount{
+						VolumeName: "cache-server-kubeconfig",
+						SecretName: resources.GetCacheServerKubeconfigName(cacheRef),
+						MountPath:  getCacheServerKubeconfigMountPath(),
+					}, utils.SecretMount{
+						VolumeName: "cache-server-ca",
+						SecretName: resources.GetCacheServerCAName(cacheRef, operatorv1alpha1.RootCA),
+						MountPath:  getCacheServerCAMountPath(operatorv1alpha1.RootCA),
+					},
+				)
+			}
+
 			volumes := []corev1.Volume{}
 			volumeMounts := []corev1.VolumeMount{}
 
@@ -176,6 +212,15 @@ func DeploymentReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1al
 }
 
 func getArgs(shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShard) []string {
+	// Configure the cache kubeconfig to point either to an explicitly configured cache (maybe on the
+	// shard, maybe on the root shard), or the root shard itself (in case no external cache is configured).
+	var cacheKubeconfigMount string
+	if getEffectiveCacheRef(shard, rootShard) != "" {
+		cacheKubeconfigMount = getCacheServerKubeconfigMountPath()
+	} else {
+		cacheKubeconfigMount = getKubeconfigMountPath(operatorv1alpha1.ClientCertificate)
+	}
+
 	args := []string{
 		// CA configuration.
 		fmt.Sprintf("--root-ca-file=%s/tls.crt", getCAMountPath(operatorv1alpha1.RootCA)),
@@ -203,8 +248,8 @@ func getArgs(shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShar
 		fmt.Sprintf("--shard-external-url=https://%s:%d", rootShard.Spec.External.Hostname, rootShard.Spec.External.Port),
 		fmt.Sprintf("--external-hostname=%s", rootShard.Spec.External.Hostname),
 
+		fmt.Sprintf("--cache-kubeconfig=%s/kubeconfig", cacheKubeconfigMount),
 		fmt.Sprintf("--root-shard-kubeconfig-file=%s/kubeconfig", getKubeconfigMountPath(operatorv1alpha1.ClientCertificate)),
-		fmt.Sprintf("--cache-kubeconfig=%s/kubeconfig", getKubeconfigMountPath(operatorv1alpha1.ClientCertificate)),
 		fmt.Sprintf("--logical-cluster-admin-kubeconfig=%s/kubeconfig", getKubeconfigMountPath(operatorv1alpha1.LogicalClusterAdminCertificate)),
 		fmt.Sprintf("--external-logical-cluster-admin-kubeconfig=%s/kubeconfig", getKubeconfigMountPath(operatorv1alpha1.ExternalLogicalClusterAdminCertificate)),
 

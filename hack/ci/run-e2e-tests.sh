@@ -122,7 +122,7 @@ export ETCD_HELM_CHART="$(realpath hack/ci/testdata/etcd)"
 
 WHAT="${WHAT:-./test/e2e/...}"
 TEST_ARGS="${TEST_ARGS:--timeout 2h -v}"
-E2E_PARALLELISM=${E2E_PARALLELISM:-2}
+E2E_PARALLELISM=${E2E_PARALLELISM:-1}
 
 # Increase file descriptor limit for CI environments
 ulimit -n 65536
