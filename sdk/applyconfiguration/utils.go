@@ -33,6 +33,8 @@ import (
 func ForKind(kind schema.GroupVersionKind) interface{} {
 	switch kind {
 	// Group=operator.kcp.io, Version=v1alpha1
+	case v1alpha1.SchemeGroupVersion.WithKind("AuditPolicySpec"):
+		return &operatorv1alpha1.AuditPolicySpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AuditSpec"):
 		return &operatorv1alpha1.AuditSpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AuditWebhookSpec"):
@@ -107,6 +109,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &operatorv1alpha1.KubeconfigStatusApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("KubeconfigTarget"):
 		return &operatorv1alpha1.KubeconfigTargetApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("LocalDataKeyReference"):
+		return &operatorv1alpha1.LocalDataKeyReferenceApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("LoggingSpec"):
 		return &operatorv1alpha1.LoggingSpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ObjectReference"):
