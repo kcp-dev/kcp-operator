@@ -82,7 +82,7 @@ func TestDeploymentReconciler(t *testing.T) {
 					resources.GetFrontProxyCertificateName(&operatorv1alpha1.RootShard{ObjectMeta: metav1.ObjectMeta{Name: "test-root-shard"}}, &operatorv1alpha1.FrontProxy{ObjectMeta: metav1.ObjectMeta{Name: "test-front-proxy"}}, operatorv1alpha1.ServerCertificate),
 					resources.GetFrontProxyCertificateName(&operatorv1alpha1.RootShard{ObjectMeta: metav1.ObjectMeta{Name: "test-root-shard"}}, &operatorv1alpha1.FrontProxy{ObjectMeta: metav1.ObjectMeta{Name: "test-front-proxy"}}, operatorv1alpha1.RequestHeaderClientCertificate),
 					resources.GetFrontProxyConfigName(&operatorv1alpha1.FrontProxy{ObjectMeta: metav1.ObjectMeta{Name: "test-front-proxy"}}),
-					resources.GetRootShardCAName(&operatorv1alpha1.RootShard{ObjectMeta: metav1.ObjectMeta{Name: "test-root-shard"}}, operatorv1alpha1.FrontProxyClientCA),
+					resources.GetMergedClientCAName("test-front-proxy"),
 					resources.GetRootShardCAName(&operatorv1alpha1.RootShard{ObjectMeta: metav1.ObjectMeta{Name: "test-root-shard"}}, operatorv1alpha1.RootCA),
 				}
 

@@ -88,6 +88,7 @@ func (r *reconciler) Reconcile(ctx context.Context, client ctrlruntimeclient.Cli
 
 	secretReconcilers := []k8creconciling.NamedSecretReconcilerFactory{
 		r.dynamicKubeconfigSecretReconciler(),
+		r.mergedClientCASecretReconciler(ctx, client),
 	}
 
 	if r.getCABundleSecretRef() != nil {

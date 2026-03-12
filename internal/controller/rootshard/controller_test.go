@@ -22,6 +22,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 	ctrlruntimefakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -64,11 +65,31 @@ func TestReconciling(t *testing.T) {
 
 	for _, testcase := range testcases {
 		t.Run(testcase.name, func(t *testing.T) {
+			// The merged client CA reconciler fetches FrontProxyClientCA and ClientCA.
+			frontProxyClientCASecret := &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      testcase.rootShard.Name + "-front-proxy-client-ca",
+					Namespace: namespace,
+				},
+				Data: map[string][]byte{
+					"tls.crt": []byte("front-proxy-client-ca-cert"),
+				},
+			}
+			clientCASecret := &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      testcase.rootShard.Name + "-client-ca",
+					Namespace: namespace,
+				},
+				Data: map[string][]byte{
+					"tls.crt": []byte("client-ca-cert"),
+				},
+			}
+
 			client := ctrlruntimefakeclient.
 				NewClientBuilder().
 				WithScheme(scheme).
 				WithStatusSubresource(testcase.rootShard).
-				WithObjects(testcase.rootShard).
+				WithObjects(testcase.rootShard, frontProxyClientCASecret, clientCASecret).
 				Build()
 
 			ctx := context.Background()
