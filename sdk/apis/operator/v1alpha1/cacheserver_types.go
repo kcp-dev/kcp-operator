@@ -21,6 +21,7 @@ import (
 )
 
 // CacheServerSpec defines the desired state of CacheServer.
+// +kubebuilder:validation:XValidation:rule="!has(self.replicas) || self.replicas <= 1 || has(self.etcd)",message="etcd must be specified when replicas > 1"
 type CacheServerSpec struct {
 	// ClusterDomain is the DNS domain for services in the cluster. Defaults to "cluster.local" if not set.
 	// +optional
@@ -28,6 +29,12 @@ type CacheServerSpec struct {
 
 	// Optional: Image overwrites the container image used to deploy the cache server.
 	Image *ImageSpec `json:"image,omitempty"`
+
+	// Optional: Replicas configures the replica count for the cache-server Deployment.
+	// With an embedded etcd, the replica count defafults to one, and users are not allowed
+	// to set the replica count to more than one.
+	// With an external etcd, the replica count defaults to two.
+	Replicas *int32 `json:"replicas,omitempty"`
 
 	// Optional: Logging configures the logging settings for the cache server.
 	Logging *LoggingSpec `json:"logging,omitempty"`

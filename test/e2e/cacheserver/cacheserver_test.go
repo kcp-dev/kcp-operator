@@ -111,7 +111,7 @@ func TestCacheWithExternalEtcdAndRootShard(t *testing.T) {
 	namespace := utils.CreateSelfDestructingNamespace(t, ctx, client, "cache-with-etcd-rootshard")
 
 	// deploy the cache server
-	cacheServer := utils.DeployCacheServerWithExternalEtcd(ctx, t, client, namespace.Name)
+	cacheServer := utils.DeployCacheServerWithExternalEtcd(ctx, t, client, namespace.Name, 2)
 
 	// deploy a root shard that uses our cache
 	rootShard := utils.DeployRootShard(ctx, t, client, namespace.Name, "example.localhost", func(rs *operatorv1alpha1.RootShard) {

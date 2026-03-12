@@ -79,9 +79,14 @@ func DeploymentReconciler(server *operatorv1alpha1.CacheServer) reconciling.Name
 				MatchLabels: labels,
 			}
 
-			if r := dep.Spec.Replicas; r != nil && *r > 1 {
-				// Since there is only embedded etcd, this Deployment must not be scaled up.
-				dep.Spec.Replicas = ptr.To(int32(1))
+			if server.Spec.Etcd == nil {
+				if r := dep.Spec.Replicas; r != nil && *r > 1 {
+					// Since there is only embedded etcd, this Deployment must not be scaled up.
+					dep.Spec.Replicas = ptr.To(int32(1))
+				}
+			} else {
+				// We are running with an external etcd. Default to 2 replicas.
+				dep.Spec.Replicas = ptr.To(ptr.Deref(server.Spec.Replicas, 2))
 			}
 
 			dep.Spec.Template.SetLabels(labels)

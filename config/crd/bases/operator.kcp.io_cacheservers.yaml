@@ -1468,6 +1468,14 @@ spec:
                     minimum: 0
                     type: integer
                 type: object
+              replicas:
+                description: |-
+                  Optional: Replicas configures the replica count for the cache-server Deployment.
+                  With an embedded etcd, the replica count defafults to one, and users are not allowed
+                  to set the replica count to more than one.
+                  With an external etcd, the replica count defaults to two.
+                format: int32
+                type: integer
               serviceTemplate:
                 description: 'Optional: ServiceTemplate configures the Kubernetes
                   Service created for this cache server.'
@@ -1503,6 +1511,9 @@ spec:
             required:
             - certificates
             type: object
+            x-kubernetes-validations:
+            - message: etcd must be specified when replicas > 1
+              rule: '!has(self.replicas) || self.replicas <= 1 || has(self.etcd)'
           status:
             description: CacheServerStatus defines the observed state of CacheServer
             type: object
