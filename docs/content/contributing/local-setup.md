@@ -37,8 +37,8 @@ kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/
 Set up two etcd instances, one for the root shard and one for a supplementary shard:
 
 ```sh
-helm install etcd oci://registry-1.docker.io/bitnamicharts/etcd --set auth.rbac.enabled=false --set auth.rbac.create=false
-helm install etcd-shard oci://registry-1.docker.io/bitnamicharts/etcd --set auth.rbac.enabled=false --set auth.rbac.create=false
+helm install etcd ./hack/ci/testdata/etcd
+helm install etcd-shard ./hack/ci/testdata/etcd
 ```
 
 Create a "self-signed" cert-manager issuer:
