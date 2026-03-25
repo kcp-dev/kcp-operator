@@ -71,6 +71,7 @@ func applyPodSpecTemplate(spec *corev1.PodSpec, tpl *operatorv1alpha1.PodSpecTem
 	spec.Tolerations = tpl.Tolerations
 	spec.HostAliases = tpl.HostAliases
 	spec.ImagePullSecrets = tpl.ImagePullSecrets
+	spec.TopologySpreadConstraints = tpl.TopologySpreadConstraints
 }
 
 func ApplyResources(container corev1.Container, resources *corev1.ResourceRequirements) corev1.Container {

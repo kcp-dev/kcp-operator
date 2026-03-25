@@ -390,6 +390,16 @@ type PodSpecTemplate struct {
 	// +listType=map
 	// +listMapKey=name
 	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
+
+	// TopologySpreadConstraints describes how a group of pods ought to spread across topology domains.
+	// Scheduler will schedule pods in a way which abides by the constraints.
+	// All topologySpreadConstraints are ANDed.
+	// +optional
+	// +patchMergeKey=topologyKey
+	// +patchStrategy=merge
+	// +listType=map
+	// +listMapKey=topologyKey
+	TopologySpreadConstraints []corev1.TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
 }
 
 // LoggingSpec defines the logging configuration for kcp components.
