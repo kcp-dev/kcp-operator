@@ -53,9 +53,20 @@ type CacheServerSpec struct {
 
 // CacheServerStatus defines the observed state of CacheServer
 type CacheServerStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	Phase CacheServerPhase `json:"phase,omitempty"`
+
+	// +listType=map
+	// +listMapKey=type
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
+
+type CacheServerPhase string
+
+const (
+	CacheServerPhaseProvisioning CacheServerPhase = "Provisioning"
+	CacheServerPhaseRunning      CacheServerPhase = "Running"
+	CacheServerPhaseDeleting     CacheServerPhase = "Deleting"
+)
 
 // +genclient
 // +kubebuilder:object:root=true
