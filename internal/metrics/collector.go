@@ -18,7 +18,10 @@ package metrics
 
 import (
 	"context"
+	"sync"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -27,22 +30,29 @@ import (
 )
 
 const (
+	// UnknownPhase is used when the phase of a resource is empty.
 	UnknownPhase = "Unknown"
 )
 
+// MetricsCollector collects metrics for kc-operator resources.
 type MetricsCollector struct {
 	client ctrlruntimeclient.Client
+	mu     sync.RWMutex
 }
 
+// NewMetricsCollector creates a new MetricsCollector.
 func NewMetricsCollector(client ctrlruntimeclient.Client) *MetricsCollector {
 	return &MetricsCollector{
 		client: client,
 	}
 }
 
+// Start begins periodic metrics updates every 30 seconds until ctx is canceled.
 func (mc *MetricsCollector) Start(ctx context.Context) {
 	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
 
+	// Initial update
 	mc.updateObjectCounts(ctx)
 
 	for {
@@ -55,6 +65,7 @@ func (mc *MetricsCollector) Start(ctx context.Context) {
 	}
 }
 
+// recordConditionStatuses sets Prometheus metrics for resource conditions.
 func recordConditionStatuses(resourceType, name, namespace string, conditions []metav1.Condition) {
 	for _, condition := range conditions {
 		ConditionStatus.
@@ -63,7 +74,11 @@ func recordConditionStatuses(resourceType, name, namespace string, conditions []
 	}
 }
 
+// updateObjectCounts resets and repopulates all resource metrics.
 func (mc *MetricsCollector) updateObjectCounts(ctx context.Context) {
+	mc.mu.Lock()
+	defer mc.mu.Unlock()
+
 	ConditionStatus.Reset()
 	mc.updateRootShardCounts(ctx)
 	mc.updateShardCounts(ctx)
@@ -72,6 +87,7 @@ func (mc *MetricsCollector) updateObjectCounts(ctx context.Context) {
 	mc.updateKubeconfigCounts(ctx)
 }
 
+// updateRootSharedCounts updates metrics for RootShard resources.
 func (mc *MetricsCollector) updateRootShardCounts(ctx context.Context) {
 	var rootShards operatorv1alpha1.RootShardList
 	if err := mc.client.List(ctx, &rootShards); err != nil {
@@ -101,6 +117,7 @@ func (mc *MetricsCollector) updateRootShardCounts(ctx context.Context) {
 	}
 }
 
+// updateShardCounts updates metrics for Shard resources.
 func (mc *MetricsCollector) updateShardCounts(ctx context.Context) {
 	var shards operatorv1alpha1.ShardList
 	if err := mc.client.List(ctx, &shards); err != nil {
@@ -130,6 +147,7 @@ func (mc *MetricsCollector) updateShardCounts(ctx context.Context) {
 	}
 }
 
+// updateFrontProxyCounts updates metrics for FrontProxy resources.
 func (mc *MetricsCollector) updateFrontProxyCounts(ctx context.Context) {
 	var frontProxies operatorv1alpha1.FrontProxyList
 	if err := mc.client.List(ctx, &frontProxies); err != nil {
@@ -159,6 +177,7 @@ func (mc *MetricsCollector) updateFrontProxyCounts(ctx context.Context) {
 	}
 }
 
+// updateCacheServerCounts updates metrics for CacheServer resources.
 func (mc *MetricsCollector) updateCacheServerCounts(ctx context.Context) {
 	var cacheServers operatorv1alpha1.CacheServerList
 	if err := mc.client.List(ctx, &cacheServers); err != nil {
@@ -177,6 +196,7 @@ func (mc *MetricsCollector) updateCacheServerCounts(ctx context.Context) {
 	}
 }
 
+// updateKubeconfigCounts updates metrics for Kubeconfig resources.
 func (mc *MetricsCollector) updateKubeconfigCounts(ctx context.Context) {
 	var kubeconfigs operatorv1alpha1.KubeconfigList
 	if err := mc.client.List(ctx, &kubeconfigs); err != nil {
@@ -195,4 +215,17 @@ func (mc *MetricsCollector) updateKubeconfigCounts(ctx context.Context) {
 	for namespace, count := range namespaceCounts {
 		KubeconfigCount.WithLabelValues(namespace).Set(float64(count))
 	}
+}
+
+// Collect safely reads metrics.
+func (mc *MetricsCollector) Collect(ch chan<- prometheus.Metric) {
+	mc.mu.RLock()
+	defer mc.mu.RUnlock()
+
+	ConditionStatus.Collect(ch)
+	RootShardCount.Collect(ch)
+	ShardCount.Collect(ch)
+	FrontProxyCount.Collect(ch)
+	CacheServerCount.Collect(ch)
+	KubeconfigCount.Collect(ch)
 }
