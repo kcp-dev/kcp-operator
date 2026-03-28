@@ -18,12 +18,14 @@ package metrics
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 const (
@@ -32,6 +34,7 @@ const (
 
 type MetricsCollector struct {
 	client ctrlruntimeclient.Client
+	mu     sync.RWMutex
 }
 
 func NewMetricsCollector(client ctrlruntimeclient.Client) *MetricsCollector {
@@ -64,6 +67,9 @@ func recordConditionStatuses(resourceType, name, namespace string, conditions []
 }
 
 func (mc *MetricsCollector) updateObjectCounts(ctx context.Context) {
+	mc.mu.Lock()
+	defer mc.mu.Unlock()
+
 	ConditionStatus.Reset()
 	mc.updateRootShardCounts(ctx)
 	mc.updateShardCounts(ctx)
@@ -195,4 +201,16 @@ func (mc *MetricsCollector) updateKubeconfigCounts(ctx context.Context) {
 	for namespace, count := range namespaceCounts {
 		KubeconfigCount.WithLabelValues(namespace).Set(float64(count))
 	}
+}
+
+func (mc *MetricsCollector) Collect(ch chan<- prometheus.Metric) {
+	mc.mu.RLock()
+	defer mc.mu.RUnlock()
+
+	ConditionStatus.Collect(ch)
+	RootShardCount.Collect(ch)
+	ShardCount.Collect(ch)
+	FrontProxyCount.Collect(ch)
+	CacheServerCount.Collect(ch)
+	KubeconfigCount.Collect(ch)
 }
