@@ -21,11 +21,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 const (
@@ -49,6 +50,7 @@ func NewMetricsCollector(client ctrlruntimeclient.Client) *MetricsCollector {
 // Start begins periodic metrics updates every 30 seconds until ctx is canceled.
 func (mc *MetricsCollector) Start(ctx context.Context) {
 	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
 
 	// Initial update
 	mc.updateObjectCounts(ctx)
