@@ -71,6 +71,11 @@ func getCacheServerCAMountPath(caName operatorv1alpha1.CA) string {
 	return fmt.Sprintf("/etc/cache-server/tls/ca/%s", caName)
 }
 
+// getCacheServerClientCertMountPath has to match the code in the cacheserver package.
+func getCacheServerClientCertMountPath() string {
+	return "/etc/cache-server/tls/client-certificate"
+}
+
 // getEffectiveCacheRef returns the cache server reference to use for this shard.
 // The shard's own cache config takes precedence over the rootShard's.
 func getEffectiveCacheRef(shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShard) string {
@@ -155,7 +160,8 @@ func DeploymentReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1al
 				})
 			}
 
-			// If a cache server is configured (shard-specific or inherited from rootShard), mount its kubeconfig.
+			// If a cache server is configured (shard-specific or inherited from rootShard), mount its kubeconfig,
+			// CA and client certificate.
 			if cacheRef := getEffectiveCacheRef(shard, rootShard); cacheRef != "" {
 				secretMounts = append(secretMounts,
 					utils.SecretMount{
@@ -166,6 +172,10 @@ func DeploymentReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1al
 						VolumeName: "cache-server-ca",
 						SecretName: resources.GetCacheServerCAName(cacheRef, operatorv1alpha1.RootCA),
 						MountPath:  getCacheServerCAMountPath(operatorv1alpha1.RootCA),
+					}, utils.SecretMount{
+						VolumeName: "cache-server-client-cert",
+						SecretName: fmt.Sprintf("%s-client-certificate", cacheRef),
+						MountPath:  getCacheServerClientCertMountPath(),
 					},
 				)
 			}
