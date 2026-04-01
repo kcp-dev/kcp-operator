@@ -223,6 +223,10 @@ func GetFrontProxyDynamicKubeconfigName(r *operatorv1alpha1.RootShard, f *operat
 	return fmt.Sprintf("%s-%s-dynamic-kubeconfig", r.Name, f.Name)
 }
 
+func GetCacheServerClientCertificateName(s *operatorv1alpha1.CacheServer) string {
+	return fmt.Sprintf("%s-client-certificate", s.Name)
+}
+
 func GetCacheServerKubeconfigName(cacheServerName string) string {
 	return fmt.Sprintf("%s-kubeconfig", cacheServerName)
 }
