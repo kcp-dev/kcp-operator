@@ -1328,8 +1328,8 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>https://github.com/cert-manager/cert-manager/releases/download/v1.19.3/cert-manager.yaml
 </code></pre></div>
 <p>Set up two etcd instances, one for the root shard and one for a supplementary shard:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>helm<span class="w"> </span>install<span class="w"> </span>etcd<span class="w"> </span>oci://registry-1.docker.io/bitnamicharts/etcd<span class="w"> </span>--set<span class="w"> </span>auth.rbac.enabled<span class="o">=</span><span class="nb">false</span><span class="w"> </span>--set<span class="w"> </span>auth.rbac.create<span class="o">=</span><span class="nb">false</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>helm<span class="w"> </span>install<span class="w"> </span>etcd-shard<span class="w"> </span>oci://registry-1.docker.io/bitnamicharts/etcd<span class="w"> </span>--set<span class="w"> </span>auth.rbac.enabled<span class="o">=</span><span class="nb">false</span><span class="w"> </span>--set<span class="w"> </span>auth.rbac.create<span class="o">=</span><span class="nb">false</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>helm<span class="w"> </span>install<span class="w"> </span>etcd<span class="w"> </span>./hack/ci/testdata/etcd
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>helm<span class="w"> </span>install<span class="w"> </span>etcd-shard<span class="w"> </span>./hack/ci/testdata/etcd
 </code></pre></div>
 <p>Create a "self-signed" cert-manager issuer:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>config/samples/cert-manager/issuer.yaml
