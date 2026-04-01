@@ -3,10 +3,10 @@
 ## Development
 
 * Use `make imports` before committing any change to Go code.
-* Use `go mod tidy` after any change to a `go.mod`.
+* Use `make modules` after any change to a `go.mod`.
 * Run `make lint-fix` before submitting a pull request.
 * Run the e2e tests before submitting a pull request.
-* When possible, try to keep pull-requests small and self-contained to make reviews easier.
+* When possible, try to keep pull requests small and self-contained to make reviews easier.
 
 ## SDK
 
