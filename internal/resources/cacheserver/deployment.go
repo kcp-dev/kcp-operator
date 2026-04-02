@@ -70,6 +70,10 @@ func getCAMountPath(caName operatorv1alpha1.CA) string {
 	return fmt.Sprintf("/etc/cache-server/tls/ca/%s", caName)
 }
 
+func getClientCertificateMountPath() string {
+	return "/etc/cache-server/tls/client-certificate"
+}
+
 func DeploymentReconciler(server *operatorv1alpha1.CacheServer) reconciling.NamedDeploymentReconcilerFactory {
 	return func() (string, reconciling.DeploymentReconciler) {
 		return resources.GetCacheServerDeploymentName(server), func(dep *appsv1.Deployment) (*appsv1.Deployment, error) {
@@ -198,6 +202,8 @@ func getArgs(server *operatorv1alpha1.CacheServer) []string {
 		// Certificate flags (server, service account signing).
 		fmt.Sprintf("--tls-cert-file=%s/tls.crt", getCertificateMountPath(operatorv1alpha1.ServerCertificate)),
 		fmt.Sprintf("--tls-private-key-file=%s/tls.key", getCertificateMountPath(operatorv1alpha1.ServerCertificate)),
+		// Client CA for authenticating clients connecting to the cache server.
+		fmt.Sprintf("--client-ca-file=%s/tls.crt", getCAMountPath(operatorv1alpha1.RootCA)),
 		// Configure (lack of) persistence.
 		"--root-directory=",
 	}
@@ -227,11 +233,18 @@ func getArgs(server *operatorv1alpha1.CacheServer) []string {
 }
 
 func getSecretMounts(server *operatorv1alpha1.CacheServer) []utils.SecretMount {
-	secretMounts := []utils.SecretMount{{
-		VolumeName: "serving-cert",
-		SecretName: resources.GetCacheServerCertificateName(server, operatorv1alpha1.ServerCertificate),
-		MountPath:  getCertificateMountPath(operatorv1alpha1.ServerCertificate),
-	}}
+	secretMounts := []utils.SecretMount{
+		{
+			VolumeName: "serving-cert",
+			SecretName: resources.GetCacheServerCertificateName(server, operatorv1alpha1.ServerCertificate),
+			MountPath:  getCertificateMountPath(operatorv1alpha1.ServerCertificate),
+		},
+		{
+			VolumeName: "client-ca",
+			SecretName: resources.GetCacheServerCAName(server.Name, operatorv1alpha1.RootCA),
+			MountPath:  getCAMountPath(operatorv1alpha1.RootCA),
+		},
+	}
 
 	if server.Spec.Etcd != nil && server.Spec.Etcd.TLSConfig != nil {
 		secretMounts = append(secretMounts, utils.SecretMount{

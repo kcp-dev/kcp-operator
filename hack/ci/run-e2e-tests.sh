@@ -78,9 +78,12 @@ KUBECTL="$(UGET_PRINT_PATH=absolute make --no-print-directory install-kubectl)"
 "$KUBECTL" wait --for=condition=Complete job/kernel-limits --timeout=300s
 echo "Kernel limits job completed."
 
-# store logs as artifacts
-PROTOKOL="$(UGET_PRINT_PATH=absolute make --no-print-directory install-protokol)"
-"$PROTOKOL" --output "$ARTIFACTS/logs" --namespace 'kcp-*' --namespace 'e2e-*' >/dev/null 2>&1 &
+# store logs as artifacts (optional; protokol may not be available)
+if PROTOKOL="$(UGET_PRINT_PATH=absolute make --no-print-directory install-protokol 2>/dev/null)"; then
+  "$PROTOKOL" --output "$ARTIFACTS/logs" --namespace 'kcp-*' --namespace 'e2e-*' >/dev/null 2>&1 &
+else
+  echo "WARNING: failed to install protokol, logs will not be collected as artifacts"
+fi
 
 # need Helm to setup etcd
 HELM="$(UGET_PRINT_PATH=absolute make --no-print-directory install-helm)"

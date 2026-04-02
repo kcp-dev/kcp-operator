@@ -26,7 +26,7 @@ import (
 
 const (
 	ImageRepository = "ghcr.io/kcp-dev/kcp"
-	ImageTag        = "v0.30.1"
+	ImageTag        = "v0.30.3"
 
 	appNameLabel      = "app.kubernetes.io/name"
 	appInstanceLabel  = "app.kubernetes.io/instance"
@@ -221,6 +221,10 @@ func GetRootShardProxyDynamicKubeconfigName(r *operatorv1alpha1.RootShard) strin
 
 func GetFrontProxyDynamicKubeconfigName(r *operatorv1alpha1.RootShard, f *operatorv1alpha1.FrontProxy) string {
 	return fmt.Sprintf("%s-%s-dynamic-kubeconfig", r.Name, f.Name)
+}
+
+func GetCacheServerClientCertificateName(s *operatorv1alpha1.CacheServer) string {
+	return fmt.Sprintf("%s-client-certificate", s.Name)
 }
 
 func GetCacheServerKubeconfigName(cacheServerName string) string {
