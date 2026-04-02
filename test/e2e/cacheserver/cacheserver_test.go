@@ -97,7 +97,7 @@ func TestCacheWithExternalEtcdAndRootShard(t *testing.T) {
 	switch utils.GetKcpRelease() {
 	// We skip release "" because it currently points to kcp 0.30 which
 	// doesn't currently support cache-server with an external etcd cluster.
-	case "release-0.28", "release-0.29", "release-30", "": // TODO(gman0): remove the empty ("") kcp release!
+	case "release-0.29", "release-0.30", "": // TODO(gman0): remove the empty ("") kcp release!
 		t.Skip("running external etcd with cache-server is only supported with kcp >=0.31")
 		return
 	}

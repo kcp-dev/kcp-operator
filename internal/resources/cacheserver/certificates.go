@@ -68,6 +68,55 @@ func RootCACertificateReconciler(server *operatorv1alpha1.CacheServer) reconcili
 	}
 }
 
+// ClientCertificateReconciler creates a client certificate for authenticating to the cache server.
+// This certificate is mounted by shards that connect to the cache server.
+func ClientCertificateReconciler(server *operatorv1alpha1.CacheServer) reconciling.NamedCertificateReconcilerFactory {
+	name := resources.GetCacheServerClientCertificateName(server)
+	template := server.Spec.CertificateTemplates.CertificateTemplate(operatorv1alpha1.ClientCertificate)
+
+	return func() (string, reconciling.CertificateReconciler) {
+		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
+			cert.SetLabels(resources.GetCacheServerResourceLabels(server))
+			cert.Spec = certmanagerv1.CertificateSpec{
+				SecretName: name,
+				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
+					Labels: map[string]string{
+						resources.CacheServerLabel: server.Name,
+					},
+				},
+
+				CommonName: "cache-client",
+
+				Subject: &certmanagerv1.X509Subject{
+					Organizations: []string{"system:masters"},
+				},
+
+				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
+				RenewBefore: &operatorv1alpha1.DefaultCertificateRenewal,
+
+				PrivateKey: &certmanagerv1.CertificatePrivateKey{
+					Algorithm: certmanagerv1.RSAKeyAlgorithm,
+					Size:      4096,
+				},
+
+				Usages: []certmanagerv1.KeyUsage{
+					certmanagerv1.UsageClientAuth,
+					certmanagerv1.UsageKeyEncipherment,
+					certmanagerv1.UsageDigitalSignature,
+				},
+
+				IssuerRef: certmanagermetav1.ObjectReference{
+					Name:  resources.GetCacheServerCAName(server.Name, operatorv1alpha1.RootCA),
+					Kind:  "Issuer",
+					Group: "cert-manager.io",
+				},
+			}
+
+			return utils.ApplyCertificateTemplate(cert, &template), nil
+		}
+	}
+}
+
 func ServerCertificateReconciler(server *operatorv1alpha1.CacheServer) reconciling.NamedCertificateReconcilerFactory {
 	const certKind = operatorv1alpha1.ServerCertificate
 

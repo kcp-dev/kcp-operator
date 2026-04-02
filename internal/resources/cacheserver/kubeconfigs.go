@@ -47,9 +47,16 @@ func KubeconfigReconciler(server *operatorv1alpha1.CacheServer) k8creconciling.N
 						CertificateAuthority: getCAMountPath(operatorv1alpha1.RootCA) + "/tls.crt",
 					},
 				},
+				AuthInfos: map[string]*clientcmdapi.AuthInfo{
+					serverName: {
+						ClientCertificate: getClientCertificateMountPath() + "/tls.crt",
+						ClientKey:         getClientCertificateMountPath() + "/tls.key",
+					},
+				},
 				Contexts: map[string]*clientcmdapi.Context{
 					contextName: {
-						Cluster: serverName,
+						Cluster:  serverName,
+						AuthInfo: serverName,
 					},
 				},
 				CurrentContext: contextName,

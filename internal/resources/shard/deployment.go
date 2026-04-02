@@ -62,6 +62,32 @@ func getKubeconfigMountPath(certName operatorv1alpha1.Certificate) string {
 	return fmt.Sprintf("/etc/kcp/%s-kubeconfig", certName)
 }
 
+func getCacheServerKubeconfigMountPath() string {
+	return "/etc/cache-server/kubeconfig"
+}
+
+// getCacheServerCAMountPath has to match the code in the cacheserver package.
+func getCacheServerCAMountPath(caName operatorv1alpha1.CA) string {
+	return fmt.Sprintf("/etc/cache-server/tls/ca/%s", caName)
+}
+
+// getCacheServerClientCertMountPath has to match the code in the cacheserver package.
+func getCacheServerClientCertMountPath() string {
+	return "/etc/cache-server/tls/client-certificate"
+}
+
+// getEffectiveCacheRef returns the cache server reference to use for this shard.
+// The shard's own cache config takes precedence over the rootShard's.
+func getEffectiveCacheRef(shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShard) string {
+	if shard.Spec.Cache != nil && shard.Spec.Cache.Reference != nil {
+		return shard.Spec.Cache.Reference.Name
+	}
+	if rootShard.Spec.Cache.Reference != nil {
+		return rootShard.Spec.Cache.Reference.Name
+	}
+	return ""
+}
+
 func DeploymentReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShard) reconciling.NamedDeploymentReconcilerFactory {
 	return func() (string, reconciling.DeploymentReconciler) {
 		return resources.GetShardDeploymentName(shard), func(dep *appsv1.Deployment) (*appsv1.Deployment, error) {
@@ -132,6 +158,26 @@ func DeploymentReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1al
 					SecretName: fmt.Sprintf("%s-merged-ca-bundle", shard.Name),
 					MountPath:  getCAMountPath(operatorv1alpha1.CABundleCA),
 				})
+			}
+
+			// If a cache server is configured (shard-specific or inherited from rootShard), mount its kubeconfig,
+			// CA and client certificate.
+			if cacheRef := getEffectiveCacheRef(shard, rootShard); cacheRef != "" {
+				secretMounts = append(secretMounts,
+					utils.SecretMount{
+						VolumeName: "cache-server-kubeconfig",
+						SecretName: resources.GetCacheServerKubeconfigName(cacheRef),
+						MountPath:  getCacheServerKubeconfigMountPath(),
+					}, utils.SecretMount{
+						VolumeName: "cache-server-ca",
+						SecretName: resources.GetCacheServerCAName(cacheRef, operatorv1alpha1.RootCA),
+						MountPath:  getCacheServerCAMountPath(operatorv1alpha1.RootCA),
+					}, utils.SecretMount{
+						VolumeName: "cache-server-client-cert",
+						SecretName: fmt.Sprintf("%s-client-certificate", cacheRef),
+						MountPath:  getCacheServerClientCertMountPath(),
+					},
+				)
 			}
 
 			volumes := []corev1.Volume{}
