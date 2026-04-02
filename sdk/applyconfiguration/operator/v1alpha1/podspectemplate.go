@@ -25,11 +25,12 @@ import (
 // PodSpecTemplateApplyConfiguration represents a declarative configuration of the PodSpecTemplate type for use
 // with apply.
 type PodSpecTemplateApplyConfiguration struct {
-	NodeSelector     map[string]string         `json:"nodeSelector,omitempty"`
-	Affinity         *v1.Affinity              `json:"affinity,omitempty"`
-	Tolerations      []v1.Toleration           `json:"tolerations,omitempty"`
-	HostAliases      []v1.HostAlias            `json:"hostAliases,omitempty"`
-	ImagePullSecrets []v1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
+	NodeSelector              map[string]string             `json:"nodeSelector,omitempty"`
+	Affinity                  *v1.Affinity                  `json:"affinity,omitempty"`
+	Tolerations               []v1.Toleration               `json:"tolerations,omitempty"`
+	HostAliases               []v1.HostAlias                `json:"hostAliases,omitempty"`
+	ImagePullSecrets          []v1.LocalObjectReference     `json:"imagePullSecrets,omitempty"`
+	TopologySpreadConstraints []v1.TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
 }
 
 // PodSpecTemplateApplyConfiguration constructs a declarative configuration of the PodSpecTemplate type for use with
@@ -86,6 +87,16 @@ func (b *PodSpecTemplateApplyConfiguration) WithHostAliases(values ...v1.HostAli
 func (b *PodSpecTemplateApplyConfiguration) WithImagePullSecrets(values ...v1.LocalObjectReference) *PodSpecTemplateApplyConfiguration {
 	for i := range values {
 		b.ImagePullSecrets = append(b.ImagePullSecrets, values[i])
+	}
+	return b
+}
+
+// WithTopologySpreadConstraints adds the given value to the TopologySpreadConstraints field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the TopologySpreadConstraints field.
+func (b *PodSpecTemplateApplyConfiguration) WithTopologySpreadConstraints(values ...v1.TopologySpreadConstraint) *PodSpecTemplateApplyConfiguration {
+	for i := range values {
+		b.TopologySpreadConstraints = append(b.TopologySpreadConstraints, values[i])
 	}
 	return b
 }
