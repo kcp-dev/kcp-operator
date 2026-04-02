@@ -71,6 +71,11 @@ func getCacheServerCAMountPath(caName operatorv1alpha1.CA) string {
 	return fmt.Sprintf("/etc/cache-server/tls/ca/%s", caName)
 }
 
+// getCacheServerClientCertMountPath has to match the code in the cacheserver package.
+func getCacheServerClientCertMountPath() string {
+	return "/etc/cache-server/tls/client-certificate"
+}
+
 func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.NamedDeploymentReconcilerFactory {
 	return func() (string, reconciling.DeploymentReconciler) {
 		return resources.GetRootShardDeploymentName(rootShard), func(dep *appsv1.Deployment) (*appsv1.Deployment, error) {
@@ -142,7 +147,7 @@ func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.Nam
 			}
 
 			// If an external CacheServer is meant to be used, mount its kubeconfig and the
-			// certificate referenced in it.
+			// certificates referenced in it.
 			if ref := rootShard.Spec.Cache.Reference; ref != nil {
 				secretMounts = append(secretMounts, utils.SecretMount{
 					VolumeName: "cache-server-kubeconfig",
@@ -154,6 +159,12 @@ func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.Nam
 					VolumeName: "cache-server-ca",
 					SecretName: resources.GetCacheServerCAName(ref.Name, operatorv1alpha1.RootCA),
 					MountPath:  getCacheServerCAMountPath(operatorv1alpha1.RootCA),
+				})
+
+				secretMounts = append(secretMounts, utils.SecretMount{
+					VolumeName: "cache-server-client-cert",
+					SecretName: fmt.Sprintf("%s-client-certificate", ref.Name),
+					MountPath:  getCacheServerClientCertMountPath(),
 				})
 			}
 

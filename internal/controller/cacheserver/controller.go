@@ -90,6 +90,7 @@ func (r *CacheServerReconciler) reconcile(ctx context.Context, server *operatorv
 	if err := reconciling.ReconcileCertificates(ctx, []reconciling.NamedCertificateReconcilerFactory{
 		cacheserver.RootCACertificateReconciler(server),
 		cacheserver.ServerCertificateReconciler(server),
+		cacheserver.ClientCertificateReconciler(server),
 	}, server.Namespace, r.Client, ownerRefWrapper); err != nil {
 		return err
 	}
