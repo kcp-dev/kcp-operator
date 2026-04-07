@@ -32,6 +32,7 @@ import (
 	"github.com/kcp-dev/sdk/testing/server"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -70,6 +71,7 @@ func TestExternalVirtualWorkspace(t *testing.T) {
 		vw.Spec.Target.RootShardRef = &corev1.LocalObjectReference{
 			Name: "r00t", // Must match the rootshard name
 		}
+		vw.Spec.Resources = lowResourceRequirements()
 	})
 
 	// externalHostname must match whatever DeployFrontProxy chooses as the name for the FrontProxy
@@ -81,10 +83,16 @@ func TestExternalVirtualWorkspace(t *testing.T) {
 		rs.Spec.KCPVirtualWorkspace = &corev1.LocalObjectReference{
 			Name: vw.Name,
 		}
+		rs.Spec.Resources = lowResourceRequirements()
+		if rs.Spec.Proxy != nil {
+			rs.Spec.Proxy.Resources = lowResourceRequirements()
+		}
 	})
 
 	// deploy front-proxy
-	utils.DeployFrontProxy(ctx, t, client, namespace.Name, rootShard.Name, externalHostname)
+	utils.DeployFrontProxy(ctx, t, client, namespace.Name, rootShard.Name, externalHostname, func(fp *operatorv1alpha1.FrontProxy) {
+		fp.Spec.Resources = lowResourceRequirements()
+	})
 
 	// Wait for the VirtualWorkspace pods to be ready.
 	t.Log("Waiting for VirtualWorkspace pods to be ready...")
@@ -253,6 +261,7 @@ func TestMultipleShardsWithExternalVirtualWorkspacesAndExtCache(t *testing.T) {
 		vw.Spec.Target.RootShardRef = &corev1.LocalObjectReference{
 			Name: "r00t",
 		}
+		vw.Spec.Resources = lowResourceRequirements()
 	})
 
 	// externalHostname must match whatever DeployFrontProxy chooses as the name for the FrontProxy
@@ -266,6 +275,10 @@ func TestMultipleShardsWithExternalVirtualWorkspacesAndExtCache(t *testing.T) {
 		rs.Spec.Cache.Reference = &corev1.LocalObjectReference{
 			Name: cacheServer.Name,
 		}
+		rs.Spec.Resources = lowResourceRequirements()
+		if rs.Spec.Proxy != nil {
+			rs.Spec.Proxy.Resources = lowResourceRequirements()
+		}
 	})
 
 	// Deploy external VirtualWorkspace for regular shard1
@@ -273,6 +286,7 @@ func TestMultipleShardsWithExternalVirtualWorkspacesAndExtCache(t *testing.T) {
 		vw.Spec.Target.ShardRef = &corev1.LocalObjectReference{
 			Name: "shard1",
 		}
+		vw.Spec.Resources = lowResourceRequirements()
 	})
 
 	// Deploy regular shard1 with external VW
@@ -280,13 +294,18 @@ func TestMultipleShardsWithExternalVirtualWorkspacesAndExtCache(t *testing.T) {
 		s.Spec.KCPVirtualWorkspace = &corev1.LocalObjectReference{
 			Name: shard1VW.Name,
 		}
+		s.Spec.Resources = lowResourceRequirements()
 	})
 
 	// Deploy another regular shard with internal VW
-	utils.DeployShard(ctx, t, client, namespace.Name, "shard2", rootShard.Name)
+	utils.DeployShard(ctx, t, client, namespace.Name, "shard2", rootShard.Name, func(s *operatorv1alpha1.Shard) {
+		s.Spec.Resources = lowResourceRequirements()
+	})
 
 	// Deploy front-proxy
-	frontProxy := utils.DeployFrontProxy(ctx, t, client, namespace.Name, rootShard.Name, externalHostname)
+	frontProxy := utils.DeployFrontProxy(ctx, t, client, namespace.Name, rootShard.Name, externalHostname, func(fp *operatorv1alpha1.FrontProxy) {
+		fp.Spec.Resources = lowResourceRequirements()
+	})
 
 	// Wait for both VirtualWorkspace pods to be ready
 	t.Log("Waiting for root VirtualWorkspace pods to be ready...")
@@ -318,4 +337,14 @@ func waitForVirtualWorkspacePods(t *testing.T, ctx context.Context, client ctrlr
 		},
 	}
 	utils.WaitForPods(t, ctx, client, opts...)
+}
+
+// lowResourceRequirements returns minimal resource requirements for testing.
+func lowResourceRequirements() *corev1.ResourceRequirements {
+	return &corev1.ResourceRequirements{
+		Requests: corev1.ResourceList{
+			corev1.ResourceCPU:    resource.MustParse("10m"),
+			corev1.ResourceMemory: resource.MustParse("32Mi"),
+		},
+	}
 }
