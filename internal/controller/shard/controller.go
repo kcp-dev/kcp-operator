@@ -70,7 +70,7 @@ func (r *ShardReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		rootShard := obj.(*operatorv1alpha1.RootShard)
 
 		var shards operatorv1alpha1.ShardList
-		if err := mgr.GetClient().List(ctx, &shards, &ctrlruntimeclient.ListOptions{Namespace: rootShard.Namespace}); err != nil {
+		if err := mgr.GetClient().List(ctx, &shards, ctrlruntimeclient.InNamespace(rootShard.Namespace)); err != nil {
 			utilruntime.HandleError(err)
 			return nil
 		}
@@ -78,6 +78,25 @@ func (r *ShardReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		var requests []reconcile.Request
 		for _, shard := range shards.Items {
 			if ref := shard.Spec.RootShard.Reference; ref != nil && ref.Name == rootShard.Name {
+				requests = append(requests, reconcile.Request{NamespacedName: ctrlruntimeclient.ObjectKeyFromObject(&shard)})
+			}
+		}
+
+		return requests
+	})
+
+	vwHandler := handler.TypedEnqueueRequestsFromMapFunc(func(ctx context.Context, obj ctrlruntimeclient.Object) []reconcile.Request {
+		vw := obj.(*operatorv1alpha1.VirtualWorkspace)
+
+		var shards operatorv1alpha1.ShardList
+		if err := mgr.GetClient().List(ctx, &shards, ctrlruntimeclient.InNamespace(vw.Namespace)); err != nil {
+			utilruntime.HandleError(err)
+			return nil
+		}
+
+		var requests []reconcile.Request
+		for _, shard := range shards.Items {
+			if ref := shard.Spec.KCPVirtualWorkspace; ref != nil && ref.Name == vw.Name {
 				requests = append(requests, reconcile.Request{NamespacedName: ctrlruntimeclient.ObjectKeyFromObject(&shard)})
 			}
 		}
@@ -93,6 +112,7 @@ func (r *ShardReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&corev1.Service{}).
 		Owns(&certmanagerv1.Certificate{}).
 		Watches(&operatorv1alpha1.RootShard{}, rootShardHandler).
+		Watches(&operatorv1alpha1.VirtualWorkspace{}, vwHandler).
 		Complete(r)
 }
 

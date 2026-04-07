@@ -79,11 +79,11 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, recErr error) {
 	startTime := time.Now()
 	defer func() {
 		duration := time.Since(startTime)
-		metrics.RecordReconciliationMetrics(metrics.VirtualWorkspaceResourceType, duration.Seconds(), nil)
+		metrics.RecordReconciliationMetrics(metrics.VirtualWorkspaceResourceType, duration.Seconds(), recErr)
 	}()
 
 	logger := log.FromContext(ctx)
@@ -228,17 +228,18 @@ func (r *Reconciler) reconcile(ctx context.Context, vw *operatorv1alpha1.Virtual
 		return conditions, err
 	}
 
-	conditions = append(conditions, metav1.Condition{
-		Type:    string(operatorv1alpha1.ConditionTypeAvailable),
-		Status:  metav1.ConditionTrue,
-		Reason:  "SecretsReady",
-		Message: "Client certificate and server CA secrets are ready",
-	})
-
 	return conditions, nil
 }
 
 func (r *Reconciler) reconcileStatus(ctx context.Context, oldVW *operatorv1alpha1.VirtualWorkspace, vw *operatorv1alpha1.VirtualWorkspace, conditions []metav1.Condition) error {
+	// Check deployment status
+	depKey := types.NamespacedName{Namespace: vw.Namespace, Name: resources.GetVirtualWorkspaceDeploymentName(vw)}
+	cond, err := util.GetDeploymentAvailableCondition(ctx, r.Client, depKey)
+	if err != nil {
+		return err
+	}
+	conditions = append(conditions, cond)
+
 	for _, condition := range conditions {
 		condition.ObservedGeneration = vw.Generation
 		vw.Status.Conditions = util.UpdateCondition(vw.Status.Conditions, condition)
@@ -257,7 +258,7 @@ func (r *Reconciler) mapRootShardToVirtualWorkspaces(ctx context.Context, obj ct
 	logger := log.FromContext(ctx).WithValues("rootShard", obj.GetName())
 	logger.V(4).Info("Mapping RootShard to VirtualWorkspaces")
 
-	return r.mapVirtualWorkspaces(ctx, func(target operatorv1alpha1.VirtualWorkspaceTarget) bool {
+	return r.mapVirtualWorkspaces(ctx, obj.GetNamespace(), func(target operatorv1alpha1.VirtualWorkspaceTarget) bool {
 		return target.RootShardRef != nil && target.RootShardRef.Name == obj.GetName()
 	})
 }
@@ -266,7 +267,7 @@ func (r *Reconciler) mapShardToVirtualWorkspaces(ctx context.Context, obj ctrlru
 	logger := log.FromContext(ctx).WithValues("shard", obj.GetName())
 	logger.V(4).Info("Mapping Shard to VirtualWorkspaces")
 
-	return r.mapVirtualWorkspaces(ctx, func(target operatorv1alpha1.VirtualWorkspaceTarget) bool {
+	return r.mapVirtualWorkspaces(ctx, obj.GetNamespace(), func(target operatorv1alpha1.VirtualWorkspaceTarget) bool {
 		return target.ShardRef != nil && target.ShardRef.Name == obj.GetName()
 	})
 }
@@ -316,9 +317,9 @@ func (r *Reconciler) mapIssuerToVirtualWorkspaces(ctx context.Context, obj ctrlr
 	return requests
 }
 
-func (r *Reconciler) mapVirtualWorkspaces(ctx context.Context, matches func(t operatorv1alpha1.VirtualWorkspaceTarget) bool) []ctrl.Request {
+func (r *Reconciler) mapVirtualWorkspaces(ctx context.Context, namespace string, matches func(t operatorv1alpha1.VirtualWorkspaceTarget) bool) []ctrl.Request {
 	var virtualWorkspaces operatorv1alpha1.VirtualWorkspaceList
-	if err := r.List(ctx, &virtualWorkspaces); err != nil {
+	if err := r.List(ctx, &virtualWorkspaces, ctrlruntimeclient.InNamespace(namespace)); err != nil {
 		log.FromContext(ctx).Error(err, "Failed to list VirtualWorkspaces")
 		return []ctrl.Request{}
 	}

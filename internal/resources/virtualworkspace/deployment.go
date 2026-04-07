@@ -184,14 +184,17 @@ func DeploymentReconciler(vw *operatorv1alpha1.VirtualWorkspace, rootShard *oper
 
 			image, _ := resources.GetImageSettings(vw.Spec.Image)
 
-			dep.Spec.Template.Spec.Containers = []corev1.Container{{
+			container := corev1.Container{
 				Name:         ServerContainerName,
 				Image:        image,
 				Command:      []string{"/virtual-workspaces"},
 				Args:         args,
 				VolumeMounts: volumeMounts,
 				Resources:    defaultResourceRequirements,
-			}}
+			}
+			container = utils.ApplyResources(container, vw.Spec.Resources)
+
+			dep.Spec.Template.Spec.Containers = []corev1.Container{container}
 			dep.Spec.Template.Spec.Volumes = volumes
 
 			if vw.Spec.Replicas != nil {
@@ -242,7 +245,6 @@ func getArgs(vw *operatorv1alpha1.VirtualWorkspace, rootShard *operatorv1alpha1.
 		// listening
 		"--bind-address=0.0.0.0",
 		"--secure-port=6443",
-		"-v=6",
 
 		// requestheader CA
 		fmt.Sprintf("--requestheader-client-ca-file=%s/tls.crt", getCAMountPath(operatorv1alpha1.RequestHeaderClientCA)),

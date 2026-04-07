@@ -26,6 +26,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kcp-dev/kcp-operator/internal/resources"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -135,7 +136,7 @@ func DeployRootShard(ctx context.Context, t *testing.T, client ctrlruntimeclient
 	rootShard.Namespace = namespace
 
 	if externalHostname == "" {
-		externalHostname = fmt.Sprintf("%s-root-shard.%s.svc.cluster.local", rootShard.Name, rootShard.Namespace)
+		externalHostname = resources.GetRootShardBaseHost(&rootShard)
 	}
 
 	rootShard.Spec = operatorv1alpha1.RootShardSpec{
@@ -304,14 +305,12 @@ func DeployCacheServerWithExternalEtcd(ctx context.Context, t *testing.T, client
 func DeployVirtualWorkspace(ctx context.Context, t *testing.T, client ctrlruntimeclient.Client, namespace, name string, waitForReady bool, patches ...func(*operatorv1alpha1.VirtualWorkspace)) operatorv1alpha1.VirtualWorkspace {
 	t.Helper()
 
-	vwHostname := fmt.Sprintf("%s-virtual-workspace.%s.svc.cluster.local", name, namespace)
-
 	vw := operatorv1alpha1.VirtualWorkspace{}
 	vw.Name = name
 	vw.Namespace = namespace
 	vw.Spec = operatorv1alpha1.VirtualWorkspaceSpec{
 		External: operatorv1alpha1.ExternalConfig{
-			Hostname: vwHostname,
+			Hostname: resources.GetVirtualWorkspaceBaseHost(&vw),
 			Port:     6443,
 		},
 	}

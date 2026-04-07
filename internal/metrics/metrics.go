@@ -124,6 +124,7 @@ func RegisterMetrics() {
 		FrontProxyCount,
 		CacheServerCount,
 		KubeconfigCount,
+		VirtualWorkspaceCount,
 		ReconciliationDuration,
 		ReconciliationErrors,
 		ConditionStatus,

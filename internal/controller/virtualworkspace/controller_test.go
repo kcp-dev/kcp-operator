@@ -19,7 +19,6 @@ package virtualworkspace
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -34,12 +33,12 @@ import (
 )
 
 func TestReconciling(t *testing.T) {
-	const namespace = "kubeconfig-tests"
+	const namespace = "virtual-workspace-tests"
 
 	testcases := []struct {
-		name       string
-		rootShard  *operatorv1alpha1.RootShard
-		kubeConfig *operatorv1alpha1.Kubeconfig
+		name             string
+		rootShard        *operatorv1alpha1.RootShard
+		virtualWorkspace *operatorv1alpha1.VirtualWorkspace
 	}{
 		{
 			name: "vanilla",
@@ -60,17 +59,17 @@ func TestReconciling(t *testing.T) {
 					},
 				},
 			},
-			kubeConfig: &operatorv1alpha1.Kubeconfig{
+			virtualWorkspace: &operatorv1alpha1.VirtualWorkspace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "confy",
 					Namespace: namespace,
 				},
-				Spec: operatorv1alpha1.KubeconfigSpec{
-					Validity: metav1.Duration{Duration: 24 * time.Hour},
-					SecretRef: corev1.LocalObjectReference{
-						Name: "confy-secret",
+				Spec: operatorv1alpha1.VirtualWorkspaceSpec{
+					External: operatorv1alpha1.ExternalConfig{
+						Hostname: "example.com",
+						Port:     6443,
 					},
-					Target: operatorv1alpha1.KubeconfigTarget{
+					Target: operatorv1alpha1.VirtualWorkspaceTarget{
 						RootShardRef: &corev1.LocalObjectReference{
 							Name: "rooty",
 						},
@@ -88,8 +87,8 @@ func TestReconciling(t *testing.T) {
 				NewClientBuilder().
 				WithScheme(scheme).
 				WithStatusSubresource(testcase.rootShard).
-				WithStatusSubresource(testcase.kubeConfig).
-				WithObjects(testcase.rootShard, testcase.kubeConfig).
+				WithStatusSubresource(testcase.virtualWorkspace).
+				WithObjects(testcase.rootShard, testcase.virtualWorkspace).
 				Build()
 
 			ctx := context.Background()
@@ -100,7 +99,7 @@ func TestReconciling(t *testing.T) {
 			}
 
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
-				NamespacedName: ctrlruntimeclient.ObjectKeyFromObject(testcase.kubeConfig),
+				NamespacedName: ctrlruntimeclient.ObjectKeyFromObject(testcase.virtualWorkspace),
 			})
 			require.NoError(t, err)
 		})

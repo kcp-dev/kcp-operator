@@ -35,12 +35,12 @@ const (
 
 	// RootShardLabel is placed on Secrets created for Certificates so that
 	// the Secrets can be more easily mapped to their RootShards.
-	RootShardLabel         = "operator.kcp.io/rootshard"
-	ShardLabel             = "operator.kcp.io/shard"
-	FrontProxyLabel        = "operator.kcp.io/front-proxy"
-	KubeconfigLabel        = "operator.kcp.io/kubeconfig"
-	CacheServerLabel       = "operator.kcp.io/cache-server"
-	VirtuallWorkspaceLabel = "operator.kcp.io/virtual-workspace"
+	RootShardLabel        = "operator.kcp.io/rootshard"
+	ShardLabel            = "operator.kcp.io/shard"
+	FrontProxyLabel       = "operator.kcp.io/front-proxy"
+	KubeconfigLabel       = "operator.kcp.io/kubeconfig"
+	CacheServerLabel      = "operator.kcp.io/cache-server"
+	VirtualWorkspaceLabel = "operator.kcp.io/virtual-workspace"
 
 	// BundleAnnotation is placed on RootShard, Shard, or FrontProxy objects to trigger automatic Bundle creation
 	BundleAnnotation = "operator.kcp.io/bundle"

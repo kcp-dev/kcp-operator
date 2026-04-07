@@ -207,7 +207,9 @@ func (test *workspaceSchedulingTest) createKubeconfig(log logger, ctx context.Co
 		secret := &corev1.Secret{}
 		key := types.NamespacedName{Namespace: test.hostNamespace, Name: secretName}
 
-		return test.hostClient.Get(ctx, key, secret) == nil, nil
+		err = test.hostClient.Get(ctx, key, secret)
+
+		return err == nil, ctrlruntimeclient.IgnoreNotFound(err)
 	})
 	if err != nil {
 		return fmt.Errorf("failed to wait for kubeconfig to become ready: %v", err)

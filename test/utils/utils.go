@@ -157,7 +157,7 @@ func SelfDestuctingPortForward(
 	})
 }
 
-func selfDesctructingUrlForward(t *testing.T, ctx context.Context, namespace string, parsed *url.URL) int {
+func selfDestructingURLForward(t *testing.T, ctx context.Context, namespace string, parsed *url.URL) int {
 	hostname, portString, err := net.SplitHostPort(parsed.Host)
 	if err != nil {
 		t.Fatalf("Failed to parse host %q: %v", parsed.Host, err)
@@ -238,7 +238,7 @@ func ConnectWithKubeconfig(
 	}
 
 	// start a port forwarding
-	localPort := selfDesctructingUrlForward(t, ctx, namespace, parsed)
+	localPort := selfDestructingURLForward(t, ctx, namespace, parsed)
 
 	// patch the target server
 	parsed.Host = net.JoinHostPort("localhost", fmt.Sprintf("%d", localPort))
@@ -277,7 +277,7 @@ func KubeconfigClusterClient(
 	}
 
 	// start a port forwarding
-	localPort := selfDesctructingUrlForward(t, ctx, namespace, parsed)
+	localPort := selfDestructingURLForward(t, ctx, namespace, parsed)
 
 	// patch the target server
 	parsed.Host = net.JoinHostPort("localhost", fmt.Sprintf("%d", localPort))

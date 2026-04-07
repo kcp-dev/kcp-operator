@@ -45,7 +45,7 @@ func ClientCertificateReconciler(vw *operatorv1alpha1.VirtualWorkspace, issuerNa
 				SecretName: name,
 				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
 					Labels: map[string]string{
-						resources.KubeconfigLabel: vw.Name,
+						resources.VirtualWorkspaceLabel: vw.Name,
 					},
 				},
 
@@ -93,7 +93,7 @@ func ServerCertificateReconciler(vw *operatorv1alpha1.VirtualWorkspace, rootShar
 				SecretName: name,
 				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
 					Labels: map[string]string{
-						resources.VirtuallWorkspaceLabel: vw.Name,
+						resources.VirtualWorkspaceLabel: vw.Name,
 					},
 				},
 
