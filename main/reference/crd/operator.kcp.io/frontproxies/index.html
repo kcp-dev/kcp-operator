@@ -4903,6 +4903,413 @@ If the operator is Exists, the value should be empty, otherwise just a regular s
 </div>
 </div>
 
+<div class="property depth-5">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.deploymentTemplate.spec.template.spec.topologySpreadConstraints">.spec.deploymentTemplate.spec.template.spec.topologySpreadConstraints</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">array</span>
+
+</div>
+
+<div class="property-description">
+<p>TopologySpreadConstraints describes how a group of pods ought to spread across topology domains.
+Scheduler will schedule pods in a way which abides by the constraints.
+All topologySpreadConstraints are ANDed.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-6">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.deploymentTemplate.spec.template.spec.topologySpreadConstraints[*]">.spec.deploymentTemplate.spec.template.spec.topologySpreadConstraints[*]</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+<div class="property-description">
+<p>TopologySpreadConstraint specifies how to spread matching pods among the given topology.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-7">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.deploymentTemplate.spec.template.spec.topologySpreadConstraints[*].labelSelector">.spec.deploymentTemplate.spec.template.spec.topologySpreadConstraints[*].labelSelector</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+<div class="property-description">
+<p>LabelSelector is used to find matching pods.
+Pods that match this label selector are counted to determine the number of pods
+in their corresponding topology domain.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-8">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.deploymentTemplate.spec.template.spec.topologySpreadConstraints[*].labelSelector.matchExpressions">.spec.deploymentTemplate.spec.template.spec.topologySpreadConstraints[*].labelSelector.matchExpressions</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">array</span>
+
+</div>
+
+<div class="property-description">
+<p>matchExpressions is a list of label selector requirements. The requirements are ANDed.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-9">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.deploymentTemplate.spec.template.spec.topologySpreadConstraints[*].labelSelector.matchExpressions[*]">.spec.deploymentTemplate.spec.template.spec.topologySpreadConstraints[*].labelSelector.matchExpressions[*]</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+<div class="property-description">
+<p>A label selector requirement is a selector that contains values, a key, and an operator that
+relates the key and values.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-10">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.deploymentTemplate.spec.template.spec.topologySpreadConstraints[*].labelSelector.matchExpressions[*].key">.spec.deploymentTemplate.spec.template.spec.topologySpreadConstraints[*].labelSelector.matchExpressions[*].key</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>key is the label key that the selector applies to.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-10">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.deploymentTemplate.spec.template.spec.topologySpreadConstraints[*].labelSelector.matchExpressions[*].operator">.spec.deploymentTemplate.spec.template.spec.topologySpreadConstraints[*].labelSelector.matchExpressions[*].operator</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>operator represents a key&rsquo;s relationship to a set of values.
+Valid operators are In, NotIn, Exists and DoesNotExist.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-10">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.deploymentTemplate.spec.template.spec.topologySpreadConstraints[*].labelSelector.matchExpressions[*].values">.spec.deploymentTemplate.spec.template.spec.topologySpreadConstraints[*].labelSelector.matchExpressions[*].values</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">array</span>
+
+</div>
+
+<div class="property-description">
+<p>values is an array of string values. If the operator is In or NotIn,
+the values array must be non-empty. If the operator is Exists or DoesNotExist,
+the values array must be empty. This array is replaced during a strategic
+merge patch.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-11">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.deploymentTemplate.spec.template.spec.topologySpreadConstraints[*].labelSelector.matchExpressions[*].values[*]">.spec.deploymentTemplate.spec.template.spec.topologySpreadConstraints[*].labelSelector.matchExpressions[*].values[*]</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-8">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.deploymentTemplate.spec.template.spec.topologySpreadConstraints[*].labelSelector.matchLabels">.spec.deploymentTemplate.spec.template.spec.topologySpreadConstraints[*].labelSelector.matchLabels</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+<div class="property-description">
+<p>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+map is equivalent to an element of matchExpressions, whose key field is &ldquo;key&rdquo;, the
+operator is &ldquo;In&rdquo;, and the values array contains only &ldquo;value&rdquo;. The requirements are ANDed.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-7">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.deploymentTemplate.spec.template.spec.topologySpreadConstraints[*].matchLabelKeys">.spec.deploymentTemplate.spec.template.spec.topologySpreadConstraints[*].matchLabelKeys</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">array</span>
+
+</div>
+
+<div class="property-description">
+<p>MatchLabelKeys is a set of pod label keys to select the pods over which
+spreading will be calculated. The keys are used to lookup values from the
+incoming pod labels, those key-value labels are ANDed with labelSelector
+to select the group of existing pods over which spreading will be calculated
+for the incoming pod. The same key is forbidden to exist in both MatchLabelKeys and LabelSelector.
+MatchLabelKeys cannot be set when LabelSelector isn&rsquo;t set.
+Keys that don&rsquo;t exist in the incoming pod labels will
+be ignored. A null or empty list means only match against labelSelector.</p>
+
+<p>This is a beta field and requires the MatchLabelKeysInPodTopologySpread feature gate to be enabled (enabled by default).</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-8">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.deploymentTemplate.spec.template.spec.topologySpreadConstraints[*].matchLabelKeys[*]">.spec.deploymentTemplate.spec.template.spec.topologySpreadConstraints[*].matchLabelKeys[*]</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-7">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.deploymentTemplate.spec.template.spec.topologySpreadConstraints[*].maxSkew">.spec.deploymentTemplate.spec.template.spec.topologySpreadConstraints[*].maxSkew</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">integer</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>MaxSkew describes the degree to which pods may be unevenly distributed.
+When <code>whenUnsatisfiable=DoNotSchedule</code>, it is the maximum permitted difference
+between the number of matching pods in the target topology and the global minimum.
+The global minimum is the minimum number of matching pods in an eligible domain
+or zero if the number of eligible domains is less than MinDomains.
+For example, in a 3-zone cluster, MaxSkew is set to 1, and pods with the same
+labelSelector spread as 2/2/1:
+In this case, the global minimum is 1.
+| zone1 | zone2 | zone3 |
+|  P P  |  P P  |   P   |
+- if MaxSkew is 1, incoming pod can only be scheduled to zone3 to become 2/2/2;
+scheduling it onto zone1(zone2) would make the ActualSkew(3-1) on zone1(zone2)
+violate MaxSkew(1).
+- if MaxSkew is 2, incoming pod can be scheduled onto any zone.
+When <code>whenUnsatisfiable=ScheduleAnyway</code>, it is used to give higher precedence
+to topologies that satisfy it.
+It&rsquo;s a required field. Default value is 1 and 0 is not allowed.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-7">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.deploymentTemplate.spec.template.spec.topologySpreadConstraints[*].minDomains">.spec.deploymentTemplate.spec.template.spec.topologySpreadConstraints[*].minDomains</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">integer</span>
+
+</div>
+
+<div class="property-description">
+<p>MinDomains indicates a minimum number of eligible domains.
+When the number of eligible domains with matching topology keys is less than minDomains,
+Pod Topology Spread treats &ldquo;global minimum&rdquo; as 0, and then the calculation of Skew is performed.
+And when the number of eligible domains with matching topology keys equals or greater than minDomains,
+this value has no effect on scheduling.
+As a result, when the number of eligible domains is less than minDomains,
+scheduler won&rsquo;t schedule more than maxSkew Pods to those domains.
+If value is nil, the constraint behaves as if MinDomains is equal to 1.
+Valid values are integers greater than 0.
+When value is not nil, WhenUnsatisfiable must be DoNotSchedule.</p>
+
+<p>For example, in a 3-zone cluster, MaxSkew is set to 2, MinDomains is set to 5 and pods with the same
+labelSelector spread as 2/2/2:
+| zone1 | zone2 | zone3 |
+|  P P  |  P P  |  P P  |
+The number of domains is less than 5(MinDomains), so &ldquo;global minimum&rdquo; is treated as 0.
+In this situation, new pod with the same labelSelector cannot be scheduled,
+because computed skew will be 3(3 - 0) if new Pod is scheduled to any of the three zones,
+it will violate MaxSkew.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-7">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.deploymentTemplate.spec.template.spec.topologySpreadConstraints[*].nodeAffinityPolicy">.spec.deploymentTemplate.spec.template.spec.topologySpreadConstraints[*].nodeAffinityPolicy</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>NodeAffinityPolicy indicates how we will treat Pod&rsquo;s nodeAffinity/nodeSelector
+when calculating pod topology spread skew. Options are:
+- Honor: only nodes matching nodeAffinity/nodeSelector are included in the calculations.
+- Ignore: nodeAffinity/nodeSelector are ignored. All nodes are included in the calculations.</p>
+
+<p>If this value is nil, the behavior is equivalent to the Honor policy.
+This is a beta-level feature default enabled by the NodeInclusionPolicyInPodTopologySpread feature flag.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-7">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.deploymentTemplate.spec.template.spec.topologySpreadConstraints[*].nodeTaintsPolicy">.spec.deploymentTemplate.spec.template.spec.topologySpreadConstraints[*].nodeTaintsPolicy</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>NodeTaintsPolicy indicates how we will treat node taints when calculating
+pod topology spread skew. Options are:
+- Honor: nodes without taints, along with tainted nodes for which the incoming pod
+has a toleration, are included.
+- Ignore: node taints are ignored. All nodes are included.</p>
+
+<p>If this value is nil, the behavior is equivalent to the Ignore policy.
+This is a beta-level feature default enabled by the NodeInclusionPolicyInPodTopologySpread feature flag.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-7">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.deploymentTemplate.spec.template.spec.topologySpreadConstraints[*].topologyKey">.spec.deploymentTemplate.spec.template.spec.topologySpreadConstraints[*].topologyKey</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>TopologyKey is the key of node labels. Nodes that have a label with this key
+and identical values are considered to be in the same topology.
+We consider each <key, value> as a &ldquo;bucket&rdquo;, and try to put balanced number
+of pods into each bucket.
+We define a domain as a particular instance of a topology.
+Also, we define an eligible domain as a domain whose nodes meet the requirements of
+nodeAffinityPolicy and nodeTaintsPolicy.
+e.g. If TopologyKey is &ldquo;kubernetes.io/hostname&rdquo;, each Node is a domain of that topology.
+And, if TopologyKey is &ldquo;topology.kubernetes.io/zone&rdquo;, each zone is a domain of that topology.
+It&rsquo;s a required field.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-7">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.deploymentTemplate.spec.template.spec.topologySpreadConstraints[*].whenUnsatisfiable">.spec.deploymentTemplate.spec.template.spec.topologySpreadConstraints[*].whenUnsatisfiable</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>WhenUnsatisfiable indicates how to deal with a pod if it doesn&rsquo;t satisfy
+the spread constraint.
+- DoNotSchedule (default) tells the scheduler not to schedule it.
+- ScheduleAnyway tells the scheduler to schedule the pod in any location,
+  but giving higher precedence to topologies that would help reduce the
+  skew.
+A constraint is considered &ldquo;Unsatisfiable&rdquo; for an incoming pod
+if and only if every possible node assignment for that pod would violate
+&ldquo;MaxSkew&rdquo; on some topology.
+For example, in a 3-zone cluster, MaxSkew is set to 1, and pods with the same
+labelSelector spread as 3/1/1:
+| zone1 | zone2 | zone3 |
+| P P P |   P   |   P   |
+If WhenUnsatisfiable is set to DoNotSchedule, incoming pod can only be scheduled
+to zone2(zone3) to become 3/2/1(3/1/2) as ActualSkew(2-1) on zone2(zone3) satisfies
+MaxSkew(1). In other words, the cluster can still be imbalanced, but scheduler
+won&rsquo;t make it <em>more</em> imbalanced.
+It&rsquo;s a required field.</p>
+
+</div>
+
+</div>
+</div>
+
 <div class="property depth-1">
 <div class="property-header">
 <h3 class="property-path" id="v1alpha1-.spec.external">.spec.external</h3>
