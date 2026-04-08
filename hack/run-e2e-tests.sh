@@ -161,6 +161,7 @@ echo "Running e2e tests..."
 
 export HELM_BINARY="$HELM"
 export ETCD_HELM_CHART="$(realpath hack/ci/testdata/etcd)"
+export KCP_RELEASE="${KCP_TAG:-}"
 
 WHAT="${WHAT:-./test/e2e/...}"
 TEST_ARGS="${TEST_ARGS:--timeout 2h -v}"
