@@ -658,6 +658,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#high-availability" class="md-nav__link">
+    <span class="md-ellipsis">
+      High availability
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1189,6 +1198,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#high-availability" class="md-nav__link">
+    <span class="md-ellipsis">
+      High availability
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1213,17 +1231,10 @@ by all of them, like <code>APIExports</code>, <code>Workspaces</code> and RBAC t
 configured, then the kcp root shard will run an in-process cache that uses the root shard's etcd as
 its storage backend. However once multiple shards are involved, a standalone cache server should be
 provisioned.</p>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>Currently there is no support for persistence in kcp's cache-server, so whenever the Pod is
-restarted, it will have to be re-filled over time by the kcp shards.</p>
-</div>
 <h2 id="architecture">Architecture</h2>
 <p>The cache server is a purely passive server: It doesn't connect to any shard or proxy, but instead
 all the kcp shards connect to it, in order to store their data on the cache. This makes the server
-conceptually very simple, since it all it needs to function is a TLS serving certificate.</p>
-<p>As of kcp 0.30, there is only a single cache server supported for a whole kcp installation
-consisting of multiple shads).</p>
+conceptually very simple, since all it needs to function is a TLS serving certificate.</p>
 <h2 id="usage">Usage</h2>
 <p>To deploy a cache server, create a <code>CacheServer</code> object:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">operator.kcp.io/v1alpha1</span>
@@ -1259,6 +1270,43 @@ is enabled:</p>
 </code></pre></div>
 <p>Once applied, the kcp-operator will reconfigure the shard <code>Deployments</code> accordingly and briefly after
 that, the cache server will be filled with data.</p>
+<p>By default, the cache-server is run with an embedded (in-process) etcd store which has implications
+on persistance and availability:</p>
+<ul>
+<li>embedded etcd uses ephemeral store, and will not retain its data across cache-server Pod deletions,</li>
+<li>CacheServer deployment with an embedded etcd store may not scale to more than one replice.</li>
+</ul>
+<p>This is usually sufficient for development environments. For production environments, please see
+the <a href="#high-availability">High availability</a> section below.</p>
+<h2 id="high-availability">High availability</h2>
+<p>It is recommended to run the cache-server with more than a single replica for high availability and
+load balancing.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">operator.kcp.io/v1alpha1</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">CacheServer</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-cache-server</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">example</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="nt">spec</span><span class="p">:</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">  </span><span class="c1"># ...</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">  </span><span class="nt">etcd</span><span class="p">:</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="w">    </span><span class="nt">tlsConfig</span><span class="p">:</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="w">      </span><span class="nt">secretRef</span><span class="p">:</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cache-etcd-client-tls</span>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="w">    </span><span class="nt">endpoints</span><span class="p">:</span>
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://cache-etcd-0.cache-etcd.example.svc.cluster.local:8379</span>
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="w">  </span><span class="c1"># ...</span>
+</code></pre></div>
+<p>With multiple replicas, the CacheServer must be configured with an external etcd store. Each replica then
+communicates with the same etcd store.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Currently, all CacheServer deployments in a kcp installation must use the same instance of the etcd store.
+The user is responsible for making sure the instance is able to span the whole kcp installation.</p>
+</div>
 
 
 
