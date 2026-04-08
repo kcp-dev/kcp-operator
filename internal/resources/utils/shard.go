@@ -140,7 +140,7 @@ func ApplyCommonShardConfig(deployment *appsv1.Deployment, spec *operatorv1alpha
 	}
 
 	// set container image
-	image, _ := resources.GetImageSettings(spec.Image)
+	image, _, _ := resources.GetImageSettings(spec.Image)
 	container.Image = image
 
 	deployment.Spec.Template.Spec.Containers[0] = container

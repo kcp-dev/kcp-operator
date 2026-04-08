@@ -5,6 +5,7 @@ go 1.24.0
 replace github.com/kcp-dev/kcp-operator/sdk => ./sdk
 
 require (
+	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/cert-manager/cert-manager v1.18.5
 	github.com/go-logr/logr v1.4.3
 	github.com/go-logr/zapr v1.3.0
@@ -30,7 +31,6 @@ require (
 
 require (
 	cel.dev/expr v0.25.1 // indirect
-	github.com/Masterminds/semver/v3 v3.2.1 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
