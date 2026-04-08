@@ -272,7 +272,7 @@ func hasAuthenticatedCache(version *semver.Version) bool {
 
 	// Only include client-ca for kcp >= 0.29; 0.28 users will have to ensure their
 	// tags parse as 0.28 to ensure compatibility with recent kcp-operators.
-	constraint, _ := semver.NewConstraint("~0.29.2 || ~0.30.2")
+	constraint, _ := semver.NewConstraint("~0.29.2 || ~0.30.2 || >=0.31.0")
 
 	return constraint.Check(version)
 }
