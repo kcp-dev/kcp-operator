@@ -49,7 +49,10 @@ if [[ -n "${BRANCH:-}" ]]; then
   MIKE_OPTIONS+=(--branch "$BRANCH")
 fi
 
-LATEST="$(git describe --tags --match='v[0-9]*' "$(git rev-list --tags --max-count=1)" | grep -o '^v[0-9]\+\.[0-9]\+' || echo 'v0.0.0')"
+# Determine the latest release version by semantic version sorting, not by commit date.
+# Using --sort=-v:refname ensures that e.g. v0.6.0 is considered newer than v0.5.2,
+# even if v0.5.2 was tagged after v0.6.0 (which happens with backport releases).
+LATEST="$(git tag -l 'v[0-9]*' --sort=-v:refname | grep -o '^v[0-9]\+\.[0-9]\+' | head -1 || echo 'v0.0.0')"
 if [[ "${LATEST:-}" == "${VERSION:-}" ]]; then
   MIKE_DEPLOY_OPTIONS+=(--update-aliases)
   MIKE_ALIASES+=(latest)
