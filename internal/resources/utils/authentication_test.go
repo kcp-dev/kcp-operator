@@ -87,7 +87,7 @@ func TestApplyServiceAccountAuthentication(t *testing.T) {
 				args := container.Args
 				assert.Contains(t, args, "--existing-arg=value")
 				assert.Contains(t, args, "--service-account-lookup=false")
-				assert.Contains(t, args, "--service-account-key-file=/etc/kcp/tls/test-root-shard/service-account/tls.key")
+				assert.Contains(t, args, "--service-account-key-file=/etc/kcp/tls/test-root-shard/service-account/tls.crt")
 				assert.Len(t, args, 3)
 			},
 		},
@@ -159,9 +159,9 @@ func TestApplyServiceAccountAuthentication(t *testing.T) {
 				// Check args
 				args := container.Args
 				assert.Contains(t, args, "--service-account-lookup=false")
-				assert.Contains(t, args, "--service-account-key-file=/etc/kcp/tls/test-root-shard/service-account/tls.key")
-				assert.Contains(t, args, "--service-account-key-file=/etc/kcp/tls/shard-1/service-account/tls.key")
-				assert.Contains(t, args, "--service-account-key-file=/etc/kcp/tls/shard-2/service-account/tls.key")
+				assert.Contains(t, args, "--service-account-key-file=/etc/kcp/tls/test-root-shard/service-account/tls.crt")
+				assert.Contains(t, args, "--service-account-key-file=/etc/kcp/tls/shard-1/service-account/tls.crt")
+				assert.Contains(t, args, "--service-account-key-file=/etc/kcp/tls/shard-2/service-account/tls.crt")
 				assert.Len(t, args, 4)
 			},
 		},
@@ -281,7 +281,7 @@ func TestApplyServiceAccountAuthentication(t *testing.T) {
 				// Should only have root shard args
 				args := container.Args
 				assert.Contains(t, args, "--service-account-lookup=false")
-				assert.Contains(t, args, "--service-account-key-file=/etc/kcp/tls/test-root-shard/service-account/tls.key")
+				assert.Contains(t, args, "--service-account-key-file=/etc/kcp/tls/test-root-shard/service-account/tls.crt")
 				assert.Len(t, args, 2)
 			},
 		},

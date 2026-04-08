@@ -76,7 +76,7 @@ func getCacheServerClientCertMountPath() string {
 	return "/etc/cache-server/tls/client-certificate"
 }
 
-func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.NamedDeploymentReconcilerFactory {
+func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard, kcpVW *operatorv1alpha1.VirtualWorkspace) reconciling.NamedDeploymentReconcilerFactory {
 	return func() (string, reconciling.DeploymentReconciler) {
 		return resources.GetRootShardDeploymentName(rootShard), func(dep *appsv1.Deployment) (*appsv1.Deployment, error) {
 			labels := resources.GetRootShardResourceLabels(rootShard)
@@ -93,7 +93,7 @@ func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.Nam
 				MountPath:  getCAMountPath(operatorv1alpha1.RootCA),
 			}}
 
-			args := getArgs(rootShard)
+			args := getArgs(rootShard, kcpVW)
 
 			for _, cert := range []operatorv1alpha1.Certificate{
 				// requires server CA and the logical-cluster-admin cert to be mounted
@@ -103,7 +103,7 @@ func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.Nam
 			} {
 				secretMounts = append(secretMounts, utils.SecretMount{
 					VolumeName: fmt.Sprintf("%s-kubeconfig", cert),
-					SecretName: kubeconfigSecret(rootShard, cert),
+					SecretName: resources.GetRootShardKubeconfigSecret(rootShard, cert),
 					MountPath:  getKubeconfigMountPath(cert),
 				})
 			}
@@ -124,6 +124,7 @@ func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.Nam
 			for _, cert := range []operatorv1alpha1.Certificate{
 				operatorv1alpha1.ServerCertificate,
 				operatorv1alpha1.ServiceAccountCertificate,
+				operatorv1alpha1.ClientCertificate,
 				operatorv1alpha1.LogicalClusterAdminCertificate,
 				operatorv1alpha1.ExternalLogicalClusterAdminCertificate,
 			} {
@@ -209,7 +210,7 @@ func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.Nam
 	}
 }
 
-func getArgs(rootShard *operatorv1alpha1.RootShard) []string {
+func getArgs(rootShard *operatorv1alpha1.RootShard, kcpVW *operatorv1alpha1.VirtualWorkspace) []string {
 	args := []string{
 		// CA configuration.
 		fmt.Sprintf("--root-ca-file=%s/tls.crt", getCAMountPath(operatorv1alpha1.RootCA)),
@@ -247,6 +248,18 @@ func getArgs(rootShard *operatorv1alpha1.RootShard) []string {
 
 	if ref := rootShard.Spec.Cache.Reference; ref != nil {
 		args = append(args, fmt.Sprintf("--cache-kubeconfig=%s/kubeconfig", getCacheServerKubeconfigMountPath()))
+	}
+
+	if kcpVW != nil {
+		args = append(args,
+			"--run-virtual-workspaces=false",
+			fmt.Sprintf("--shard-virtual-workspace-url=https://%s:%d", kcpVW.Spec.External.Hostname, kcpVW.Spec.External.Port),
+			fmt.Sprintf("--shard-virtual-workspace-ca-file=%s/tls.crt", getCAMountPath(operatorv1alpha1.ServerCA)),
+
+			// these two become mandatory when the in-process VW server is disabled
+			fmt.Sprintf("--shard-client-key-file=%s/tls.key", getCertificateMountPath(operatorv1alpha1.ClientCertificate)),
+			fmt.Sprintf("--shard-client-cert-file=%s/tls.crt", getCertificateMountPath(operatorv1alpha1.ClientCertificate)),
+		)
 	}
 
 	return args

@@ -126,10 +126,10 @@ func applyServiceAccountAuthentication(deployment *appsv1.Deployment, rootShard 
 
 	extraArgs := []string{}
 	extraArgs = append(extraArgs, "--service-account-lookup=false")
-	extraArgs = append(extraArgs, fmt.Sprintf("--service-account-key-file=/etc/kcp/tls/%s/service-account/tls.key", rootShard.Name))
+	extraArgs = append(extraArgs, fmt.Sprintf("--service-account-key-file=/etc/kcp/tls/%s/service-account/tls.crt", rootShard.Name))
 
 	for _, shard := range rootShard.Status.Shards {
-		extraArgs = append(extraArgs, fmt.Sprintf("--service-account-key-file=/etc/kcp/tls/%s/service-account/tls.key", shard.Name))
+		extraArgs = append(extraArgs, fmt.Sprintf("--service-account-key-file=/etc/kcp/tls/%s/service-account/tls.crt", shard.Name))
 	}
 
 	podSpec.Containers[0].Args = append(podSpec.Containers[0].Args, extraArgs...)

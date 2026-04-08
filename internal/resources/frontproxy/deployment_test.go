@@ -354,10 +354,10 @@ func TestDeploymentReconciler(t *testing.T) {
 					if strings.HasPrefix(arg, "--service-account-lookup=false") {
 						foundServiceAccountLookup = true
 					}
-					if strings.HasPrefix(arg, "--service-account-key-file=/etc/kcp/tls/test-root-shard/service-account/tls.key") {
+					if strings.HasPrefix(arg, "--service-account-key-file=/etc/kcp/tls/test-root-shard/service-account/tls.crt") {
 						foundShard1 = true
 					}
-					if strings.HasPrefix(arg, "--service-account-key-file=/etc/kcp/tls/test-shard-2/service-account/tls.key") {
+					if strings.HasPrefix(arg, "--service-account-key-file=/etc/kcp/tls/test-shard-2/service-account/tls.crt") {
 						foundShard2 = true
 					}
 				}

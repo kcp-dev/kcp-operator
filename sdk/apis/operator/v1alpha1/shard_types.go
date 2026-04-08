@@ -48,6 +48,8 @@ type CommonShardSpec struct {
 	Image *ImageSpec `json:"image,omitempty"`
 
 	// Replicas configures how many instances of this shard run in parallel. Defaults to 2 if not set.
+	//
+	// +optional
 	Replicas *int32 `json:"replicas,omitempty"`
 
 	// Resources overrides the default resource requests and limits.
@@ -59,6 +61,14 @@ type CommonShardSpec struct {
 	// Optional: Auth configures various aspects of Authentication and Authorization for this shard.
 	Auth *AuthSpec `json:"auth,omitempty"`
 
+	// Optionally the kcp virtual-workspace can be deployed standalone. In this case, the Shard or
+	// RootShard will need to be configured to point to the VirtualWorkspace that serve the kcp
+	// virtual workspaces (apiexport, initializingworkspaces etc.). If this field is left blank, kcp
+	// the kcp-operator assumes that the in-process virtual workspace should be enabled on this shard.
+	//
+	// +optional
+	KCPVirtualWorkspace *corev1.LocalObjectReference `json:"kcpVirtualWorkspace,omitempty"`
+
 	// CertificateTemplates allows to customize the properties on the generated
 	// certificates for this shard.
 	CertificateTemplates CertificateTemplateMap `json:"certificateTemplates,omitempty"`
@@ -69,12 +79,15 @@ type CommonShardSpec struct {
 	// Optional: DeploymentTemplate configures the Kubernetes Deployment created for this shard.
 	DeploymentTemplate *DeploymentTemplate `json:"deploymentTemplate,omitempty"`
 
-	// CABundle references a v1.Secret object that contains the CA bundle
-	// that should be used to validate the API server's TLS certificate.
-	// The secret must contain a key named `tls.crt` that holds the PEM encoded CA certificate.
-	// It will be merged into the "external-logical-cluster-admin-kubeconfig" kubeconfig under the `certificate-authority-data` field.
-	// If not specified, the kubeconfig will use the CA bundle of the root shard or front-proxy referenced in the Target field.
-	// It will NOT be used to configure the API server's own TLS certificate or any other component.
+	// CABundle references a v1.Secret object that contains the CA bundle that should be used
+	// to validate the API server's TLS certificate. The secret must contain a key named `tls.crt`
+	// that holds the PEM encoded CA certificate. It will be merged into the
+	// "external-logical-cluster-admin-kubeconfig" kubeconfig under the `certificate-authority-data`
+	// field.
+	// If not specified, the kubeconfig will use the CA bundle of the root shard or front-proxy
+	// referenced in the Target field. It will NOT be used to configure the API server's own TLS
+	// certificate or any other component.
+	//
 	// +optional
 	CABundleSecretRef *corev1.LocalObjectReference `json:"caBundleSecretRef,omitempty"`
 

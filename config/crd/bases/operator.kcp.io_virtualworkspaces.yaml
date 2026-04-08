@@ -4,30 +4,23 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.16.1
-  name: shards.operator.kcp.io
+  name: virtualworkspaces.operator.kcp.io
 spec:
   group: operator.kcp.io
   names:
-    kind: Shard
-    listKind: ShardList
-    plural: shards
-    singular: shard
+    kind: VirtualWorkspace
+    listKind: VirtualWorkspaceList
+    plural: virtualworkspaces
+    singular: virtualworkspace
   scope: Namespaced
   versions:
-  - additionalPrinterColumns:
-    - jsonPath: .spec.rootShard.ref.name
-      name: RootShard
-      type: string
-    - jsonPath: .status.phase
-      name: Phase
-      type: string
-    - jsonPath: .metadata.creationTimestamp
-      name: Age
-      type: date
-    name: v1alpha1
+  - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: Shard is the Schema for the shards API
+        description: |-
+          VirtualWorkspace represents an external virtual workspace server that will be deployed as a
+          single Deployment (plus a few auxiliary resources). Creating a per-shard virtual workspace means
+          you have to create one VirtualWorkspace object for each shard, plus one for the root shard.
         properties:
           apiVersion:
             description: |-
@@ -47,212 +40,8 @@ spec:
           metadata:
             type: object
           spec:
-            description: ShardSpec defines the desired state of Shard
+            description: VirtualWorkspaceSpec defines the desired state of VirtualWorkspace.
             properties:
-              audit:
-                properties:
-                  policy:
-                    description: Audit policy configuration.
-                    properties:
-                      configMap:
-                        description: |-
-                          ConfigMap is a reference to the ConfigMap containing the audit policy
-                          file which is mounted into the container.
-                        properties:
-                          key:
-                            description: Key in the data.
-                            type: string
-                          name:
-                            description: Name of the object.
-                            type: string
-                        required:
-                        - key
-                        - name
-                        type: object
-                    type: object
-                  webhook:
-                    properties:
-                      batchBufferSize:
-                        description: The size of the buffer to store events before
-                          batching and writing. Only used in batch mode.
-                        type: integer
-                      batchMaxSize:
-                        description: The maximum size of a batch. Only used in batch
-                          mode.
-                        type: integer
-                      batchMaxWait:
-                        description: |-
-                          The amount of time to wait before force writing the batch that hadn't reached the max size.
-                          Only used in batch mode.
-                        type: string
-                      batchThrottleBurst:
-                        description: |-
-                          Maximum number of requests sent at the same moment if ThrottleQPS was not utilized before.
-                          Only used in batch mode.
-                        type: integer
-                      batchThrottleEnable:
-                        description: Whether batching throttling is enabled. Only
-                          used in batch mode.
-                        type: boolean
-                      batchThrottleQPS:
-                        description: |-
-                          Maximum average number of batches per second. Only used in batch mode.
-                          This value is a floating point number, stored as a string (e.g. "3.1").
-                        type: string
-                      configSecretName:
-                        description: |-
-                          Name of a Kubernetes Secret that contains a kubeconfig formatted file that defines the
-                          audit webhook configuration.
-                        type: string
-                      initialBackoff:
-                        description: The amount of time to wait before retrying the
-                          first failed request.
-                        type: string
-                      mode:
-                        description: |-
-                          Strategy for sending audit events. Blocking indicates sending events should block server
-                          responses. Batch causes the backend to buffer and write events asynchronously.
-                        enum:
-                        - ""
-                        - batch
-                        - blocking
-                        - blocking-strict
-                        type: string
-                      truncateEnabled:
-                        description: Whether event and batch truncating is enabled.
-                        type: boolean
-                      truncateMaxBatchSize:
-                        description: |-
-                          Maximum size of the batch sent to the underlying backend. Actual serialized size can be
-                          several hundreds of bytes greater. If a batch exceeds this limit, it is split into several
-                          batches of smaller size.
-                        type: integer
-                      truncateMaxEventSize:
-                        description: |-
-                          Maximum size of the audit event sent to the underlying backend. If the size of an event
-                          is greater than this number, first request and response are removed, and if this doesn't
-                          reduce the size enough, event is discarded.
-                        type: integer
-                      version:
-                        description: API group and version used for serializing audit
-                          events written to webhook.
-                        type: string
-                    type: object
-                type: object
-              auth:
-                description: 'Optional: Auth configures various aspects of Authentication
-                  and Authorization for this shard.'
-                properties:
-                  dropGroups:
-                    description: 'Optional: DropGroups configures groups to be dropped
-                      before forwarding requests to Shards.'
-                    items:
-                      type: string
-                    type: array
-                  oidc:
-                    description: 'Optional: OIDC configures OpenID Connect Authentication.'
-                    properties:
-                      caFileRef:
-                        description: |-
-                          Optionally provides a reference to a secret that contains a CA bundle for the OIDC issuer. This is useful when
-                          the OIDC issuer is not publicly trusted.
-                        properties:
-                          key:
-                            description: Key is the key in the secret that contains
-                              the CA file. Defaults to "ca.crt".
-                            type: string
-                          name:
-                            description: Name is the name of the secret that contains
-                              the CA file.
-                            type: string
-                        required:
-                        - name
-                        type: object
-                      clientID:
-                        description: ClientID is the OIDC client ID configured on
-                          the issuer side for this kcp instance.
-                        type: string
-                      clientSecret:
-                        description: |-
-                          Optionally provide the client secret for the OIDC client. This is not used by kcp itself, but is used to generate
-                          a OIDC kubeconfig that can be shared with users to log in via the OIDC provider.
-                        type: string
-                      groupsClaim:
-                        description: 'Experimental: Optionally provides a custom claim
-                          for fetching groups. The claim must be a string or an array
-                          of strings.'
-                        type: string
-                      groupsPrefix:
-                        description: |-
-                          Optionally sets a custom groups prefix. This defaults to "oidc:" if unset, which means a group called "group1"
-                          on the OIDC side will be recognised as "oidc:group1" in kcp.
-                        type: string
-                      issuerURL:
-                        description: IssuerURL is used for the OIDC issuer URL. Only
-                          https URLs will be accepted.
-                        type: string
-                      usernameClaim:
-                        description: Optionally uses a custom claim for fetching the
-                          username. This defaults to "sub" if unset.
-                        type: string
-                      usernamePrefix:
-                        description: |-
-                          Optionally sets a custom username prefix. This defaults to "oidc:" if unset, which means a user called "user@example.com"
-                          on the OIDC side will be recognised as "oidc:user@example.com" in kcp.
-                        type: string
-                    required:
-                    - clientID
-                    - issuerURL
-                    type: object
-                  passOnGroups:
-                    description: 'Optional: PassOnGroups configures groups to be passed
-                      on before forwarding requests to Shards'
-                    items:
-                      type: string
-                    type: array
-                  serviceAccount:
-                    description: 'Optional: serviceAccountAuthentication configures
-                      ServiceAccount Authentication.'
-                    properties:
-                      enabled:
-                        description: |-
-                          Optional: Enabled enables or disables ServiceAccount Authentication.
-                          If set, it will mount every shard's service account certificate to the front-proxy.
-                        type: boolean
-                    required:
-                    - enabled
-                    type: object
-                type: object
-              authorization:
-                properties:
-                  webhook:
-                    properties:
-                      allowPaths:
-                        description: |-
-                          A list of HTTP paths to skip during authorization, i.e. these are authorized without contacting the 'core' kubernetes server.
-                          If specified, completely overwrites the default of [/healthz,/readyz,/livez].
-                        items:
-                          type: string
-                        type: array
-                      cacheAuthorizedTTL:
-                        description: The duration to cache 'authorized' responses
-                          from the webhook authorizer.
-                        type: string
-                      cacheUnauthorizedTTL:
-                        description: The duration to cache 'unauthorized' responses
-                          from the webhook authorizer.
-                        type: string
-                      configSecretName:
-                        description: |-
-                          Name of a Kubernetes Secret that contains a kubeconfig formatted file that defines the
-                          authorization webhook configuration.
-                        type: string
-                      version:
-                        description: The API version of the authorization.k8s.io SubjectAccessReview
-                          to send to and expect from the webhook.
-                        type: string
-                    type: object
-                type: object
               caBundleSecretRef:
                 description: |-
                   CABundle references a v1.Secret object that contains the CA bundle that should be used
@@ -275,26 +64,6 @@ spec:
                     type: string
                 type: object
                 x-kubernetes-map-type: atomic
-              cache:
-                description: |-
-                  Optional: Configure an external cache server for this shard. If not configured, the cache
-                  settings of the RootShard will be used.
-                properties:
-                  ref:
-                    description: Reference references a local CacheServer object.
-                    properties:
-                      name:
-                        default: ""
-                        description: |-
-                          Name of the referent.
-                          This field is effectively required, but due to backwards compatibility is
-                          allowed to be empty. Instances of this type with an empty value here are
-                          almost certainly wrong.
-                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                        type: string
-                    type: object
-                    x-kubernetes-map-type: atomic
-                type: object
               certificateTemplates:
                 additionalProperties:
                   properties:
@@ -505,7 +274,7 @@ spec:
                   type: object
                 description: |-
                   CertificateTemplates allows to customize the properties on the generated
-                  certificates for this shard.
+                  certificates for this server.
                 type: object
               clusterDomain:
                 description: ClusterDomain is the DNS domain for services in the cluster.
@@ -513,7 +282,7 @@ spec:
                 type: string
               deploymentTemplate:
                 description: 'Optional: DeploymentTemplate configures the Kubernetes
-                  Deployment created for this shard.'
+                  Deployment created for this server.'
                 properties:
                   metadata:
                     properties:
@@ -1784,50 +1553,49 @@ spec:
                         type: object
                     type: object
                 type: object
-              etcd:
-                description: Etcd configures the etcd cluster that this shard should
-                  be using.
+              external:
+                description: |-
+                  External configures the domain and port under which this virtual workspace should be reachable.
+                  This is important to allow kcp to generate the correct URLs for clients of virtual workspaces.
                 properties:
-                  endpoints:
-                    description: Endpoints is a list of http urls at which etcd nodes
-                      are available. The expected format is "https://etcd-hostname:2379".
-                    items:
-                      type: string
-                    type: array
-                  tlsConfig:
-                    description: ClientCert configures the client certificate used
-                      to access etcd.
-                    properties:
-                      secretRef:
-                        description: SecretRef is the reference to a v1.Secret object
-                          that contains the TLS certificate.
-                        properties:
-                          name:
-                            default: ""
-                            description: |-
-                              Name of the referent.
-                              This field is effectively required, but due to backwards compatibility is
-                              allowed to be empty. Instances of this type with an empty value here are
-                              almost certainly wrong.
-                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                            type: string
-                        type: object
-                        x-kubernetes-map-type: atomic
-                    required:
-                    - secretRef
-                    type: object
+                  hostname:
+                    description: |-
+                      Hostname is the external name of the kcp instance. This should be matched by a DNS
+                      record pointing to the kcp-front-proxy Service's external IP address.
+                    type: string
+                  port:
+                    format: int32
+                    type: integer
+                  privateHostname:
+                    description: |-
+                      Optional: PrivateHostname is an optional hostname that should be used to
+                      access internal front-proxy services, e.g. by other kcp components. This is helpful
+                      if you don't want to use the public hostname for internal communication, e.g.
+                      You have a DNS configuration, where DNS is re-encrypted for external access, but
+                      internal components can access the front-proxy directly. If not set, the value of `hostname` is used.
+                    type: string
+                  privatePort:
+                    description: |-
+                      Optional: PrivatePort is an optional port that should be used to
+                      access internal front-proxy services, e.g. by other kcp components. This is helpful
+                      if you don't want to use the public port for internal communication, e.g.
+                      because it is firewalled. If not set, the value of `port` is used.
+                    format: int32
+                    type: integer
                 required:
-                - endpoints
+                - hostname
+                - port
                 type: object
               extraArgs:
                 description: 'Optional: ExtraArgs defines additional command line
-                  arguments to pass to the shard container.'
+                  arguments to pass to the server container.'
                 items:
                   type: string
                 type: array
               image:
-                description: ImageSpec defines settings for using a specific image
-                  and overwriting the default images used.
+                description: |-
+                  Optional: Image overwrites the container image used to deploy the server.
+                  If not specified, kcp's own virtual-workspace server will be deployed.
                 properties:
                   imagePullSecrets:
                     description: 'Optional: ImagePullSecrets is a list of secret references
@@ -1859,27 +1627,9 @@ spec:
                       Defaults to the latest kcp release that the operator supports.
                     type: string
                 type: object
-              kcpVirtualWorkspace:
-                description: |-
-                  Optionally the kcp virtual-workspace can be deployed standalone. In this case, the Shard or
-                  RootShard will need to be configured to point to the VirtualWorkspace that serve the kcp
-                  virtual workspaces (apiexport, initializingworkspaces etc.). If this field is left blank, kcp
-                  the kcp-operator assumes that the in-process virtual workspace should be enabled on this shard.
-                properties:
-                  name:
-                    default: ""
-                    description: |-
-                      Name of the referent.
-                      This field is effectively required, but due to backwards compatibility is
-                      allowed to be empty. Instances of this type with an empty value here are
-                      almost certainly wrong.
-                      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                    type: string
-                type: object
-                x-kubernetes-map-type: atomic
               logging:
                 description: 'Optional: Logging configures the logging settings for
-                  the shard.'
+                  the server.'
                 properties:
                   level:
                     description: |-
@@ -1890,8 +1640,9 @@ spec:
                     type: integer
                 type: object
               replicas:
-                description: Replicas configures how many instances of this shard
-                  run in parallel. Defaults to 2 if not set.
+                description: |-
+                  Replicas configures how many instances of this server run in parallel.
+                  Defaults to 2 if not set.
                 format: int32
                 type: integer
               resources:
@@ -1954,26 +1705,9 @@ spec:
                       More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
                     type: object
                 type: object
-              rootShard:
-                properties:
-                  ref:
-                    description: Reference references a local RootShard object.
-                    properties:
-                      name:
-                        default: ""
-                        description: |-
-                          Name of the referent.
-                          This field is effectively required, but due to backwards compatibility is
-                          allowed to be empty. Instances of this type with an empty value here are
-                          almost certainly wrong.
-                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                        type: string
-                    type: object
-                    x-kubernetes-map-type: atomic
-                type: object
               serviceTemplate:
                 description: 'Optional: ServiceTemplate configures the Kubernetes
-                  Service created for this shard.'
+                  Service created for this server.'
                 properties:
                   metadata:
                     description: |-
@@ -2003,17 +1737,56 @@ spec:
                         type: string
                     type: object
                 type: object
-              shardBaseURL:
-                description: |-
-                  ShardBaseURL is the base URL under which this shard should be reachable. This is used to configure
-                  the external URL. If not provided, the operator will use kubernetes service address to generate it.
-                type: string
+              target:
+                description: Target configures to which shard this virtual workspace
+                  belongs.
+                properties:
+                  rootShardRef:
+                    description: |-
+                      RootShardRef is used to connect this virtual workspace to the root shard. This can be used for
+                      per-shard VWs, in which case having one VirtualWorkspace object with a rootShardRef is done
+                      because the root shard is technically also a shard. But it can also be used for "singleton"
+                      virtual workspaces, where one single deployment is meant to connect to all shards. In this
+                      case the VW will most likely need to connect to the root shard to query and watch the Shard
+                      objects.
+
+                      Mutually exclusive with shardRef.
+                    properties:
+                      name:
+                        default: ""
+                        description: |-
+                          Name of the referent.
+                          This field is effectively required, but due to backwards compatibility is
+                          allowed to be empty. Instances of this type with an empty value here are
+                          almost certainly wrong.
+                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                        type: string
+                    type: object
+                    x-kubernetes-map-type: atomic
+                  shardRef:
+                    description: |-
+                      ShardRef is used to connect this virtual workspace to one specific shard.
+
+                      Mutually exclusive with rootShardRef.
+                    properties:
+                      name:
+                        default: ""
+                        description: |-
+                          Name of the referent.
+                          This field is effectively required, but due to backwards compatibility is
+                          allowed to be empty. Instances of this type with an empty value here are
+                          almost certainly wrong.
+                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                        type: string
+                    type: object
+                    x-kubernetes-map-type: atomic
+                type: object
             required:
-            - etcd
-            - rootShard
+            - external
+            - target
             type: object
           status:
-            description: ShardStatus defines the observed state of Shard
+            description: VirtualWorkspaceStatus defines the observed state of VirtualWorkspace
             properties:
               conditions:
                 items:
@@ -2074,8 +1847,6 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
-              phase:
-                type: string
             type: object
         type: object
     served: true

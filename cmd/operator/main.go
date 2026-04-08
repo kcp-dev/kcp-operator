@@ -48,6 +48,7 @@ import (
 	kubeconfigrbac "github.com/kcp-dev/kcp-operator/internal/controller/kubeconfig-rbac"
 	"github.com/kcp-dev/kcp-operator/internal/controller/rootshard"
 	"github.com/kcp-dev/kcp-operator/internal/controller/shard"
+	"github.com/kcp-dev/kcp-operator/internal/controller/virtualworkspace"
 	"github.com/kcp-dev/kcp-operator/internal/metrics"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
@@ -218,6 +219,12 @@ func run(ctx context.Context) error {
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("unable to create controller %s: %w", "Kubeconfig", err)
+	}
+	if err = (&virtualworkspace.Reconciler{
+		Client: client,
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("unable to create controller %s: %w", "VirtualWorkspace", err)
 	}
 	if config.Enabled(config.ConfigurationBundle) {
 		if err = (&bundle.BundleReconciler{

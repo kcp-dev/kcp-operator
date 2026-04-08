@@ -297,3 +297,51 @@ func OperatorClientCertificateReconciler(rootShard *operatorv1alpha1.RootShard) 
 		}
 	}
 }
+
+// ClientCertificateReconciler generates a client certificate that is used by the root shard to
+// connect to an external kcp-virtual-workspaces pod.
+func ClientCertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
+	const certKind = operatorv1alpha1.ClientCertificate
+
+	name := resources.GetRootShardCertificateName(rootShard, certKind)
+	template := rootShard.Spec.CertificateTemplates.CertificateTemplate(certKind)
+
+	return func() (string, reconciling.CertificateReconciler) {
+		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
+			cert.SetLabels(resources.GetRootShardResourceLabels(rootShard))
+			cert.Spec = certmanagerv1.CertificateSpec{
+				SecretName: name,
+				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
+					Labels: map[string]string{
+						resources.RootShardLabel: rootShard.Name,
+					},
+				},
+
+				CommonName:  rootShard.Name,
+				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
+				RenewBefore: &operatorv1alpha1.DefaultCertificateRenewal,
+
+				PrivateKey: &certmanagerv1.CertificatePrivateKey{
+					Algorithm: certmanagerv1.RSAKeyAlgorithm,
+					Size:      4096,
+				},
+
+				Subject: &certmanagerv1.X509Subject{
+					Organizations: []string{"system:masters"},
+				},
+
+				Usages: []certmanagerv1.KeyUsage{
+					certmanagerv1.UsageClientAuth,
+				},
+
+				IssuerRef: certmanagermetav1.ObjectReference{
+					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.ClientCA),
+					Kind:  "Issuer",
+					Group: "cert-manager.io",
+				},
+			}
+
+			return utils.ApplyCertificateTemplate(cert, &template), nil
+		}
+	}
+}

@@ -26,6 +26,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kcp-dev/kcp-operator/internal/resources"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -133,6 +134,10 @@ func DeployRootShard(ctx context.Context, t *testing.T, client ctrlruntimeclient
 	rootShard := operatorv1alpha1.RootShard{}
 	rootShard.Name = "r00t"
 	rootShard.Namespace = namespace
+
+	if externalHostname == "" {
+		externalHostname = resources.GetRootShardBaseHost(&rootShard)
+	}
 
 	rootShard.Spec = operatorv1alpha1.RootShardSpec{
 		External: operatorv1alpha1.ExternalConfig{
@@ -295,4 +300,46 @@ func DeployCacheServerWithExternalEtcd(ctx context.Context, t *testing.T, client
 			Endpoints: []string{etcd},
 		}
 	})...)
+}
+
+func DeployVirtualWorkspace(ctx context.Context, t *testing.T, client ctrlruntimeclient.Client, namespace, name string, waitForReady bool, patches ...func(*operatorv1alpha1.VirtualWorkspace)) operatorv1alpha1.VirtualWorkspace {
+	t.Helper()
+
+	vw := operatorv1alpha1.VirtualWorkspace{}
+	vw.Name = name
+	vw.Namespace = namespace
+	vw.Spec = operatorv1alpha1.VirtualWorkspaceSpec{
+		External: operatorv1alpha1.ExternalConfig{
+			Hostname: resources.GetVirtualWorkspaceBaseHost(&vw),
+			Port:     6443,
+		},
+	}
+
+	if tag := getKcpTag(); tag != "" {
+		vw.Spec.Image = &operatorv1alpha1.ImageSpec{
+			Tag: tag,
+		}
+	}
+
+	for _, patch := range patches {
+		patch(&vw)
+	}
+
+	t.Logf("Creating VirtualWorkspace %s...", vw.Name)
+	if err := client.Create(ctx, &vw); err != nil {
+		t.Fatal(err)
+	}
+
+	if waitForReady {
+		opts := []ctrlruntimeclient.ListOption{
+			ctrlruntimeclient.InNamespace(vw.Namespace),
+			ctrlruntimeclient.MatchingLabels{
+				"app.kubernetes.io/component": "virtual-workspace",
+				"app.kubernetes.io/instance":  vw.Name,
+			},
+		}
+		WaitForPods(t, ctx, client, opts...)
+	}
+
+	return vw
 }

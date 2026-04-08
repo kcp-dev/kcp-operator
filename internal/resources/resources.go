@@ -35,11 +35,12 @@ const (
 
 	// RootShardLabel is placed on Secrets created for Certificates so that
 	// the Secrets can be more easily mapped to their RootShards.
-	RootShardLabel   = "operator.kcp.io/rootshard"
-	ShardLabel       = "operator.kcp.io/shard"
-	FrontProxyLabel  = "operator.kcp.io/front-proxy"
-	KubeconfigLabel  = "operator.kcp.io/kubeconfig"
-	CacheServerLabel = "operator.kcp.io/cache-server"
+	RootShardLabel        = "operator.kcp.io/rootshard"
+	ShardLabel            = "operator.kcp.io/shard"
+	FrontProxyLabel       = "operator.kcp.io/front-proxy"
+	KubeconfigLabel       = "operator.kcp.io/kubeconfig"
+	CacheServerLabel      = "operator.kcp.io/cache-server"
+	VirtualWorkspaceLabel = "operator.kcp.io/virtual-workspace"
 
 	// BundleAnnotation is placed on RootShard, Shard, or FrontProxy objects to trigger automatic Bundle creation
 	BundleAnnotation = "operator.kcp.io/bundle"
@@ -91,6 +92,10 @@ func GetCacheServerDeploymentName(s *operatorv1alpha1.CacheServer) string {
 	return fmt.Sprintf("%s-cache-server", s.Name)
 }
 
+func GetVirtualWorkspaceDeploymentName(vw *operatorv1alpha1.VirtualWorkspace) string {
+	return fmt.Sprintf("%s-virtual-workspace", vw.Name)
+}
+
 func GetRootShardServiceName(r *operatorv1alpha1.RootShard) string {
 	return fmt.Sprintf("%s-kcp", r.Name)
 }
@@ -126,6 +131,10 @@ func GetShardResourceLabels(s *operatorv1alpha1.Shard) map[string]string {
 
 func GetCacheServerResourceLabels(s *operatorv1alpha1.CacheServer) map[string]string {
 	return getResourceLabels(s.Name, "cache-server")
+}
+
+func GetVirtualWorkspaceResourceLabels(vw *operatorv1alpha1.VirtualWorkspace) map[string]string {
+	return getResourceLabels(vw.Name, "virtual-workspace")
 }
 
 func GetRootShardBaseHost(r *operatorv1alpha1.RootShard) string {
@@ -173,6 +182,19 @@ func GetCacheServerBaseURL(s *operatorv1alpha1.CacheServer) string {
 	return fmt.Sprintf("https://%s:6443", GetCacheServerBaseHost(s))
 }
 
+func GetVirtualWorkspaceBaseHost(s *operatorv1alpha1.VirtualWorkspace) string {
+	clusterDomain := s.Spec.ClusterDomain
+	if clusterDomain == "" {
+		clusterDomain = defaultClusterDomain
+	}
+
+	return fmt.Sprintf("%s-virtual-workspace.%s.svc.%s", s.Name, s.Namespace, clusterDomain)
+}
+
+func GetVirtualWorkspaceBaseURL(s *operatorv1alpha1.VirtualWorkspace) string {
+	return fmt.Sprintf("https://%s:6443", GetVirtualWorkspaceBaseHost(s))
+}
+
 func GetRootShardCertificateName(r *operatorv1alpha1.RootShard, certName operatorv1alpha1.Certificate) string {
 	return fmt.Sprintf("%s-%s", r.Name, certName)
 }
@@ -187,6 +209,10 @@ func GetShardCertificateName(s *operatorv1alpha1.Shard, certName operatorv1alpha
 
 func GetCacheServerCertificateName(s *operatorv1alpha1.CacheServer, certName operatorv1alpha1.Certificate) string {
 	return fmt.Sprintf("%s-%s", s.Name, certName)
+}
+
+func GetVirtualWorkspaceCertificateName(vw *operatorv1alpha1.VirtualWorkspace, certName operatorv1alpha1.Certificate) string {
+	return fmt.Sprintf("%s-%s", vw.Name, certName)
 }
 
 func GetRootShardCAName(r *operatorv1alpha1.RootShard, caName operatorv1alpha1.CA) string {
@@ -245,6 +271,14 @@ func GetFrontProxyServiceName(f *operatorv1alpha1.FrontProxy) string {
 
 func GetRootShardProxyServiceName(r *operatorv1alpha1.RootShard) string {
 	return fmt.Sprintf("%s-proxy", r.Name)
+}
+
+func GetRootShardKubeconfigSecret(r *operatorv1alpha1.RootShard, cert operatorv1alpha1.Certificate) string {
+	return fmt.Sprintf("%s-%s-kubeconfig", r.Name, cert)
+}
+
+func GetShardKubeconfigSecret(shard *operatorv1alpha1.Shard, cert operatorv1alpha1.Certificate) string {
+	return fmt.Sprintf("%s-%s-kubeconfig", shard.Name, cert)
 }
 
 func GetBundleName(ownerName string) string {

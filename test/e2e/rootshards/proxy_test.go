@@ -47,6 +47,8 @@ func TestRootShardProxy(t *testing.T) {
 	ctx := context.Background()
 
 	namespace := utils.CreateSelfDestructingNamespace(t, ctx, client, "rootshard-proxy")
+
+	// externalHostname must match whatever DeployFrontProxy chooses as the name for the FrontProxy
 	externalHostname := fmt.Sprintf("front-proxy-front-proxy.%s.svc.cluster.local", namespace.Name)
 
 	// deploy a root shard incl. etcd

@@ -48,7 +48,7 @@ func TestCreateShard(t *testing.T) {
 	namespace := utils.CreateSelfDestructingNamespace(t, ctx, client, "create-shard")
 
 	// deploy a root shard incl. etcd
-	rootShard := utils.DeployRootShard(ctx, t, client, namespace.Name, "example.localhost")
+	rootShard := utils.DeployRootShard(ctx, t, client, namespace.Name, "")
 
 	// deploy a 2nd shard incl. etcd
 	shardName := "aadvark"
@@ -154,7 +154,7 @@ func TestShardBundleAnnotation(t *testing.T) {
 	namespace := utils.CreateSelfDestructingNamespace(t, ctx, client, "shard-bundle-annotation")
 
 	// deploy a root shard incl. etcd
-	rootShard := utils.DeployRootShard(ctx, t, client, namespace.Name, "example.localhost")
+	rootShard := utils.DeployRootShard(ctx, t, client, namespace.Name, "")
 
 	// deploy a shard without bundle annotation first
 	shardName := "annotated-shard"
