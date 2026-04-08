@@ -395,6 +395,11 @@ func (in *CacheServerSpec) DeepCopyInto(out *CacheServerSpec) {
 		*out = new(ImageSpec)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.Replicas != nil {
+		in, out := &in.Replicas, &out.Replicas
+		*out = new(int32)
+		**out = **in
+	}
 	if in.Logging != nil {
 		in, out := &in.Logging, &out.Logging
 		*out = new(LoggingSpec)
