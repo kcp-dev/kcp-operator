@@ -1781,6 +1781,10 @@ spec:
                     type: object
                     x-kubernetes-map-type: atomic
                 type: object
+                x-kubernetes-validations:
+                - message: Must specify exactly one of rootShardRef or shardRef
+                  rule: (has(self.rootShardRef) && !has(self.shardRef)) || (!has(self.rootShardRef)
+                    && has(self.shardRef))
             required:
             - external
             - target
