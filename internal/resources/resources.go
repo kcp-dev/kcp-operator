@@ -26,7 +26,12 @@ import (
 
 const (
 	ImageRepository = "ghcr.io/kcp-dev/kcp"
-	ImageTag        = "v0.30.3"
+
+	// ImageTag is the default tag to be used for any kcp component.
+	//
+	// When changing this to a new minor version, you must also update
+	// the .prow.yaml accordingly and shift the jobs.
+	ImageTag = "v0.30.3"
 
 	appNameLabel      = "app.kubernetes.io/name"
 	appInstanceLabel  = "app.kubernetes.io/instance"
