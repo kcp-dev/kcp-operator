@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"net"
 	"net/url"
-	"os"
 	"os/exec"
 	"regexp"
 	"strconv"
@@ -29,6 +28,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/kcp-dev/logicalcluster/v3"
 	kcpcorev1alpha1 "github.com/kcp-dev/sdk/apis/core/v1alpha1"
 	kcptenancyv1alpha1 "github.com/kcp-dev/sdk/apis/tenancy/v1alpha1"
@@ -356,6 +356,16 @@ func changeClusterInURL(u string, newCluster logicalcluster.Path) string {
 	return strings.Replace(u, matches[0], newPath, 1)
 }
 
-func GetKcpRelease() string {
-	return os.Getenv("KCP_RELEASE")
+func GetKcpRelease() *semver.Version {
+	tag := getKcpTag()
+	if tag == "" {
+		tag = resources.ImageTag
+	}
+
+	parsed, err := semver.NewVersion(tag)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to determine effective kcp version, provider KCP_TAG is not a valid semver: %v", err))
+	}
+
+	return parsed
 }

@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/Masterminds/semver/v3"
+
 	corev1 "k8s.io/api/core/v1"
 
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"

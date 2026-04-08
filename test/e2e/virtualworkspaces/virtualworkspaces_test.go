@@ -25,6 +25,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/go-logr/logr"
 	"github.com/kcp-dev/logicalcluster/v3"
 	kcpcorev1alpha1 "github.com/kcp-dev/sdk/apis/core/v1alpha1"
@@ -47,7 +48,7 @@ import (
 )
 
 func skipIfNotMainBranch(t *testing.T) {
-	if utils.GetKcpRelease() != "main" {
+	if utils.GetKcpRelease().LessThan(semver.MustParse("0.31")) {
 		t.Skip("This test requires kcp >= 0.31.")
 	}
 }

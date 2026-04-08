@@ -26,10 +26,10 @@ import (
 
 func TestGetImageSettings(t *testing.T) {
 	tests := []struct {
-		name              string
-		imageSpec         *operatorv1alpha1.ImageSpec
-		expectedImage     string
-		expectedVersion   string // "major.minor" or empty if unparseable
+		name            string
+		imageSpec       *operatorv1alpha1.ImageSpec
+		expectedImage   string
+		expectedVersion string // "major.minor" or empty if unparseable
 	}{
 		{
 			name:            "default settings",

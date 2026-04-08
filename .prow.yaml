@@ -159,6 +159,8 @@ presubmits:
           env:
             - name: KCP_TAG
               value: main
+            - name: KCP_RELEASE
+              value: '0.31'
           resources:
             requests:
               memory: 8Gi
