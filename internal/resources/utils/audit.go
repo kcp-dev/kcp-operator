@@ -88,7 +88,7 @@ func applyAuditWebhookConfiguration(deployment *appsv1.Deployment, config *opera
 	}
 
 	if val := config.BatchMaxWait; val != nil {
-		extraArgs = append(extraArgs, fmt.Sprintf("--audit-webhook-batch-max-wait=%v", val.String()))
+		extraArgs = append(extraArgs, fmt.Sprintf("--audit-webhook-batch-max-wait=%v", val.Duration.String()))
 	}
 
 	if val := config.BatchThrottleBurst; val != 0 {
@@ -104,7 +104,7 @@ func applyAuditWebhookConfiguration(deployment *appsv1.Deployment, config *opera
 	}
 
 	if val := config.InitialBackoff; val != nil {
-		extraArgs = append(extraArgs, fmt.Sprintf("--audit-webhook-initial-backoff=%v", val.String()))
+		extraArgs = append(extraArgs, fmt.Sprintf("--audit-webhook-initial-backoff=%v", val.Duration.String()))
 	}
 
 	if val := config.Mode; val != "" {
