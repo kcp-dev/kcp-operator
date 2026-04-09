@@ -5,14 +5,12 @@
 * Use `make imports` before committing any change to Go code.
 * Use `make modules` after any change to a `go.mod`.
 * Run `make lint-fix` before submitting a pull request.
+* When changing any file in `sdk/apis/`, run `make codegen`.
 * Run the e2e tests before submitting a pull request.
-* When possible, try to keep pull requests small and self-contained to make reviews easier.
-
-## SDK
-
-* Do not update dependencies in `sdk/go.mod` unless necessary to keep the kcp-operator compiling.
-* Specifically do not attempt to manually bump the Go version in any `go.mod` file in this project,
-  instead let `go mod tidy` take care of that.
+* When possible, try to keep pull requests small and self-contained to make reviews easier. Follow
+  the repository's `.github/pull_request_template.md` and make sure to focus more on the reasons,
+  background and encountered problems that motivated the change and less on reiterating code
+  changes.
 
 ## Documentation
 
