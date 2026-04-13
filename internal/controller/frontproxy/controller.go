@@ -41,8 +41,8 @@ import (
 	bundlehelper "github.com/kcp-dev/kcp-operator/internal/controller/bundle"
 	"github.com/kcp-dev/kcp-operator/internal/controller/util"
 	"github.com/kcp-dev/kcp-operator/internal/metrics"
-	"github.com/kcp-dev/kcp-operator/internal/resources"
 	"github.com/kcp-dev/kcp-operator/internal/resources/frontproxy"
+	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -113,16 +113,18 @@ func (r *FrontProxyReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, nil
 	}
 
-	conditions, recErr := r.reconcile(ctx, &frontProxy)
+	namingScheme := naming.NewVersion1()
 
-	if err := r.reconcileStatus(ctx, &frontProxy, conditions); err != nil {
+	conditions, recErr := r.reconcile(ctx, &frontProxy, namingScheme)
+
+	if err := r.reconcileStatus(ctx, &frontProxy, conditions, namingScheme); err != nil {
 		recErr = kerrors.NewAggregate([]error{recErr, err})
 	}
 
 	return ctrl.Result{}, recErr
 }
 
-func (r *FrontProxyReconciler) reconcile(ctx context.Context, frontProxy *operatorv1alpha1.FrontProxy) ([]metav1.Condition, error) {
+func (r *FrontProxyReconciler) reconcile(ctx context.Context, frontProxy *operatorv1alpha1.FrontProxy, names naming.Scheme) ([]metav1.Condition, error) {
 	var (
 		conditions []metav1.Condition
 		errs       []error
@@ -133,7 +135,7 @@ func (r *FrontProxyReconciler) reconcile(ctx context.Context, frontProxy *operat
 	}
 
 	// Ensure Bundle object exists if annotation is present
-	if _, err := bundlehelper.EnsureBundleForOwner(ctx, r.Client, r.Scheme, frontProxy); err != nil {
+	if _, err := bundlehelper.EnsureBundleForOwner(ctx, r.Client, r.Scheme, frontProxy, names); err != nil {
 		errs = append(errs, fmt.Errorf("failed to ensure bundle: %w", err))
 	}
 
@@ -144,7 +146,7 @@ func (r *FrontProxyReconciler) reconcile(ctx context.Context, frontProxy *operat
 		return conditions, nil
 	}
 
-	fpReconciler := frontproxy.NewFrontProxy(frontProxy, rootShard)
+	fpReconciler := frontproxy.NewFrontProxy(frontProxy, rootShard, names)
 
 	// Deployment will be scaled to 0 if bundle annotation is present
 	if err := fpReconciler.Reconcile(ctx, r.Client, frontProxy.Namespace); err != nil {
@@ -154,12 +156,12 @@ func (r *FrontProxyReconciler) reconcile(ctx context.Context, frontProxy *operat
 	return conditions, kerrors.NewAggregate(errs)
 }
 
-func (r *FrontProxyReconciler) reconcileStatus(ctx context.Context, oldFrontProxy *operatorv1alpha1.FrontProxy, conditions []metav1.Condition) error {
+func (r *FrontProxyReconciler) reconcileStatus(ctx context.Context, oldFrontProxy *operatorv1alpha1.FrontProxy, conditions []metav1.Condition, names naming.Scheme) error {
 	frontProxy := oldFrontProxy.DeepCopy()
 	var errs []error
 
 	// Add Bundle condition
-	bundleCond := bundlehelper.GetBundleReadyCondition(ctx, r.Client, frontProxy, frontProxy.Generation)
+	bundleCond := bundlehelper.GetBundleReadyCondition(ctx, r.Client, frontProxy, frontProxy.Generation, names)
 	conditions = append(conditions, bundleCond)
 
 	// Check if frontproxy is bundled (has bundle annotation with Ready bundle)
@@ -167,7 +169,8 @@ func (r *FrontProxyReconciler) reconcileStatus(ctx context.Context, oldFrontProx
 
 	// Only check deployment status if not bundled
 	if !isBundled {
-		depKey := types.NamespacedName{Namespace: frontProxy.Namespace, Name: resources.GetFrontProxyDeploymentName(frontProxy)}
+		namingScheme := naming.NewVersion1()
+		depKey := types.NamespacedName{Namespace: frontProxy.Namespace, Name: namingScheme.FrontProxyDeploymentName(frontProxy)}
 		cond, err := util.GetDeploymentAvailableCondition(ctx, r.Client, depKey)
 		if err != nil {
 			errs = append(errs, err)

@@ -42,9 +42,9 @@ func (r *reconciler) certSecretLabels() map[string]string {
 
 func (r *reconciler) certName(certKind operatorv1alpha1.Certificate) string {
 	if r.frontProxy != nil {
-		return resources.GetFrontProxyCertificateName(r.rootShard, r.frontProxy, certKind)
+		return r.names.FrontProxyCertificateName(r.rootShard, r.frontProxy, certKind)
 	} else {
-		return resources.GetRootShardProxyCertificateName(r.rootShard, certKind)
+		return r.names.RootShardProxyCertificateName(r.rootShard, certKind)
 	}
 }
 
@@ -121,7 +121,7 @@ func (r *reconciler) serverCertificateReconciler() reconciling.NamedCertificateR
 				DNSNames: dnsNames,
 
 				IssuerRef: certmanagermetav1.IssuerReference{
-					Name:  resources.GetRootShardCAName(r.rootShard, operatorv1alpha1.ServerCA),
+					Name:  r.names.RootShardCAName(r.rootShard, operatorv1alpha1.ServerCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},
@@ -166,7 +166,7 @@ func (r *reconciler) adminKubeconfigCertificateReconciler() reconciling.NamedCer
 				},
 
 				IssuerRef: certmanagermetav1.IssuerReference{
-					Name:  resources.GetRootShardCAName(r.rootShard, operatorv1alpha1.FrontProxyClientCA),
+					Name:  r.names.RootShardCAName(r.rootShard, operatorv1alpha1.FrontProxyClientCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},
@@ -210,7 +210,7 @@ func (r *reconciler) kubeconfigCertificateReconciler() reconciling.NamedCertific
 				},
 
 				IssuerRef: certmanagermetav1.IssuerReference{
-					Name:  resources.GetRootShardCAName(r.rootShard, operatorv1alpha1.ClientCA),
+					Name:  r.names.RootShardCAName(r.rootShard, operatorv1alpha1.ClientCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},
@@ -250,7 +250,7 @@ func (r *reconciler) requestHeaderCertificateReconciler() reconciling.NamedCerti
 				},
 
 				IssuerRef: certmanagermetav1.IssuerReference{
-					Name:  resources.GetRootShardCAName(r.rootShard, operatorv1alpha1.RequestHeaderClientCA),
+					Name:  r.names.RootShardCAName(r.rootShard, operatorv1alpha1.RequestHeaderClientCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},

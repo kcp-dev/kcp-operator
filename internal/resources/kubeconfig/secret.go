@@ -27,7 +27,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 
-	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	"github.com/kcp-dev/kcp-operator/internal/resources/utils"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
@@ -46,6 +46,7 @@ func KubeconfigSecretReconciler(
 	caSecret *corev1.Secret,
 	certSecret *corev1.Secret,
 	caBundle *corev1.Secret, // can be nil
+	names naming.Scheme,
 ) (reconciling.NamedSecretReconcilerFactory, error) {
 	if caBundle != nil && caBundle.Data["tls.crt"] == nil {
 		return nil, fmt.Errorf("the CA bundle secret %s/%s does not contain a `tls.crt` key", caBundle.Namespace, caBundle.Name)
@@ -86,7 +87,7 @@ func KubeconfigSecretReconciler(
 			panic("RootShard must be provided when kubeconfig targets one.")
 		}
 
-		serverURL := resources.GetRootShardBaseURL(rootShard)
+		serverURL := names.RootShardBaseURL(rootShard)
 		defaultURL, err := url.JoinPath(serverURL, "clusters", "root")
 		if err != nil {
 			return nil, err
@@ -104,7 +105,7 @@ func KubeconfigSecretReconciler(
 			panic("Shard must be provided when kubeconfig targets one.")
 		}
 
-		serverURL := resources.GetShardBaseURL(shard)
+		serverURL := names.ShardBaseURL(shard)
 		defaultURL, err := url.JoinPath(serverURL, "clusters", "root")
 		if err != nil {
 			return nil, err

@@ -29,7 +29,7 @@ import (
 
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling/modifier"
-	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -37,9 +37,10 @@ type reconciler struct {
 	frontProxy     *operatorv1alpha1.FrontProxy
 	rootShard      *operatorv1alpha1.RootShard
 	resourceLabels map[string]string
+	names          naming.Scheme
 }
 
-func NewFrontProxy(frontProxy *operatorv1alpha1.FrontProxy, rootShard *operatorv1alpha1.RootShard) *reconciler {
+func NewFrontProxy(frontProxy *operatorv1alpha1.FrontProxy, rootShard *operatorv1alpha1.RootShard, names naming.Scheme) *reconciler {
 	if frontProxy == nil {
 		panic("Use NewRootShardProxy instead.")
 	}
@@ -47,14 +48,16 @@ func NewFrontProxy(frontProxy *operatorv1alpha1.FrontProxy, rootShard *operatorv
 	return &reconciler{
 		frontProxy:     frontProxy,
 		rootShard:      rootShard,
-		resourceLabels: resources.GetFrontProxyResourceLabels(frontProxy),
+		resourceLabels: names.FrontProxyResourceLabels(frontProxy),
+		names:          names,
 	}
 }
 
-func NewRootShardProxy(rootShard *operatorv1alpha1.RootShard) *reconciler {
+func NewRootShardProxy(rootShard *operatorv1alpha1.RootShard, namingScheme naming.Scheme) *reconciler {
 	return &reconciler{
 		rootShard:      rootShard,
-		resourceLabels: resources.GetRootShardProxyResourceLabels(rootShard),
+		resourceLabels: namingScheme.RootShardProxyResourceLabels(rootShard),
+		names:          namingScheme,
 	}
 }
 

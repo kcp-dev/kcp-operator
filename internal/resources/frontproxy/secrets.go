@@ -22,8 +22,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	clientcmdv1 "k8s.io/client-go/tools/clientcmd/api/v1"
 	"sigs.k8s.io/yaml"
-
-	"github.com/kcp-dev/kcp-operator/internal/resources"
 )
 
 const (
@@ -36,9 +34,9 @@ const (
 func (r *reconciler) dynamicKubeconfigSecretReconciler() reconciling.NamedSecretReconcilerFactory {
 	var name string
 	if r.frontProxy != nil {
-		name = resources.GetFrontProxyDynamicKubeconfigName(r.rootShard, r.frontProxy)
+		name = r.names.FrontProxyDynamicKubeconfigName(r.rootShard, r.frontProxy)
 	} else {
-		name = resources.GetRootShardProxyDynamicKubeconfigName(r.rootShard)
+		name = r.names.RootShardProxyDynamicKubeconfigName(r.rootShard)
 	}
 
 	return func() (string, reconciling.SecretReconciler) {
@@ -66,7 +64,7 @@ func (r *reconciler) dynamicKubeconfig() ([]byte, error) {
 				Name: "system:admin",
 				Cluster: clientcmdv1.Cluster{
 					CertificateAuthority: kubeconfigCAPath,
-					Server:               resources.GetRootShardBaseURL(r.rootShard),
+					Server:               r.names.RootShardBaseURL(r.rootShard),
 				},
 			},
 		},

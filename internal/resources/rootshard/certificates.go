@@ -24,19 +24,20 @@ import (
 
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	"github.com/kcp-dev/kcp-operator/internal/resources/utils"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
-func ServerCertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
+func ServerCertificateReconciler(rootShard *operatorv1alpha1.RootShard, names naming.Scheme) reconciling.NamedCertificateReconcilerFactory {
 	const certKind = operatorv1alpha1.ServerCertificate
 
-	name := resources.GetRootShardCertificateName(rootShard, certKind)
+	name := names.RootShardCertificateName(rootShard, certKind)
 	template := rootShard.Spec.CertificateTemplates.CertificateTemplate(certKind)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
-			cert.SetLabels(resources.GetRootShardResourceLabels(rootShard))
+			cert.SetLabels(names.RootShardResourceLabels(rootShard))
 			cert.Spec = certmanagerv1.CertificateSpec{
 				SecretName: name,
 				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
@@ -58,10 +59,10 @@ func ServerCertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconcil
 					certmanagerv1.UsageDigitalSignature,
 				},
 
-				DNSNames: buildRootShardDNSNames(rootShard),
+				DNSNames: buildRootShardDNSNames(rootShard, names),
 
 				IssuerRef: certmanagermetav1.IssuerReference{
-					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.ServerCA),
+					Name:  names.RootShardCAName(rootShard, operatorv1alpha1.ServerCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},
@@ -72,15 +73,15 @@ func ServerCertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconcil
 	}
 }
 
-func VirtualWorkspacesCertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
+func VirtualWorkspacesCertificateReconciler(rootShard *operatorv1alpha1.RootShard, names naming.Scheme) reconciling.NamedCertificateReconcilerFactory {
 	const certKind = operatorv1alpha1.VirtualWorkspacesCertificate
 
-	name := resources.GetRootShardCertificateName(rootShard, certKind)
+	name := names.RootShardCertificateName(rootShard, certKind)
 	template := rootShard.Spec.CertificateTemplates.CertificateTemplate(certKind)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
-			cert.SetLabels(resources.GetRootShardResourceLabels(rootShard))
+			cert.SetLabels(names.RootShardResourceLabels(rootShard))
 			cert.Spec = certmanagerv1.CertificateSpec{
 				SecretName: name,
 				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
@@ -105,7 +106,7 @@ func VirtualWorkspacesCertificateReconciler(rootShard *operatorv1alpha1.RootShar
 				},
 
 				IssuerRef: certmanagermetav1.IssuerReference{
-					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.ServerCA),
+					Name:  names.RootShardCAName(rootShard, operatorv1alpha1.ServerCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},
@@ -116,15 +117,15 @@ func VirtualWorkspacesCertificateReconciler(rootShard *operatorv1alpha1.RootShar
 	}
 }
 
-func ServiceAccountCertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
+func ServiceAccountCertificateReconciler(rootShard *operatorv1alpha1.RootShard, names naming.Scheme) reconciling.NamedCertificateReconcilerFactory {
 	const certKind = operatorv1alpha1.ServiceAccountCertificate
 
-	name := resources.GetRootShardCertificateName(rootShard, certKind)
+	name := names.RootShardCertificateName(rootShard, certKind)
 	template := rootShard.Spec.CertificateTemplates.CertificateTemplate(certKind)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
-			cert.SetLabels(resources.GetRootShardResourceLabels(rootShard))
+			cert.SetLabels(names.RootShardResourceLabels(rootShard))
 			cert.Spec = certmanagerv1.CertificateSpec{
 				CommonName: name,
 				SecretName: name,
@@ -147,7 +148,7 @@ func ServiceAccountCertificateReconciler(rootShard *operatorv1alpha1.RootShard) 
 				},
 
 				IssuerRef: certmanagermetav1.IssuerReference{
-					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.ServiceAccountCA),
+					Name:  names.RootShardCAName(rootShard, operatorv1alpha1.ServiceAccountCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},
@@ -158,15 +159,15 @@ func ServiceAccountCertificateReconciler(rootShard *operatorv1alpha1.RootShard) 
 	}
 }
 
-func LogicalClusterAdminCertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
+func LogicalClusterAdminCertificateReconciler(rootShard *operatorv1alpha1.RootShard, names naming.Scheme) reconciling.NamedCertificateReconcilerFactory {
 	const certKind = operatorv1alpha1.LogicalClusterAdminCertificate
 
-	name := resources.GetRootShardCertificateName(rootShard, certKind)
+	name := names.RootShardCertificateName(rootShard, certKind)
 	template := rootShard.Spec.CertificateTemplates.CertificateTemplate(certKind)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
-			cert.SetLabels(resources.GetRootShardResourceLabels(rootShard))
+			cert.SetLabels(names.RootShardResourceLabels(rootShard))
 			cert.Spec = certmanagerv1.CertificateSpec{
 				CommonName: "logical-cluster-admin",
 				SecretName: name,
@@ -192,7 +193,7 @@ func LogicalClusterAdminCertificateReconciler(rootShard *operatorv1alpha1.RootSh
 				},
 
 				IssuerRef: certmanagermetav1.IssuerReference{
-					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.ClientCA),
+					Name:  names.RootShardCAName(rootShard, operatorv1alpha1.ClientCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},
@@ -203,15 +204,15 @@ func LogicalClusterAdminCertificateReconciler(rootShard *operatorv1alpha1.RootSh
 	}
 }
 
-func ExternalLogicalClusterAdminCertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
+func ExternalLogicalClusterAdminCertificateReconciler(rootShard *operatorv1alpha1.RootShard, names naming.Scheme) reconciling.NamedCertificateReconcilerFactory {
 	const certKind = operatorv1alpha1.ExternalLogicalClusterAdminCertificate
 
-	name := resources.GetRootShardCertificateName(rootShard, certKind)
+	name := names.RootShardCertificateName(rootShard, certKind)
 	template := rootShard.Spec.CertificateTemplates.CertificateTemplate(certKind)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
-			cert.SetLabels(resources.GetRootShardResourceLabels(rootShard))
+			cert.SetLabels(names.RootShardResourceLabels(rootShard))
 			cert.Spec = certmanagerv1.CertificateSpec{
 				CommonName: "external-logical-cluster-admin",
 				SecretName: name,
@@ -237,7 +238,7 @@ func ExternalLogicalClusterAdminCertificateReconciler(rootShard *operatorv1alpha
 				},
 
 				IssuerRef: certmanagermetav1.IssuerReference{
-					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.FrontProxyClientCA),
+					Name:  names.RootShardCAName(rootShard, operatorv1alpha1.FrontProxyClientCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},
@@ -248,15 +249,15 @@ func ExternalLogicalClusterAdminCertificateReconciler(rootShard *operatorv1alpha
 	}
 }
 
-func OperatorClientCertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
+func OperatorClientCertificateReconciler(rootShard *operatorv1alpha1.RootShard, names naming.Scheme) reconciling.NamedCertificateReconcilerFactory {
 	const certKind = operatorv1alpha1.OperatorCertificate
 
-	name := resources.GetRootShardCertificateName(rootShard, certKind)
+	name := names.RootShardCertificateName(rootShard, certKind)
 	template := rootShard.Spec.CertificateTemplates.CertificateTemplate(certKind)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
-			cert.SetLabels(resources.GetRootShardResourceLabels(rootShard))
+			cert.SetLabels(names.RootShardResourceLabels(rootShard))
 			cert.Spec = certmanagerv1.CertificateSpec{
 				CommonName: resources.OperatorUsername,
 				SecretName: name,
@@ -286,7 +287,7 @@ func OperatorClientCertificateReconciler(rootShard *operatorv1alpha1.RootShard) 
 					// the internal root shard proxy (also cluster-local). All of these are configured
 					// to use the regular client CA (not like "normal" front-proxies, which have their
 					// own CA).
-					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.ClientCA),
+					Name:  names.RootShardCAName(rootShard, operatorv1alpha1.ClientCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},
@@ -299,15 +300,15 @@ func OperatorClientCertificateReconciler(rootShard *operatorv1alpha1.RootShard) 
 
 // ClientCertificateReconciler generates a client certificate that is used by the root shard to
 // connect to an external kcp-virtual-workspaces pod.
-func ClientCertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
+func ClientCertificateReconciler(rootShard *operatorv1alpha1.RootShard, names naming.Scheme) reconciling.NamedCertificateReconcilerFactory {
 	const certKind = operatorv1alpha1.ClientCertificate
 
-	name := resources.GetRootShardCertificateName(rootShard, certKind)
+	name := names.RootShardCertificateName(rootShard, certKind)
 	template := rootShard.Spec.CertificateTemplates.CertificateTemplate(certKind)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
-			cert.SetLabels(resources.GetRootShardResourceLabels(rootShard))
+			cert.SetLabels(names.RootShardResourceLabels(rootShard))
 			cert.Spec = certmanagerv1.CertificateSpec{
 				SecretName: name,
 				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
@@ -334,7 +335,7 @@ func ClientCertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconcil
 				},
 
 				IssuerRef: certmanagermetav1.IssuerReference{
-					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.ClientCA),
+					Name:  names.RootShardCAName(rootShard, operatorv1alpha1.ClientCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},
@@ -348,9 +349,9 @@ func ClientCertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconcil
 // buildRootShardDNSNames builds the list of DNS names for the root shard server certificate.
 // It includes the internal Kubernetes service host, the external hostname, and if shardBaseURL
 // is set, it also extracts and includes the hostname from that URL.
-func buildRootShardDNSNames(rootShard *operatorv1alpha1.RootShard) []string {
+func buildRootShardDNSNames(rootShard *operatorv1alpha1.RootShard, names naming.Scheme) []string {
 	dnsNames := sets.New(
-		resources.GetRootShardBaseHost(rootShard),
+		names.RootShardBaseHost(rootShard),
 		rootShard.Spec.External.Hostname,
 	)
 

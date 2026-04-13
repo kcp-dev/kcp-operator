@@ -44,7 +44,7 @@ func (r *reconciler) mergedClientCASecretName() string {
 func (r *reconciler) mergedClientCASecretReconciler(ctx context.Context, kubeClient ctrlruntimeclient.Client) k8creconciling.NamedSecretReconcilerFactory {
 	getCA := func(caType operatorv1alpha1.CA) ([]byte, error) {
 		caSecret := &corev1.Secret{}
-		caSecretName := resources.GetRootShardCAName(r.rootShard, caType)
+		caSecretName := r.names.RootShardCAName(r.rootShard, caType)
 		if err := kubeClient.Get(ctx, types.NamespacedName{
 			Namespace: r.rootShard.Namespace,
 			Name:      caSecretName,
@@ -108,7 +108,7 @@ func (r *reconciler) mergedCABundleSecretReconciler(ctx context.Context, kubeCli
 
 			// Get ServerCA certificate from the rootshard
 			serverCASecret := &corev1.Secret{}
-			serverCASecretName := resources.GetRootShardCAName(r.rootShard, operatorv1alpha1.ServerCA)
+			serverCASecretName := r.names.RootShardCAName(r.rootShard, operatorv1alpha1.ServerCA)
 			err := kubeClient.Get(ctx, types.NamespacedName{
 				Name:      serverCASecretName,
 				Namespace: r.rootShard.Namespace,

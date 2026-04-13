@@ -29,19 +29,20 @@ import (
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
 // EnsureBundleForOwner ensures that a Bundle object exists for the given owner if it has the bundle annotation.
 // If the annotation is present and no Bundle exists, it creates one owned by the object.
 // Returns the Bundle object if it exists/was created, or nil if no bundle annotation is present.
-func EnsureBundleForOwner(ctx context.Context, client ctrlruntimeclient.Client, scheme *runtime.Scheme, owner ctrlruntimeclient.Object) (*operatorv1alpha1.Bundle, error) {
+func EnsureBundleForOwner(ctx context.Context, client ctrlruntimeclient.Client, scheme *runtime.Scheme, owner ctrlruntimeclient.Object, names naming.Scheme) (*operatorv1alpha1.Bundle, error) {
 	annotations := owner.GetAnnotations()
 	if annotations == nil || annotations[resources.BundleAnnotation] == "" {
 		return nil, nil
 	}
 
-	bundleName := resources.GetBundleName(owner.GetName())
+	bundleName := names.BundleName(owner.GetName())
 	bundle := &operatorv1alpha1.Bundle{}
 
 	err := client.Get(ctx, types.NamespacedName{
@@ -100,7 +101,7 @@ func buildBundleTarget(owner ctrlruntimeclient.Object) operatorv1alpha1.BundleTa
 
 // GetBundleReadyCondition checks if the Bundle associated with the owner is ready.
 // Returns a condition that can be added to the owner's status.
-func GetBundleReadyCondition(ctx context.Context, client ctrlruntimeclient.Client, owner ctrlruntimeclient.Object, generation int64) metav1.Condition {
+func GetBundleReadyCondition(ctx context.Context, client ctrlruntimeclient.Client, owner ctrlruntimeclient.Object, generation int64, names naming.Scheme) metav1.Condition {
 	annotations := owner.GetAnnotations()
 	if annotations == nil || annotations[resources.BundleAnnotation] == "" {
 		// No bundle annotation, return ready condition
@@ -113,7 +114,7 @@ func GetBundleReadyCondition(ctx context.Context, client ctrlruntimeclient.Clien
 		}
 	}
 
-	bundleName := resources.GetBundleName(owner.GetName())
+	bundleName := names.BundleName(owner.GetName())
 	bundle := &operatorv1alpha1.Bundle{}
 
 	err := client.Get(ctx, types.NamespacedName{

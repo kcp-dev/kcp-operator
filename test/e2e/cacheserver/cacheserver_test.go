@@ -33,6 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	ctrlruntime "sigs.k8s.io/controller-runtime"
 
+	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 	"github.com/kcp-dev/kcp-operator/test/utils"
 )
@@ -42,6 +43,7 @@ func TestCacheWithRootShard(t *testing.T) {
 
 	client := utils.GetKubeClient(t)
 	ctx := context.Background()
+	namingScheme := naming.NewVersion1()
 
 	// create namespace
 	namespace := utils.CreateSelfDestructingNamespace(t, ctx, client, "cache-rootshard")
@@ -50,7 +52,7 @@ func TestCacheWithRootShard(t *testing.T) {
 	cacheServer := utils.DeployCacheServer(ctx, t, client, namespace.Name)
 
 	// deploy a root shard that uses our cache
-	rootShard := utils.DeployRootShard(ctx, t, client, namespace.Name, "", func(rs *operatorv1alpha1.RootShard) {
+	rootShard := utils.DeployRootShard(ctx, t, client, namingScheme, namespace.Name, "", func(rs *operatorv1alpha1.RootShard) {
 		rs.Spec.Cache.Reference = &corev1.LocalObjectReference{
 			Name: cacheServer.Name,
 		}
@@ -104,6 +106,7 @@ func TestCacheWithExternalEtcdAndRootShard(t *testing.T) {
 
 	client := utils.GetKubeClient(t)
 	ctx := context.Background()
+	namingScheme := naming.NewVersion1()
 
 	// create namespace
 	namespace := utils.CreateSelfDestructingNamespace(t, ctx, client, "cache-with-etcd-rootshard")
@@ -112,7 +115,7 @@ func TestCacheWithExternalEtcdAndRootShard(t *testing.T) {
 	cacheServer := utils.DeployCacheServerWithExternalEtcd(ctx, t, client, namespace.Name, 2)
 
 	// deploy a root shard that uses our cache
-	rootShard := utils.DeployRootShard(ctx, t, client, namespace.Name, "", func(rs *operatorv1alpha1.RootShard) {
+	rootShard := utils.DeployRootShard(ctx, t, client, namingScheme, namespace.Name, "", func(rs *operatorv1alpha1.RootShard) {
 		rs.Spec.Cache.Reference = &corev1.LocalObjectReference{
 			Name: cacheServer.Name,
 		}
@@ -161,6 +164,7 @@ func TestCacheWithMultipleExplicitShards(t *testing.T) {
 
 	client := utils.GetKubeClient(t)
 	ctx := context.Background()
+	namingScheme := naming.NewVersion1()
 
 	// create namespace
 	namespace := utils.CreateSelfDestructingNamespace(t, ctx, client, "cache-sharded-explicit")
@@ -169,7 +173,7 @@ func TestCacheWithMultipleExplicitShards(t *testing.T) {
 	cacheServer := utils.DeployCacheServer(ctx, t, client, namespace.Name)
 
 	// deploy a root shard that uses our cache
-	rootShard := utils.DeployRootShard(ctx, t, client, namespace.Name, "", func(rs *operatorv1alpha1.RootShard) {
+	rootShard := utils.DeployRootShard(ctx, t, client, namingScheme, namespace.Name, "", func(rs *operatorv1alpha1.RootShard) {
 		rs.Spec.Cache.Reference = &corev1.LocalObjectReference{
 			Name: cacheServer.Name,
 		}
@@ -228,6 +232,7 @@ func TestCacheWithMultipleShardsInheritingConfig(t *testing.T) {
 
 	client := utils.GetKubeClient(t)
 	ctx := context.Background()
+	namingScheme := naming.NewVersion1()
 
 	// create namespace
 	namespace := utils.CreateSelfDestructingNamespace(t, ctx, client, "cache-sharded-inherit")
@@ -236,7 +241,7 @@ func TestCacheWithMultipleShardsInheritingConfig(t *testing.T) {
 	cacheServer := utils.DeployCacheServer(ctx, t, client, namespace.Name)
 
 	// deploy a root shard that uses our cache
-	rootShard := utils.DeployRootShard(ctx, t, client, namespace.Name, "", func(rs *operatorv1alpha1.RootShard) {
+	rootShard := utils.DeployRootShard(ctx, t, client, namingScheme, namespace.Name, "", func(rs *operatorv1alpha1.RootShard) {
 		rs.Spec.Cache.Reference = &corev1.LocalObjectReference{
 			Name: cacheServer.Name,
 		}

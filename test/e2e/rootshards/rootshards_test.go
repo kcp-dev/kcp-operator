@@ -31,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	ctrlruntime "sigs.k8s.io/controller-runtime"
 
+	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 	"github.com/kcp-dev/kcp-operator/test/utils"
 )
@@ -40,9 +41,10 @@ func TestCreateRootShard(t *testing.T) {
 
 	client := utils.GetKubeClient(t)
 	ctx := context.Background()
+	namingScheme := naming.NewVersion1()
 
 	namespace := utils.CreateSelfDestructingNamespace(t, ctx, client, "create-rootshard")
-	rootShard := utils.DeployRootShard(ctx, t, client, namespace.Name, "")
+	rootShard := utils.DeployRootShard(ctx, t, client, namingScheme, namespace.Name, "")
 
 	configSecretName := "kubeconfig"
 

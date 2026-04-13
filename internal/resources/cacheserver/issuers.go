@@ -20,12 +20,12 @@ import (
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
-	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
-func RootCAIssuerReconciler(server *operatorv1alpha1.CacheServer) reconciling.NamedIssuerReconcilerFactory {
-	name := resources.GetCacheServerCAName(server.Name, operatorv1alpha1.RootCA)
+func RootCAIssuerReconciler(server *operatorv1alpha1.CacheServer, names naming.Scheme) reconciling.NamedIssuerReconcilerFactory {
+	name := names.CacheServerCAName(server.Name, operatorv1alpha1.RootCA)
 
 	secretName := name
 	if server.Spec.Certificates.CASecretRef != nil {
@@ -34,7 +34,7 @@ func RootCAIssuerReconciler(server *operatorv1alpha1.CacheServer) reconciling.Na
 
 	return func() (string, reconciling.IssuerReconciler) {
 		return name, func(issuer *certmanagerv1.Issuer) (*certmanagerv1.Issuer, error) {
-			issuer.SetLabels(resources.GetCacheServerResourceLabels(server))
+			issuer.SetLabels(names.CacheServerResourceLabels(server))
 			issuer.Spec = certmanagerv1.IssuerSpec{
 				IssuerConfig: certmanagerv1.IssuerConfig{
 					CA: &certmanagerv1.CAIssuer{

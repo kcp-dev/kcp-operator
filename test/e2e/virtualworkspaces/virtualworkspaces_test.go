@@ -42,6 +42,7 @@ import (
 	ctrlruntime "sigs.k8s.io/controller-runtime"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 	"github.com/kcp-dev/kcp-operator/test/conformance"
 	"github.com/kcp-dev/kcp-operator/test/utils"
@@ -63,12 +64,13 @@ func TestExternalVirtualWorkspace(t *testing.T) {
 
 	client := utils.GetKubeClient(t)
 	ctx := context.Background()
+	namingScheme := naming.NewVersion1()
 
 	namespace := utils.CreateSelfDestructingNamespace(t, ctx, client, "external-vw")
 
 	// Deploy the standalone, external kcp virtual-workspace (do not wait for readiness since both
 	// the root shard and the VW will need to have a little dance before both are ready).
-	vw := utils.DeployVirtualWorkspace(ctx, t, client, namespace.Name, "kcp-vw", false, func(vw *operatorv1alpha1.VirtualWorkspace) {
+	vw := utils.DeployVirtualWorkspace(ctx, t, client, namingScheme, namespace.Name, "kcp-vw", false, func(vw *operatorv1alpha1.VirtualWorkspace) {
 		vw.Spec.Target.RootShardRef = &corev1.LocalObjectReference{
 			Name: "r00t", // Must match the rootshard name
 		}
@@ -79,7 +81,7 @@ func TestExternalVirtualWorkspace(t *testing.T) {
 	externalHostname := fmt.Sprintf("front-proxy-front-proxy.%s.svc.cluster.local", namespace.Name)
 
 	// Deploy a root shard that uses the external VW (in-process VW is disabled).
-	rootShard := utils.DeployRootShard(ctx, t, client, namespace.Name, externalHostname, func(rs *operatorv1alpha1.RootShard) {
+	rootShard := utils.DeployRootShard(ctx, t, client, namingScheme, namespace.Name, externalHostname, func(rs *operatorv1alpha1.RootShard) {
 		// Point the root shard to use our external VW instead of the in-process one.
 		rs.Spec.KCPVirtualWorkspace = &corev1.LocalObjectReference{
 			Name: vw.Name,
@@ -251,6 +253,7 @@ func TestMultipleShardsWithExternalVirtualWorkspacesAndExtCache(t *testing.T) {
 
 	client := utils.GetKubeClient(t)
 	ctx := context.Background()
+	namingScheme := naming.NewVersion1()
 
 	namespace := utils.CreateSelfDestructingNamespace(t, ctx, client, "multi-shard-extcache-vw")
 
@@ -258,7 +261,7 @@ func TestMultipleShardsWithExternalVirtualWorkspacesAndExtCache(t *testing.T) {
 	cacheServer := utils.DeployCacheServer(ctx, t, client, namespace.Name)
 
 	// Deploy external VirtualWorkspace for root shard
-	rootVW := utils.DeployVirtualWorkspace(ctx, t, client, namespace.Name, "root-vw", false, func(vw *operatorv1alpha1.VirtualWorkspace) {
+	rootVW := utils.DeployVirtualWorkspace(ctx, t, client, namingScheme, namespace.Name, "root-vw", false, func(vw *operatorv1alpha1.VirtualWorkspace) {
 		vw.Spec.Target.RootShardRef = &corev1.LocalObjectReference{
 			Name: "r00t",
 		}
@@ -269,7 +272,7 @@ func TestMultipleShardsWithExternalVirtualWorkspacesAndExtCache(t *testing.T) {
 	externalHostname := fmt.Sprintf("front-proxy-front-proxy.%s.svc.cluster.local", namespace.Name)
 
 	// Deploy root shard with external VW
-	rootShard := utils.DeployRootShard(ctx, t, client, namespace.Name, externalHostname, func(rs *operatorv1alpha1.RootShard) {
+	rootShard := utils.DeployRootShard(ctx, t, client, namingScheme, namespace.Name, externalHostname, func(rs *operatorv1alpha1.RootShard) {
 		rs.Spec.KCPVirtualWorkspace = &corev1.LocalObjectReference{
 			Name: rootVW.Name,
 		}
@@ -283,7 +286,7 @@ func TestMultipleShardsWithExternalVirtualWorkspacesAndExtCache(t *testing.T) {
 	})
 
 	// Deploy external VirtualWorkspace for regular shard1
-	shard1VW := utils.DeployVirtualWorkspace(ctx, t, client, namespace.Name, "shard1-vw", false, func(vw *operatorv1alpha1.VirtualWorkspace) {
+	shard1VW := utils.DeployVirtualWorkspace(ctx, t, client, namingScheme, namespace.Name, "shard1-vw", false, func(vw *operatorv1alpha1.VirtualWorkspace) {
 		vw.Spec.Target.ShardRef = &corev1.LocalObjectReference{
 			Name: "shard1",
 		}

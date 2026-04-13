@@ -23,19 +23,15 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 
-	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	"github.com/kcp-dev/kcp-operator/internal/resources/utils"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
-func GetVirtualWorkspaceServiceName(vw *operatorv1alpha1.VirtualWorkspace) string {
-	return resources.GetVirtualWorkspaceDeploymentName(vw)
-}
-
-func ServiceReconciler(vw *operatorv1alpha1.VirtualWorkspace) reconciling.NamedServiceReconcilerFactory {
+func ServiceReconciler(vw *operatorv1alpha1.VirtualWorkspace, names naming.Scheme) reconciling.NamedServiceReconcilerFactory {
 	return func() (string, reconciling.ServiceReconciler) {
-		return GetVirtualWorkspaceServiceName(vw), func(svc *corev1.Service) (*corev1.Service, error) {
-			labels := resources.GetVirtualWorkspaceResourceLabels(vw)
+		return names.VirtualWorkspaceServiceName(vw), func(svc *corev1.Service) (*corev1.Service, error) {
+			labels := names.VirtualWorkspaceResourceLabels(vw)
 			svc.SetLabels(labels)
 			svc.Spec.Type = corev1.ServiceTypeClusterIP
 			svc.Spec.Ports = []corev1.ServicePort{

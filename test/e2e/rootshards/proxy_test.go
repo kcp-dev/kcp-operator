@@ -36,6 +36,7 @@ import (
 	ctrlruntime "sigs.k8s.io/controller-runtime"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 	"github.com/kcp-dev/kcp-operator/test/utils"
 )
@@ -45,6 +46,7 @@ func TestRootShardProxy(t *testing.T) {
 
 	client := utils.GetKubeClient(t)
 	ctx := context.Background()
+	namingScheme := naming.NewVersion1()
 
 	namespace := utils.CreateSelfDestructingNamespace(t, ctx, client, "rootshard-proxy")
 
@@ -52,7 +54,7 @@ func TestRootShardProxy(t *testing.T) {
 	externalHostname := fmt.Sprintf("front-proxy-front-proxy.%s.svc.cluster.local", namespace.Name)
 
 	// deploy a root shard incl. etcd
-	rootShard := utils.DeployRootShard(ctx, t, client, namespace.Name, externalHostname)
+	rootShard := utils.DeployRootShard(ctx, t, client, namingScheme, namespace.Name, externalHostname)
 
 	// deploy a 2nd shard incl. etcd
 	shardName := "aadvark"

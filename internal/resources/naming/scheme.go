@@ -17,62 +17,82 @@ limitations under the License.
 package naming
 
 import (
+	"fmt"
+
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
+)
+
+const (
+	appNameLabel      = "app.kubernetes.io/name"
+	appInstanceLabel  = "app.kubernetes.io/instance"
+	appManagedByLabel = "app.kubernetes.io/managed-by"
+	appComponentLabel = "app.kubernetes.io/component"
+
+	defaultClusterDomain = "cluster.local"
 )
 
 type Scheme interface {
 	// RootShard naming
-	GetRootShardDeploymentName(r *operatorv1alpha1.RootShard) string
-	GetRootShardProxyDeploymentName(r *operatorv1alpha1.RootShard) string
-	GetRootShardServiceName(r *operatorv1alpha1.RootShard) string
-	GetRootShardResourceLabels(r *operatorv1alpha1.RootShard) map[string]string
-	GetRootShardProxyResourceLabels(r *operatorv1alpha1.RootShard) map[string]string
-	GetRootShardBaseHost(r *operatorv1alpha1.RootShard) string
-	GetRootShardBaseURL(r *operatorv1alpha1.RootShard) string
-	GetRootShardCertificateName(r *operatorv1alpha1.RootShard, certName operatorv1alpha1.Certificate) string
-	GetRootShardProxyCertificateName(r *operatorv1alpha1.RootShard, certName operatorv1alpha1.Certificate) string
-	GetRootShardCAName(r *operatorv1alpha1.RootShard, caName operatorv1alpha1.CA) string
-	GetRootShardProxyDynamicKubeconfigName(r *operatorv1alpha1.RootShard) string
-	GetRootShardProxyConfigName(r *operatorv1alpha1.RootShard) string
-	GetRootShardProxyServiceName(r *operatorv1alpha1.RootShard) string
-	GetRootShardKubeconfigSecret(r *operatorv1alpha1.RootShard, cert operatorv1alpha1.Certificate) string
+	RootShardDeploymentName(r *operatorv1alpha1.RootShard) string
+	RootShardProxyDeploymentName(r *operatorv1alpha1.RootShard) string
+	RootShardServiceName(r *operatorv1alpha1.RootShard) string
+	RootShardResourceLabels(r *operatorv1alpha1.RootShard) map[string]string
+	RootShardProxyResourceLabels(r *operatorv1alpha1.RootShard) map[string]string
+	RootShardBaseHost(r *operatorv1alpha1.RootShard) string
+	RootShardBaseURL(r *operatorv1alpha1.RootShard) string
+	RootShardCertificateName(r *operatorv1alpha1.RootShard, cert operatorv1alpha1.Certificate) string
+	RootShardProxyCertificateName(r *operatorv1alpha1.RootShard, cert operatorv1alpha1.Certificate) string
+	RootShardCAName(r *operatorv1alpha1.RootShard, ca operatorv1alpha1.CA) string
+	RootShardProxyDynamicKubeconfigName(r *operatorv1alpha1.RootShard) string
+	RootShardProxyConfigName(r *operatorv1alpha1.RootShard) string
+	RootShardProxyServiceName(r *operatorv1alpha1.RootShard) string
+	RootShardKubeconfigSecret(r *operatorv1alpha1.RootShard, cert operatorv1alpha1.Certificate) string
 
 	// Shard naming
-	GetShardDeploymentName(s *operatorv1alpha1.Shard) string
-	GetShardServiceName(s *operatorv1alpha1.Shard) string
-	GetShardResourceLabels(s *operatorv1alpha1.Shard) map[string]string
-	GetShardBaseHost(s *operatorv1alpha1.Shard) string
-	GetShardBaseURL(s *operatorv1alpha1.Shard) string
-	GetShardCertificateName(s *operatorv1alpha1.Shard, certName operatorv1alpha1.Certificate) string
-	GetShardKubeconfigSecret(shard *operatorv1alpha1.Shard, cert operatorv1alpha1.Certificate) string
+	ShardDeploymentName(s *operatorv1alpha1.Shard) string
+	ShardServiceName(s *operatorv1alpha1.Shard) string
+	ShardResourceLabels(s *operatorv1alpha1.Shard) map[string]string
+	ShardBaseHost(s *operatorv1alpha1.Shard) string
+	ShardBaseURL(s *operatorv1alpha1.Shard) string
+	ShardCertificateName(s *operatorv1alpha1.Shard, cert operatorv1alpha1.Certificate) string
+	ShardKubeconfigSecret(s *operatorv1alpha1.Shard, cert operatorv1alpha1.Certificate) string
 
 	// CacheServer naming
-	GetCacheServerDeploymentName(s *operatorv1alpha1.CacheServer) string
-	GetCacheServerServiceName(s *operatorv1alpha1.CacheServer) string
-	GetCacheServerResourceLabels(s *operatorv1alpha1.CacheServer) map[string]string
-	GetCacheServerBaseHost(s *operatorv1alpha1.CacheServer) string
-	GetCacheServerBaseURL(s *operatorv1alpha1.CacheServer) string
-	GetCacheServerCertificateName(s *operatorv1alpha1.CacheServer, certName operatorv1alpha1.Certificate) string
-	GetCacheServerCAName(cacheServerName string, caName operatorv1alpha1.CA) string
-	GetCacheServerClientCertificateName(s *operatorv1alpha1.CacheServer) string
-	GetCacheServerKubeconfigName(cacheServerName string) string
+	CacheServerDeploymentName(c *operatorv1alpha1.CacheServer) string
+	CacheServerServiceName(c *operatorv1alpha1.CacheServer) string
+	CacheServerResourceLabels(c *operatorv1alpha1.CacheServer) map[string]string
+	CacheServerBaseHost(c *operatorv1alpha1.CacheServer) string
+	CacheServerBaseURL(c *operatorv1alpha1.CacheServer) string
+	CacheServerCertificateName(c *operatorv1alpha1.CacheServer, cert operatorv1alpha1.Certificate) string
+	CacheServerCAName(cacheServerName string, ca operatorv1alpha1.CA) string
+	CacheServerClientCertificateName(c *operatorv1alpha1.CacheServer) string
+	CacheServerKubeconfigName(cacheServerName string) string
 
 	// VirtualWorkspace naming
-	GetVirtualWorkspaceDeploymentName(vw *operatorv1alpha1.VirtualWorkspace) string
-	GetVirtualWorkspaceResourceLabels(vw *operatorv1alpha1.VirtualWorkspace) map[string]string
-	GetVirtualWorkspaceBaseHost(s *operatorv1alpha1.VirtualWorkspace) string
-	GetVirtualWorkspaceBaseURL(s *operatorv1alpha1.VirtualWorkspace) string
-	GetVirtualWorkspaceCertificateName(vw *operatorv1alpha1.VirtualWorkspace, certName operatorv1alpha1.Certificate) string
+	VirtualWorkspaceDeploymentName(vw *operatorv1alpha1.VirtualWorkspace) string
+	VirtualWorkspaceServiceName(vw *operatorv1alpha1.VirtualWorkspace) string
+	VirtualWorkspaceResourceLabels(vw *operatorv1alpha1.VirtualWorkspace) map[string]string
+	VirtualWorkspaceBaseHost(vw *operatorv1alpha1.VirtualWorkspace) string
+	VirtualWorkspaceBaseURL(vw *operatorv1alpha1.VirtualWorkspace) string
+	VirtualWorkspaceCertificateName(vw *operatorv1alpha1.VirtualWorkspace, cert operatorv1alpha1.Certificate) string
 
 	// FrontProxy naming
-	GetFrontProxyResourceLabels(f *operatorv1alpha1.FrontProxy) map[string]string
-	GetFrontProxyDeploymentName(f *operatorv1alpha1.FrontProxy) string
-	GetFrontProxyCertificateName(r *operatorv1alpha1.RootShard, f *operatorv1alpha1.FrontProxy, certName operatorv1alpha1.Certificate) string
-	GetFrontProxyDynamicKubeconfigName(r *operatorv1alpha1.RootShard, f *operatorv1alpha1.FrontProxy) string
-	GetFrontProxyConfigName(f *operatorv1alpha1.FrontProxy) string
-	GetFrontProxyServiceName(f *operatorv1alpha1.FrontProxy) string
+	FrontProxyResourceLabels(fp *operatorv1alpha1.FrontProxy) map[string]string
+	FrontProxyDeploymentName(fp *operatorv1alpha1.FrontProxy) string
+	FrontProxyCertificateName(r *operatorv1alpha1.RootShard, fp *operatorv1alpha1.FrontProxy, cert operatorv1alpha1.Certificate) string
+	FrontProxyDynamicKubeconfigName(r *operatorv1alpha1.RootShard, fp *operatorv1alpha1.FrontProxy) string
+	FrontProxyConfigName(fp *operatorv1alpha1.FrontProxy) string
+	FrontProxyServiceName(fp *operatorv1alpha1.FrontProxy) string
 
 	// Bundle naming
-	GetBundleName(ownerName string) string
-	GetMergedClientCAName(ownerName string) string
+	BundleName(ownerName string) string
+	MergedClientCAName(ownerName string) string
+}
+
+func fqService(svcName, namespace, clusterDomain string) string {
+	if clusterDomain == "" {
+		clusterDomain = defaultClusterDomain
+	}
+
+	return fmt.Sprintf("%s.%s.svc.%s", svcName, namespace, clusterDomain)
 }

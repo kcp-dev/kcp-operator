@@ -51,7 +51,7 @@ import (
 	"github.com/kcp-dev/kcp-operator/internal/metrics"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling/modifier"
-	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	"github.com/kcp-dev/kcp-operator/internal/resources/shard"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
@@ -143,23 +143,25 @@ func (r *ShardReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res 
 		return ctrl.Result{}, nil
 	}
 
-	conditions, recErr := r.reconcile(ctx, &s)
+	namingScheme := naming.NewVersion1()
 
-	if err := r.reconcileStatus(ctx, &s, conditions); err != nil {
+	conditions, recErr := r.reconcile(ctx, &s, namingScheme)
+
+	if err := r.reconcileStatus(ctx, &s, conditions, namingScheme); err != nil {
 		recErr = kerrors.NewAggregate([]error{recErr, err})
 	}
 
 	return ctrl.Result{}, recErr
 }
 
-func (r *ShardReconciler) reconcile(ctx context.Context, s *operatorv1alpha1.Shard) ([]metav1.Condition, error) {
+func (r *ShardReconciler) reconcile(ctx context.Context, s *operatorv1alpha1.Shard, names naming.Scheme) ([]metav1.Condition, error) {
 	var (
 		errs       []error
 		conditions []metav1.Condition
 	)
 
 	if s.DeletionTimestamp != nil {
-		return r.handleDeletion(ctx, s)
+		return r.handleDeletion(ctx, s, names)
 	}
 
 	// Ensure finalizer before any other work
@@ -170,7 +172,7 @@ func (r *ShardReconciler) reconcile(ctx context.Context, s *operatorv1alpha1.Sha
 	}
 
 	// Ensure Bundle object exists if annotation is present
-	if _, err := bundlehelper.EnsureBundleForOwner(ctx, r.Client, r.Scheme, s); err != nil {
+	if _, err := bundlehelper.EnsureBundleForOwner(ctx, r.Client, r.Scheme, s, names); err != nil {
 		errs = append(errs, fmt.Errorf("failed to ensure bundle: %w", err))
 	}
 
@@ -185,12 +187,12 @@ func (r *ShardReconciler) reconcile(ctx context.Context, s *operatorv1alpha1.Sha
 	revisionLabels := modifier.RelatedRevisionsLabels(ctx, r.Client)
 
 	certReconcilers := []reconciling.NamedCertificateReconcilerFactory{
-		shard.ServerCertificateReconciler(s, rootShard),
-		shard.ServiceAccountCertificateReconciler(s, rootShard),
-		shard.VirtualWorkspacesCertificateReconciler(s, rootShard),
-		shard.RootShardClientCertificateReconciler(s, rootShard),
-		shard.LogicalClusterAdminCertificateReconciler(s, rootShard),
-		shard.ExternalLogicalClusterAdminCertificateReconciler(s, rootShard),
+		shard.ServerCertificateReconciler(s, rootShard, names),
+		shard.ServiceAccountCertificateReconciler(s, rootShard, names),
+		shard.VirtualWorkspacesCertificateReconciler(s, rootShard, names),
+		shard.RootShardClientCertificateReconciler(s, rootShard, names),
+		shard.LogicalClusterAdminCertificateReconciler(s, rootShard, names),
+		shard.ExternalLogicalClusterAdminCertificateReconciler(s, rootShard, names),
 	}
 
 	if err := reconciling.ReconcileCertificates(ctx, certReconcilers, s.Namespace, r.Client, ownerRefWrapper); err != nil {
@@ -198,16 +200,16 @@ func (r *ShardReconciler) reconcile(ctx context.Context, s *operatorv1alpha1.Sha
 	}
 
 	if err := k8creconciling.ReconcileSecrets(ctx, []k8creconciling.NamedSecretReconcilerFactory{
-		shard.RootShardClientKubeconfigReconciler(s, rootShard),
-		shard.LogicalClusterAdminKubeconfigReconciler(s, rootShard),
-		shard.ExternalLogicalClusterAdminKubeconfigReconciler(s, rootShard),
+		shard.RootShardClientKubeconfigReconciler(s, rootShard, names),
+		shard.LogicalClusterAdminKubeconfigReconciler(s, rootShard, names),
+		shard.ExternalLogicalClusterAdminKubeconfigReconciler(s, rootShard, names),
 	}, s.Namespace, r.Client, ownerRefWrapper); err != nil {
 		errs = append(errs, err)
 	}
 
 	if s.Spec.CABundleSecretRef != nil {
 		if err := k8creconciling.ReconcileSecrets(ctx, []k8creconciling.NamedSecretReconcilerFactory{
-			shard.MergedCABundleSecretReconciler(ctx, s, r.Client),
+			shard.MergedCABundleSecretReconciler(ctx, s, r.Client, names),
 		}, s.Namespace, r.Client, ownerRefWrapper); err != nil {
 			errs = append(errs, err)
 		}
@@ -231,7 +233,7 @@ func (r *ShardReconciler) reconcile(ctx context.Context, s *operatorv1alpha1.Sha
 	// Deployment will be scaled to 0 if bundle annotation is present
 	if vwConfigValid {
 		if err := k8creconciling.ReconcileDeployments(ctx, []k8creconciling.NamedDeploymentReconcilerFactory{
-			shard.DeploymentReconciler(s, rootShard, kcpVW),
+			shard.DeploymentReconciler(s, rootShard, kcpVW, names),
 		}, s.Namespace, r.Client, ownerRefWrapper, revisionLabels); err != nil {
 			// Swallow these errors and instead rely on us watching Secrets and re-reconciling whenever they change.
 			if !errors.Is(err, modifier.ErrMountNotFound) {
@@ -241,7 +243,7 @@ func (r *ShardReconciler) reconcile(ctx context.Context, s *operatorv1alpha1.Sha
 	}
 
 	if err := k8creconciling.ReconcileServices(ctx, []k8creconciling.NamedServiceReconcilerFactory{
-		shard.ServiceReconciler(s),
+		shard.ServiceReconciler(s, names),
 	}, s.Namespace, r.Client, ownerRefWrapper); err != nil {
 		errs = append(errs, err)
 	}
@@ -250,12 +252,12 @@ func (r *ShardReconciler) reconcile(ctx context.Context, s *operatorv1alpha1.Sha
 }
 
 // reconcileStatus sets both phase and conditions on the reconciled Shard object.
-func (r *ShardReconciler) reconcileStatus(ctx context.Context, oldShard *operatorv1alpha1.Shard, conditions []metav1.Condition) error {
+func (r *ShardReconciler) reconcileStatus(ctx context.Context, oldShard *operatorv1alpha1.Shard, conditions []metav1.Condition, names naming.Scheme) error {
 	newShard := oldShard.DeepCopy()
 	var errs []error
 
 	// Add Bundle condition
-	bundleCond := bundlehelper.GetBundleReadyCondition(ctx, r.Client, newShard, newShard.Generation)
+	bundleCond := bundlehelper.GetBundleReadyCondition(ctx, r.Client, newShard, newShard.Generation, names)
 	conditions = append(conditions, bundleCond)
 
 	// Check if shard is bundled (has bundle annotation with Ready bundle)
@@ -263,7 +265,7 @@ func (r *ShardReconciler) reconcileStatus(ctx context.Context, oldShard *operato
 
 	// Only check deployment status if not bundled
 	if !isBundled {
-		depKey := types.NamespacedName{Namespace: newShard.Namespace, Name: resources.GetShardDeploymentName(newShard)}
+		depKey := types.NamespacedName{Namespace: newShard.Namespace, Name: names.ShardDeploymentName(newShard)}
 		cond, err := util.GetDeploymentAvailableCondition(ctx, r.Client, depKey)
 		if err != nil {
 			errs = append(errs, err)
@@ -311,7 +313,7 @@ func (r *ShardReconciler) reconcileStatus(ctx context.Context, oldShard *operato
 	return kerrors.NewAggregate(errs)
 }
 
-func (r *ShardReconciler) handleDeletion(ctx context.Context, s *operatorv1alpha1.Shard) ([]metav1.Condition, error) {
+func (r *ShardReconciler) handleDeletion(ctx context.Context, s *operatorv1alpha1.Shard, names naming.Scheme) ([]metav1.Condition, error) {
 	logger := log.FromContext(ctx)
 
 	if !slices.Contains(s.Finalizers, cleanupFinalizer) {
@@ -330,7 +332,7 @@ func (r *ShardReconciler) handleDeletion(ctx context.Context, s *operatorv1alpha
 	}
 
 	// Create client to root shard
-	kcpClient, err := client.NewRootShardClient(ctx, r.Client, rootShard, logicalcluster.Name("root"), r.Scheme)
+	kcpClient, err := client.NewRootShardClient(ctx, names, r.Client, rootShard, logicalcluster.Name("root"), r.Scheme)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create root shard client: %w", err)
 	}

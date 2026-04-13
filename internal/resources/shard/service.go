@@ -23,14 +23,14 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 
-	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	"github.com/kcp-dev/kcp-operator/internal/resources/utils"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
-func ServiceReconciler(shard *operatorv1alpha1.Shard) reconciling.NamedServiceReconcilerFactory {
+func ServiceReconciler(shard *operatorv1alpha1.Shard, names naming.Scheme) reconciling.NamedServiceReconcilerFactory {
 	return func() (string, reconciling.ServiceReconciler) {
-		return resources.GetShardServiceName(shard), func(svc *corev1.Service) (*corev1.Service, error) {
+		return names.ShardServiceName(shard), func(svc *corev1.Service) (*corev1.Service, error) {
 			ports := []corev1.ServicePort{{
 				Name:        "https",
 				Protocol:    corev1.ProtocolTCP,
@@ -49,7 +49,7 @@ func ServiceReconciler(shard *operatorv1alpha1.Shard) reconciling.NamedServiceRe
 				})
 			}
 
-			labels := resources.GetShardResourceLabels(shard)
+			labels := names.ShardResourceLabels(shard)
 			svc.SetLabels(labels)
 			svc.Spec.Type = corev1.ServiceTypeClusterIP
 			svc.Spec.Ports = ports

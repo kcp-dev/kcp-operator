@@ -23,16 +23,15 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 
-	"github.com/kcp-dev/kcp-operator/internal/resources"
 	"github.com/kcp-dev/kcp-operator/internal/resources/utils"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
 func (r *reconciler) serviceName() string {
 	if r.frontProxy != nil {
-		return resources.GetFrontProxyServiceName(r.frontProxy)
+		return r.names.FrontProxyServiceName(r.frontProxy)
 	} else {
-		return resources.GetRootShardProxyServiceName(r.rootShard)
+		return r.names.RootShardProxyServiceName(r.rootShard)
 	}
 }
 

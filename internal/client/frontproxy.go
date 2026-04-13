@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -39,6 +40,7 @@ import (
 // does not drop groups/permissions).
 func NewInternalKubeconfigClient(ctx context.Context, c ctrlruntimeclient.Client, kubeconfig *operatorv1alpha1.Kubeconfig, cluster logicalcluster.Name, scheme *runtime.Scheme) (ctrlruntimeclient.Client, error) {
 	target := kubeconfig.Spec.Target
+	namingScheme := naming.NewVersion1()
 
 	switch {
 	case target.RootShardRef != nil:
@@ -47,7 +49,7 @@ func NewInternalKubeconfigClient(ctx context.Context, c ctrlruntimeclient.Client
 			return nil, fmt.Errorf("failed to get RootShard: %w", err)
 		}
 
-		return NewRootShardClient(ctx, c, rootShard, cluster, scheme)
+		return NewRootShardClient(ctx, namingScheme, c, rootShard, cluster, scheme)
 
 	case target.ShardRef != nil:
 		shard := &operatorv1alpha1.Shard{}
@@ -55,7 +57,7 @@ func NewInternalKubeconfigClient(ctx context.Context, c ctrlruntimeclient.Client
 			return nil, fmt.Errorf("failed to get Shard: %w", err)
 		}
 
-		return NewShardClient(ctx, c, shard, cluster, scheme)
+		return NewShardClient(ctx, namingScheme, c, shard, cluster, scheme)
 
 	case target.FrontProxyRef != nil:
 		frontProxy := &operatorv1alpha1.FrontProxy{}
@@ -68,7 +70,7 @@ func NewInternalKubeconfigClient(ctx context.Context, c ctrlruntimeclient.Client
 			return nil, fmt.Errorf("failed to get RootShard: %w", err)
 		}
 
-		return NewRootShardProxyClient(ctx, c, rootShard, cluster, scheme)
+		return NewRootShardProxyClient(ctx, namingScheme, c, rootShard, cluster, scheme)
 
 	default:
 		return nil, errors.New("no valid target configured in Kubeconfig: neither rootShard, shard nor frontProxy ref set")
