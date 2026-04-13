@@ -19,6 +19,8 @@ package resources
 import (
 	"fmt"
 
+	"github.com/Masterminds/semver/v3"
+
 	corev1 "k8s.io/api/core/v1"
 
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
@@ -26,7 +28,12 @@ import (
 
 const (
 	ImageRepository = "ghcr.io/kcp-dev/kcp"
-	ImageTag        = "v0.30.3"
+
+	// ImageTag is the default tag to be used for any kcp component.
+	//
+	// When changing this to a new minor version, you must also update
+	// the .prow.yaml accordingly and shift the jobs.
+	ImageTag = "v0.30.3"
 
 	appNameLabel      = "app.kubernetes.io/name"
 	appInstanceLabel  = "app.kubernetes.io/instance"
@@ -57,7 +64,7 @@ const (
 	defaultClusterDomain = "cluster.local"
 )
 
-func GetImageSettings(imageSpec *operatorv1alpha1.ImageSpec) (string, []corev1.LocalObjectReference) {
+func GetImageSettings(imageSpec *operatorv1alpha1.ImageSpec) (string, []corev1.LocalObjectReference, *semver.Version) {
 	repository := ImageRepository
 	if imageSpec != nil && imageSpec.Repository != "" {
 		repository = imageSpec.Repository
@@ -73,7 +80,10 @@ func GetImageSettings(imageSpec *operatorv1alpha1.ImageSpec) (string, []corev1.L
 		imagePullSecrets = imageSpec.ImagePullSecrets
 	}
 
-	return fmt.Sprintf("%s:%s", repository, tag), imagePullSecrets
+	// try to detect the kcp version, but accept that this might not work for custom image tags
+	version, _ := semver.NewVersion(tag)
+
+	return fmt.Sprintf("%s:%s", repository, tag), imagePullSecrets, version
 }
 
 func GetRootShardDeploymentName(r *operatorv1alpha1.RootShard) string {

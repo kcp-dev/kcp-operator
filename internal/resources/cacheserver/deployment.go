@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Masterminds/semver/v3"
 	"k8c.io/reconciler/pkg/reconciling"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -96,11 +97,11 @@ func DeploymentReconciler(server *operatorv1alpha1.CacheServer) reconciling.Name
 			dep.Spec.Template.SetLabels(labels)
 
 			// TODO: Why do we discard the imagePullSecrets?
-			image, _ := resources.GetImageSettings(server.Spec.Image)
+			image, _, version := resources.GetImageSettings(server.Spec.Image)
 
 			volumes, volumeMounts := getVolumeMounts(server)
 
-			for _, sm := range getSecretMounts(server) {
+			for _, sm := range getSecretMounts(server, version) {
 				v, vm := sm.Build()
 				volumes = append(volumes, v)
 				volumeMounts = append(volumeMounts, vm)
@@ -110,7 +111,7 @@ func DeploymentReconciler(server *operatorv1alpha1.CacheServer) reconciling.Name
 				Name:         ServerContainerName,
 				Image:        image,
 				Command:      []string{"/cache-server"},
-				Args:         getArgs(server),
+				Args:         getArgs(server, version),
 				VolumeMounts: volumeMounts,
 				Resources:    defaultResourceRequirements,
 				SecurityContext: &corev1.SecurityContext{
@@ -202,15 +203,18 @@ func getVolumeMounts(server *operatorv1alpha1.CacheServer) (volumes []corev1.Vol
 	return
 }
 
-func getArgs(server *operatorv1alpha1.CacheServer) []string {
+func getArgs(server *operatorv1alpha1.CacheServer, version *semver.Version) []string {
 	args := []string{
 		// Certificate flags (server, service account signing).
 		fmt.Sprintf("--tls-cert-file=%s/tls.crt", getCertificateMountPath(operatorv1alpha1.ServerCertificate)),
 		fmt.Sprintf("--tls-private-key-file=%s/tls.key", getCertificateMountPath(operatorv1alpha1.ServerCertificate)),
-		// Client CA for authenticating clients connecting to the cache server.
-		fmt.Sprintf("--client-ca-file=%s/tls.crt", getCAMountPath(operatorv1alpha1.RootCA)),
 		// Configure (lack of) persistence.
 		"--root-directory=",
+	}
+
+	if hasAuthenticatedCache(version) {
+		// Client CA for authenticating clients connecting to the cache server.
+		args = append(args, fmt.Sprintf("--client-ca-file=%s/tls.crt", getCAMountPath(operatorv1alpha1.RootCA)))
 	}
 
 	if server.Spec.Etcd == nil {
@@ -237,18 +241,21 @@ func getArgs(server *operatorv1alpha1.CacheServer) []string {
 	return args
 }
 
-func getSecretMounts(server *operatorv1alpha1.CacheServer) []utils.SecretMount {
+func getSecretMounts(server *operatorv1alpha1.CacheServer, version *semver.Version) []utils.SecretMount {
 	secretMounts := []utils.SecretMount{
 		{
 			VolumeName: "serving-cert",
 			SecretName: resources.GetCacheServerCertificateName(server, operatorv1alpha1.ServerCertificate),
 			MountPath:  getCertificateMountPath(operatorv1alpha1.ServerCertificate),
 		},
-		{
+	}
+
+	if hasAuthenticatedCache(version) {
+		secretMounts = append(secretMounts, utils.SecretMount{
 			VolumeName: "client-ca",
 			SecretName: resources.GetCacheServerCAName(server.Name, operatorv1alpha1.RootCA),
 			MountPath:  getCAMountPath(operatorv1alpha1.RootCA),
-		},
+		})
 	}
 
 	if server.Spec.Etcd != nil && server.Spec.Etcd.TLSConfig != nil {
@@ -260,4 +267,17 @@ func getSecretMounts(server *operatorv1alpha1.CacheServer) []utils.SecretMount {
 	}
 
 	return secretMounts
+}
+
+func hasAuthenticatedCache(version *semver.Version) bool {
+	if version == nil {
+		// If we can't parse the version, assume the best and include the client CA.
+		return true
+	}
+
+	// Only include client-ca for kcp >= 0.29; 0.28 users will have to ensure their
+	// tags parse as 0.28 to ensure compatibility with recent kcp-operators.
+	constraint, _ := semver.NewConstraint("~0.29.2 || ~0.30.2 || >=0.31.0")
+
+	return constraint.Check(version)
 }

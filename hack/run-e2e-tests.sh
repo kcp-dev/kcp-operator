@@ -16,6 +16,9 @@
 
 set -euo pipefail
 
+cd $(dirname $0)/..
+source hack/lib.sh
+
 export KIND_CLUSTER_NAME="${KIND_CLUSTER_NAME:-e2e}"
 DATA_DIR=".e2e-$KIND_CLUSTER_NAME"
 OPERATOR_PID=0
@@ -69,6 +72,48 @@ fi
 
 echo "Kubeconfig is in $KUBECONFIG."
 
+if [ -n "${KCP_TAG:-}" ]; then
+  # resolve what looks like branch names
+  if [[ "$KCP_TAG" == main ]] || [[ "$KCP_TAG" =~ ^release- ]]; then
+    if [[ "$KCP_TAG" == main ]]; then
+      # rely on a KCP_RELEASE env in the Prowjob
+      KCP_TAG_ALIAS="v$KCP_RELEASE.999"
+    else
+      KCP_TAG_ALIAS="v$(echo "$KCP_TAG" | sed -E 's/release-//g').999"
+    fi
+
+    echo "Resolving kcp $KCP_TAG (as $KCP_TAG_ALIAS)..."
+
+    tmpdir="$(mktemp -d)"
+    here="$(pwd)"
+
+    cd "$tmpdir"
+    git clone --quiet --depth 1 --branch "$KCP_TAG" --single-branch https://github.com/kcp-dev/kcp .
+    gitHead="$(git rev-parse HEAD)"
+    cd "$here"
+    rm -rf "$tmpdir"
+
+    # kcp's containers are tagged with the first 9 characters of the Git hash
+    ORIGINAL_TAG="${gitHead:0:9}"
+
+    echo "Going to use kcp image $ORIGINAL_TAG as $KCP_TAG_ALIAS."
+
+    # Due to the process above, we might now run the tests against "kcp:d6ab2dc"
+    # or whatever random hash might be the most recent build. This interferes with
+    # the operator's version detection. To work around this, we pull the image first,
+    # retag it with a dummy version, load it into kind and then use that image.
+    KCP_TAG="$KCP_TAG_ALIAS"
+    ORIGINAL_IMAGE="ghcr.io/kcp-dev/kcp:$ORIGINAL_TAG"
+    PRELOAD_IMAGE="ghcr.io/kcp-dev/kcp:$KCP_TAG"
+    docker pull "$ORIGINAL_IMAGE"
+    docker tag "$ORIGINAL_IMAGE" "$PRELOAD_IMAGE"
+
+    retry_linear 1 5 kind load docker-image "$PRELOAD_IMAGE" --name "$KIND_CLUSTER_NAME"
+  fi
+
+  echo "kcp image tag: $KCP_TAG"
+fi
+
 KUBECTL="$(UGET_PRINT_PATH=absolute make --no-print-directory install-kubectl)"
 KUSTOMIZE="$(UGET_PRINT_PATH=absolute make --no-print-directory install-kustomize)"
 HELM="$(UGET_PRINT_PATH=absolute make --no-print-directory install-helm)"
@@ -116,7 +161,6 @@ echo "Running e2e tests..."
 
 export HELM_BINARY="$HELM"
 export ETCD_HELM_CHART="$(realpath hack/ci/testdata/etcd)"
-export KCP_RELEASE="${KCP_TAG:-}"
 
 WHAT="${WHAT:-./test/e2e/...}"
 TEST_ARGS="${TEST_ARGS:--timeout 2h -v}"

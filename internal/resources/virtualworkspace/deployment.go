@@ -182,7 +182,7 @@ func DeploymentReconciler(vw *operatorv1alpha1.VirtualWorkspace, rootShard *oper
 				volumeMounts = append(volumeMounts, vm)
 			}
 
-			image, _ := resources.GetImageSettings(vw.Spec.Image)
+			image, _, _ := resources.GetImageSettings(vw.Spec.Image)
 
 			container := corev1.Container{
 				Name:         ServerContainerName,

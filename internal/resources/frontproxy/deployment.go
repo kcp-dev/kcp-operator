@@ -69,7 +69,7 @@ func (r *reconciler) deploymentReconciler() reconciling.NamedDeploymentReconcile
 			}
 			dep.Spec.Template.SetLabels(r.resourceLabels)
 
-			image, _ := resources.GetImageSettings(imageSpec)
+			image, _, _ := resources.GetImageSettings(imageSpec)
 			args := r.getArgs()
 
 			container := corev1.Container{

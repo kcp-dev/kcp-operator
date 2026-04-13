@@ -77,6 +77,29 @@ presubmits:
               memory: 8Gi
               cpu: 4
 
+  - name: pull-kcp-operator-test-e2e-0.28
+    decorate: true
+    run_if_changed: "(Dockerfile|Makefile|.prow.yaml|go.mod|go.sum|cmd|internal|sdk|hack|test|config)"
+    optional: false
+    clone_uri: "https://github.com/kcp-dev/kcp-operator"
+    labels:
+      preset-goproxy: "true"
+    spec:
+      containers:
+        - image: ghcr.io/kcp-dev/infra/build:1.26.2-1
+          command:
+            - hack/ci/run-e2e-tests.sh
+          env:
+            - name: KCP_TAG
+              value: release-0.28
+          resources:
+            requests:
+              memory: 8Gi
+              cpu: 4
+          # docker-in-docker needs privileged mode
+          securityContext:
+            privileged: true
+
   - name: pull-kcp-operator-test-e2e-0.29
     decorate: true
     run_if_changed: "(Dockerfile|Makefile|.prow.yaml|go.mod|go.sum|cmd|internal|sdk|hack|test|config)"
@@ -100,29 +123,7 @@ presubmits:
           securityContext:
             privileged: true
 
-  - name: pull-kcp-operator-test-e2e-0.30
-    decorate: true
-    run_if_changed: "(Dockerfile|Makefile|.prow.yaml|go.mod|go.sum|cmd|internal|sdk|hack|test|config)"
-    optional: false
-    clone_uri: "https://github.com/kcp-dev/kcp-operator"
-    labels:
-      preset-goproxy: "true"
-    spec:
-      containers:
-        - image: ghcr.io/kcp-dev/infra/build:1.26.2-1
-          command:
-            - hack/ci/run-e2e-tests.sh
-          env:
-            - name: KCP_TAG
-              value: release-0.30
-          resources:
-            requests:
-              memory: 8Gi
-              cpu: 4
-          # docker-in-docker needs privileged mode
-          securityContext:
-            privileged: true
-
+  # default is currently kcp 0.30
   - name: pull-kcp-operator-test-e2e-default
     decorate: true
     run_if_changed: "(Dockerfile|Makefile|.prow.yaml|go.mod|go.sum|cmd|internal|sdk|hack|test|config)"
@@ -158,6 +159,8 @@ presubmits:
           env:
             - name: KCP_TAG
               value: main
+            - name: KCP_RELEASE
+              value: '0.31'
           resources:
             requests:
               memory: 8Gi

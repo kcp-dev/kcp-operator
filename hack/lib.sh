@@ -14,6 +14,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+retry_linear() {
+  delay=$1
+  retries=$2
+  shift
+  shift
+
+  count=0
+  until "$@"; do
+    rc=$?
+    count=$((count + 1))
+    if [ $count -lt "$retries" ]; then
+      echo "[$count/$retries] Command returned $rc, retrying…"
+      sleep $delay
+    else
+      echo "Command returned $rc, no more retries left."
+      return $rc
+    fi
+  done
+
+  return 0
+}
+
 start_docker_daemon_ci() {
   # DOCKER_REGISTRY_MIRROR_ADDR is injected via Prow preset;
   # MTU improves the docker-in-docker networking;

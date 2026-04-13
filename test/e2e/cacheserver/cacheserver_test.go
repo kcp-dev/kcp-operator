@@ -24,6 +24,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/go-logr/logr"
 	"github.com/kcp-dev/logicalcluster/v3"
 
@@ -94,10 +95,7 @@ func TestCacheWithRootShard(t *testing.T) {
 }
 
 func TestCacheWithExternalEtcdAndRootShard(t *testing.T) {
-	switch utils.GetKcpRelease() {
-	// We skip release "" because it currently points to kcp 0.30 which
-	// doesn't currently support cache-server with an external etcd cluster.
-	case "release-0.29", "release-0.30", "": // TODO(gman0): remove the empty ("") kcp release!
+	if utils.GetKcpRelease().LessThan(semver.MustParse("0.31")) {
 		t.Skip("running external etcd with cache-server is only supported with kcp >=0.31")
 		return
 	}

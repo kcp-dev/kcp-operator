@@ -19,29 +19,48 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 source hack/lib.sh
 
-# KCP_TAG (when coming from .prow.yaml) is set to release-* branch name.
-# We stash it into KCP_RELEASE because KCP_TAG is overridden later to a specific
-# git hash of that branch.
-export KCP_RELEASE="${KCP_TAG:-}"
+# start docker so we can run kind
+start_docker_daemon_ci
 
 # For periodics especially it's important that we output what versions exactly
 # we're testing against.
+PRELOAD_IMAGE=
+
 if [ -n "${KCP_TAG:-}" ]; then
   # resolve what looks like branch names
   if [[ "$KCP_TAG" == main ]] || [[ "$KCP_TAG" =~ ^release- ]]; then
-    echo "Resolving kcp $KCP_TAG ..."
+    if [[ "$KCP_TAG" == main ]]; then
+      # rely on a KCP_RELEASE env in the Prowjob
+      KCP_TAG_ALIAS="v$KCP_RELEASE.999"
+    else
+      KCP_TAG_ALIAS="v$(echo "$KCP_TAG" | sed -E 's/release-//g').999"
+    fi
+
+    echo "Resolving kcp $KCP_TAG (as $KCP_TAG_ALIAS)..."
 
     tmpdir="$(mktemp -d)"
     here="$(pwd)"
 
     cd "$tmpdir"
     git clone --quiet --depth 1 --branch "$KCP_TAG" --single-branch https://github.com/kcp-dev/kcp .
-    KCP_TAG="$(git rev-parse HEAD)"
+    gitHead="$(git rev-parse HEAD)"
     cd "$here"
     rm -rf "$tmpdir"
 
     # kcp's containers are tagged with the first 9 characters of the Git hash
-    KCP_TAG="${KCP_TAG:0:9}"
+    ORIGINAL_TAG="${gitHead:0:9}"
+
+    echo "Going to use kcp image $ORIGINAL_TAG as $KCP_TAG_ALIAS."
+
+    # Due to the process above, we might now run the tests against "kcp:d6ab2dc"
+    # or whatever random hash might be the most recent build. This interferes with
+    # the operator's version detection. To work around this, we pull the image first,
+    # retag it with a dummy version, load it into kind and then use that image.
+    KCP_TAG="$KCP_TAG_ALIAS"
+    ORIGINAL_IMAGE="ghcr.io/kcp-dev/kcp:$ORIGINAL_TAG"
+    PRELOAD_IMAGE="ghcr.io/kcp-dev/kcp:$KCP_TAG"
+    docker pull "$ORIGINAL_IMAGE"
+    docker tag "$ORIGINAL_IMAGE" "$PRELOAD_IMAGE"
   fi
 
   echo "kcp image tag.......: $KCP_TAG"
@@ -57,9 +76,6 @@ export IMAGE_TAG=local
 echo "Building container images..."
 ARCHITECTURES=arm64 DRY_RUN=yes ./hack/ci/build-image.sh
 
-# start docker so we can run kind
-start_docker_daemon_ci
-
 # create a local kind cluster
 KIND_CLUSTER_NAME=e2e
 
@@ -70,6 +86,12 @@ export KUBECONFIG=$(mktemp)
 echo "Creating kind cluster $KIND_CLUSTER_NAME..."
 create_kind_cluster "$KIND_CLUSTER_NAME" kindest/node:v1.32.2
 chmod 600 "$KUBECONFIG"
+
+# preload the custom kcp image, if requested
+if [[ -n "$PRELOAD_IMAGE" ]]; then
+  echo "Preloading kcp image $PRELOAD_IMAGE into kind cluster..."
+  retry_linear 1 5 kind load docker-image "$PRELOAD_IMAGE" --name "$KIND_CLUSTER_NAME"
+fi
 
 # apply kernel limits job first and wait for completion
 echo "Applying kernel limits job…"
