@@ -169,8 +169,7 @@ func (r *FrontProxyReconciler) reconcileStatus(ctx context.Context, oldFrontProx
 
 	// Only check deployment status if not bundled
 	if !isBundled {
-		namingScheme := naming.NewVersion1()
-		depKey := types.NamespacedName{Namespace: frontProxy.Namespace, Name: namingScheme.FrontProxyDeploymentName(frontProxy)}
+		depKey := types.NamespacedName{Namespace: frontProxy.Namespace, Name: names.FrontProxyDeploymentName(frontProxy)}
 		cond, err := util.GetDeploymentAvailableCondition(ctx, r.Client, depKey)
 		if err != nil {
 			errs = append(errs, err)

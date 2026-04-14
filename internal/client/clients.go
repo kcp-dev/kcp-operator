@@ -34,7 +34,7 @@ import (
 
 // NewRootShardClient returns a new client for talking to the kcp root shard service directly.
 func NewRootShardClient(ctx context.Context, names naming.Scheme, c ctrlruntimeclient.Client, rootShard *operatorv1alpha1.RootShard, cluster logicalcluster.Name, scheme *runtime.Scheme) (ctrlruntimeclient.Client, error) {
-	baseUrl := fmt.Sprintf("https://%s.%s.svc.cluster.local:6443", names.RootShardServiceName(rootShard), rootShard.Namespace)
+	baseUrl := fmt.Sprintf("https://%s:6443", names.RootShardBaseHost(rootShard))
 
 	if !cluster.Empty() {
 		baseUrl = fmt.Sprintf("%s/clusters/%s", baseUrl, cluster.String())
@@ -45,7 +45,7 @@ func NewRootShardClient(ctx context.Context, names naming.Scheme, c ctrlruntimec
 
 // NewRootShardClient returns a new client that connects to the operator's internal front-proxy.
 func NewRootShardProxyClient(ctx context.Context, names naming.Scheme, c ctrlruntimeclient.Client, rootShard *operatorv1alpha1.RootShard, cluster logicalcluster.Name, scheme *runtime.Scheme) (ctrlruntimeclient.Client, error) {
-	baseUrl := fmt.Sprintf("https://%s.%s.svc.cluster.local:6443", names.RootShardProxyServiceName(rootShard), rootShard.Namespace)
+	baseUrl := fmt.Sprintf("https://%s:6443", names.RootShardProxyBaseHost(rootShard))
 
 	if !cluster.Empty() {
 		baseUrl = fmt.Sprintf("%s/clusters/%s", baseUrl, cluster.String())
@@ -61,7 +61,7 @@ func NewShardClient(ctx context.Context, names naming.Scheme, c ctrlruntimeclien
 		return nil, fmt.Errorf("failed to determine effective RootShard: %w", err)
 	}
 
-	baseUrl := fmt.Sprintf("https://%s.%s.svc.cluster.local:6443", names.ShardServiceName(shard), shard.Namespace)
+	baseUrl := fmt.Sprintf("https://%s:6443", names.ShardBaseHost(shard))
 
 	if !cluster.Empty() {
 		baseUrl = fmt.Sprintf("%s/clusters/%s", baseUrl, cluster.String())

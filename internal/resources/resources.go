@@ -50,6 +50,10 @@ const (
 	CacheServerLabel      = "operator.kcp.io/cache-server"
 	VirtualWorkspaceLabel = "operator.kcp.io/virtual-workspace"
 
+	// KubeconfigUIDLabel is used inside kcp workspaces to link RBAC resources
+	// to their owning Kubeconfig object on the kcp operator cluster.
+	KubeconfigUIDLabel = "operator.kcp.io/kubeconfig"
+
 	// BundleAnnotation is placed on RootShard, Shard, or FrontProxy objects to trigger automatic Bundle creation
 	BundleAnnotation = "operator.kcp.io/bundle"
 

@@ -46,6 +46,7 @@ type Scheme interface {
 	RootShardProxyDynamicKubeconfigName(r *operatorv1alpha1.RootShard) string
 	RootShardProxyConfigName(r *operatorv1alpha1.RootShard) string
 	RootShardProxyServiceName(r *operatorv1alpha1.RootShard) string
+	RootShardProxyBaseHost(r *operatorv1alpha1.RootShard) string
 	RootShardKubeconfigSecret(r *operatorv1alpha1.RootShard, cert operatorv1alpha1.Certificate) string
 
 	// Shard naming

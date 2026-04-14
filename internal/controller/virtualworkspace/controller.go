@@ -142,7 +142,7 @@ func (r *Reconciler) reconcile(ctx context.Context, vw *operatorv1alpha1.Virtual
 		}
 
 		clientCertIssuer = names.RootShardCAName(rootShard, operatorv1alpha1.ClientCA)
-		// serverCA = namingScheme.GetRootShardCAName(rootShard, operatorv1alpha1.ServerCA)
+		// serverCA = names.RootShardCAName(rootShard, operatorv1alpha1.ServerCA)
 
 	case vw.Spec.Target.ShardRef != nil:
 		shard = &operatorv1alpha1.Shard{}

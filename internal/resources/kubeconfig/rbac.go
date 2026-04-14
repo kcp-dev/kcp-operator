@@ -24,12 +24,13 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 
 	"github.com/kcp-dev/kcp-operator/internal/kubernetes"
+	"github.com/kcp-dev/kcp-operator/internal/resources"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
 func OwnerLabels(owner *operatorv1alpha1.Kubeconfig) map[string]string {
 	return map[string]string{
-		"operator.kcp.io/kubeconfig": string(owner.UID),
+		resources.KubeconfigUIDLabel: string(owner.UID),
 	}
 }
 

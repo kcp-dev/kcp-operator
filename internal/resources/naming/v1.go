@@ -97,6 +97,10 @@ func (v *version1) RootShardProxyServiceName(r *operatorv1alpha1.RootShard) stri
 	return fmt.Sprintf("%s-proxy", r.Name)
 }
 
+func (v *version1) RootShardProxyBaseHost(r *operatorv1alpha1.RootShard) string {
+	return fqService(v.RootShardProxyServiceName(r), r.Namespace, r.Spec.ClusterDomain)
+}
+
 func (v *version1) RootShardKubeconfigSecret(r *operatorv1alpha1.RootShard, cert operatorv1alpha1.Certificate) string {
 	return fmt.Sprintf("%s-%s-kubeconfig", r.Name, cert)
 }
