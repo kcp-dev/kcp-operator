@@ -143,7 +143,7 @@ func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard, kcpVW *operator
 			if rootShard.Spec.CABundleSecretRef != nil {
 				secretMounts = append(secretMounts, utils.SecretMount{
 					VolumeName: "ca-bundle",
-					SecretName: fmt.Sprintf("%s-merged-ca-bundle", rootShard.Name),
+					SecretName: names.MergedCABundleName(rootShard.Name),
 					MountPath:  getCAMountPath(operatorv1alpha1.CABundleCA),
 				})
 			}
@@ -165,7 +165,7 @@ func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard, kcpVW *operator
 
 				secretMounts = append(secretMounts, utils.SecretMount{
 					VolumeName: "cache-server-client-cert",
-					SecretName: fmt.Sprintf("%s-client-certificate", ref.Name),
+					SecretName: names.CacheServerClientCertificateName(ref.Name),
 					MountPath:  getCacheServerClientCertMountPath(),
 				})
 			}

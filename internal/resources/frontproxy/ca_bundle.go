@@ -32,10 +32,12 @@ import (
 )
 
 func (r *reconciler) mergedClientCASecretName() string {
+	owner := r.names.RootShardProxyDeploymentName(r.rootShard)
 	if r.frontProxy != nil {
-		return fmt.Sprintf("%s-merged-client-ca", r.frontProxy.Name)
+		owner = r.frontProxy.Name
 	}
-	return fmt.Sprintf("%s-proxy-merged-client-ca", r.rootShard.Name)
+
+	return r.names.MergedClientCAName(owner)
 }
 
 // mergedClientCASecretReconciler creates a single secret with the
@@ -92,11 +94,12 @@ func (r *reconciler) mergedClientCASecretReconciler(ctx context.Context, kubeCli
 }
 
 func (r *reconciler) mergedCABundleSecretName() string {
-	// Validate whether called for frontProxy or rootShardFrontProxy
+	owner := r.names.RootShardProxyDeploymentName(r.rootShard)
 	if r.frontProxy != nil {
-		return fmt.Sprintf("%s-merged-ca-bundle", r.frontProxy.Name)
+		owner = r.frontProxy.Name
 	}
-	return fmt.Sprintf("%s-proxy-merged-ca-bundle", r.rootShard.Name)
+
+	return r.names.MergedCABundleName(owner)
 }
 
 func (r *reconciler) mergedCABundleSecretReconciler(ctx context.Context, kubeClient ctrlruntimeclient.Client) k8creconciling.NamedSecretReconcilerFactory {

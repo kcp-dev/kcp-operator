@@ -78,7 +78,7 @@ func TestExternalVirtualWorkspace(t *testing.T) {
 	})
 
 	// externalHostname must match whatever DeployFrontProxy chooses as the name for the FrontProxy
-	externalHostname := fmt.Sprintf("front-proxy-front-proxy.%s.svc.cluster.local", namespace.Name)
+	externalHostname := utils.FrontProxyExternalHostname(namespace.Name, namingScheme)
 
 	// Deploy a root shard that uses the external VW (in-process VW is disabled).
 	rootShard := utils.DeployRootShard(ctx, t, client, namingScheme, namespace.Name, externalHostname, func(rs *operatorv1alpha1.RootShard) {
@@ -97,16 +97,8 @@ func TestExternalVirtualWorkspace(t *testing.T) {
 		fp.Spec.Resources = lowResourceRequirements()
 	})
 
-	// Wait for the VirtualWorkspace pods to be ready.
 	t.Log("Waiting for VirtualWorkspace pods to be ready...")
-	vwPodOpts := []ctrlruntimeclient.ListOption{
-		ctrlruntimeclient.InNamespace(vw.Namespace),
-		ctrlruntimeclient.MatchingLabels{
-			"app.kubernetes.io/component": "virtual-workspace",
-			"app.kubernetes.io/instance":  vw.Name,
-		},
-	}
-	utils.WaitForPods(t, ctx, client, vwPodOpts...)
+	waitForVirtualWorkspacePods(t, ctx, client, namingScheme, &vw)
 
 	// Create a kubeconfig to access the root shard.
 	configSecretName := "kubeconfig"
@@ -195,7 +187,7 @@ func TestExternalVirtualWorkspace(t *testing.T) {
 	}
 
 	// Set up port forwarding to the VirtualWorkspace service
-	vwServiceName := fmt.Sprintf("%s-virtual-workspace", vw.Name)
+	vwServiceName := namingScheme.VirtualWorkspaceServiceName(&vw)
 	vwLocalPortStr, err := server.GetFreePort(t)
 	if err != nil {
 		t.Fatalf("Failed to get free port: %v", err)
@@ -269,7 +261,7 @@ func TestMultipleShardsWithExternalVirtualWorkspacesAndExtCache(t *testing.T) {
 	})
 
 	// externalHostname must match whatever DeployFrontProxy chooses as the name for the FrontProxy
-	externalHostname := fmt.Sprintf("front-proxy-front-proxy.%s.svc.cluster.local", namespace.Name)
+	externalHostname := utils.FrontProxyExternalHostname(namespace.Name, namingScheme)
 
 	// Deploy root shard with external VW
 	rootShard := utils.DeployRootShard(ctx, t, client, namingScheme, namespace.Name, externalHostname, func(rs *operatorv1alpha1.RootShard) {
@@ -313,10 +305,10 @@ func TestMultipleShardsWithExternalVirtualWorkspacesAndExtCache(t *testing.T) {
 
 	// Wait for both VirtualWorkspace pods to be ready
 	t.Log("Waiting for root VirtualWorkspace pods to be ready...")
-	waitForVirtualWorkspacePods(t, ctx, client, rootVW.Namespace, rootVW.Name)
+	waitForVirtualWorkspacePods(t, ctx, client, namingScheme, &rootVW)
 
 	t.Log("Waiting for shard VirtualWorkspace pods to be ready...")
-	waitForVirtualWorkspacePods(t, ctx, client, shard1VW.Namespace, shard1VW.Name)
+	waitForVirtualWorkspacePods(t, ctx, client, namingScheme, &shard1VW)
 
 	// verify the setup
 	test := conformance.NewWorkspaceSchedulingTest(frontProxy.Name, client, namespace.Name)
@@ -330,15 +322,12 @@ func TestMultipleShardsWithExternalVirtualWorkspacesAndExtCache(t *testing.T) {
 }
 
 // waitForVirtualWorkspacePods waits for VirtualWorkspace pods to become ready.
-func waitForVirtualWorkspacePods(t *testing.T, ctx context.Context, client ctrlruntimeclient.Client, namespace, name string) {
+func waitForVirtualWorkspacePods(t *testing.T, ctx context.Context, client ctrlruntimeclient.Client, names naming.Scheme, vw *operatorv1alpha1.VirtualWorkspace) {
 	t.Helper()
 
 	opts := []ctrlruntimeclient.ListOption{
-		ctrlruntimeclient.InNamespace(namespace),
-		ctrlruntimeclient.MatchingLabels{
-			"app.kubernetes.io/component": "virtual-workspace",
-			"app.kubernetes.io/instance":  name,
-		},
+		ctrlruntimeclient.InNamespace(vw.Namespace),
+		ctrlruntimeclient.MatchingLabels(names.VirtualWorkspaceResourceLabels(vw)),
 	}
 	utils.WaitForPods(t, ctx, client, opts...)
 }

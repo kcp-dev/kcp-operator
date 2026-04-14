@@ -167,8 +167,9 @@ func (v *version1) CacheServerCAName(cacheServerName string, ca operatorv1alpha1
 	return fmt.Sprintf("%s-%s-ca", cacheServerName, ca)
 }
 
-func (v *version1) CacheServerClientCertificateName(c *operatorv1alpha1.CacheServer) string {
-	return fmt.Sprintf("%s-client-certificate", c.Name)
+func (v *version1) CacheServerClientCertificateName(cacheServerName string) string {
+	// This being a different naming scheme than CacheServerCertificateName() is fixed in v2.
+	return fmt.Sprintf("%s-client-certificate", cacheServerName)
 }
 
 func (v *version1) CacheServerKubeconfigName(cacheServerName string) string {
@@ -227,10 +228,18 @@ func (v *version1) FrontProxyServiceName(fp *operatorv1alpha1.FrontProxy) string
 	return fmt.Sprintf("%s-front-proxy", fp.Name)
 }
 
+func (v *version1) FrontProxyBaseHost(fp *operatorv1alpha1.FrontProxy, r *operatorv1alpha1.RootShard) string {
+	return fqService(v.FrontProxyServiceName(fp), fp.Namespace, r.Spec.ClusterDomain)
+}
+
 // Bundle naming
 
 func (v *version1) BundleName(ownerName string) string {
 	return fmt.Sprintf("%s-bundle", ownerName)
+}
+
+func (v *version1) MergedCABundleName(ownerName string) string {
+	return fmt.Sprintf("%s-merged-ca-bundle", ownerName)
 }
 
 func (v *version1) MergedClientCAName(ownerName string) string {

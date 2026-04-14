@@ -29,10 +29,6 @@ import (
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
-func kubeconfigSecret(shard *operatorv1alpha1.Shard, cert operatorv1alpha1.Certificate) string {
-	return fmt.Sprintf("%s-%s-kubeconfig", shard.Name, cert)
-}
-
 func RootShardClientKubeconfigReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShard, names naming.Scheme) k8creconciling.NamedSecretReconcilerFactory {
 	const (
 		serverName   = "root-shard"
@@ -41,7 +37,7 @@ func RootShardClientKubeconfigReconciler(shard *operatorv1alpha1.Shard, rootShar
 	)
 
 	return func() (string, k8creconciling.SecretReconciler) {
-		return kubeconfigSecret(shard, operatorv1alpha1.ClientCertificate), func(secret *corev1.Secret) (*corev1.Secret, error) {
+		return names.ShardKubeconfigSecret(shard, operatorv1alpha1.ClientCertificate), func(secret *corev1.Secret) (*corev1.Secret, error) {
 			var config *clientcmdapi.Config
 			if secret.Data == nil {
 				secret.Data = make(map[string][]byte)
@@ -89,7 +85,7 @@ func LogicalClusterAdminKubeconfigReconciler(shard *operatorv1alpha1.Shard, root
 	)
 
 	return func() (string, k8creconciling.SecretReconciler) {
-		return kubeconfigSecret(shard, operatorv1alpha1.LogicalClusterAdminCertificate), func(secret *corev1.Secret) (*corev1.Secret, error) {
+		return names.ShardKubeconfigSecret(shard, operatorv1alpha1.LogicalClusterAdminCertificate), func(secret *corev1.Secret) (*corev1.Secret, error) {
 			var config *clientcmdapi.Config
 
 			if secret.Data == nil {
@@ -138,7 +134,7 @@ func ExternalLogicalClusterAdminKubeconfigReconciler(shard *operatorv1alpha1.Sha
 	)
 
 	return func() (string, k8creconciling.SecretReconciler) {
-		return kubeconfigSecret(shard, operatorv1alpha1.ExternalLogicalClusterAdminCertificate), func(secret *corev1.Secret) (*corev1.Secret, error) {
+		return names.ShardKubeconfigSecret(shard, operatorv1alpha1.ExternalLogicalClusterAdminCertificate), func(secret *corev1.Secret) (*corev1.Secret, error) {
 			var config *clientcmdapi.Config
 
 			if secret.Data == nil {

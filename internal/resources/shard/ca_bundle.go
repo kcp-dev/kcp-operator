@@ -33,7 +33,7 @@ import (
 
 func MergedCABundleSecretReconciler(ctx context.Context, shard *operatorv1alpha1.Shard, kubeClient ctrlruntimeclient.Client, names naming.Scheme) k8creconciling.NamedSecretReconcilerFactory {
 	return func() (string, k8creconciling.SecretReconciler) {
-		secretName := fmt.Sprintf("%s-merged-ca-bundle", shard.Name)
+		secretName := names.MergedCABundleName(shard.Name)
 		return secretName, func(secret *corev1.Secret) (*corev1.Secret, error) {
 			if secret.Data == nil {
 				secret.Data = make(map[string][]byte)

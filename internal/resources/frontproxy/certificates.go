@@ -74,10 +74,15 @@ func (r *reconciler) serverCertificateReconciler() reconciling.NamedCertificateR
 	template := r.certTemplateMap().CertificateTemplate(certKind)
 	fpService := r.serviceName()
 
+	clusterDomain := "cluster.local"
+	if cd := r.rootShard.Spec.ClusterDomain; cd != "" {
+		clusterDomain = cd
+	}
+
 	dnsNames := []string{
 		fpService,
 		fmt.Sprintf("%s.%s", fpService, r.rootShard.Namespace),
-		fmt.Sprintf("%s.%s.svc.cluster.local", fpService, r.rootShard.Namespace),
+		fmt.Sprintf("%s.%s.svc.%s", fpService, r.rootShard.Namespace, clusterDomain),
 	}
 
 	if r.frontProxy != nil {

@@ -24,6 +24,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -207,13 +208,15 @@ func TestGetExternalPort(t *testing.T) {
 		},
 	}
 
+	namingScheme := naming.NewVersion1()
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var rec *reconciler
 			if tt.frontProxy != nil {
-				rec = NewFrontProxy(tt.frontProxy, tt.rootShard)
+				rec = NewFrontProxy(tt.frontProxy, tt.rootShard, namingScheme)
 			} else {
-				rec = NewRootShardProxy(tt.rootShard)
+				rec = NewRootShardProxy(tt.rootShard, namingScheme)
 			}
 
 			actualPort := rec.getExternalPort()

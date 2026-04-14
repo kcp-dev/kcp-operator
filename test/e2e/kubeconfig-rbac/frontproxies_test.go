@@ -20,7 +20,6 @@ package kubeconfigrbac
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -51,7 +50,7 @@ func TestProvisionFrontProxyRBAC(t *testing.T) {
 	namespace := utils.CreateSelfDestructingNamespace(t, ctx, client, "provision-frontproxy-rbac")
 
 	// externalHostname must match whatever DeployFrontProxy chooses as the name for the FrontProxy
-	externalHostname := fmt.Sprintf("front-proxy-front-proxy.%s.svc.cluster.local", namespace.Name)
+	externalHostname := utils.FrontProxyExternalHostname(namespace.Name, namingScheme)
 
 	// deploy rootshard
 	rootShard := utils.DeployRootShard(ctx, t, client, namingScheme, namespace.Name, externalHostname)

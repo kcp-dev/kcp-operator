@@ -43,6 +43,7 @@ import (
 	ctrlruntime "sigs.k8s.io/controller-runtime"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kcp-dev/kcp-operator/internal/resources"
 	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
@@ -370,4 +371,16 @@ func GetKcpRelease() *semver.Version {
 	}
 
 	return parsed
+}
+
+func FrontProxyExternalHostname(namespace string, names naming.Scheme) string {
+	fp := &operatorv1alpha1.FrontProxy{}
+	fp.Name = "front-proxy" // has to match what is used in DeployFrontProxy()
+	fp.Namespace = namespace
+
+	rs := &operatorv1alpha1.RootShard{}
+	rs.Name = "r00t" // has to match what is used in DeployRootShard()
+	rs.Namespace = namespace
+
+	return names.FrontProxyBaseHost(fp, rs)
 }

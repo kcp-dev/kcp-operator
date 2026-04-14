@@ -65,7 +65,8 @@ type Scheme interface {
 	CacheServerBaseURL(c *operatorv1alpha1.CacheServer) string
 	CacheServerCertificateName(c *operatorv1alpha1.CacheServer, cert operatorv1alpha1.Certificate) string
 	CacheServerCAName(cacheServerName string, ca operatorv1alpha1.CA) string
-	CacheServerClientCertificateName(c *operatorv1alpha1.CacheServer) string
+	// deprecated, use CacheServerCertificateName instead
+	CacheServerClientCertificateName(cacheServerName string) string
 	CacheServerKubeconfigName(cacheServerName string) string
 
 	// VirtualWorkspace naming
@@ -83,9 +84,11 @@ type Scheme interface {
 	FrontProxyDynamicKubeconfigName(r *operatorv1alpha1.RootShard, fp *operatorv1alpha1.FrontProxy) string
 	FrontProxyConfigName(fp *operatorv1alpha1.FrontProxy) string
 	FrontProxyServiceName(fp *operatorv1alpha1.FrontProxy) string
+	FrontProxyBaseHost(fp *operatorv1alpha1.FrontProxy, r *operatorv1alpha1.RootShard) string
 
 	// Bundle naming
 	BundleName(ownerName string) string
+	MergedCABundleName(ownerName string) string
 	MergedClientCAName(ownerName string) string
 }
 

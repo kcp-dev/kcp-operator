@@ -42,6 +42,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -159,6 +160,7 @@ func (r *BundleReconciler) reconcile(ctx context.Context, bundle *operatorv1alph
 
 	// Determine which target the bundle is for and get the list of required objects
 	target := bundle.Spec.Target
+	names := naming.NewVersion1()
 	var (
 		targetExists    bool
 		targetName      string
@@ -178,7 +180,7 @@ func (r *BundleReconciler) reconcile(ctx context.Context, bundle *operatorv1alph
 		}, rootShard)
 		if err == nil {
 			targetExists = true
-			requiredObjects = getBundleObjectsForRootShard(rootShard)
+			requiredObjects = getBundleObjectsForRootShard(rootShard, names)
 		} else if ctrlruntimeclient.IgnoreNotFound(err) != nil {
 			errs = append(errs, fmt.Errorf("failed to get RootShard %s: %w", targetName, err))
 		}
@@ -200,7 +202,7 @@ func (r *BundleReconciler) reconcile(ctx context.Context, bundle *operatorv1alph
 					Namespace: bundle.Namespace,
 				}, rootShard)
 				if err == nil {
-					requiredObjects = getBundleObjectsForShard(shard, rootShard.Name)
+					requiredObjects = getBundleObjectsForShard(shard, rootShard.Name, names)
 				} else {
 					errs = append(errs, fmt.Errorf("failed to get RootShard for Shard %s: %w", targetName, err))
 				}
@@ -226,7 +228,7 @@ func (r *BundleReconciler) reconcile(ctx context.Context, bundle *operatorv1alph
 					Namespace: bundle.Namespace,
 				}, rootShard)
 				if err == nil {
-					requiredObjects = getBundleObjectsForFrontProxy(frontProxy, rootShard.Name)
+					requiredObjects = getBundleObjectsForFrontProxy(frontProxy, rootShard.Name, names)
 				} else {
 					errs = append(errs, fmt.Errorf("failed to get RootShard for FrontProxy %s: %w", targetName, err))
 				}

@@ -72,7 +72,7 @@ func RootCACertificateReconciler(server *operatorv1alpha1.CacheServer, names nam
 // ClientCertificateReconciler creates a client certificate for authenticating to the cache server.
 // This certificate is mounted by shards that connect to the cache server.
 func ClientCertificateReconciler(server *operatorv1alpha1.CacheServer, names naming.Scheme) reconciling.NamedCertificateReconcilerFactory {
-	name := names.CacheServerClientCertificateName(server)
+	name := names.CacheServerClientCertificateName(server.Name)
 	template := server.Spec.CertificateTemplates.CertificateTemplate(operatorv1alpha1.ClientCertificate)
 
 	return func() (string, reconciling.CertificateReconciler) {

@@ -23,6 +23,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -144,9 +145,11 @@ func TestBuildRootShardDNSNames(t *testing.T) {
 		},
 	}
 
+	namingScheme := naming.NewVersion1()
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := buildRootShardDNSNames(tt.rootShard)
+			result := buildRootShardDNSNames(tt.rootShard, namingScheme)
 			assert.ElementsMatch(t, tt.expected, result)
 		})
 	}

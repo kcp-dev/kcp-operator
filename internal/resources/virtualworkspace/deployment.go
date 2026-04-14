@@ -168,7 +168,7 @@ func DeploymentReconciler(vw *operatorv1alpha1.VirtualWorkspace, rootShard *oper
 					},
 					utils.SecretMount{
 						VolumeName: "cache-server-client-cert",
-						SecretName: fmt.Sprintf("%s-client-certificate", cacheRef),
+						SecretName: names.CacheServerClientCertificateName(cacheRef),
 						MountPath:  getCacheServerClientCertMountPath(),
 					},
 				)
