@@ -92,6 +92,7 @@ type VirtualWorkspaceSpec struct {
 
 // VirtualWorkspaceTarget configures which shard or root shard a virtual workspace is connected to.
 // This influences the certificates and CAs mounted to it.
+// +kubebuilder:validation:XValidation:rule="(has(self.rootShardRef) && !has(self.shardRef)) || (!has(self.rootShardRef) && has(self.shardRef))",message="Must specify exactly one of rootShardRef or shardRef"
 type VirtualWorkspaceTarget struct {
 	// RootShardRef is used to connect this virtual workspace to the root shard. This can be used for
 	// per-shard VWs, in which case having one VirtualWorkspace object with a rootShardRef is done
