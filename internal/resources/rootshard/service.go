@@ -31,25 +31,28 @@ import (
 func ServiceReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.NamedServiceReconcilerFactory {
 	return func() (string, reconciling.ServiceReconciler) {
 		return resources.GetRootShardServiceName(rootShard), func(svc *corev1.Service) (*corev1.Service, error) {
-			labels := resources.GetRootShardResourceLabels(rootShard)
-			svc.SetLabels(labels)
-			svc.Spec.Type = corev1.ServiceTypeClusterIP
-			svc.Spec.Ports = []corev1.ServicePort{
-				{
-					Name:        "https",
-					Protocol:    corev1.ProtocolTCP,
-					Port:        6443,
-					TargetPort:  intstr.FromInt32(6443),
-					AppProtocol: ptr.To("https"),
-				},
-				{
+			ports := []corev1.ServicePort{{
+				Name:        "https",
+				Protocol:    corev1.ProtocolTCP,
+				Port:        6443,
+				TargetPort:  intstr.FromInt32(6443),
+				AppProtocol: ptr.To("https"),
+			}}
+
+			if rootShard.Spec.KCPVirtualWorkspace == nil {
+				ports = append(ports, corev1.ServicePort{
 					Name:        "https-virtual-workspaces",
 					Protocol:    corev1.ProtocolTCP,
 					Port:        6444,
 					TargetPort:  intstr.FromInt32(6444),
 					AppProtocol: ptr.To("https"),
-				},
+				})
 			}
+
+			labels := resources.GetRootShardResourceLabels(rootShard)
+			svc.SetLabels(labels)
+			svc.Spec.Type = corev1.ServiceTypeClusterIP
+			svc.Spec.Ports = ports
 			svc.Spec.Selector = labels
 
 			return utils.ApplyServiceTemplate(svc, rootShard.Spec.ServiceTemplate), nil

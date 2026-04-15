@@ -18,6 +18,7 @@ package kubeconfig
 
 import (
 	"fmt"
+	"net"
 	"net/url"
 
 	"k8c.io/reconciler/pkg/reconciling"
@@ -122,11 +123,17 @@ func KubeconfigSecretReconciler(
 		}
 
 		var serverURL string
-		// New flow:
-		if frontProxy.Spec.External.Hostname != "" {
+		switch {
+		case frontProxy.Spec.External.Hostname != "":
 			serverURL = fmt.Sprintf("https://%s:%d", frontProxy.Spec.External.Hostname, frontProxy.Spec.External.Port)
-		} else {
-			// Old flow:
+		case frontProxy.Spec.ExternalHostname != "":
+			_, _, err := net.SplitHostPort(frontProxy.Spec.ExternalHostname)
+			if err == nil {
+				serverURL = fmt.Sprintf("https://%s", frontProxy.Spec.ExternalHostname)
+			} else {
+				serverURL = fmt.Sprintf("https://%s:6443", frontProxy.Spec.ExternalHostname)
+			}
+		default:
 			serverURL = fmt.Sprintf("https://%s:%d", rootShard.Spec.External.Hostname, rootShard.Spec.External.Port)
 		}
 
