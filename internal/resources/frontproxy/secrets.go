@@ -31,16 +31,17 @@ const (
 	kubeconfigCAPath      = "/etc/kcp/tls/ca/tls.crt"
 )
 
-func (r *reconciler) dynamicKubeconfigSecretReconciler() reconciling.NamedSecretReconcilerFactory {
-	var name string
+func (r *reconciler) dynamicKubeconfigSecretName() string {
 	if r.frontProxy != nil {
-		name = r.names.FrontProxyDynamicKubeconfigName(r.rootShard, r.frontProxy)
+		return r.names.FrontProxyDynamicKubeconfigName(r.rootShard, r.frontProxy)
 	} else {
-		name = r.names.RootShardProxyDynamicKubeconfigName(r.rootShard)
+		return r.names.RootShardProxyDynamicKubeconfigName(r.rootShard)
 	}
+}
 
+func (r *reconciler) dynamicKubeconfigSecretReconciler() reconciling.NamedSecretReconcilerFactory {
 	return func() (string, reconciling.SecretReconciler) {
-		return name, func(obj *corev1.Secret) (*corev1.Secret, error) {
+		return r.dynamicKubeconfigSecretName(), func(obj *corev1.Secret) (*corev1.Secret, error) {
 			obj.SetLabels(r.resourceLabels)
 
 			kubeconfig, err := r.dynamicKubeconfig()

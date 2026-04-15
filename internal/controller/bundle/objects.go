@@ -17,9 +17,8 @@ limitations under the License.
 package bundle
 
 import (
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-
+	"github.com/kcp-dev/kcp-operator/internal/resources/bundling"
+	"github.com/kcp-dev/kcp-operator/internal/resources/frontproxy"
 	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
@@ -32,36 +31,6 @@ type BundleObjectSpec struct {
 	Objects []operatorv1alpha1.BundleObject
 }
 
-var (
-	// secretGVR is the GVR for Secret resources
-	secretGVR = schema.GroupVersionResource{
-		Group:    corev1.GroupName,
-		Version:  "v1",
-		Resource: "secrets",
-	}
-
-	// serviceGVR is the GVR for Service resources
-	serviceGVR = schema.GroupVersionResource{
-		Group:    corev1.GroupName,
-		Version:  "v1",
-		Resource: "services",
-	}
-
-	// configMapGVR is the GVR for ConfigMap resources
-	configMapGVR = schema.GroupVersionResource{
-		Group:    corev1.GroupName,
-		Version:  "v1",
-		Resource: "configmaps",
-	}
-
-	// deploymentGVR is the GVR for Deployment resources
-	deploymentGVR = schema.GroupVersionResource{
-		Group:    "apps",
-		Version:  "v1",
-		Resource: "deployments",
-	}
-)
-
 // getBundleObjectsForShard returns the list of objects required for a Shard bundle
 func getBundleObjectsForShard(shard *operatorv1alpha1.Shard, rootShardName string, names naming.Scheme) []operatorv1alpha1.BundleObject {
 	namespace := shard.Namespace
@@ -72,47 +41,35 @@ func getBundleObjectsForShard(shard *operatorv1alpha1.Shard, rootShardName strin
 
 	objects := []operatorv1alpha1.BundleObject{
 		// CA certificates from RootShard (shared)
-		{GVR: secretGVR, Name: names.RootShardCAName(rootShard, operatorv1alpha1.RootCA), Namespace: namespace},
-		{GVR: secretGVR, Name: names.RootShardCAName(rootShard, operatorv1alpha1.ServerCA), Namespace: namespace},
-		{GVR: secretGVR, Name: names.RootShardCAName(rootShard, operatorv1alpha1.RequestHeaderClientCA), Namespace: namespace},
-		{GVR: secretGVR, Name: names.RootShardCAName(rootShard, operatorv1alpha1.ClientCA), Namespace: namespace},
-		{GVR: secretGVR, Name: names.RootShardCAName(rootShard, operatorv1alpha1.ServiceAccountCA), Namespace: namespace},
-		{GVR: secretGVR, Name: names.RootShardCAName(rootShard, operatorv1alpha1.FrontProxyClientCA), Namespace: namespace},
+		bundling.NewSecret(names.RootShardCAName(rootShard, operatorv1alpha1.RootCA), namespace),
+		bundling.NewSecret(names.RootShardCAName(rootShard, operatorv1alpha1.ServerCA), namespace),
+		bundling.NewSecret(names.RootShardCAName(rootShard, operatorv1alpha1.RequestHeaderClientCA), namespace),
+		bundling.NewSecret(names.RootShardCAName(rootShard, operatorv1alpha1.ClientCA), namespace),
+		bundling.NewSecret(names.RootShardCAName(rootShard, operatorv1alpha1.ServiceAccountCA), namespace),
+		bundling.NewSecret(names.RootShardCAName(rootShard, operatorv1alpha1.FrontProxyClientCA), namespace),
 
 		// Shard-specific certificates and secrets
-		{GVR: secretGVR, Name: names.ShardCertificateName(shard, operatorv1alpha1.LogicalClusterAdminCertificate), Namespace: namespace},
-		{GVR: secretGVR, Name: names.ShardKubeconfigSecret(shard, operatorv1alpha1.LogicalClusterAdminCertificate), Namespace: namespace},
-		{GVR: secretGVR, Name: names.ShardCertificateName(shard, operatorv1alpha1.ClientCertificate), Namespace: namespace},
-		{GVR: secretGVR, Name: names.ShardKubeconfigSecret(shard, operatorv1alpha1.ClientCertificate), Namespace: namespace},
-		{GVR: secretGVR, Name: names.ShardCertificateName(shard, operatorv1alpha1.ExternalLogicalClusterAdminCertificate), Namespace: namespace},
-		{GVR: secretGVR, Name: names.ShardKubeconfigSecret(shard, operatorv1alpha1.ExternalLogicalClusterAdminCertificate), Namespace: namespace},
-		{GVR: secretGVR, Name: names.ShardCertificateName(shard, operatorv1alpha1.ServerCertificate), Namespace: namespace},
-		{GVR: secretGVR, Name: names.ShardCertificateName(shard, operatorv1alpha1.VirtualWorkspacesCertificate), Namespace: namespace},
-		{GVR: secretGVR, Name: names.ShardCertificateName(shard, operatorv1alpha1.ServiceAccountCertificate), Namespace: namespace},
+		bundling.NewSecret(names.ShardCertificateName(shard, operatorv1alpha1.LogicalClusterAdminCertificate), namespace),
+		bundling.NewSecret(names.ShardKubeconfigSecret(shard, operatorv1alpha1.LogicalClusterAdminCertificate), namespace),
+		bundling.NewSecret(names.ShardCertificateName(shard, operatorv1alpha1.ClientCertificate), namespace),
+		bundling.NewSecret(names.ShardKubeconfigSecret(shard, operatorv1alpha1.ClientCertificate), namespace),
+		bundling.NewSecret(names.ShardCertificateName(shard, operatorv1alpha1.ExternalLogicalClusterAdminCertificate), namespace),
+		bundling.NewSecret(names.ShardKubeconfigSecret(shard, operatorv1alpha1.ExternalLogicalClusterAdminCertificate), namespace),
+		bundling.NewSecret(names.ShardCertificateName(shard, operatorv1alpha1.ServerCertificate), namespace),
+		bundling.NewSecret(names.ShardCertificateName(shard, operatorv1alpha1.VirtualWorkspacesCertificate), namespace),
+		bundling.NewSecret(names.ShardCertificateName(shard, operatorv1alpha1.ServiceAccountCertificate), namespace),
 	}
 
 	// Add merged CA bundle only if CABundleSecretRef is configured
 	if shard.Spec.CABundleSecretRef != nil {
-		objects = append(objects, operatorv1alpha1.BundleObject{
-			GVR:       secretGVR,
-			Name:      names.MergedCABundleName(shard.Name),
-			Namespace: namespace,
-		})
+		objects = append(objects, bundling.NewSecret(names.MergedCABundleName(shard.Name), namespace))
 	}
 
 	// Deployment
-	objects = append(objects, operatorv1alpha1.BundleObject{
-		GVR:       deploymentGVR,
-		Name:      names.ShardDeploymentName(shard),
-		Namespace: namespace,
-	})
+	objects = append(objects, bundling.NewDeployment(names.ShardDeploymentName(shard), namespace))
 
 	// Service
-	objects = append(objects, operatorv1alpha1.BundleObject{
-		GVR:       serviceGVR,
-		Name:      names.ShardServiceName(shard),
-		Namespace: namespace,
-	})
+	objects = append(objects, bundling.NewService(names.ShardServiceName(shard), namespace))
 
 	return objects
 }
@@ -124,82 +81,50 @@ func getBundleObjectsForRootShard(rootShard *operatorv1alpha1.RootShard, names n
 
 	objects := []operatorv1alpha1.BundleObject{
 		// Root CA and intermediate CAs
-		{GVR: secretGVR, Name: names.RootShardCAName(rootShard, operatorv1alpha1.RootCA), Namespace: namespace},
-		{GVR: secretGVR, Name: names.RootShardCAName(rootShard, operatorv1alpha1.ServerCA), Namespace: namespace},
-		{GVR: secretGVR, Name: names.RootShardCAName(rootShard, operatorv1alpha1.RequestHeaderClientCA), Namespace: namespace},
-		{GVR: secretGVR, Name: names.RootShardCAName(rootShard, operatorv1alpha1.ClientCA), Namespace: namespace},
-		{GVR: secretGVR, Name: names.RootShardCAName(rootShard, operatorv1alpha1.ServiceAccountCA), Namespace: namespace},
-		{GVR: secretGVR, Name: names.RootShardCAName(rootShard, operatorv1alpha1.FrontProxyClientCA), Namespace: namespace},
+		bundling.NewSecret(names.RootShardCAName(rootShard, operatorv1alpha1.RootCA), namespace),
+		bundling.NewSecret(names.RootShardCAName(rootShard, operatorv1alpha1.ServerCA), namespace),
+		bundling.NewSecret(names.RootShardCAName(rootShard, operatorv1alpha1.RequestHeaderClientCA), namespace),
+		bundling.NewSecret(names.RootShardCAName(rootShard, operatorv1alpha1.ClientCA), namespace),
+		bundling.NewSecret(names.RootShardCAName(rootShard, operatorv1alpha1.ServiceAccountCA), namespace),
+		bundling.NewSecret(names.RootShardCAName(rootShard, operatorv1alpha1.FrontProxyClientCA), namespace),
 
 		// RootShard certificates
-		{GVR: secretGVR, Name: names.RootShardCertificateName(rootShard, operatorv1alpha1.ServerCertificate), Namespace: namespace},
-		{GVR: secretGVR, Name: names.RootShardCertificateName(rootShard, operatorv1alpha1.ServiceAccountCertificate), Namespace: namespace},
-		{GVR: secretGVR, Name: names.RootShardCertificateName(rootShard, operatorv1alpha1.VirtualWorkspacesCertificate), Namespace: namespace},
-		{GVR: secretGVR, Name: names.RootShardCertificateName(rootShard, operatorv1alpha1.LogicalClusterAdminCertificate), Namespace: namespace},
-		{GVR: secretGVR, Name: names.RootShardCertificateName(rootShard, operatorv1alpha1.ExternalLogicalClusterAdminCertificate), Namespace: namespace},
-		{GVR: secretGVR, Name: names.RootShardCertificateName(rootShard, operatorv1alpha1.OperatorCertificate), Namespace: namespace},
+		bundling.NewSecret(names.RootShardCertificateName(rootShard, operatorv1alpha1.ServerCertificate), namespace),
+		bundling.NewSecret(names.RootShardCertificateName(rootShard, operatorv1alpha1.ServiceAccountCertificate), namespace),
+		bundling.NewSecret(names.RootShardCertificateName(rootShard, operatorv1alpha1.VirtualWorkspacesCertificate), namespace),
+		bundling.NewSecret(names.RootShardCertificateName(rootShard, operatorv1alpha1.LogicalClusterAdminCertificate), namespace),
+		bundling.NewSecret(names.RootShardCertificateName(rootShard, operatorv1alpha1.ExternalLogicalClusterAdminCertificate), namespace),
+		bundling.NewSecret(names.RootShardCertificateName(rootShard, operatorv1alpha1.OperatorCertificate), namespace),
 
 		// Kubeconfig secrets
-		{GVR: secretGVR, Name: names.RootShardKubeconfigSecret(rootShard, operatorv1alpha1.LogicalClusterAdminCertificate), Namespace: namespace},
-		{GVR: secretGVR, Name: names.RootShardKubeconfigSecret(rootShard, operatorv1alpha1.ExternalLogicalClusterAdminCertificate), Namespace: namespace},
+		bundling.NewSecret(names.RootShardKubeconfigSecret(rootShard, operatorv1alpha1.LogicalClusterAdminCertificate), namespace),
+		bundling.NewSecret(names.RootShardKubeconfigSecret(rootShard, operatorv1alpha1.ExternalLogicalClusterAdminCertificate), namespace),
 
 		// Service
-		{GVR: serviceGVR, Name: names.RootShardServiceName(rootShard), Namespace: namespace},
+		bundling.NewService(names.RootShardServiceName(rootShard), namespace),
 	}
 
 	// Add merged CA bundle if configured
 	if rootShard.Spec.CABundleSecretRef != nil {
-		objects = append(objects, operatorv1alpha1.BundleObject{
-			GVR:       secretGVR,
-			Name:      names.MergedCABundleName(rootShard.Name),
-			Namespace: namespace,
-		})
+		objects = append(objects, bundling.NewSecret(names.MergedCABundleName(rootShard.Name), namespace))
 	}
 
 	// Add proxy-related objects
 	objects = append(objects, []operatorv1alpha1.BundleObject{
-		{GVR: secretGVR, Name: names.RootShardProxyDynamicKubeconfigName(rootShard), Namespace: namespace},
-		{GVR: configMapGVR, Name: names.RootShardProxyConfigName(rootShard), Namespace: namespace},
-		{GVR: serviceGVR, Name: names.RootShardProxyServiceName(rootShard), Namespace: namespace},
-		{GVR: deploymentGVR, Name: names.RootShardProxyDeploymentName(rootShard), Namespace: namespace},
+		bundling.NewSecret(names.RootShardProxyDynamicKubeconfigName(rootShard), namespace),
+		bundling.NewConfigMap(names.RootShardProxyConfigName(rootShard), namespace),
+		bundling.NewService(names.RootShardProxyServiceName(rootShard), namespace),
+		bundling.NewDeployment(names.RootShardProxyDeploymentName(rootShard), namespace),
 	}...)
 
 	// Add rootshard deployment
-	objects = append(objects, operatorv1alpha1.BundleObject{
-		GVR:       deploymentGVR,
-		Name:      names.RootShardDeploymentName(rootShard),
-		Namespace: namespace,
-	})
+	objects = append(objects, bundling.NewDeployment(names.RootShardDeploymentName(rootShard), namespace))
 
 	return objects
 }
 
 // getBundleObjectsForFrontProxy returns the list of objects required for a FrontProxy bundle
 // TODO(mjudeikis): These are not yet tested. Need to double check if its full list.
-func getBundleObjectsForFrontProxy(frontProxy *operatorv1alpha1.FrontProxy, rootShardName string, names naming.Scheme) []operatorv1alpha1.BundleObject {
-	namespace := frontProxy.Namespace
-
-	rootShard := &operatorv1alpha1.RootShard{}
-	rootShard.Name = rootShardName
-	rootShard.Namespace = namespace
-
-	return []operatorv1alpha1.BundleObject{
-		// CA certificates from RootShard (shared) (Secret names are identical to Cert names)
-		{GVR: secretGVR, Name: names.RootShardCAName(rootShard, operatorv1alpha1.FrontProxyClientCA), Namespace: namespace},
-		{GVR: secretGVR, Name: names.RootShardCAName(rootShard, operatorv1alpha1.RequestHeaderClientCA), Namespace: namespace},
-		{GVR: secretGVR, Name: names.RootShardCAName(rootShard, operatorv1alpha1.ServerCA), Namespace: namespace},
-		{GVR: secretGVR, Name: names.RootShardCAName(rootShard, operatorv1alpha1.RootCA), Namespace: namespace},
-
-		// FrontProxy-specific certificates
-		{GVR: secretGVR, Name: names.FrontProxyCertificateName(rootShard, frontProxy, operatorv1alpha1.ServerCertificate), Namespace: namespace},
-		{GVR: secretGVR, Name: names.FrontProxyCertificateName(rootShard, frontProxy, operatorv1alpha1.ClientCertificate), Namespace: namespace},
-
-		// FrontProxy configuration and service
-		{GVR: secretGVR, Name: names.FrontProxyDynamicKubeconfigName(rootShard, frontProxy), Namespace: namespace},
-		{GVR: configMapGVR, Name: names.FrontProxyConfigName(frontProxy), Namespace: namespace},
-		{GVR: serviceGVR, Name: names.FrontProxyServiceName(frontProxy), Namespace: namespace},
-
-		// FrontProxy deployment
-		{GVR: deploymentGVR, Name: names.FrontProxyDeploymentName(frontProxy), Namespace: namespace},
-	}
+func getBundleObjectsForFrontProxy(frontProxy *operatorv1alpha1.FrontProxy, rootShard *operatorv1alpha1.RootShard, names naming.Scheme) []operatorv1alpha1.BundleObject {
+	return frontproxy.NewFrontProxy(frontProxy, rootShard, names).Bundle()
 }

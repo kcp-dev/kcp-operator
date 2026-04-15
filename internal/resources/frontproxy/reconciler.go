@@ -29,6 +29,7 @@ import (
 
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling/modifier"
+	"github.com/kcp-dev/kcp-operator/internal/resources/bundling"
 	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
@@ -53,11 +54,11 @@ func NewFrontProxy(frontProxy *operatorv1alpha1.FrontProxy, rootShard *operatorv
 	}
 }
 
-func NewRootShardProxy(rootShard *operatorv1alpha1.RootShard, namingScheme naming.Scheme) *reconciler {
+func NewRootShardProxy(rootShard *operatorv1alpha1.RootShard, names naming.Scheme) *reconciler {
 	return &reconciler{
 		rootShard:      rootShard,
-		resourceLabels: namingScheme.RootShardProxyResourceLabels(rootShard),
-		names:          namingScheme,
+		resourceLabels: names.RootShardProxyResourceLabels(rootShard),
+		names:          names,
 	}
 }
 
@@ -141,4 +142,32 @@ func (r *reconciler) Reconcile(ctx context.Context, client ctrlruntimeclient.Cli
 	}
 
 	return kerrors.NewAggregate(errs)
+}
+
+func (r *reconciler) Bundle() []operatorv1alpha1.BundleObject {
+	namespace := r.frontProxy.Namespace
+
+	objects := []operatorv1alpha1.BundleObject{
+		// CA certificates from RootShard (shared) (Secret names are identical to Cert names)
+		bundling.NewSecret(r.names.RootShardCAName(r.rootShard, operatorv1alpha1.FrontProxyClientCA), namespace),
+		bundling.NewSecret(r.names.RootShardCAName(r.rootShard, operatorv1alpha1.RequestHeaderClientCA), namespace),
+		bundling.NewSecret(r.names.RootShardCAName(r.rootShard, operatorv1alpha1.ServerCA), namespace),
+		bundling.NewSecret(r.names.RootShardCAName(r.rootShard, operatorv1alpha1.RootCA), namespace),
+
+		// FrontProxy-specific certificates
+		bundling.NewSecret(r.certName(operatorv1alpha1.ServerCertificate), namespace),
+		bundling.NewSecret(r.certName(operatorv1alpha1.AdminKubeconfigClientCertificate), namespace),
+		bundling.NewSecret(r.certName(operatorv1alpha1.KubeconfigCertificate), namespace),
+		bundling.NewSecret(r.certName(operatorv1alpha1.RequestHeaderClientCertificate), namespace),
+
+		// FrontProxy configuration and service
+		bundling.NewSecret(r.names.FrontProxyDynamicKubeconfigName(r.rootShard, r.frontProxy), namespace),
+		bundling.NewConfigMap(r.pathMappingConfigMapName(), namespace),
+		bundling.NewService(r.names.FrontProxyServiceName(r.frontProxy), namespace),
+
+		// FrontProxy deployment
+		bundling.NewDeployment(r.names.FrontProxyDeploymentName(r.frontProxy), namespace),
+	}
+
+	return objects
 }

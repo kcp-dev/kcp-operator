@@ -184,7 +184,7 @@ func (r *Reconciler) reconcile(ctx context.Context, vw *operatorv1alpha1.Virtual
 
 		// The client CA is shared among all shards and owned by the root shard.
 		clientCertIssuer = names.RootShardCAName(rootShard, operatorv1alpha1.ClientCA)
-		// serverCA = namingScheme.GetRootShardCAName(rootShard, operatorv1alpha1.ServerCA)
+		// serverCA = names.GetRootShardCAName(rootShard, operatorv1alpha1.ServerCA)
 
 	default:
 		err := errors.New("no valid target for VirtualWorkspace found")

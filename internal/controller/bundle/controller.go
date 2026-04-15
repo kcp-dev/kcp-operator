@@ -228,7 +228,7 @@ func (r *BundleReconciler) reconcile(ctx context.Context, bundle *operatorv1alph
 					Namespace: bundle.Namespace,
 				}, rootShard)
 				if err == nil {
-					requiredObjects = getBundleObjectsForFrontProxy(frontProxy, rootShard.Name, names)
+					requiredObjects = getBundleObjectsForFrontProxy(frontProxy, rootShard, names)
 				} else {
 					errs = append(errs, fmt.Errorf("failed to get RootShard for FrontProxy %s: %w", targetName, err))
 				}
