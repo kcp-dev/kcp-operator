@@ -36,14 +36,29 @@ func (r *reconciler) serviceName() string {
 	}
 }
 
+func (r *reconciler) getExternalPort() int {
+	// We're reconciling a regular FrontProxy.
+	if r.frontProxy != nil {
+		return utils.GetFrontProxyExternalPort(r.frontProxy, r.rootShard)
+	}
+
+	// We're reconciling the rootshard's internal proxy.
+	// This proxy is not meant to be exposed, but only used internally by
+	// the kcp-operator, so we never allow to customize its port.
+	return 6443
+}
+
 func (r *reconciler) serviceReconciler() reconciling.NamedServiceReconcilerFactory {
 	var tpl *operatorv1alpha1.ServiceTemplate
+
 	switch {
 	case r.frontProxy != nil:
 		tpl = r.frontProxy.Spec.ServiceTemplate
 	case r.rootShard.Spec.Proxy != nil:
 		tpl = r.rootShard.Spec.Proxy.ServiceTemplate
 	}
+
+	portNumber := r.getExternalPort()
 
 	return func() (string, reconciling.ServiceReconciler) {
 		return r.serviceName(), func(svc *corev1.Service) (*corev1.Service, error) {
@@ -57,7 +72,7 @@ func (r *reconciler) serviceReconciler() reconciling.NamedServiceReconcilerFacto
 
 			port.Name = "https"
 			port.Protocol = corev1.ProtocolTCP
-			port.Port = 6443
+			port.Port = int32(portNumber)
 			port.TargetPort = intstr.FromInt32(6443)
 			port.AppProtocol = ptr.To("https")
 
