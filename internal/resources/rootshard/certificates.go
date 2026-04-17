@@ -20,6 +20,8 @@ import (
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	certmanagermetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 
+	"k8s.io/apimachinery/pkg/util/sets"
+
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
 	"github.com/kcp-dev/kcp-operator/internal/resources/utils"
@@ -56,10 +58,7 @@ func ServerCertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconcil
 					certmanagerv1.UsageDigitalSignature,
 				},
 
-				DNSNames: []string{
-					resources.GetRootShardBaseHost(rootShard),
-					rootShard.Spec.External.Hostname,
-				},
+				DNSNames: buildRootShardDNSNames(rootShard),
 
 				IssuerRef: certmanagermetav1.ObjectReference{
 					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.ServerCA),
@@ -344,4 +343,23 @@ func ClientCertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconcil
 			return utils.ApplyCertificateTemplate(cert, &template), nil
 		}
 	}
+}
+
+// buildRootShardDNSNames builds the list of DNS names for the root shard server certificate.
+// It includes the internal Kubernetes service host, the external hostname, and if shardBaseURL
+// is set, it also extracts and includes the hostname from that URL.
+func buildRootShardDNSNames(rootShard *operatorv1alpha1.RootShard) []string {
+	dnsNames := sets.New(
+		resources.GetRootShardBaseHost(rootShard),
+		rootShard.Spec.External.Hostname,
+	)
+
+	// If shardBaseURL is set, extract and add its hostname
+	if rootShard.Spec.ShardBaseURL != "" {
+		if hostname := utils.ExtractHostnameFromURL(rootShard.Spec.ShardBaseURL); hostname != "" {
+			dnsNames.Insert(hostname)
+		}
+	}
+
+	return sets.List(dnsNames)
 }
