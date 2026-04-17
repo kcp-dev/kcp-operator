@@ -248,6 +248,7 @@ func getArgs(vw *operatorv1alpha1.VirtualWorkspace, rootShard *operatorv1alpha1.
 
 		// requestheader CA
 		fmt.Sprintf("--requestheader-client-ca-file=%s/tls.crt", getCAMountPath(operatorv1alpha1.RequestHeaderClientCA)),
+		fmt.Sprintf("--requestheader-allowed-names=%s,%s", resources.FrontProxyCommonName, resources.RootShardProxyCommonName),
 		"--requestheader-username-headers=X-Remote-User",
 		"--requestheader-group-headers=X-Remote-Group",
 		"--requestheader-extra-headers-prefix=X-Remote-Extra-",

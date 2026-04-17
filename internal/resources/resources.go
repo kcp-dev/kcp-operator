@@ -27,6 +27,12 @@ import (
 )
 
 const (
+	// FrontProxyCommonName is the CommonName used in the requestheader client certificate for a FrontProxy.
+	FrontProxyCommonName = "kcp-front-proxy"
+
+	// RootShardProxyCommonName is the CommonName used in the requestheader client certificate for a RootShard's built-in proxy.
+	RootShardProxyCommonName = "kcp-root-shard-proxy"
+
 	ImageRepository = "ghcr.io/kcp-dev/kcp"
 
 	// ImageTag is the default tag to be used for any kcp component.
