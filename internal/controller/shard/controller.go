@@ -24,8 +24,8 @@ import (
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	kcpcorev1alpha1 "github.com/kcp-dev/kcp/sdk/apis/core/v1alpha1"
 	"github.com/kcp-dev/logicalcluster/v3"
+	kcpcorev1alpha1 "github.com/kcp-dev/sdk/apis/core/v1alpha1"
 	k8creconciling "k8c.io/reconciler/pkg/reconciling"
 
 	appsv1 "k8s.io/api/apps/v1"
