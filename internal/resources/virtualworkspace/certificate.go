@@ -68,7 +68,7 @@ func ClientCertificateReconciler(vw *operatorv1alpha1.VirtualWorkspace, issuerNa
 					Organizations: []string{"system:masters"},
 				},
 
-				IssuerRef: certmanagermetav1.ObjectReference{
+				IssuerRef: certmanagermetav1.IssuerReference{
 					Name:  issuerName,
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
@@ -116,7 +116,7 @@ func ServerCertificateReconciler(vw *operatorv1alpha1.VirtualWorkspace, rootShar
 					resources.GetVirtualWorkspaceBaseHost(vw),
 				},
 
-				IssuerRef: certmanagermetav1.ObjectReference{
+				IssuerRef: certmanagermetav1.IssuerReference{
 					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.ServerCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",

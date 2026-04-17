@@ -60,7 +60,7 @@ func ServerCertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconcil
 
 				DNSNames: buildRootShardDNSNames(rootShard),
 
-				IssuerRef: certmanagermetav1.ObjectReference{
+				IssuerRef: certmanagermetav1.IssuerReference{
 					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.ServerCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
@@ -104,7 +104,7 @@ func VirtualWorkspacesCertificateReconciler(rootShard *operatorv1alpha1.RootShar
 					rootShard.Spec.External.Hostname,
 				},
 
-				IssuerRef: certmanagermetav1.ObjectReference{
+				IssuerRef: certmanagermetav1.IssuerReference{
 					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.ServerCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
@@ -146,7 +146,7 @@ func ServiceAccountCertificateReconciler(rootShard *operatorv1alpha1.RootShard) 
 					Size:      4096,
 				},
 
-				IssuerRef: certmanagermetav1.ObjectReference{
+				IssuerRef: certmanagermetav1.IssuerReference{
 					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.ServiceAccountCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
@@ -191,7 +191,7 @@ func LogicalClusterAdminCertificateReconciler(rootShard *operatorv1alpha1.RootSh
 					certmanagerv1.UsageClientAuth,
 				},
 
-				IssuerRef: certmanagermetav1.ObjectReference{
+				IssuerRef: certmanagermetav1.IssuerReference{
 					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.ClientCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
@@ -236,7 +236,7 @@ func ExternalLogicalClusterAdminCertificateReconciler(rootShard *operatorv1alpha
 					certmanagerv1.UsageClientAuth,
 				},
 
-				IssuerRef: certmanagermetav1.ObjectReference{
+				IssuerRef: certmanagermetav1.IssuerReference{
 					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.FrontProxyClientCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
@@ -281,7 +281,7 @@ func OperatorClientCertificateReconciler(rootShard *operatorv1alpha1.RootShard) 
 					certmanagerv1.UsageClientAuth,
 				},
 
-				IssuerRef: certmanagermetav1.ObjectReference{
+				IssuerRef: certmanagermetav1.IssuerReference{
 					// This shard is meant to be used against shards directly (cluster-local) or with
 					// the internal root shard proxy (also cluster-local). All of these are configured
 					// to use the regular client CA (not like "normal" front-proxies, which have their
@@ -333,7 +333,7 @@ func ClientCertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconcil
 					certmanagerv1.UsageClientAuth,
 				},
 
-				IssuerRef: certmanagermetav1.ObjectReference{
+				IssuerRef: certmanagermetav1.IssuerReference{
 					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.ClientCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",

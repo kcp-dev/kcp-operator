@@ -58,7 +58,7 @@ func ClientCertificateReconciler(kubeConfig *operatorv1alpha1.Kubeconfig, issuer
 					Organizations: sets.List(orgs),
 				},
 
-				IssuerRef: certmanagermetav1.ObjectReference{
+				IssuerRef: certmanagermetav1.IssuerReference{
 					Name:  issuerName,
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
