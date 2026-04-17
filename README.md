@@ -21,13 +21,12 @@ The table below marks known support of a kcp version in kcp-operator versions.
 
 <!-- The same table is in docs/content/README.md, make sure to keep them in-sync. -->
 
-| kcp    | `main`             | 0.1.x              |
-| ------ | ------------------ | ------------------ |
-| `main` | :warning:          | :question:         |
-| 0.30.x | :white_check_mark: | :question:         |
-| 0.29.x | :white_check_mark: | :question:         |
-| 0.28.x | :white_check_mark: | :question:         |
-| 0.27.x | :question:         | :white_check_mark: |
+| kcp    | `main`             | 0.7.x              | 0.6.x              | 0.5.x              |
+| ------ | ------------------ | ------------------ | ------------------ | ------------------ |
+| `main` | :warning:          | :question:         | :question:         | :question:         |
+| 0.31.x | :white_check_mark: | :white_check_mark: | :white_check_mark: | :question:         |
+| 0.30.x | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| 0.29.x | :question:         | :question:         | :question:         | :white_check_mark: |
 
 [^1]: While we try to support kcp's `main` branch, this support is best effort and should not be used for deploying actual kcp instances.
 
