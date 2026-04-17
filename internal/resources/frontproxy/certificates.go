@@ -50,9 +50,9 @@ func (r *reconciler) certName(certKind operatorv1alpha1.Certificate) string {
 
 func (r *reconciler) certCommonName() string {
 	if r.frontProxy != nil {
-		return "kcp-front-proxy"
+		return resources.FrontProxyCommonName
 	} else {
-		return "kcp-root-shard-proxy"
+		return resources.RootShardProxyCommonName
 	}
 }
 
