@@ -134,7 +134,7 @@ echo "Deploying cert-manager..."
   --install \
   --namespace cert-manager \
   --create-namespace \
-  --version v1.19.3 \
+  --version v1.20.2 \
   --set crds.enabled=true \
   cert-manager jetstack/cert-manager
 
