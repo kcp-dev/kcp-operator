@@ -112,8 +112,10 @@ spec:
                         type: string
                       clientSecret:
                         description: |-
-                          Optionally provide the client secret for the OIDC client. This is not used by kcp itself, but is used to generate
-                          a OIDC kubeconfig that can be shared with users to log in via the OIDC provider.
+                          ClientSecret is the OIDC client secret configured on the issuer side for this kcp instance.
+                          This is not used by kcp itself, but is used to generate a OIDC kubeconfig that can be
+                          shared with users to log in via the OIDC provider.
+                          Deprecated: kube OIDC is secretless.
                         type: string
                       groupsClaim:
                         description: 'Experimental: Optionally provides a custom claim
