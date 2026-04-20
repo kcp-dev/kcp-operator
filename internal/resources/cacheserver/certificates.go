@@ -56,7 +56,7 @@ func RootCACertificateReconciler(server *operatorv1alpha1.CacheServer) reconcili
 					Size:      4096,
 				},
 
-				IssuerRef: certmanagermetav1.ObjectReference{
+				IssuerRef: certmanagermetav1.IssuerReference{
 					Name:  server.Spec.Certificates.IssuerRef.Name,
 					Kind:  server.Spec.Certificates.IssuerRef.Kind,
 					Group: server.Spec.Certificates.IssuerRef.Group,
@@ -105,7 +105,7 @@ func ClientCertificateReconciler(server *operatorv1alpha1.CacheServer) reconcili
 					certmanagerv1.UsageDigitalSignature,
 				},
 
-				IssuerRef: certmanagermetav1.ObjectReference{
+				IssuerRef: certmanagermetav1.IssuerReference{
 					Name:  resources.GetCacheServerCAName(server.Name, operatorv1alpha1.RootCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
@@ -153,7 +153,7 @@ func ServerCertificateReconciler(server *operatorv1alpha1.CacheServer) reconcili
 					resources.GetCacheServerBaseHost(server),
 				},
 
-				IssuerRef: certmanagermetav1.ObjectReference{
+				IssuerRef: certmanagermetav1.IssuerReference{
 					Name:  resources.GetCacheServerCAName(server.Name, operatorv1alpha1.RootCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",

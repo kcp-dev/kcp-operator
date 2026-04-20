@@ -64,7 +64,7 @@ func ServerCertificateReconciler(shard *operatorv1alpha1.Shard, rootShard *opera
 
 				DNSNames: buildShardDNSNames(shard),
 
-				IssuerRef: certmanagermetav1.ObjectReference{
+				IssuerRef: certmanagermetav1.IssuerReference{
 					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.ServerCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
@@ -110,7 +110,7 @@ func VirtualWorkspacesCertificateReconciler(shard *operatorv1alpha1.Shard, rootS
 					resources.GetShardBaseHost(shard),
 				},
 
-				IssuerRef: certmanagermetav1.ObjectReference{
+				IssuerRef: certmanagermetav1.IssuerReference{
 					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.ServerCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
@@ -154,7 +154,7 @@ func ServiceAccountCertificateReconciler(shard *operatorv1alpha1.Shard, rootShar
 					Size:      4096,
 				},
 
-				IssuerRef: certmanagermetav1.ObjectReference{
+				IssuerRef: certmanagermetav1.IssuerReference{
 					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.ServiceAccountCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
@@ -201,7 +201,7 @@ func RootShardClientCertificateReconciler(shard *operatorv1alpha1.Shard, rootSha
 					certmanagerv1.UsageClientAuth,
 				},
 
-				IssuerRef: certmanagermetav1.ObjectReference{
+				IssuerRef: certmanagermetav1.IssuerReference{
 					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.ClientCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
@@ -248,7 +248,7 @@ func LogicalClusterAdminCertificateReconciler(shard *operatorv1alpha1.Shard, roo
 					certmanagerv1.UsageClientAuth,
 				},
 
-				IssuerRef: certmanagermetav1.ObjectReference{
+				IssuerRef: certmanagermetav1.IssuerReference{
 					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.ClientCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
@@ -295,7 +295,7 @@ func ExternalLogicalClusterAdminCertificateReconciler(shard *operatorv1alpha1.Sh
 					certmanagerv1.UsageClientAuth,
 				},
 
-				IssuerRef: certmanagermetav1.ObjectReference{
+				IssuerRef: certmanagermetav1.IssuerReference{
 					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.FrontProxyClientCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",

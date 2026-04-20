@@ -120,7 +120,7 @@ func (r *reconciler) serverCertificateReconciler() reconciling.NamedCertificateR
 
 				DNSNames: dnsNames,
 
-				IssuerRef: certmanagermetav1.ObjectReference{
+				IssuerRef: certmanagermetav1.IssuerReference{
 					Name:  resources.GetRootShardCAName(r.rootShard, operatorv1alpha1.ServerCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
@@ -165,7 +165,7 @@ func (r *reconciler) adminKubeconfigCertificateReconciler() reconciling.NamedCer
 					Organizations: []string{"system:kcp:external-logical-cluster-admin"},
 				},
 
-				IssuerRef: certmanagermetav1.ObjectReference{
+				IssuerRef: certmanagermetav1.IssuerReference{
 					Name:  resources.GetRootShardCAName(r.rootShard, operatorv1alpha1.FrontProxyClientCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
@@ -209,7 +209,7 @@ func (r *reconciler) kubeconfigCertificateReconciler() reconciling.NamedCertific
 					certmanagerv1.UsageClientAuth,
 				},
 
-				IssuerRef: certmanagermetav1.ObjectReference{
+				IssuerRef: certmanagermetav1.IssuerReference{
 					Name:  resources.GetRootShardCAName(r.rootShard, operatorv1alpha1.ClientCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
@@ -249,7 +249,7 @@ func (r *reconciler) requestHeaderCertificateReconciler() reconciling.NamedCerti
 					certmanagerv1.UsageClientAuth,
 				},
 
-				IssuerRef: certmanagermetav1.ObjectReference{
+				IssuerRef: certmanagermetav1.IssuerReference{
 					Name:  resources.GetRootShardCAName(r.rootShard, operatorv1alpha1.RequestHeaderClientCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",

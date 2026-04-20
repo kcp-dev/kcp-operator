@@ -56,7 +56,7 @@ func RootCACertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconcil
 					Size:      4096,
 				},
 
-				IssuerRef: certmanagermetav1.ObjectReference{
+				IssuerRef: certmanagermetav1.IssuerReference{
 					Name:  rootShard.Spec.Certificates.IssuerRef.Name,
 					Kind:  rootShard.Spec.Certificates.IssuerRef.Kind,
 					Group: rootShard.Spec.Certificates.IssuerRef.Group,
@@ -92,7 +92,7 @@ func CACertificateReconciler(rootShard *operatorv1alpha1.RootShard, ca operatorv
 					Size:      4096,
 				},
 
-				IssuerRef: certmanagermetav1.ObjectReference{
+				IssuerRef: certmanagermetav1.IssuerReference{
 					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.RootCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",

@@ -101,7 +101,7 @@ func applyCertificateSpecTemplate(cert *certmanagerv1.Certificate, tpl *operator
 		cert.Spec.SecretTemplate.Labels = addNewKeys(cert.Spec.SecretTemplate.Labels, secretTpl.Labels)
 	}
 	if tpl.IssuerRef != nil {
-		cert.Spec.IssuerRef = cmmeta.ObjectReference{
+		cert.Spec.IssuerRef = cmmeta.IssuerReference{
 			Name:  tpl.IssuerRef.Name,
 			Kind:  tpl.IssuerRef.Kind,
 			Group: tpl.IssuerRef.Group,
