@@ -24,6 +24,7 @@ import (
 
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	"github.com/kcp-dev/kcp-operator/internal/resources/utils"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
@@ -32,11 +33,11 @@ func commonName(vw *operatorv1alpha1.VirtualWorkspace) string {
 	return fmt.Sprintf("%s-virtual-workspace", vw.Name)
 }
 
-func ClientCertificateReconciler(vw *operatorv1alpha1.VirtualWorkspace, issuerName string) reconciling.NamedCertificateReconcilerFactory {
+func ClientCertificateReconciler(vw *operatorv1alpha1.VirtualWorkspace, issuerName string, names naming.Scheme) reconciling.NamedCertificateReconcilerFactory {
 	const certKind = operatorv1alpha1.ClientCertificate
 
 	template := vw.Spec.CertificateTemplates.CertificateTemplate(certKind)
-	name := resources.GetVirtualWorkspaceCertificateName(vw, certKind)
+	name := names.VirtualWorkspaceCertificateName(vw, certKind)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
@@ -68,7 +69,7 @@ func ClientCertificateReconciler(vw *operatorv1alpha1.VirtualWorkspace, issuerNa
 					Organizations: []string{"system:masters"},
 				},
 
-				IssuerRef: certmanagermetav1.ObjectReference{
+				IssuerRef: certmanagermetav1.IssuerReference{
 					Name:  issuerName,
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
@@ -80,15 +81,15 @@ func ClientCertificateReconciler(vw *operatorv1alpha1.VirtualWorkspace, issuerNa
 	}
 }
 
-func ServerCertificateReconciler(vw *operatorv1alpha1.VirtualWorkspace, rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
+func ServerCertificateReconciler(vw *operatorv1alpha1.VirtualWorkspace, rootShard *operatorv1alpha1.RootShard, names naming.Scheme) reconciling.NamedCertificateReconcilerFactory {
 	const certKind = operatorv1alpha1.ServerCertificate
 
-	name := resources.GetVirtualWorkspaceCertificateName(vw, certKind)
+	name := names.VirtualWorkspaceCertificateName(vw, certKind)
 	template := vw.Spec.CertificateTemplates.CertificateTemplate(certKind)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
-			cert.SetLabels(resources.GetVirtualWorkspaceResourceLabels(vw))
+			cert.SetLabels(names.VirtualWorkspaceResourceLabels(vw))
 			cert.Spec = certmanagerv1.CertificateSpec{
 				SecretName: name,
 				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
@@ -113,11 +114,11 @@ func ServerCertificateReconciler(vw *operatorv1alpha1.VirtualWorkspace, rootShar
 
 				DNSNames: []string{
 					"localhost",
-					resources.GetVirtualWorkspaceBaseHost(vw),
+					names.VirtualWorkspaceBaseHost(vw),
 				},
 
-				IssuerRef: certmanagermetav1.ObjectReference{
-					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.ServerCA),
+				IssuerRef: certmanagermetav1.IssuerReference{
+					Name:  names.RootShardCAName(rootShard, operatorv1alpha1.ServerCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},

@@ -23,15 +23,15 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 
-	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	"github.com/kcp-dev/kcp-operator/internal/resources/utils"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
-func ServiceReconciler(server *operatorv1alpha1.CacheServer) reconciling.NamedServiceReconcilerFactory {
+func ServiceReconciler(server *operatorv1alpha1.CacheServer, names naming.Scheme) reconciling.NamedServiceReconcilerFactory {
 	return func() (string, reconciling.ServiceReconciler) {
-		return resources.GetCacheServerServiceName(server), func(svc *corev1.Service) (*corev1.Service, error) {
-			labels := resources.GetCacheServerResourceLabels(server)
+		return names.CacheServerServiceName(server), func(svc *corev1.Service) (*corev1.Service, error) {
+			labels := names.CacheServerResourceLabels(server)
 			svc.SetLabels(labels)
 			svc.Spec.Type = corev1.ServiceTypeClusterIP
 			svc.Spec.Ports = []corev1.ServicePort{

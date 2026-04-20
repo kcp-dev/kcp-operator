@@ -34,6 +34,7 @@ import (
 	ctrlruntime "sigs.k8s.io/controller-runtime"
 
 	resources "github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 	"github.com/kcp-dev/kcp-operator/test/utils"
 )
@@ -43,12 +44,13 @@ func TestCreateShard(t *testing.T) {
 
 	client := utils.GetKubeClient(t)
 	ctx := context.Background()
+	namingScheme := naming.NewVersion1()
 
 	// create namespace
 	namespace := utils.CreateSelfDestructingNamespace(t, ctx, client, "create-shard")
 
 	// deploy a root shard incl. etcd
-	rootShard := utils.DeployRootShard(ctx, t, client, namespace.Name, "")
+	rootShard := utils.DeployRootShard(ctx, t, client, namingScheme, namespace.Name, "")
 
 	// deploy a 2nd shard incl. etcd
 	shardName := "aadvark"
@@ -149,12 +151,13 @@ func TestShardBundleAnnotation(t *testing.T) {
 
 	client := utils.GetKubeClient(t)
 	ctx := context.Background()
+	namingScheme := naming.NewVersion1()
 
 	// create namespace
 	namespace := utils.CreateSelfDestructingNamespace(t, ctx, client, "shard-bundle-annotation")
 
 	// deploy a root shard incl. etcd
-	rootShard := utils.DeployRootShard(ctx, t, client, namespace.Name, "")
+	rootShard := utils.DeployRootShard(ctx, t, client, namingScheme, namespace.Name, "")
 
 	// deploy a shard without bundle annotation first
 	shardName := "annotated-shard"
@@ -162,7 +165,7 @@ func TestShardBundleAnnotation(t *testing.T) {
 	shard := utils.DeployShard(ctx, t, client, namespace.Name, shardName, rootShard.Name)
 
 	// verify no bundle exists yet
-	bundleName := fmt.Sprintf("%s-bundle", shard.Name)
+	bundleName := namingScheme.BundleName(shard.Name)
 	bundle := &operatorv1alpha1.Bundle{}
 	err := client.Get(ctx, types.NamespacedName{
 		Namespace: namespace.Name,
@@ -277,29 +280,29 @@ bundleReady:
 	// verify specific expected objects exist
 	expectedObjectsList := []string{
 		// CA certificates from RootShard (6 objects)
-		fmt.Sprintf("secrets.core.v1:%s/%s-front-proxy-client-ca", namespace.Name, rootShard.Name),
-		fmt.Sprintf("secrets.core.v1:%s/%s-requestheader-client-ca", namespace.Name, rootShard.Name),
-		fmt.Sprintf("secrets.core.v1:%s/%s-server-ca", namespace.Name, rootShard.Name),
-		fmt.Sprintf("secrets.core.v1:%s/%s-ca", namespace.Name, rootShard.Name),
-		fmt.Sprintf("secrets.core.v1:%s/%s-client-ca", namespace.Name, rootShard.Name),
-		fmt.Sprintf("secrets.core.v1:%s/%s-service-account-ca", namespace.Name, rootShard.Name),
+		fmt.Sprintf("secrets.core.v1:%s/%s", namespace.Name, namingScheme.RootShardCAName(&rootShard, operatorv1alpha1.RootCA)),
+		fmt.Sprintf("secrets.core.v1:%s/%s", namespace.Name, namingScheme.RootShardCAName(&rootShard, operatorv1alpha1.ServerCA)),
+		fmt.Sprintf("secrets.core.v1:%s/%s", namespace.Name, namingScheme.RootShardCAName(&rootShard, operatorv1alpha1.RequestHeaderClientCA)),
+		fmt.Sprintf("secrets.core.v1:%s/%s", namespace.Name, namingScheme.RootShardCAName(&rootShard, operatorv1alpha1.ClientCA)),
+		fmt.Sprintf("secrets.core.v1:%s/%s", namespace.Name, namingScheme.RootShardCAName(&rootShard, operatorv1alpha1.ServiceAccountCA)),
+		fmt.Sprintf("secrets.core.v1:%s/%s", namespace.Name, namingScheme.RootShardCAName(&rootShard, operatorv1alpha1.FrontProxyClientCA)),
 
 		// Shard-specific certificates and secrets (9 objects)
-		fmt.Sprintf("secrets.core.v1:%s/%s-logical-cluster-admin", namespace.Name, shard.Name),
-		fmt.Sprintf("secrets.core.v1:%s/%s-logical-cluster-admin-kubeconfig", namespace.Name, shard.Name),
-		fmt.Sprintf("secrets.core.v1:%s/%s-client-kubeconfig", namespace.Name, shard.Name),
-		fmt.Sprintf("secrets.core.v1:%s/%s-external-logical-cluster-admin", namespace.Name, shard.Name),
-		fmt.Sprintf("secrets.core.v1:%s/%s-external-logical-cluster-admin-kubeconfig", namespace.Name, shard.Name),
-		fmt.Sprintf("secrets.core.v1:%s/%s-virtual-workspaces", namespace.Name, shard.Name),
-		fmt.Sprintf("secrets.core.v1:%s/%s-client", namespace.Name, shard.Name),
-		fmt.Sprintf("secrets.core.v1:%s/%s-server", namespace.Name, shard.Name),
-		fmt.Sprintf("secrets.core.v1:%s/%s-service-account", namespace.Name, shard.Name),
+		fmt.Sprintf("secrets.core.v1:%s/%s", namespace.Name, namingScheme.ShardCertificateName(&shard, operatorv1alpha1.LogicalClusterAdminCertificate)),
+		fmt.Sprintf("secrets.core.v1:%s/%s", namespace.Name, namingScheme.ShardKubeconfigSecret(&shard, operatorv1alpha1.LogicalClusterAdminCertificate)),
+		fmt.Sprintf("secrets.core.v1:%s/%s", namespace.Name, namingScheme.ShardCertificateName(&shard, operatorv1alpha1.ClientCertificate)),
+		fmt.Sprintf("secrets.core.v1:%s/%s", namespace.Name, namingScheme.ShardKubeconfigSecret(&shard, operatorv1alpha1.ClientCertificate)),
+		fmt.Sprintf("secrets.core.v1:%s/%s", namespace.Name, namingScheme.ShardCertificateName(&shard, operatorv1alpha1.ExternalLogicalClusterAdminCertificate)),
+		fmt.Sprintf("secrets.core.v1:%s/%s", namespace.Name, namingScheme.ShardKubeconfigSecret(&shard, operatorv1alpha1.ExternalLogicalClusterAdminCertificate)),
+		fmt.Sprintf("secrets.core.v1:%s/%s", namespace.Name, namingScheme.ShardCertificateName(&shard, operatorv1alpha1.ServerCertificate)),
+		fmt.Sprintf("secrets.core.v1:%s/%s", namespace.Name, namingScheme.ShardCertificateName(&shard, operatorv1alpha1.VirtualWorkspacesCertificate)),
+		fmt.Sprintf("secrets.core.v1:%s/%s", namespace.Name, namingScheme.ShardCertificateName(&shard, operatorv1alpha1.ServiceAccountCertificate)),
 
 		// Deployment (1 object)
-		fmt.Sprintf("deployments.apps.v1:%s/%s-shard-kcp", namespace.Name, shard.Name),
+		fmt.Sprintf("deployments.apps.v1:%s/%s", namespace.Name, namingScheme.ShardDeploymentName(&shard)),
 
 		// Service (1 object)
-		fmt.Sprintf("services.core.v1:%s/%s-shard-kcp", namespace.Name, shard.Name),
+		fmt.Sprintf("services.core.v1:%s/%s", namespace.Name, namingScheme.ShardServiceName(&shard)),
 	}
 
 	t.Log("Verifying all expected objects are present in bundle...")

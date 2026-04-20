@@ -29,6 +29,7 @@ import (
 	"k8s.io/utils/ptr"
 
 	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	"github.com/kcp-dev/kcp-operator/internal/resources/utils"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
@@ -88,10 +89,10 @@ func getEffectiveCacheRef(shard *operatorv1alpha1.Shard, rootShard *operatorv1al
 	return ""
 }
 
-func DeploymentReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShard, kcpVW *operatorv1alpha1.VirtualWorkspace) reconciling.NamedDeploymentReconcilerFactory {
+func DeploymentReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShard, kcpVW *operatorv1alpha1.VirtualWorkspace, names naming.Scheme) reconciling.NamedDeploymentReconcilerFactory {
 	return func() (string, reconciling.DeploymentReconciler) {
-		return resources.GetShardDeploymentName(shard), func(dep *appsv1.Deployment) (*appsv1.Deployment, error) {
-			labels := resources.GetShardResourceLabels(shard)
+		return names.ShardDeploymentName(shard), func(dep *appsv1.Deployment) (*appsv1.Deployment, error) {
+			labels := names.ShardResourceLabels(shard)
 			dep.SetLabels(labels)
 			dep.Spec.Selector = &metav1.LabelSelector{
 				MatchLabels: labels,
@@ -101,11 +102,11 @@ func DeploymentReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1al
 
 			secretMounts := []utils.SecretMount{{
 				VolumeName: "kcp-ca",
-				SecretName: resources.GetRootShardCAName(rootShard, operatorv1alpha1.RootCA),
+				SecretName: names.RootShardCAName(rootShard, operatorv1alpha1.RootCA),
 				MountPath:  getCAMountPath(operatorv1alpha1.RootCA),
 			}}
 
-			args := getArgs(shard, rootShard, kcpVW)
+			args := getArgs(shard, rootShard, kcpVW, names)
 
 			for _, cert := range []operatorv1alpha1.Certificate{
 				// requires server CA and the shard client cert to be mounted
@@ -115,7 +116,7 @@ func DeploymentReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1al
 			} {
 				secretMounts = append(secretMounts, utils.SecretMount{
 					VolumeName: fmt.Sprintf("%s-kubeconfig", cert),
-					SecretName: resources.GetShardKubeconfigSecret(shard, cert),
+					SecretName: names.ShardKubeconfigSecret(shard, cert),
 					MountPath:  getKubeconfigMountPath(cert),
 				})
 			}
@@ -129,7 +130,7 @@ func DeploymentReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1al
 			} {
 				secretMounts = append(secretMounts, utils.SecretMount{
 					VolumeName: fmt.Sprintf("%s-ca", ca),
-					SecretName: resources.GetRootShardCAName(rootShard, ca),
+					SecretName: names.RootShardCAName(rootShard, ca),
 					MountPath:  getCAMountPath(ca),
 				})
 			}
@@ -143,7 +144,7 @@ func DeploymentReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1al
 			} {
 				secretMounts = append(secretMounts, utils.SecretMount{
 					VolumeName: fmt.Sprintf("%s-cert", cert),
-					SecretName: resources.GetShardCertificateName(shard, cert),
+					SecretName: names.ShardCertificateName(shard, cert),
 					MountPath:  getCertificateMountPath(cert),
 				})
 			}
@@ -155,7 +156,7 @@ func DeploymentReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1al
 			if shard.Spec.CABundleSecretRef != nil {
 				secretMounts = append(secretMounts, utils.SecretMount{
 					VolumeName: "ca-bundle",
-					SecretName: fmt.Sprintf("%s-merged-ca-bundle", shard.Name),
+					SecretName: names.MergedCABundleName(shard.Name),
 					MountPath:  getCAMountPath(operatorv1alpha1.CABundleCA),
 				})
 			}
@@ -166,15 +167,15 @@ func DeploymentReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1al
 				secretMounts = append(secretMounts,
 					utils.SecretMount{
 						VolumeName: "cache-server-kubeconfig",
-						SecretName: resources.GetCacheServerKubeconfigName(cacheRef),
+						SecretName: names.CacheServerKubeconfigName(cacheRef),
 						MountPath:  getCacheServerKubeconfigMountPath(),
 					}, utils.SecretMount{
 						VolumeName: "cache-server-ca",
-						SecretName: resources.GetCacheServerCAName(cacheRef, operatorv1alpha1.RootCA),
+						SecretName: names.CacheServerCAName(cacheRef, operatorv1alpha1.RootCA),
 						MountPath:  getCacheServerCAMountPath(operatorv1alpha1.RootCA),
 					}, utils.SecretMount{
 						VolumeName: "cache-server-client-cert",
-						SecretName: fmt.Sprintf("%s-client-certificate", cacheRef),
+						SecretName: names.CacheServerClientCertificateName(cacheRef),
 						MountPath:  getCacheServerClientCertMountPath(),
 					},
 				)
@@ -221,7 +222,7 @@ func DeploymentReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1al
 	}
 }
 
-func getArgs(shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShard, kcpVW *operatorv1alpha1.VirtualWorkspace) []string {
+func getArgs(shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShard, kcpVW *operatorv1alpha1.VirtualWorkspace, names naming.Scheme) []string {
 	// Configure the cache kubeconfig to point either to an explicitly configured cache (maybe on the
 	// shard, maybe on the root shard), or the root shard itself (in case no external cache is configured).
 	var cacheKubeconfigMount string
@@ -238,6 +239,7 @@ func getArgs(shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShar
 
 		// Requestheader configuration.
 		fmt.Sprintf("--requestheader-client-ca-file=%s/tls.crt", getCAMountPath(operatorv1alpha1.RequestHeaderClientCA)),
+		fmt.Sprintf("--requestheader-allowed-names=%s,%s", resources.FrontProxyCommonName, resources.RootShardProxyCommonName),
 		"--requestheader-username-headers=X-Remote-User",
 		"--requestheader-group-headers=X-Remote-Group",
 		"--requestheader-extra-headers-prefix=X-Remote-Extra-",
@@ -254,7 +256,7 @@ func getArgs(shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShar
 
 		// General shard configuration.
 		fmt.Sprintf("--shard-name=%s", shard.Name),
-		fmt.Sprintf("--shard-base-url=%s", resources.GetShardBaseURL(shard)),
+		fmt.Sprintf("--shard-base-url=%s", names.ShardBaseURL(shard)),
 		fmt.Sprintf("--shard-external-url=https://%s:%d", rootShard.Spec.External.Hostname, rootShard.Spec.External.Port),
 		fmt.Sprintf("--external-hostname=%s", rootShard.Spec.External.Hostname),
 

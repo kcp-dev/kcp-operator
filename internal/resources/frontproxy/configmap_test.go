@@ -24,6 +24,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -81,9 +82,11 @@ func TestDefaultPathMappings(t *testing.T) {
 		},
 	}
 
+	version1 := naming.NewVersion1()
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rec := NewFrontProxy(tt.frontProxy, tt.rootShard)
+			rec := NewFrontProxy(tt.frontProxy, tt.rootShard, version1)
 			mappings := rec.defaultPathMappings()
 
 			require.Len(t, mappings, 2)

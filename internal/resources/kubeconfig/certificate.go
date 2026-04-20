@@ -24,11 +24,12 @@ import (
 
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	"github.com/kcp-dev/kcp-operator/internal/resources/utils"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
-func ClientCertificateReconciler(kubeConfig *operatorv1alpha1.Kubeconfig, issuerName string) reconciling.NamedCertificateReconcilerFactory {
+func ClientCertificateReconciler(kubeConfig *operatorv1alpha1.Kubeconfig, issuerName string, names naming.Scheme) reconciling.NamedCertificateReconcilerFactory {
 	orgs := sets.New(kubeConfig.Spec.Groups...)
 	orgs.Insert(KubeconfigGroup(kubeConfig))
 
@@ -58,7 +59,7 @@ func ClientCertificateReconciler(kubeConfig *operatorv1alpha1.Kubeconfig, issuer
 					Organizations: sets.List(orgs),
 				},
 
-				IssuerRef: certmanagermetav1.ObjectReference{
+				IssuerRef: certmanagermetav1.IssuerReference{
 					Name:  issuerName,
 					Kind:  "Issuer",
 					Group: "cert-manager.io",

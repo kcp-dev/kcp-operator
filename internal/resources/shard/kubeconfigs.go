@@ -25,15 +25,11 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 
-	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
-func kubeconfigSecret(shard *operatorv1alpha1.Shard, cert operatorv1alpha1.Certificate) string {
-	return fmt.Sprintf("%s-%s-kubeconfig", shard.Name, cert)
-}
-
-func RootShardClientKubeconfigReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShard) k8creconciling.NamedSecretReconcilerFactory {
+func RootShardClientKubeconfigReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShard, names naming.Scheme) k8creconciling.NamedSecretReconcilerFactory {
 	const (
 		serverName   = "root-shard"
 		contextName  = "shard-base" // hardcoded in kcp
@@ -41,7 +37,7 @@ func RootShardClientKubeconfigReconciler(shard *operatorv1alpha1.Shard, rootShar
 	)
 
 	return func() (string, k8creconciling.SecretReconciler) {
-		return kubeconfigSecret(shard, operatorv1alpha1.ClientCertificate), func(secret *corev1.Secret) (*corev1.Secret, error) {
+		return names.ShardKubeconfigSecret(shard, operatorv1alpha1.ClientCertificate), func(secret *corev1.Secret) (*corev1.Secret, error) {
 			var config *clientcmdapi.Config
 			if secret.Data == nil {
 				secret.Data = make(map[string][]byte)
@@ -50,7 +46,7 @@ func RootShardClientKubeconfigReconciler(shard *operatorv1alpha1.Shard, rootShar
 			config = &clientcmdapi.Config{
 				Clusters: map[string]*clientcmdapi.Cluster{
 					serverName: {
-						Server:               resources.GetRootShardBaseURL(rootShard),
+						Server:               names.RootShardBaseURL(rootShard),
 						CertificateAuthority: getCAMountPath(operatorv1alpha1.ServerCA) + "/tls.crt",
 					},
 				},
@@ -81,7 +77,7 @@ func RootShardClientKubeconfigReconciler(shard *operatorv1alpha1.Shard, rootShar
 	}
 }
 
-func LogicalClusterAdminKubeconfigReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShard) k8creconciling.NamedSecretReconcilerFactory {
+func LogicalClusterAdminKubeconfigReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShard, names naming.Scheme) k8creconciling.NamedSecretReconcilerFactory {
 	const (
 		serverName   = "logical-cluster:admin"
 		contextName  = "logical-cluster"
@@ -89,7 +85,7 @@ func LogicalClusterAdminKubeconfigReconciler(shard *operatorv1alpha1.Shard, root
 	)
 
 	return func() (string, k8creconciling.SecretReconciler) {
-		return kubeconfigSecret(shard, operatorv1alpha1.LogicalClusterAdminCertificate), func(secret *corev1.Secret) (*corev1.Secret, error) {
+		return names.ShardKubeconfigSecret(shard, operatorv1alpha1.LogicalClusterAdminCertificate), func(secret *corev1.Secret) (*corev1.Secret, error) {
 			var config *clientcmdapi.Config
 
 			if secret.Data == nil {
@@ -99,7 +95,7 @@ func LogicalClusterAdminKubeconfigReconciler(shard *operatorv1alpha1.Shard, root
 			config = &clientcmdapi.Config{
 				Clusters: map[string]*clientcmdapi.Cluster{
 					serverName: {
-						Server:               resources.GetShardBaseURL(shard),
+						Server:               names.ShardBaseURL(shard),
 						CertificateAuthority: getCAMountPath(operatorv1alpha1.ServerCA) + "/tls.crt",
 					},
 				},
@@ -130,7 +126,7 @@ func LogicalClusterAdminKubeconfigReconciler(shard *operatorv1alpha1.Shard, root
 	}
 }
 
-func ExternalLogicalClusterAdminKubeconfigReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShard) k8creconciling.NamedSecretReconcilerFactory {
+func ExternalLogicalClusterAdminKubeconfigReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShard, names naming.Scheme) k8creconciling.NamedSecretReconcilerFactory {
 	const (
 		serverName   = "external-logical-cluster:admin"
 		contextName  = "external-logical-cluster"
@@ -138,7 +134,7 @@ func ExternalLogicalClusterAdminKubeconfigReconciler(shard *operatorv1alpha1.Sha
 	)
 
 	return func() (string, k8creconciling.SecretReconciler) {
-		return kubeconfigSecret(shard, operatorv1alpha1.ExternalLogicalClusterAdminCertificate), func(secret *corev1.Secret) (*corev1.Secret, error) {
+		return names.ShardKubeconfigSecret(shard, operatorv1alpha1.ExternalLogicalClusterAdminCertificate), func(secret *corev1.Secret) (*corev1.Secret, error) {
 			var config *clientcmdapi.Config
 
 			if secret.Data == nil {

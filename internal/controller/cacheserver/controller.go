@@ -34,6 +34,7 @@ import (
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling/modifier"
 	"github.com/kcp-dev/kcp-operator/internal/resources/cacheserver"
+	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -84,25 +85,27 @@ func (r *CacheServerReconciler) Reconcile(ctx context.Context, req ctrlruntime.R
 }
 
 func (r *CacheServerReconciler) reconcile(ctx context.Context, server *operatorv1alpha1.CacheServer) error {
+	namingScheme := naming.NewVersion1()
+
 	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*metav1.NewControllerRef(server, operatorv1alpha1.SchemeGroupVersion.WithKind("CacheServer")))
 	revisionLabels := modifier.RelatedRevisionsLabels(ctx, r.Client)
 
 	if err := reconciling.ReconcileCertificates(ctx, []reconciling.NamedCertificateReconcilerFactory{
-		cacheserver.RootCACertificateReconciler(server),
-		cacheserver.ServerCertificateReconciler(server),
-		cacheserver.ClientCertificateReconciler(server),
+		cacheserver.RootCACertificateReconciler(server, namingScheme),
+		cacheserver.ServerCertificateReconciler(server, namingScheme),
+		cacheserver.ClientCertificateReconciler(server, namingScheme),
 	}, server.Namespace, r.Client, ownerRefWrapper); err != nil {
 		return err
 	}
 
 	if err := reconciling.ReconcileIssuers(ctx, []reconciling.NamedIssuerReconcilerFactory{
-		cacheserver.RootCAIssuerReconciler(server),
+		cacheserver.RootCAIssuerReconciler(server, namingScheme),
 	}, server.Namespace, r.Client, ownerRefWrapper); err != nil {
 		return err
 	}
 
 	if err := k8creconciling.ReconcileSecrets(ctx, []k8creconciling.NamedSecretReconcilerFactory{
-		cacheserver.KubeconfigReconciler(server),
+		cacheserver.KubeconfigReconciler(server, namingScheme),
 	}, server.Namespace, r.Client, ownerRefWrapper); err != nil {
 		return err
 	}
@@ -111,7 +114,7 @@ func (r *CacheServerReconciler) reconcile(ctx context.Context, server *operatorv
 	// requeueing to eventually get there in the end. Importantly, reconciling Deployments has to happen
 	// after all Secrets have been reconciled.
 	if err := k8creconciling.ReconcileDeployments(ctx, []k8creconciling.NamedDeploymentReconcilerFactory{
-		cacheserver.DeploymentReconciler(server),
+		cacheserver.DeploymentReconciler(server, namingScheme),
 	}, server.Namespace, r.Client, ownerRefWrapper, revisionLabels); err != nil {
 		// Swallow these errors and instead rely on us watching Secrets and re-reconciling whenever they change.
 		if errors.Is(err, modifier.ErrMountNotFound) {
@@ -121,7 +124,7 @@ func (r *CacheServerReconciler) reconcile(ctx context.Context, server *operatorv
 	}
 
 	if err := k8creconciling.ReconcileServices(ctx, []k8creconciling.NamedServiceReconcilerFactory{
-		cacheserver.ServiceReconciler(server),
+		cacheserver.ServiceReconciler(server, namingScheme),
 	}, server.Namespace, r.Client, ownerRefWrapper); err != nil {
 		return err
 	}

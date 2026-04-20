@@ -42,7 +42,7 @@ import (
 	"github.com/kcp-dev/kcp-operator/internal/metrics"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling/modifier"
-	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	"github.com/kcp-dev/kcp-operator/internal/resources/virtualworkspace"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
@@ -104,18 +104,20 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 		return ctrl.Result{}, nil
 	}
 
+	namingScheme := naming.NewVersion1()
+
 	vwCopy := vw.DeepCopy()
 
-	conditions, recErr := r.reconcile(ctx, vwCopy)
+	conditions, recErr := r.reconcile(ctx, vwCopy, namingScheme)
 
-	if err := r.reconcileStatus(ctx, vw, vwCopy, conditions); err != nil {
+	if err := r.reconcileStatus(ctx, vw, vwCopy, conditions, namingScheme); err != nil {
 		recErr = kerrors.NewAggregate([]error{recErr, err})
 	}
 
 	return ctrl.Result{}, recErr
 }
 
-func (r *Reconciler) reconcile(ctx context.Context, vw *operatorv1alpha1.VirtualWorkspace) ([]metav1.Condition, error) {
+func (r *Reconciler) reconcile(ctx context.Context, vw *operatorv1alpha1.VirtualWorkspace, names naming.Scheme) ([]metav1.Condition, error) {
 	var conditions []metav1.Condition
 
 	var (
@@ -139,8 +141,8 @@ func (r *Reconciler) reconcile(ctx context.Context, vw *operatorv1alpha1.Virtual
 			return conditions, err
 		}
 
-		clientCertIssuer = resources.GetRootShardCAName(rootShard, operatorv1alpha1.ClientCA)
-		// serverCA = resources.GetRootShardCAName(rootShard, operatorv1alpha1.ServerCA)
+		clientCertIssuer = names.RootShardCAName(rootShard, operatorv1alpha1.ClientCA)
+		// serverCA = names.RootShardCAName(rootShard, operatorv1alpha1.ServerCA)
 
 	case vw.Spec.Target.ShardRef != nil:
 		shard = &operatorv1alpha1.Shard{}
@@ -181,8 +183,8 @@ func (r *Reconciler) reconcile(ctx context.Context, vw *operatorv1alpha1.Virtual
 		}
 
 		// The client CA is shared among all shards and owned by the root shard.
-		clientCertIssuer = resources.GetRootShardCAName(rootShard, operatorv1alpha1.ClientCA)
-		// serverCA = resources.GetRootShardCAName(rootShard, operatorv1alpha1.ServerCA)
+		clientCertIssuer = names.RootShardCAName(rootShard, operatorv1alpha1.ClientCA)
+		// serverCA = names.GetRootShardCAName(rootShard, operatorv1alpha1.ServerCA)
 
 	default:
 		err := errors.New("no valid target for VirtualWorkspace found")
@@ -206,14 +208,14 @@ func (r *Reconciler) reconcile(ctx context.Context, vw *operatorv1alpha1.Virtual
 	revisionLabels := modifier.RelatedRevisionsLabels(ctx, r.Client)
 
 	if err := reconciling.ReconcileCertificates(ctx, []reconciling.NamedCertificateReconcilerFactory{
-		virtualworkspace.ClientCertificateReconciler(vw, clientCertIssuer),
-		virtualworkspace.ServerCertificateReconciler(vw, rootShard),
+		virtualworkspace.ClientCertificateReconciler(vw, clientCertIssuer, names),
+		virtualworkspace.ServerCertificateReconciler(vw, rootShard, names),
 	}, vw.Namespace, r.Client, ownerRefWrapper); err != nil {
 		return conditions, err
 	}
 
 	if err := k8creconciling.ReconcileDeployments(ctx, []k8creconciling.NamedDeploymentReconcilerFactory{
-		virtualworkspace.DeploymentReconciler(vw, rootShard, shard),
+		virtualworkspace.DeploymentReconciler(vw, rootShard, shard, names),
 	}, vw.Namespace, r.Client, ownerRefWrapper, revisionLabels); err != nil {
 		// Swallow these errors and instead rely on us watching Secrets and re-reconciling whenever they change.
 		if errors.Is(err, modifier.ErrMountNotFound) {
@@ -224,7 +226,7 @@ func (r *Reconciler) reconcile(ctx context.Context, vw *operatorv1alpha1.Virtual
 	}
 
 	if err := k8creconciling.ReconcileServices(ctx, []k8creconciling.NamedServiceReconcilerFactory{
-		virtualworkspace.ServiceReconciler(vw),
+		virtualworkspace.ServiceReconciler(vw, names),
 	}, vw.Namespace, r.Client, ownerRefWrapper); err != nil {
 		return conditions, err
 	}
@@ -232,9 +234,9 @@ func (r *Reconciler) reconcile(ctx context.Context, vw *operatorv1alpha1.Virtual
 	return conditions, nil
 }
 
-func (r *Reconciler) reconcileStatus(ctx context.Context, oldVW *operatorv1alpha1.VirtualWorkspace, vw *operatorv1alpha1.VirtualWorkspace, conditions []metav1.Condition) error {
+func (r *Reconciler) reconcileStatus(ctx context.Context, oldVW *operatorv1alpha1.VirtualWorkspace, vw *operatorv1alpha1.VirtualWorkspace, conditions []metav1.Condition, names naming.Scheme) error {
 	// Check deployment status
-	depKey := types.NamespacedName{Namespace: vw.Namespace, Name: resources.GetVirtualWorkspaceDeploymentName(vw)}
+	depKey := types.NamespacedName{Namespace: vw.Namespace, Name: names.VirtualWorkspaceDeploymentName(vw)}
 	cond, err := util.GetDeploymentAvailableCondition(ctx, r.Client, depKey)
 	if err != nil {
 		return err
@@ -277,35 +279,57 @@ func (r *Reconciler) mapIssuerToVirtualWorkspaces(ctx context.Context, obj ctrlr
 	logger := log.FromContext(ctx).WithValues("issuer", obj.GetName())
 	logger.V(4).Info("Mapping Issuer to VirtualWorkspaces")
 
-	// Find all VirtualWorkspaces that use this Issuer for their client certificate
+	// Find all VirtualWorkspaces that use this Issuer for their server/client certificates
 	var virtualWorkspaces operatorv1alpha1.VirtualWorkspaceList
 	if err := r.List(ctx, &virtualWorkspaces, ctrlruntimeclient.InNamespace(obj.GetNamespace())); err != nil {
 		logger.Error(err, "Failed to list VirtualWorkspaces")
 		return []ctrl.Request{}
 	}
 
+	allNamingSchemes := []naming.Scheme{
+		naming.NewVersion1(),
+	}
+
 	var requests []ctrl.Request
 	for _, vw := range virtualWorkspaces.Items {
-		var expectedIssuer string
+		var rootShard *operatorv1alpha1.RootShard
+
 		switch {
 		case vw.Spec.Target.RootShardRef != nil:
-			rootShard := &operatorv1alpha1.RootShard{}
-			if err := r.Get(ctx, types.NamespacedName{Name: vw.Spec.Target.RootShardRef.Name, Namespace: vw.Namespace}, rootShard); err == nil {
-				expectedIssuer = resources.GetRootShardCAName(rootShard, operatorv1alpha1.ClientCA)
+			rootShard = &operatorv1alpha1.RootShard{}
+			if err := r.Get(ctx, types.NamespacedName{Name: vw.Spec.Target.RootShardRef.Name, Namespace: vw.Namespace}, rootShard); err != nil {
+				logger.Error(err, "Failed to get RootShard")
 			}
 		case vw.Spec.Target.ShardRef != nil:
 			shard := &operatorv1alpha1.Shard{}
 			if err := r.Get(ctx, types.NamespacedName{Name: vw.Spec.Target.ShardRef.Name, Namespace: vw.Namespace}, shard); err == nil {
 				if ref := shard.Spec.RootShard.Reference; ref != nil {
-					rootShard := &operatorv1alpha1.RootShard{}
-					if err := r.Get(ctx, types.NamespacedName{Name: ref.Name, Namespace: vw.Namespace}, rootShard); err == nil {
-						expectedIssuer = resources.GetRootShardCAName(rootShard, operatorv1alpha1.ClientCA)
+					rootShard = &operatorv1alpha1.RootShard{}
+					if err := r.Get(ctx, types.NamespacedName{Name: ref.Name, Namespace: vw.Namespace}, rootShard); err != nil {
+						logger.Error(err, "Failed to get RootShard")
 					}
 				}
 			}
 		}
 
-		if expectedIssuer == obj.GetName() {
+		// check name in case the .Get() call failed
+		if rootShard == nil || rootShard.Name == "" {
+			continue
+		}
+
+		// Enqueue this issuer if it is being used by any existing naming scheme for either the ServerCA or Client CA.
+		issuerName := obj.GetName()
+
+		var enqueue bool
+		for _, names := range allNamingSchemes {
+			// In the kcp-operator, the name of the Issuer is always identical to the name of the CA.
+			if issuerName == names.RootShardCAName(rootShard, operatorv1alpha1.ServerCA) || issuerName == names.RootShardCAName(rootShard, operatorv1alpha1.ClientCA) {
+				enqueue = true
+				break
+			}
+		}
+
+		if enqueue {
 			requests = append(requests, ctrl.Request{
 				NamespacedName: types.NamespacedName{
 					Name:      vw.Name,

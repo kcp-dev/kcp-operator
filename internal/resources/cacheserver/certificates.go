@@ -22,13 +22,14 @@ import (
 
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	"github.com/kcp-dev/kcp-operator/internal/resources/utils"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
 // RootCACertificateReconciler creates a standalone CA just for a single cache-server.
-func RootCACertificateReconciler(server *operatorv1alpha1.CacheServer) reconciling.NamedCertificateReconcilerFactory {
-	name := resources.GetCacheServerCAName(server.Name, operatorv1alpha1.RootCA)
+func RootCACertificateReconciler(server *operatorv1alpha1.CacheServer, names naming.Scheme) reconciling.NamedCertificateReconcilerFactory {
+	name := names.CacheServerCAName(server.Name, operatorv1alpha1.RootCA)
 	template := server.Spec.CertificateTemplates.CATemplate(operatorv1alpha1.RootCA)
 
 	if server.Spec.Certificates.IssuerRef == nil {
@@ -37,7 +38,7 @@ func RootCACertificateReconciler(server *operatorv1alpha1.CacheServer) reconcili
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
-			cert.SetLabels(resources.GetCacheServerResourceLabels(server))
+			cert.SetLabels(names.CacheServerResourceLabels(server))
 
 			cert.Spec = certmanagerv1.CertificateSpec{
 				IsCA:       true,
@@ -56,7 +57,7 @@ func RootCACertificateReconciler(server *operatorv1alpha1.CacheServer) reconcili
 					Size:      4096,
 				},
 
-				IssuerRef: certmanagermetav1.ObjectReference{
+				IssuerRef: certmanagermetav1.IssuerReference{
 					Name:  server.Spec.Certificates.IssuerRef.Name,
 					Kind:  server.Spec.Certificates.IssuerRef.Kind,
 					Group: server.Spec.Certificates.IssuerRef.Group,
@@ -70,13 +71,13 @@ func RootCACertificateReconciler(server *operatorv1alpha1.CacheServer) reconcili
 
 // ClientCertificateReconciler creates a client certificate for authenticating to the cache server.
 // This certificate is mounted by shards that connect to the cache server.
-func ClientCertificateReconciler(server *operatorv1alpha1.CacheServer) reconciling.NamedCertificateReconcilerFactory {
-	name := resources.GetCacheServerClientCertificateName(server)
+func ClientCertificateReconciler(server *operatorv1alpha1.CacheServer, names naming.Scheme) reconciling.NamedCertificateReconcilerFactory {
+	name := names.CacheServerClientCertificateName(server.Name)
 	template := server.Spec.CertificateTemplates.CertificateTemplate(operatorv1alpha1.ClientCertificate)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
-			cert.SetLabels(resources.GetCacheServerResourceLabels(server))
+			cert.SetLabels(names.CacheServerResourceLabels(server))
 			cert.Spec = certmanagerv1.CertificateSpec{
 				SecretName: name,
 				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
@@ -105,8 +106,8 @@ func ClientCertificateReconciler(server *operatorv1alpha1.CacheServer) reconcili
 					certmanagerv1.UsageDigitalSignature,
 				},
 
-				IssuerRef: certmanagermetav1.ObjectReference{
-					Name:  resources.GetCacheServerCAName(server.Name, operatorv1alpha1.RootCA),
+				IssuerRef: certmanagermetav1.IssuerReference{
+					Name:  names.CacheServerCAName(server.Name, operatorv1alpha1.RootCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},
@@ -117,15 +118,15 @@ func ClientCertificateReconciler(server *operatorv1alpha1.CacheServer) reconcili
 	}
 }
 
-func ServerCertificateReconciler(server *operatorv1alpha1.CacheServer) reconciling.NamedCertificateReconcilerFactory {
+func ServerCertificateReconciler(server *operatorv1alpha1.CacheServer, names naming.Scheme) reconciling.NamedCertificateReconcilerFactory {
 	const certKind = operatorv1alpha1.ServerCertificate
 
-	name := resources.GetCacheServerCertificateName(server, certKind)
+	name := names.CacheServerCertificateName(server, certKind)
 	template := server.Spec.CertificateTemplates.CertificateTemplate(certKind)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
-			cert.SetLabels(resources.GetCacheServerResourceLabels(server))
+			cert.SetLabels(names.CacheServerResourceLabels(server))
 			cert.Spec = certmanagerv1.CertificateSpec{
 				SecretName: name,
 				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
@@ -150,11 +151,11 @@ func ServerCertificateReconciler(server *operatorv1alpha1.CacheServer) reconcili
 
 				DNSNames: []string{
 					"localhost",
-					resources.GetCacheServerBaseHost(server),
+					names.CacheServerBaseHost(server),
 				},
 
-				IssuerRef: certmanagermetav1.ObjectReference{
-					Name:  resources.GetCacheServerCAName(server.Name, operatorv1alpha1.RootCA),
+				IssuerRef: certmanagermetav1.IssuerReference{
+					Name:  names.CacheServerCAName(server.Name, operatorv1alpha1.RootCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},

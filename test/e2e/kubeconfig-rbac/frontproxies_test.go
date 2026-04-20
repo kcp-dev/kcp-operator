@@ -20,7 +20,6 @@ package kubeconfigrbac
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -35,6 +34,7 @@ import (
 	ctrlruntime "sigs.k8s.io/controller-runtime"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 	"github.com/kcp-dev/kcp-operator/test/utils"
 )
@@ -44,15 +44,16 @@ func TestProvisionFrontProxyRBAC(t *testing.T) {
 
 	client := utils.GetKubeClient(t)
 	ctx := context.Background()
+	namingScheme := naming.NewVersion1()
 
 	rootCluster := logicalcluster.NewPath("root")
 	namespace := utils.CreateSelfDestructingNamespace(t, ctx, client, "provision-frontproxy-rbac")
 
 	// externalHostname must match whatever DeployFrontProxy chooses as the name for the FrontProxy
-	externalHostname := fmt.Sprintf("front-proxy-front-proxy.%s.svc.cluster.local", namespace.Name)
+	externalHostname := utils.FrontProxyExternalHostname(namespace.Name, namingScheme)
 
 	// deploy rootshard
-	rootShard := utils.DeployRootShard(ctx, t, client, namespace.Name, externalHostname)
+	rootShard := utils.DeployRootShard(ctx, t, client, namingScheme, namespace.Name, externalHostname)
 
 	// deploy front-proxy
 	frontProxy := utils.DeployFrontProxy(ctx, t, client, namespace.Name, rootShard.Name, externalHostname)

@@ -20,7 +20,6 @@ package frontproxies
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -32,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	ctrlruntime "sigs.k8s.io/controller-runtime"
 
+	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 	"github.com/kcp-dev/kcp-operator/test/utils"
 )
@@ -41,14 +41,14 @@ func TestCreateFrontProxy(t *testing.T) {
 
 	client := utils.GetKubeClient(t)
 	ctx := context.Background()
+	namingScheme := naming.NewVersion1()
 
 	namespace := utils.CreateSelfDestructingNamespace(t, ctx, client, "create-frontproxy")
 
-	// externalHostname must match whatever DeployFrontProxy chooses as the name for the FrontProxy
-	externalHostname := fmt.Sprintf("front-proxy-front-proxy.%s.svc.cluster.local", namespace.Name)
+	externalHostname := utils.FrontProxyExternalHostname(namespace.Name, namingScheme)
 
 	// deploy rootshard
-	rootShard := utils.DeployRootShard(ctx, t, client, namespace.Name, externalHostname)
+	rootShard := utils.DeployRootShard(ctx, t, client, namingScheme, namespace.Name, externalHostname)
 
 	// deploy front-proxy
 	frontProxy := utils.DeployFrontProxy(ctx, t, client, namespace.Name, rootShard.Name, externalHostname)

@@ -27,12 +27,13 @@ import (
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
-func MergedCABundleSecretReconciler(ctx context.Context, shard *operatorv1alpha1.Shard, kubeClient ctrlruntimeclient.Client) k8creconciling.NamedSecretReconcilerFactory {
+func MergedCABundleSecretReconciler(ctx context.Context, shard *operatorv1alpha1.Shard, kubeClient ctrlruntimeclient.Client, names naming.Scheme) k8creconciling.NamedSecretReconcilerFactory {
 	return func() (string, k8creconciling.SecretReconciler) {
-		secretName := fmt.Sprintf("%s-merged-ca-bundle", shard.Name)
+		secretName := names.MergedCABundleName(shard.Name)
 		return secretName, func(secret *corev1.Secret) (*corev1.Secret, error) {
 			if secret.Data == nil {
 				secret.Data = make(map[string][]byte)
@@ -40,7 +41,7 @@ func MergedCABundleSecretReconciler(ctx context.Context, shard *operatorv1alpha1
 
 			// Get ServerCA certificate
 			serverCASecret := &corev1.Secret{}
-			serverCASecretName := resources.GetShardCertificateName(shard, operatorv1alpha1.ServerCertificate)
+			serverCASecretName := names.ShardCertificateName(shard, operatorv1alpha1.ServerCertificate)
 			err := kubeClient.Get(ctx, types.NamespacedName{
 				Name:      serverCASecretName,
 				Namespace: shard.Namespace,

@@ -5,39 +5,52 @@ description: >
 
 # Release Process
 
-The guide describes how to release a new version of the kcp-operator.
+This document describes the end-to-end process for publishing a new kcp-operator release.
 
 ## Prerequisites
 
-1. Have all desired changes merged and/or cherrypicked into the appropriate
-   release branch.
+- Push access to the `kcp-dev/kcp-operator` repository.
+- All desired changes merged (and cherry-picked for patch releases).
 
-## Minor Release
+## 1. Bump the Default KCP Image Tag
 
-Minor releases (0.x) are tagged directly on the `main` branch and the `v0.X.0`
-tag represents where the corresponding `release/v0.X` branch branches off.
+Update the compiled-in default image tag in `internal/resources/resources.go`:
 
-1. Checkout the desired `main` branch commit.
-1. Tag the main module: `git tag -m "version 0.X" v0.X.0`
-1. Tag the SDK module: `git tag -m "SDK version 0.X" sdk/v0.X.0`
-1. Push the tags: `git push upstream v0.X.0 sdk/v0.X.0`
-1. Create the release branch: `git checkout -B release-0.X`
-1. Push the release branch: `git push -u upstream release-0.X`
+```go
+const (
+    ImageRepository = "ghcr.io/kcp-dev/kcp"
+    ImageTag        = "v0.XX.Y" // <-- update this
+)
+```
 
-Once the tag and branch have been pushed, the documentation has to be manually
-updated to include the new minor release.
+Commit and merge the change before tagging.
 
-1. Navigate to https://github.com/kcp-dev/kcp-operator/actions/workflows/docs-gen-and-push.yaml
-1. Run the workflow manually on the new release branch.
+## 2. Tag the Release
 
-Within a few minutes of the action finishing, the new branch should show up on
-https://docs.kcp.io/kcp-operator/.
+### Minor release (v0.X.0)
 
-## Patch Releases
+```bash
+git checkout main
+git tag -m "version 0.X" v0.X.0
+git tag -m "SDK version 0.X" sdk/v0.X.0
+git push upstream v0.X.0 sdk/v0.X.0
 
-Patch releases (v0.x.y) are tagged with in a release branch.
+# Create the release branch
+git checkout -B release-0.X
+git push -u upstream release-0.X
+```
 
-1. Checkout the desired `release/v0.X` branch commit.
-1. Tag the main module: `git tag -m "version 0.X.Y" v0.X.Y`
-1. Tag the SDK module: `git tag -m "SDK version 0.X.Y" sdk/v0.X.Y`
-1. Push the tags: `git push upstream v0.X.Y sdk/v0.X.Y`
+### Patch release (v0.X.Y)
+
+```bash
+git checkout release-0.X
+git tag -m "version 0.X.Y" v0.X.Y
+git tag -m "SDK version 0.X.Y" sdk/v0.X.Y
+git push upstream v0.X.Y sdk/v0.X.Y
+```
+
+## 3. Publish Documentation
+
+1. Go to the [docs-gen-and-push workflow](https://github.com/kcp-dev/kcp-operator/actions/workflows/docs-gen-and-push.yaml).
+2. Run the workflow manually on the release branch.
+3. Verify the new version appears on [docs.kcp.io/kcp-operator](https://docs.kcp.io/kcp-operator/).

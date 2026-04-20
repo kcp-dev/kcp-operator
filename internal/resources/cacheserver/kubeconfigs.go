@@ -23,18 +23,18 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 
-	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
-func KubeconfigReconciler(server *operatorv1alpha1.CacheServer) k8creconciling.NamedSecretReconcilerFactory {
+func KubeconfigReconciler(server *operatorv1alpha1.CacheServer, names naming.Scheme) k8creconciling.NamedSecretReconcilerFactory {
 	const (
 		serverName  = "cache"
 		contextName = "cache"
 	)
 
 	return func() (string, k8creconciling.SecretReconciler) {
-		return resources.GetCacheServerKubeconfigName(server.Name), func(secret *corev1.Secret) (*corev1.Secret, error) {
+		return names.CacheServerKubeconfigName(server.Name), func(secret *corev1.Secret) (*corev1.Secret, error) {
 			var config *clientcmdapi.Config
 			if secret.Data == nil {
 				secret.Data = make(map[string][]byte)
@@ -43,7 +43,7 @@ func KubeconfigReconciler(server *operatorv1alpha1.CacheServer) k8creconciling.N
 			config = &clientcmdapi.Config{
 				Clusters: map[string]*clientcmdapi.Cluster{
 					serverName: {
-						Server:               resources.GetCacheServerBaseURL(server),
+						Server:               names.CacheServerBaseURL(server),
 						CertificateAuthority: getCAMountPath(operatorv1alpha1.RootCA) + "/tls.crt",
 					},
 				},

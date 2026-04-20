@@ -23,7 +23,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -81,7 +81,7 @@ func applyOIDCConfiguration(deployment *appsv1.Deployment, config operatorv1alph
 	return deployment
 }
 
-func applyServiceAccountAuthentication(deployment *appsv1.Deployment, rootShard *operatorv1alpha1.RootShard) *appsv1.Deployment {
+func applyServiceAccountAuthentication(deployment *appsv1.Deployment, rootShard *operatorv1alpha1.RootShard, names naming.Scheme) *appsv1.Deployment {
 	// Secrets and volumes
 
 	volumes := []corev1.Volume{}
@@ -89,31 +89,31 @@ func applyServiceAccountAuthentication(deployment *appsv1.Deployment, rootShard 
 
 	// Root shard is not on the list, so we add it manually
 	volumes = append(volumes, corev1.Volume{
-		Name: resources.GetRootShardCertificateName(rootShard, operatorv1alpha1.ServiceAccountCertificate),
+		Name: names.RootShardCertificateName(rootShard, operatorv1alpha1.ServiceAccountCertificate),
 		VolumeSource: corev1.VolumeSource{
 			Secret: &corev1.SecretVolumeSource{
-				SecretName: resources.GetRootShardCertificateName(rootShard, operatorv1alpha1.ServiceAccountCertificate),
+				SecretName: names.RootShardCertificateName(rootShard, operatorv1alpha1.ServiceAccountCertificate),
 			},
 		},
 	})
 
 	volumeMounts = append(volumeMounts, corev1.VolumeMount{
-		Name:      resources.GetRootShardCertificateName(rootShard, operatorv1alpha1.ServiceAccountCertificate),
+		Name:      names.RootShardCertificateName(rootShard, operatorv1alpha1.ServiceAccountCertificate),
 		ReadOnly:  true,
 		MountPath: fmt.Sprintf("/etc/kcp/tls/%s/%s", rootShard.Name, string(operatorv1alpha1.ServiceAccountCertificate)),
 	})
 
 	for _, shard := range rootShard.Status.Shards {
 		volumes = append(volumes, corev1.Volume{
-			Name: resources.GetShardCertificateName(&operatorv1alpha1.Shard{ObjectMeta: metav1.ObjectMeta{Name: shard.Name}}, operatorv1alpha1.ServiceAccountCertificate),
+			Name: names.ShardCertificateName(&operatorv1alpha1.Shard{ObjectMeta: metav1.ObjectMeta{Name: shard.Name}}, operatorv1alpha1.ServiceAccountCertificate),
 			VolumeSource: corev1.VolumeSource{
 				Secret: &corev1.SecretVolumeSource{
-					SecretName: resources.GetShardCertificateName(&operatorv1alpha1.Shard{ObjectMeta: metav1.ObjectMeta{Name: shard.Name}}, operatorv1alpha1.ServiceAccountCertificate),
+					SecretName: names.ShardCertificateName(&operatorv1alpha1.Shard{ObjectMeta: metav1.ObjectMeta{Name: shard.Name}}, operatorv1alpha1.ServiceAccountCertificate),
 				},
 			},
 		})
 		volumeMounts = append(volumeMounts, corev1.VolumeMount{
-			Name:      resources.GetShardCertificateName(&operatorv1alpha1.Shard{ObjectMeta: metav1.ObjectMeta{Name: shard.Name}}, operatorv1alpha1.ServiceAccountCertificate),
+			Name:      names.ShardCertificateName(&operatorv1alpha1.Shard{ObjectMeta: metav1.ObjectMeta{Name: shard.Name}}, operatorv1alpha1.ServiceAccountCertificate),
 			ReadOnly:  true,
 			MountPath: fmt.Sprintf("/etc/kcp/tls/%s/%s", shard.Name, string(operatorv1alpha1.ServiceAccountCertificate)),
 		})

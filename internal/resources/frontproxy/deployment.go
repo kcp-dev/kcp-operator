@@ -43,13 +43,13 @@ func (r *reconciler) deploymentReconciler() reconciling.NamedDeploymentReconcile
 	)
 
 	if r.frontProxy != nil {
-		name = resources.GetFrontProxyDeploymentName(r.frontProxy)
+		name = r.names.FrontProxyDeploymentName(r.frontProxy)
 		imageSpec = r.frontProxy.Spec.Image
 		depResources = r.frontProxy.Spec.Resources
 		template = r.frontProxy.Spec.DeploymentTemplate
 		replicas = r.frontProxy.Spec.Replicas
 	} else {
-		name = resources.GetRootShardProxyDeploymentName(r.rootShard)
+		name = r.names.RootShardProxyDeploymentName(r.rootShard)
 
 		if r.rootShard.Spec.Proxy != nil {
 			imageSpec = r.rootShard.Spec.Proxy.Image
@@ -149,9 +149,9 @@ func (r *reconciler) deploymentReconciler() reconciling.NamedDeploymentReconcile
 			{
 				var secretName string
 				if r.frontProxy != nil {
-					secretName = resources.GetFrontProxyDynamicKubeconfigName(r.rootShard, r.frontProxy)
+					secretName = r.names.FrontProxyDynamicKubeconfigName(r.rootShard, r.frontProxy)
 				} else {
-					secretName = resources.GetRootShardProxyDynamicKubeconfigName(r.rootShard)
+					secretName = r.names.RootShardProxyDynamicKubeconfigName(r.rootShard)
 				}
 
 				// readonly=false because front-proxy updates the file to work with different shards
@@ -168,7 +168,7 @@ func (r *reconciler) deploymentReconciler() reconciling.NamedDeploymentReconcile
 			mountSecret(r.certName(operatorv1alpha1.RequestHeaderClientCertificate), frontProxyBasepath+"/requestheader-client", true)
 
 			// kcp rootshard root ca
-			mountSecret(resources.GetRootShardCAName(r.rootShard, operatorv1alpha1.RootCA), kcpBasepath+"/tls/ca", true)
+			mountSecret(r.names.RootShardCAName(r.rootShard, operatorv1alpha1.RootCA), kcpBasepath+"/tls/ca", true)
 
 			// If caBundleSecretRef is specified, mount the merged CA bundle secret.
 			// This secret contains both kcp root CA and user-provided CA bundle merged together.
@@ -216,7 +216,7 @@ func (r *reconciler) deploymentReconciler() reconciling.NamedDeploymentReconcile
 			dep = utils.ApplyDeploymentTemplate(dep, template)
 
 			if r.frontProxy != nil {
-				dep = utils.ApplyFrontProxyAuthConfiguration(dep, r.frontProxy.Spec.Auth, r.rootShard)
+				dep = utils.ApplyFrontProxyAuthConfiguration(dep, r.frontProxy.Spec.Auth, r.rootShard, r.names)
 
 				// If frontproxy has bundle annotation, store desired replicas in annotation then scale deployment to 0 locally
 				if r.frontProxy.Annotations != nil && r.frontProxy.Annotations[resources.BundleAnnotation] != "" {

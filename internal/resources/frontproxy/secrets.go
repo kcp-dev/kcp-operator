@@ -22,8 +22,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	clientcmdv1 "k8s.io/client-go/tools/clientcmd/api/v1"
 	"sigs.k8s.io/yaml"
-
-	"github.com/kcp-dev/kcp-operator/internal/resources"
 )
 
 const (
@@ -33,16 +31,17 @@ const (
 	kubeconfigCAPath      = "/etc/kcp/tls/ca/tls.crt"
 )
 
-func (r *reconciler) dynamicKubeconfigSecretReconciler() reconciling.NamedSecretReconcilerFactory {
-	var name string
+func (r *reconciler) dynamicKubeconfigSecretName() string {
 	if r.frontProxy != nil {
-		name = resources.GetFrontProxyDynamicKubeconfigName(r.rootShard, r.frontProxy)
+		return r.names.FrontProxyDynamicKubeconfigName(r.rootShard, r.frontProxy)
 	} else {
-		name = resources.GetRootShardProxyDynamicKubeconfigName(r.rootShard)
+		return r.names.RootShardProxyDynamicKubeconfigName(r.rootShard)
 	}
+}
 
+func (r *reconciler) dynamicKubeconfigSecretReconciler() reconciling.NamedSecretReconcilerFactory {
 	return func() (string, reconciling.SecretReconciler) {
-		return name, func(obj *corev1.Secret) (*corev1.Secret, error) {
+		return r.dynamicKubeconfigSecretName(), func(obj *corev1.Secret) (*corev1.Secret, error) {
 			obj.SetLabels(r.resourceLabels)
 
 			kubeconfig, err := r.dynamicKubeconfig()
@@ -66,7 +65,7 @@ func (r *reconciler) dynamicKubeconfig() ([]byte, error) {
 				Name: "system:admin",
 				Cluster: clientcmdv1.Cluster{
 					CertificateAuthority: kubeconfigCAPath,
-					Server:               resources.GetRootShardBaseURL(r.rootShard),
+					Server:               r.names.RootShardBaseURL(r.rootShard),
 				},
 			},
 		},

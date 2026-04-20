@@ -22,13 +22,14 @@ import (
 
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	"github.com/kcp-dev/kcp-operator/internal/resources/utils"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
 // RootCACertificateReconciler creates the central CA used for the kcp setup around a specific RootShard. This shouldn't be called if the RootShard is configured to use a BYO CA certificate.
-func RootCACertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
-	name := resources.GetRootShardCAName(rootShard, operatorv1alpha1.RootCA)
+func RootCACertificateReconciler(rootShard *operatorv1alpha1.RootShard, names naming.Scheme) reconciling.NamedCertificateReconcilerFactory {
+	name := names.RootShardCAName(rootShard, operatorv1alpha1.RootCA)
 	template := rootShard.Spec.CertificateTemplates.CATemplate(operatorv1alpha1.RootCA)
 
 	if rootShard.Spec.Certificates.IssuerRef == nil {
@@ -37,7 +38,7 @@ func RootCACertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconcil
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
-			cert.SetLabels(resources.GetRootShardResourceLabels(rootShard))
+			cert.SetLabels(names.RootShardResourceLabels(rootShard))
 
 			cert.Spec = certmanagerv1.CertificateSpec{
 				IsCA:       true,
@@ -56,7 +57,7 @@ func RootCACertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconcil
 					Size:      4096,
 				},
 
-				IssuerRef: certmanagermetav1.ObjectReference{
+				IssuerRef: certmanagermetav1.IssuerReference{
 					Name:  rootShard.Spec.Certificates.IssuerRef.Name,
 					Kind:  rootShard.Spec.Certificates.IssuerRef.Kind,
 					Group: rootShard.Spec.Certificates.IssuerRef.Group,
@@ -68,13 +69,13 @@ func RootCACertificateReconciler(rootShard *operatorv1alpha1.RootShard) reconcil
 	}
 }
 
-func CACertificateReconciler(rootShard *operatorv1alpha1.RootShard, ca operatorv1alpha1.CA) reconciling.NamedCertificateReconcilerFactory {
-	name := resources.GetRootShardCAName(rootShard, ca)
+func CACertificateReconciler(rootShard *operatorv1alpha1.RootShard, ca operatorv1alpha1.CA, names naming.Scheme) reconciling.NamedCertificateReconcilerFactory {
+	name := names.RootShardCAName(rootShard, ca)
 	template := rootShard.Spec.CertificateTemplates.CATemplate(ca)
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
-			cert.SetLabels(resources.GetRootShardResourceLabels(rootShard))
+			cert.SetLabels(names.RootShardResourceLabels(rootShard))
 			cert.Spec = certmanagerv1.CertificateSpec{
 				IsCA:       true,
 				CommonName: name,
@@ -92,8 +93,8 @@ func CACertificateReconciler(rootShard *operatorv1alpha1.RootShard, ca operatorv
 					Size:      4096,
 				},
 
-				IssuerRef: certmanagermetav1.ObjectReference{
-					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.RootCA),
+				IssuerRef: certmanagermetav1.IssuerReference{
+					Name:  names.RootShardCAName(rootShard, operatorv1alpha1.RootCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},

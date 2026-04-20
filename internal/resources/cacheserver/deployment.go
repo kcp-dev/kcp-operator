@@ -31,6 +31,7 @@ import (
 	"k8s.io/utils/ptr"
 
 	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	"github.com/kcp-dev/kcp-operator/internal/resources/utils"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
@@ -75,10 +76,10 @@ func getClientCertificateMountPath() string {
 	return "/etc/cache-server/tls/client-certificate"
 }
 
-func DeploymentReconciler(server *operatorv1alpha1.CacheServer) reconciling.NamedDeploymentReconcilerFactory {
+func DeploymentReconciler(server *operatorv1alpha1.CacheServer, names naming.Scheme) reconciling.NamedDeploymentReconcilerFactory {
 	return func() (string, reconciling.DeploymentReconciler) {
-		return resources.GetCacheServerDeploymentName(server), func(dep *appsv1.Deployment) (*appsv1.Deployment, error) {
-			labels := resources.GetCacheServerResourceLabels(server)
+		return names.CacheServerDeploymentName(server), func(dep *appsv1.Deployment) (*appsv1.Deployment, error) {
+			labels := names.CacheServerResourceLabels(server)
 			dep.SetLabels(labels)
 			dep.Spec.Selector = &metav1.LabelSelector{
 				MatchLabels: labels,
@@ -101,7 +102,7 @@ func DeploymentReconciler(server *operatorv1alpha1.CacheServer) reconciling.Name
 
 			volumes, volumeMounts := getVolumeMounts(server)
 
-			for _, sm := range getSecretMounts(server, version) {
+			for _, sm := range getSecretMounts(server, version, names) {
 				v, vm := sm.Build()
 				volumes = append(volumes, v)
 				volumeMounts = append(volumeMounts, vm)
@@ -241,11 +242,11 @@ func getArgs(server *operatorv1alpha1.CacheServer, version *semver.Version) []st
 	return args
 }
 
-func getSecretMounts(server *operatorv1alpha1.CacheServer, version *semver.Version) []utils.SecretMount {
+func getSecretMounts(server *operatorv1alpha1.CacheServer, version *semver.Version, names naming.Scheme) []utils.SecretMount {
 	secretMounts := []utils.SecretMount{
 		{
 			VolumeName: "serving-cert",
-			SecretName: resources.GetCacheServerCertificateName(server, operatorv1alpha1.ServerCertificate),
+			SecretName: names.CacheServerCertificateName(server, operatorv1alpha1.ServerCertificate),
 			MountPath:  getCertificateMountPath(operatorv1alpha1.ServerCertificate),
 		},
 	}
@@ -253,7 +254,7 @@ func getSecretMounts(server *operatorv1alpha1.CacheServer, version *semver.Versi
 	if hasAuthenticatedCache(version) {
 		secretMounts = append(secretMounts, utils.SecretMount{
 			VolumeName: "client-ca",
-			SecretName: resources.GetCacheServerCAName(server.Name, operatorv1alpha1.RootCA),
+			SecretName: names.CacheServerCAName(server.Name, operatorv1alpha1.RootCA),
 			MountPath:  getCAMountPath(operatorv1alpha1.RootCA),
 		})
 	}

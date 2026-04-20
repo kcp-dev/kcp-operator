@@ -32,10 +32,12 @@ import (
 )
 
 func (r *reconciler) mergedClientCASecretName() string {
+	owner := r.names.RootShardProxyDeploymentName(r.rootShard)
 	if r.frontProxy != nil {
-		return fmt.Sprintf("%s-merged-client-ca", r.frontProxy.Name)
+		owner = r.frontProxy.Name
 	}
-	return fmt.Sprintf("%s-proxy-merged-client-ca", r.rootShard.Name)
+
+	return r.names.MergedClientCAName(owner)
 }
 
 // mergedClientCASecretReconciler creates a single secret with the
@@ -44,7 +46,7 @@ func (r *reconciler) mergedClientCASecretName() string {
 func (r *reconciler) mergedClientCASecretReconciler(ctx context.Context, kubeClient ctrlruntimeclient.Client) k8creconciling.NamedSecretReconcilerFactory {
 	getCA := func(caType operatorv1alpha1.CA) ([]byte, error) {
 		caSecret := &corev1.Secret{}
-		caSecretName := resources.GetRootShardCAName(r.rootShard, caType)
+		caSecretName := r.names.RootShardCAName(r.rootShard, caType)
 		if err := kubeClient.Get(ctx, types.NamespacedName{
 			Namespace: r.rootShard.Namespace,
 			Name:      caSecretName,
@@ -92,11 +94,12 @@ func (r *reconciler) mergedClientCASecretReconciler(ctx context.Context, kubeCli
 }
 
 func (r *reconciler) mergedCABundleSecretName() string {
-	// Validate whether called for frontProxy or rootShardFrontProxy
+	owner := r.names.RootShardProxyDeploymentName(r.rootShard)
 	if r.frontProxy != nil {
-		return fmt.Sprintf("%s-merged-ca-bundle", r.frontProxy.Name)
+		owner = r.frontProxy.Name
 	}
-	return fmt.Sprintf("%s-proxy-merged-ca-bundle", r.rootShard.Name)
+
+	return r.names.MergedCABundleName(owner)
 }
 
 func (r *reconciler) mergedCABundleSecretReconciler(ctx context.Context, kubeClient ctrlruntimeclient.Client) k8creconciling.NamedSecretReconcilerFactory {
@@ -108,7 +111,7 @@ func (r *reconciler) mergedCABundleSecretReconciler(ctx context.Context, kubeCli
 
 			// Get ServerCA certificate from the rootshard
 			serverCASecret := &corev1.Secret{}
-			serverCASecretName := resources.GetRootShardCAName(r.rootShard, operatorv1alpha1.ServerCA)
+			serverCASecretName := r.names.RootShardCAName(r.rootShard, operatorv1alpha1.ServerCA)
 			err := kubeClient.Get(ctx, types.NamespacedName{
 				Name:      serverCASecretName,
 				Namespace: r.rootShard.Namespace,

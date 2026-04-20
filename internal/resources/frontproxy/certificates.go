@@ -42,17 +42,17 @@ func (r *reconciler) certSecretLabels() map[string]string {
 
 func (r *reconciler) certName(certKind operatorv1alpha1.Certificate) string {
 	if r.frontProxy != nil {
-		return resources.GetFrontProxyCertificateName(r.rootShard, r.frontProxy, certKind)
+		return r.names.FrontProxyCertificateName(r.rootShard, r.frontProxy, certKind)
 	} else {
-		return resources.GetRootShardProxyCertificateName(r.rootShard, certKind)
+		return r.names.RootShardProxyCertificateName(r.rootShard, certKind)
 	}
 }
 
 func (r *reconciler) certCommonName() string {
 	if r.frontProxy != nil {
-		return "kcp-front-proxy"
+		return resources.FrontProxyCommonName
 	} else {
-		return "kcp-root-shard-proxy"
+		return resources.RootShardProxyCommonName
 	}
 }
 
@@ -74,10 +74,15 @@ func (r *reconciler) serverCertificateReconciler() reconciling.NamedCertificateR
 	template := r.certTemplateMap().CertificateTemplate(certKind)
 	fpService := r.serviceName()
 
+	clusterDomain := "cluster.local"
+	if cd := r.rootShard.Spec.ClusterDomain; cd != "" {
+		clusterDomain = cd
+	}
+
 	dnsNames := []string{
 		fpService,
 		fmt.Sprintf("%s.%s", fpService, r.rootShard.Namespace),
-		fmt.Sprintf("%s.%s.svc.cluster.local", fpService, r.rootShard.Namespace),
+		fmt.Sprintf("%s.%s.svc.%s", fpService, r.rootShard.Namespace, clusterDomain),
 	}
 
 	if r.frontProxy != nil {
@@ -120,8 +125,8 @@ func (r *reconciler) serverCertificateReconciler() reconciling.NamedCertificateR
 
 				DNSNames: dnsNames,
 
-				IssuerRef: certmanagermetav1.ObjectReference{
-					Name:  resources.GetRootShardCAName(r.rootShard, operatorv1alpha1.ServerCA),
+				IssuerRef: certmanagermetav1.IssuerReference{
+					Name:  r.names.RootShardCAName(r.rootShard, operatorv1alpha1.ServerCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},
@@ -165,8 +170,8 @@ func (r *reconciler) adminKubeconfigCertificateReconciler() reconciling.NamedCer
 					Organizations: []string{"system:kcp:external-logical-cluster-admin"},
 				},
 
-				IssuerRef: certmanagermetav1.ObjectReference{
-					Name:  resources.GetRootShardCAName(r.rootShard, operatorv1alpha1.FrontProxyClientCA),
+				IssuerRef: certmanagermetav1.IssuerReference{
+					Name:  r.names.RootShardCAName(r.rootShard, operatorv1alpha1.FrontProxyClientCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},
@@ -209,8 +214,8 @@ func (r *reconciler) kubeconfigCertificateReconciler() reconciling.NamedCertific
 					certmanagerv1.UsageClientAuth,
 				},
 
-				IssuerRef: certmanagermetav1.ObjectReference{
-					Name:  resources.GetRootShardCAName(r.rootShard, operatorv1alpha1.ClientCA),
+				IssuerRef: certmanagermetav1.IssuerReference{
+					Name:  r.names.RootShardCAName(r.rootShard, operatorv1alpha1.ClientCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},
@@ -249,8 +254,8 @@ func (r *reconciler) requestHeaderCertificateReconciler() reconciling.NamedCerti
 					certmanagerv1.UsageClientAuth,
 				},
 
-				IssuerRef: certmanagermetav1.ObjectReference{
-					Name:  resources.GetRootShardCAName(r.rootShard, operatorv1alpha1.RequestHeaderClientCA),
+				IssuerRef: certmanagermetav1.IssuerReference{
+					Name:  r.names.RootShardCAName(r.rootShard, operatorv1alpha1.RequestHeaderClientCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},

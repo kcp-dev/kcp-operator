@@ -28,11 +28,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 
-	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
 func TestDeploymentReconciler(t *testing.T) {
+	version1 := naming.NewVersion1()
 	tests := []struct {
 		name           string
 		frontProxy     *operatorv1alpha1.FrontProxy
@@ -59,7 +60,7 @@ func TestDeploymentReconciler(t *testing.T) {
 					Name: "test-root-shard",
 				},
 			},
-			expectedName: resources.GetFrontProxyDeploymentName(&operatorv1alpha1.FrontProxy{
+			expectedName: version1.FrontProxyDeploymentName(&operatorv1alpha1.FrontProxy{
 				ObjectMeta: metav1.ObjectMeta{Name: "test-front-proxy"},
 			}),
 			validateDeploy: func(t *testing.T, dep *appsv1.Deployment) {
@@ -77,13 +78,13 @@ func TestDeploymentReconciler(t *testing.T) {
 				}
 
 				expectedMounts := []string{
-					resources.GetFrontProxyDynamicKubeconfigName(&operatorv1alpha1.RootShard{ObjectMeta: metav1.ObjectMeta{Name: "test-root-shard"}}, &operatorv1alpha1.FrontProxy{ObjectMeta: metav1.ObjectMeta{Name: "test-front-proxy"}}),
-					resources.GetFrontProxyCertificateName(&operatorv1alpha1.RootShard{ObjectMeta: metav1.ObjectMeta{Name: "test-root-shard"}}, &operatorv1alpha1.FrontProxy{ObjectMeta: metav1.ObjectMeta{Name: "test-front-proxy"}}, operatorv1alpha1.KubeconfigCertificate),
-					resources.GetFrontProxyCertificateName(&operatorv1alpha1.RootShard{ObjectMeta: metav1.ObjectMeta{Name: "test-root-shard"}}, &operatorv1alpha1.FrontProxy{ObjectMeta: metav1.ObjectMeta{Name: "test-front-proxy"}}, operatorv1alpha1.ServerCertificate),
-					resources.GetFrontProxyCertificateName(&operatorv1alpha1.RootShard{ObjectMeta: metav1.ObjectMeta{Name: "test-root-shard"}}, &operatorv1alpha1.FrontProxy{ObjectMeta: metav1.ObjectMeta{Name: "test-front-proxy"}}, operatorv1alpha1.RequestHeaderClientCertificate),
-					resources.GetFrontProxyConfigName(&operatorv1alpha1.FrontProxy{ObjectMeta: metav1.ObjectMeta{Name: "test-front-proxy"}}),
-					resources.GetMergedClientCAName("test-front-proxy"),
-					resources.GetRootShardCAName(&operatorv1alpha1.RootShard{ObjectMeta: metav1.ObjectMeta{Name: "test-root-shard"}}, operatorv1alpha1.RootCA),
+					version1.FrontProxyDynamicKubeconfigName(&operatorv1alpha1.RootShard{ObjectMeta: metav1.ObjectMeta{Name: "test-root-shard"}}, &operatorv1alpha1.FrontProxy{ObjectMeta: metav1.ObjectMeta{Name: "test-front-proxy"}}),
+					version1.FrontProxyCertificateName(&operatorv1alpha1.RootShard{ObjectMeta: metav1.ObjectMeta{Name: "test-root-shard"}}, &operatorv1alpha1.FrontProxy{ObjectMeta: metav1.ObjectMeta{Name: "test-front-proxy"}}, operatorv1alpha1.KubeconfigCertificate),
+					version1.FrontProxyCertificateName(&operatorv1alpha1.RootShard{ObjectMeta: metav1.ObjectMeta{Name: "test-root-shard"}}, &operatorv1alpha1.FrontProxy{ObjectMeta: metav1.ObjectMeta{Name: "test-front-proxy"}}, operatorv1alpha1.ServerCertificate),
+					version1.FrontProxyCertificateName(&operatorv1alpha1.RootShard{ObjectMeta: metav1.ObjectMeta{Name: "test-root-shard"}}, &operatorv1alpha1.FrontProxy{ObjectMeta: metav1.ObjectMeta{Name: "test-front-proxy"}}, operatorv1alpha1.RequestHeaderClientCertificate),
+					version1.FrontProxyConfigName(&operatorv1alpha1.FrontProxy{ObjectMeta: metav1.ObjectMeta{Name: "test-front-proxy"}}),
+					version1.MergedClientCAName("test-front-proxy"),
+					version1.RootShardCAName(&operatorv1alpha1.RootShard{ObjectMeta: metav1.ObjectMeta{Name: "test-root-shard"}}, operatorv1alpha1.RootCA),
 				}
 
 				for _, expectedMount := range expectedMounts {
@@ -121,7 +122,7 @@ func TestDeploymentReconciler(t *testing.T) {
 					Name: "test-root-shard",
 				},
 			},
-			expectedName: resources.GetFrontProxyDeploymentName(&operatorv1alpha1.FrontProxy{
+			expectedName: version1.FrontProxyDeploymentName(&operatorv1alpha1.FrontProxy{
 				ObjectMeta: metav1.ObjectMeta{Name: "test-front-proxy"},
 			}),
 			validateDeploy: func(t *testing.T, dep *appsv1.Deployment) {
@@ -151,7 +152,7 @@ func TestDeploymentReconciler(t *testing.T) {
 					Name: "test-root-shard",
 				},
 			},
-			expectedName: resources.GetFrontProxyDeploymentName(&operatorv1alpha1.FrontProxy{
+			expectedName: version1.FrontProxyDeploymentName(&operatorv1alpha1.FrontProxy{
 				ObjectMeta: metav1.ObjectMeta{Name: "test-front-proxy"},
 			}),
 			validateDeploy: func(t *testing.T, dep *appsv1.Deployment) {
@@ -181,7 +182,7 @@ func TestDeploymentReconciler(t *testing.T) {
 					Name: "test-root-shard",
 				},
 			},
-			expectedName: resources.GetFrontProxyDeploymentName(&operatorv1alpha1.FrontProxy{
+			expectedName: version1.FrontProxyDeploymentName(&operatorv1alpha1.FrontProxy{
 				ObjectMeta: metav1.ObjectMeta{Name: "test-front-proxy"},
 			}),
 			validateDeploy: func(t *testing.T, dep *appsv1.Deployment) {
@@ -228,7 +229,7 @@ func TestDeploymentReconciler(t *testing.T) {
 					Name: "test-root-shard",
 				},
 			},
-			expectedName: resources.GetFrontProxyDeploymentName(&operatorv1alpha1.FrontProxy{
+			expectedName: version1.FrontProxyDeploymentName(&operatorv1alpha1.FrontProxy{
 				ObjectMeta: metav1.ObjectMeta{Name: "test-front-proxy"},
 			}),
 			validateDeploy: func(t *testing.T, dep *appsv1.Deployment) {
@@ -280,7 +281,7 @@ func TestDeploymentReconciler(t *testing.T) {
 					Name: "test-root-shard",
 				},
 			},
-			expectedName: resources.GetFrontProxyDeploymentName(&operatorv1alpha1.FrontProxy{
+			expectedName: version1.FrontProxyDeploymentName(&operatorv1alpha1.FrontProxy{
 				ObjectMeta: metav1.ObjectMeta{Name: "test-front-proxy"},
 			}),
 			validateDeploy: func(t *testing.T, dep *appsv1.Deployment) {
@@ -337,7 +338,7 @@ func TestDeploymentReconciler(t *testing.T) {
 					},
 				},
 			},
-			expectedName: resources.GetFrontProxyDeploymentName(&operatorv1alpha1.FrontProxy{
+			expectedName: version1.FrontProxyDeploymentName(&operatorv1alpha1.FrontProxy{
 				ObjectMeta: metav1.ObjectMeta{Name: "test-front-proxy"},
 			}),
 			validateDeploy: func(t *testing.T, dep *appsv1.Deployment) {
@@ -369,10 +370,10 @@ func TestDeploymentReconciler(t *testing.T) {
 				foundShard2Volume := false
 
 				for _, volume := range dep.Spec.Template.Spec.Volumes {
-					if volume.Name == resources.GetRootShardCertificateName(&operatorv1alpha1.RootShard{ObjectMeta: metav1.ObjectMeta{Name: "test-root-shard"}}, operatorv1alpha1.ServiceAccountCertificate) {
+					if volume.Name == version1.RootShardCertificateName(&operatorv1alpha1.RootShard{ObjectMeta: metav1.ObjectMeta{Name: "test-root-shard"}}, operatorv1alpha1.ServiceAccountCertificate) {
 						foundShard1Volume = true
 					}
-					if volume.Name == resources.GetShardCertificateName(&operatorv1alpha1.Shard{ObjectMeta: metav1.ObjectMeta{Name: "test-shard-2"}}, operatorv1alpha1.ServiceAccountCertificate) {
+					if volume.Name == version1.ShardCertificateName(&operatorv1alpha1.Shard{ObjectMeta: metav1.ObjectMeta{Name: "test-shard-2"}}, operatorv1alpha1.ServiceAccountCertificate) {
 						foundShard2Volume = true
 					}
 				}
@@ -384,10 +385,10 @@ func TestDeploymentReconciler(t *testing.T) {
 				foundShard2VolumeMount := false
 
 				for _, volumeMount := range container.VolumeMounts {
-					if volumeMount.Name == resources.GetRootShardCertificateName(&operatorv1alpha1.RootShard{ObjectMeta: metav1.ObjectMeta{Name: "test-root-shard"}}, operatorv1alpha1.ServiceAccountCertificate) {
+					if volumeMount.Name == version1.RootShardCertificateName(&operatorv1alpha1.RootShard{ObjectMeta: metav1.ObjectMeta{Name: "test-root-shard"}}, operatorv1alpha1.ServiceAccountCertificate) {
 						foundShard1VolumeMount = true
 					}
-					if volumeMount.Name == resources.GetShardCertificateName(&operatorv1alpha1.Shard{ObjectMeta: metav1.ObjectMeta{Name: "test-shard-2"}}, operatorv1alpha1.ServiceAccountCertificate) {
+					if volumeMount.Name == version1.ShardCertificateName(&operatorv1alpha1.Shard{ObjectMeta: metav1.ObjectMeta{Name: "test-shard-2"}}, operatorv1alpha1.ServiceAccountCertificate) {
 						foundShard2VolumeMount = true
 					}
 				}
@@ -418,7 +419,7 @@ func TestDeploymentReconciler(t *testing.T) {
 					Name: "test-root-shard",
 				},
 			},
-			expectedName: resources.GetFrontProxyDeploymentName(&operatorv1alpha1.FrontProxy{
+			expectedName: version1.FrontProxyDeploymentName(&operatorv1alpha1.FrontProxy{
 				ObjectMeta: metav1.ObjectMeta{Name: "test-front-proxy"},
 			}),
 			validateDeploy: func(t *testing.T, dep *appsv1.Deployment) {
@@ -454,7 +455,7 @@ func TestDeploymentReconciler(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fpReconciler := NewFrontProxy(tt.frontProxy, tt.rootShard)
+			fpReconciler := NewFrontProxy(tt.frontProxy, tt.rootShard, version1)
 			name, reconcilerFunc := fpReconciler.deploymentReconciler()()
 
 			assert.Equal(t, tt.expectedName, name)
@@ -566,11 +567,14 @@ func TestGetArgs(t *testing.T) {
 		},
 	}
 
+	version1 := naming.NewVersion1()
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			rec := NewFrontProxy(
 				&operatorv1alpha1.FrontProxy{Spec: *tt.spec},
 				&operatorv1alpha1.RootShard{},
+				version1,
 			)
 
 			result := rec.getArgs()

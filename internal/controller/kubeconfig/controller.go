@@ -42,8 +42,8 @@ import (
 	"github.com/kcp-dev/kcp-operator/internal/controller/util"
 	"github.com/kcp-dev/kcp-operator/internal/metrics"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
-	"github.com/kcp-dev/kcp-operator/internal/resources"
 	"github.com/kcp-dev/kcp-operator/internal/resources/kubeconfig"
+	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -128,6 +128,8 @@ func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 func (r *KubeconfigReconciler) reconcile(ctx context.Context, kc *operatorv1alpha1.Kubeconfig, req types.NamespacedName) ([]metav1.Condition, error) {
 	var conditions []metav1.Condition
 
+	namingScheme := naming.NewVersion1()
+
 	rootShard := &operatorv1alpha1.RootShard{}
 	shard := &operatorv1alpha1.Shard{}
 	var frontProxy operatorv1alpha1.FrontProxy
@@ -151,8 +153,8 @@ func (r *KubeconfigReconciler) reconcile(ctx context.Context, kc *operatorv1alph
 			return conditions, err
 		}
 
-		clientCertIssuer = resources.GetRootShardCAName(rootShard, operatorv1alpha1.ClientCA)
-		serverCA = resources.GetRootShardCAName(rootShard, operatorv1alpha1.ServerCA)
+		clientCertIssuer = namingScheme.RootShardCAName(rootShard, operatorv1alpha1.ClientCA)
+		serverCA = namingScheme.RootShardCAName(rootShard, operatorv1alpha1.ServerCA)
 
 	case kc.Spec.Target.ShardRef != nil:
 		if err := r.Get(ctx, types.NamespacedName{Name: kc.Spec.Target.ShardRef.Name, Namespace: req.Namespace}, shard); err != nil {
@@ -189,8 +191,8 @@ func (r *KubeconfigReconciler) reconcile(ctx context.Context, kc *operatorv1alph
 		}
 
 		// The client CA is shared among all shards and owned by the root shard.
-		clientCertIssuer = resources.GetRootShardCAName(rootShard, operatorv1alpha1.ClientCA)
-		serverCA = resources.GetRootShardCAName(rootShard, operatorv1alpha1.ServerCA)
+		clientCertIssuer = namingScheme.RootShardCAName(rootShard, operatorv1alpha1.ClientCA)
+		serverCA = namingScheme.RootShardCAName(rootShard, operatorv1alpha1.ServerCA)
 
 	case kc.Spec.Target.FrontProxyRef != nil:
 		if err := r.Get(ctx, types.NamespacedName{Name: kc.Spec.Target.FrontProxyRef.Name, Namespace: req.Namespace}, &frontProxy); err != nil {
@@ -226,8 +228,8 @@ func (r *KubeconfigReconciler) reconcile(ctx context.Context, kc *operatorv1alph
 			return conditions, err
 		}
 
-		clientCertIssuer = resources.GetRootShardCAName(rootShard, operatorv1alpha1.FrontProxyClientCA)
-		serverCA = resources.GetRootShardCAName(rootShard, operatorv1alpha1.ServerCA)
+		clientCertIssuer = namingScheme.RootShardCAName(rootShard, operatorv1alpha1.FrontProxyClientCA)
+		serverCA = namingScheme.RootShardCAName(rootShard, operatorv1alpha1.ServerCA)
 
 		if frontProxy.Spec.CABundleSecretRef != nil {
 			caBundle = &corev1.Secret{}
@@ -262,7 +264,7 @@ func (r *KubeconfigReconciler) reconcile(ctx context.Context, kc *operatorv1alph
 	})
 
 	certReconcilers := []reconciling.NamedCertificateReconcilerFactory{
-		kubeconfig.ClientCertificateReconciler(kc, clientCertIssuer),
+		kubeconfig.ClientCertificateReconciler(kc, clientCertIssuer, namingScheme),
 	}
 
 	if err := reconciling.ReconcileCertificates(ctx, certReconcilers, req.Namespace, r.Client); err != nil {
@@ -307,7 +309,7 @@ func (r *KubeconfigReconciler) reconcile(ctx context.Context, kc *operatorv1alph
 		return conditions, nil
 	}
 
-	reconciler, err := kubeconfig.KubeconfigSecretReconciler(kc, rootShard, shard, frontProxy, serverCASecret, clientCertSecret, caBundle)
+	reconciler, err := kubeconfig.KubeconfigSecretReconciler(kc, rootShard, shard, frontProxy, serverCASecret, clientCertSecret, caBundle, namingScheme)
 	if err != nil {
 		return conditions, err
 	}

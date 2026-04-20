@@ -23,33 +23,36 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 
-	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	"github.com/kcp-dev/kcp-operator/internal/resources/utils"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
-func ServiceReconciler(shard *operatorv1alpha1.Shard) reconciling.NamedServiceReconcilerFactory {
+func ServiceReconciler(shard *operatorv1alpha1.Shard, names naming.Scheme) reconciling.NamedServiceReconcilerFactory {
 	return func() (string, reconciling.ServiceReconciler) {
-		return resources.GetShardServiceName(shard), func(svc *corev1.Service) (*corev1.Service, error) {
-			labels := resources.GetShardResourceLabels(shard)
-			svc.SetLabels(labels)
-			svc.Spec.Type = corev1.ServiceTypeClusterIP
-			svc.Spec.Ports = []corev1.ServicePort{
-				{
-					Name:        "https",
-					Protocol:    corev1.ProtocolTCP,
-					Port:        6443,
-					TargetPort:  intstr.FromInt32(6443),
-					AppProtocol: ptr.To("https"),
-				},
-				{
+		return names.ShardServiceName(shard), func(svc *corev1.Service) (*corev1.Service, error) {
+			ports := []corev1.ServicePort{{
+				Name:        "https",
+				Protocol:    corev1.ProtocolTCP,
+				Port:        6443,
+				TargetPort:  intstr.FromInt32(6443),
+				AppProtocol: ptr.To("https"),
+			}}
+
+			if shard.Spec.KCPVirtualWorkspace == nil {
+				ports = append(ports, corev1.ServicePort{
 					Name:        "https-virtual-workspaces",
 					Protocol:    corev1.ProtocolTCP,
 					Port:        6444,
 					TargetPort:  intstr.FromInt32(6444),
 					AppProtocol: ptr.To("https"),
-				},
+				})
 			}
+
+			labels := names.ShardResourceLabels(shard)
+			svc.SetLabels(labels)
+			svc.Spec.Type = corev1.ServiceTypeClusterIP
+			svc.Spec.Ports = ports
 			svc.Spec.Selector = labels
 
 			return utils.ApplyServiceTemplate(svc, shard.Spec.ServiceTemplate), nil

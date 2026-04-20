@@ -26,11 +26,12 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
 func TestApplyServiceAccountAuthentication(t *testing.T) {
+	version1 := naming.NewVersion1()
 	tests := []struct {
 		name           string
 		rootShard      *operatorv1alpha1.RootShard
@@ -71,7 +72,7 @@ func TestApplyServiceAccountAuthentication(t *testing.T) {
 				// Check volumes
 				assert.Len(t, dep.Spec.Template.Spec.Volumes, 1)
 				rootShardVolume := dep.Spec.Template.Spec.Volumes[0]
-				expectedVolumeName := resources.GetRootShardCertificateName(&operatorv1alpha1.RootShard{ObjectMeta: metav1.ObjectMeta{Name: "test-root-shard"}}, operatorv1alpha1.ServiceAccountCertificate)
+				expectedVolumeName := version1.RootShardCertificateName(&operatorv1alpha1.RootShard{ObjectMeta: metav1.ObjectMeta{Name: "test-root-shard"}}, operatorv1alpha1.ServiceAccountCertificate)
 				assert.Equal(t, expectedVolumeName, rootShardVolume.Name)
 				assert.NotNil(t, rootShardVolume.Secret)
 				assert.Equal(t, expectedVolumeName, rootShardVolume.Secret.SecretName)
@@ -135,9 +136,9 @@ func TestApplyServiceAccountAuthentication(t *testing.T) {
 					assert.Equal(t, volume.Name, volume.Secret.SecretName)
 				}
 
-				expectedRootVolume := resources.GetRootShardCertificateName(&operatorv1alpha1.RootShard{ObjectMeta: metav1.ObjectMeta{Name: "test-root-shard"}}, operatorv1alpha1.ServiceAccountCertificate)
-				expectedShard1Volume := resources.GetShardCertificateName(&operatorv1alpha1.Shard{ObjectMeta: metav1.ObjectMeta{Name: "shard-1"}}, operatorv1alpha1.ServiceAccountCertificate)
-				expectedShard2Volume := resources.GetShardCertificateName(&operatorv1alpha1.Shard{ObjectMeta: metav1.ObjectMeta{Name: "shard-2"}}, operatorv1alpha1.ServiceAccountCertificate)
+				expectedRootVolume := version1.RootShardCertificateName(&operatorv1alpha1.RootShard{ObjectMeta: metav1.ObjectMeta{Name: "test-root-shard"}}, operatorv1alpha1.ServiceAccountCertificate)
+				expectedShard1Volume := version1.ShardCertificateName(&operatorv1alpha1.Shard{ObjectMeta: metav1.ObjectMeta{Name: "shard-1"}}, operatorv1alpha1.ServiceAccountCertificate)
+				expectedShard2Volume := version1.ShardCertificateName(&operatorv1alpha1.Shard{ObjectMeta: metav1.ObjectMeta{Name: "shard-2"}}, operatorv1alpha1.ServiceAccountCertificate)
 
 				assert.True(t, volumeNames[expectedRootVolume], "Root shard volume not found")
 				assert.True(t, volumeNames[expectedShard1Volume], "Shard-1 volume not found")
@@ -289,7 +290,7 @@ func TestApplyServiceAccountAuthentication(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := applyServiceAccountAuthentication(tt.initialDeploy, tt.rootShard)
+			result := applyServiceAccountAuthentication(tt.initialDeploy, tt.rootShard, version1)
 
 			require.NotNil(t, result)
 			assert.Equal(t, tt.initialDeploy, result, "Function should return the same deployment instance")

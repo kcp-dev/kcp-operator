@@ -22,15 +22,14 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kcp-dev/kcp-operator/internal/resources"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
 func (r *reconciler) pathMappingConfigMapName() string {
 	if r.frontProxy != nil {
-		return resources.GetFrontProxyConfigName(r.frontProxy)
+		return r.names.FrontProxyConfigName(r.frontProxy)
 	} else {
-		return resources.GetRootShardProxyConfigName(r.rootShard)
+		return r.names.RootShardProxyConfigName(r.rootShard)
 	}
 }
 
@@ -59,7 +58,7 @@ func (r *reconciler) pathMappingConfigMapReconciler() reconciling.NamedConfigMap
 
 // defaultPathMappings sets up default paths for a front-proxy
 func (r *reconciler) defaultPathMappings() []operatorv1alpha1.PathMappingEntry {
-	url := resources.GetRootShardBaseURL(r.rootShard)
+	url := r.names.RootShardBaseURL(r.rootShard)
 
 	// Determine CA path based on CABundleSecretRef
 	backendCA := kcpBasepath + "/tls/ca/tls.crt"

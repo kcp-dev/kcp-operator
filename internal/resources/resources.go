@@ -27,6 +27,12 @@ import (
 )
 
 const (
+	// FrontProxyCommonName is the CommonName used in the requestheader client certificate for a FrontProxy.
+	FrontProxyCommonName = "kcp-front-proxy"
+
+	// RootShardProxyCommonName is the CommonName used in the requestheader client certificate for a RootShard's built-in proxy.
+	RootShardProxyCommonName = "kcp-root-shard-proxy"
+
 	ImageRepository = "ghcr.io/kcp-dev/kcp"
 
 	// ImageTag is the default tag to be used for any kcp component.
@@ -34,11 +40,6 @@ const (
 	// When changing this to a new minor version, you must also update
 	// the .prow.yaml accordingly and shift the jobs.
 	ImageTag = "v0.31.0"
-
-	appNameLabel      = "app.kubernetes.io/name"
-	appInstanceLabel  = "app.kubernetes.io/instance"
-	appManagedByLabel = "app.kubernetes.io/managed-by"
-	appComponentLabel = "app.kubernetes.io/component"
 
 	// RootShardLabel is placed on Secrets created for Certificates so that
 	// the Secrets can be more easily mapped to their RootShards.
@@ -48,6 +49,10 @@ const (
 	KubeconfigLabel       = "operator.kcp.io/kubeconfig"
 	CacheServerLabel      = "operator.kcp.io/cache-server"
 	VirtualWorkspaceLabel = "operator.kcp.io/virtual-workspace"
+
+	// KubeconfigUIDLabel is used inside kcp workspaces to link RBAC resources
+	// to their owning Kubeconfig object on the kcp operator cluster.
+	KubeconfigUIDLabel = "operator.kcp.io/kubeconfig"
 
 	// BundleAnnotation is placed on RootShard, Shard, or FrontProxy objects to trigger automatic Bundle creation
 	BundleAnnotation = "operator.kcp.io/bundle"
@@ -60,8 +65,6 @@ const (
 	// the certificate also has system:masters as an organization, which is what ultimately
 	// grants the operator its permissions.
 	OperatorUsername = "system:kcp-operator"
-
-	defaultClusterDomain = "cluster.local"
 )
 
 func GetImageSettings(imageSpec *operatorv1alpha1.ImageSpec) (string, []corev1.LocalObjectReference, *semver.Version) {
@@ -84,217 +87,4 @@ func GetImageSettings(imageSpec *operatorv1alpha1.ImageSpec) (string, []corev1.L
 	version, _ := semver.NewVersion(tag)
 
 	return fmt.Sprintf("%s:%s", repository, tag), imagePullSecrets, version
-}
-
-func GetRootShardDeploymentName(r *operatorv1alpha1.RootShard) string {
-	return fmt.Sprintf("%s-kcp", r.Name)
-}
-
-func GetRootShardProxyDeploymentName(r *operatorv1alpha1.RootShard) string {
-	return fmt.Sprintf("%s-proxy", r.Name)
-}
-
-func GetShardDeploymentName(s *operatorv1alpha1.Shard) string {
-	return fmt.Sprintf("%s-shard-kcp", s.Name)
-}
-
-func GetCacheServerDeploymentName(s *operatorv1alpha1.CacheServer) string {
-	return fmt.Sprintf("%s-cache-server", s.Name)
-}
-
-func GetVirtualWorkspaceDeploymentName(vw *operatorv1alpha1.VirtualWorkspace) string {
-	return fmt.Sprintf("%s-virtual-workspace", vw.Name)
-}
-
-func GetRootShardServiceName(r *operatorv1alpha1.RootShard) string {
-	return fmt.Sprintf("%s-kcp", r.Name)
-}
-
-func GetShardServiceName(s *operatorv1alpha1.Shard) string {
-	return fmt.Sprintf("%s-shard-kcp", s.Name)
-}
-
-func GetCacheServerServiceName(s *operatorv1alpha1.CacheServer) string {
-	return fmt.Sprintf("%s-cache-server", s.Name)
-}
-
-func getResourceLabels(instance, component string) map[string]string {
-	return map[string]string{
-		appManagedByLabel: "kcp-operator",
-		appNameLabel:      "kcp",
-		appInstanceLabel:  instance,
-		appComponentLabel: component,
-	}
-}
-
-func GetRootShardResourceLabels(r *operatorv1alpha1.RootShard) map[string]string {
-	return getResourceLabels(r.Name, "rootshard")
-}
-
-func GetRootShardProxyResourceLabels(r *operatorv1alpha1.RootShard) map[string]string {
-	return getResourceLabels(r.Name, "rootshard-proxy")
-}
-
-func GetShardResourceLabels(s *operatorv1alpha1.Shard) map[string]string {
-	return getResourceLabels(s.Name, "shard")
-}
-
-func GetCacheServerResourceLabels(s *operatorv1alpha1.CacheServer) map[string]string {
-	return getResourceLabels(s.Name, "cache-server")
-}
-
-func GetVirtualWorkspaceResourceLabels(vw *operatorv1alpha1.VirtualWorkspace) map[string]string {
-	return getResourceLabels(vw.Name, "virtual-workspace")
-}
-
-func GetRootShardBaseHost(r *operatorv1alpha1.RootShard) string {
-	clusterDomain := r.Spec.ClusterDomain
-	if clusterDomain == "" {
-		clusterDomain = defaultClusterDomain
-	}
-
-	return fmt.Sprintf("%s-kcp.%s.svc.%s", r.Name, r.Namespace, clusterDomain)
-}
-
-func GetRootShardBaseURL(r *operatorv1alpha1.RootShard) string {
-	if r.Spec.ShardBaseURL != "" {
-		return r.Spec.ShardBaseURL
-	}
-	return fmt.Sprintf("https://%s:6443", GetRootShardBaseHost(r))
-}
-
-func GetShardBaseHost(s *operatorv1alpha1.Shard) string {
-	clusterDomain := s.Spec.ClusterDomain
-	if clusterDomain == "" {
-		clusterDomain = defaultClusterDomain
-	}
-
-	return fmt.Sprintf("%s-shard-kcp.%s.svc.%s", s.Name, s.Namespace, clusterDomain)
-}
-
-func GetShardBaseURL(s *operatorv1alpha1.Shard) string {
-	if s.Spec.ShardBaseURL != "" {
-		return s.Spec.ShardBaseURL
-	}
-	return fmt.Sprintf("https://%s:6443", GetShardBaseHost(s))
-}
-
-func GetCacheServerBaseHost(s *operatorv1alpha1.CacheServer) string {
-	clusterDomain := s.Spec.ClusterDomain
-	if clusterDomain == "" {
-		clusterDomain = defaultClusterDomain
-	}
-
-	return fmt.Sprintf("%s-cache-server.%s.svc.%s", s.Name, s.Namespace, clusterDomain)
-}
-
-func GetCacheServerBaseURL(s *operatorv1alpha1.CacheServer) string {
-	return fmt.Sprintf("https://%s:6443", GetCacheServerBaseHost(s))
-}
-
-func GetVirtualWorkspaceBaseHost(s *operatorv1alpha1.VirtualWorkspace) string {
-	clusterDomain := s.Spec.ClusterDomain
-	if clusterDomain == "" {
-		clusterDomain = defaultClusterDomain
-	}
-
-	return fmt.Sprintf("%s-virtual-workspace.%s.svc.%s", s.Name, s.Namespace, clusterDomain)
-}
-
-func GetVirtualWorkspaceBaseURL(s *operatorv1alpha1.VirtualWorkspace) string {
-	return fmt.Sprintf("https://%s:6443", GetVirtualWorkspaceBaseHost(s))
-}
-
-func GetRootShardCertificateName(r *operatorv1alpha1.RootShard, certName operatorv1alpha1.Certificate) string {
-	return fmt.Sprintf("%s-%s", r.Name, certName)
-}
-
-func GetRootShardProxyCertificateName(r *operatorv1alpha1.RootShard, certName operatorv1alpha1.Certificate) string {
-	return fmt.Sprintf("%s-proxy-%s", r.Name, certName)
-}
-
-func GetShardCertificateName(s *operatorv1alpha1.Shard, certName operatorv1alpha1.Certificate) string {
-	return fmt.Sprintf("%s-%s", s.Name, certName)
-}
-
-func GetCacheServerCertificateName(s *operatorv1alpha1.CacheServer, certName operatorv1alpha1.Certificate) string {
-	return fmt.Sprintf("%s-%s", s.Name, certName)
-}
-
-func GetVirtualWorkspaceCertificateName(vw *operatorv1alpha1.VirtualWorkspace, certName operatorv1alpha1.Certificate) string {
-	return fmt.Sprintf("%s-%s", vw.Name, certName)
-}
-
-func GetRootShardCAName(r *operatorv1alpha1.RootShard, caName operatorv1alpha1.CA) string {
-	if caName == operatorv1alpha1.RootCA {
-		return fmt.Sprintf("%s-ca", r.Name)
-	}
-	return fmt.Sprintf("%s-%s-ca", r.Name, caName)
-}
-
-func GetCacheServerCAName(cacheServerName string, caName operatorv1alpha1.CA) string {
-	if caName == operatorv1alpha1.RootCA {
-		return fmt.Sprintf("%s-ca", cacheServerName)
-	}
-	return fmt.Sprintf("%s-%s-ca", cacheServerName, caName)
-}
-
-func GetFrontProxyResourceLabels(f *operatorv1alpha1.FrontProxy) map[string]string {
-	return getResourceLabels(f.Name, "front-proxy")
-}
-
-func GetFrontProxyDeploymentName(f *operatorv1alpha1.FrontProxy) string {
-	return fmt.Sprintf("%s-front-proxy", f.Name)
-}
-
-func GetFrontProxyCertificateName(r *operatorv1alpha1.RootShard, f *operatorv1alpha1.FrontProxy, certName operatorv1alpha1.Certificate) string {
-	return fmt.Sprintf("%s-%s-%s", r.Name, f.Name, certName)
-}
-
-func GetRootShardProxyDynamicKubeconfigName(r *operatorv1alpha1.RootShard) string {
-	return fmt.Sprintf("%s-proxy-dynamic-kubeconfig", r.Name)
-}
-
-func GetFrontProxyDynamicKubeconfigName(r *operatorv1alpha1.RootShard, f *operatorv1alpha1.FrontProxy) string {
-	return fmt.Sprintf("%s-%s-dynamic-kubeconfig", r.Name, f.Name)
-}
-
-func GetCacheServerClientCertificateName(s *operatorv1alpha1.CacheServer) string {
-	return fmt.Sprintf("%s-client-certificate", s.Name)
-}
-
-func GetCacheServerKubeconfigName(cacheServerName string) string {
-	return fmt.Sprintf("%s-kubeconfig", cacheServerName)
-}
-
-func GetRootShardProxyConfigName(r *operatorv1alpha1.RootShard) string {
-	return fmt.Sprintf("%s-proxy-config", r.Name)
-}
-
-func GetFrontProxyConfigName(f *operatorv1alpha1.FrontProxy) string {
-	return fmt.Sprintf("%s-config", f.Name)
-}
-
-func GetFrontProxyServiceName(f *operatorv1alpha1.FrontProxy) string {
-	return fmt.Sprintf("%s-front-proxy", f.Name)
-}
-
-func GetRootShardProxyServiceName(r *operatorv1alpha1.RootShard) string {
-	return fmt.Sprintf("%s-proxy", r.Name)
-}
-
-func GetRootShardKubeconfigSecret(r *operatorv1alpha1.RootShard, cert operatorv1alpha1.Certificate) string {
-	return fmt.Sprintf("%s-%s-kubeconfig", r.Name, cert)
-}
-
-func GetShardKubeconfigSecret(shard *operatorv1alpha1.Shard, cert operatorv1alpha1.Certificate) string {
-	return fmt.Sprintf("%s-%s-kubeconfig", shard.Name, cert)
-}
-
-func GetBundleName(ownerName string) string {
-	return fmt.Sprintf("%s-bundle", ownerName)
-}
-
-func GetMergedClientCAName(ownerName string) string {
-	return fmt.Sprintf("%s-merged-client-ca", ownerName)
 }

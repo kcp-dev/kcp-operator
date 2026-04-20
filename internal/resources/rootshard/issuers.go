@@ -20,12 +20,12 @@ import (
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
-	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
-func RootCAIssuerReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.NamedIssuerReconcilerFactory {
-	name := resources.GetRootShardCAName(rootShard, operatorv1alpha1.RootCA)
+func RootCAIssuerReconciler(rootShard *operatorv1alpha1.RootShard, names naming.Scheme) reconciling.NamedIssuerReconcilerFactory {
+	name := names.RootShardCAName(rootShard, operatorv1alpha1.RootCA)
 
 	secretName := name
 	if rootShard.Spec.Certificates.CASecretRef != nil {
@@ -34,7 +34,7 @@ func RootCAIssuerReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.N
 
 	return func() (string, reconciling.IssuerReconciler) {
 		return name, func(issuer *certmanagerv1.Issuer) (*certmanagerv1.Issuer, error) {
-			issuer.SetLabels(resources.GetRootShardResourceLabels(rootShard))
+			issuer.SetLabels(names.RootShardResourceLabels(rootShard))
 			issuer.Spec = certmanagerv1.IssuerSpec{
 				IssuerConfig: certmanagerv1.IssuerConfig{
 					CA: &certmanagerv1.CAIssuer{
@@ -48,12 +48,12 @@ func RootCAIssuerReconciler(rootShard *operatorv1alpha1.RootShard) reconciling.N
 	}
 }
 
-func CAIssuerReconciler(rootShard *operatorv1alpha1.RootShard, ca operatorv1alpha1.CA) reconciling.NamedIssuerReconcilerFactory {
-	name := resources.GetRootShardCAName(rootShard, ca)
+func CAIssuerReconciler(rootShard *operatorv1alpha1.RootShard, ca operatorv1alpha1.CA, names naming.Scheme) reconciling.NamedIssuerReconcilerFactory {
+	name := names.RootShardCAName(rootShard, ca)
 
 	return func() (string, reconciling.IssuerReconciler) {
 		return name, func(issuer *certmanagerv1.Issuer) (*certmanagerv1.Issuer, error) {
-			issuer.SetLabels(resources.GetRootShardResourceLabels(rootShard))
+			issuer.SetLabels(names.RootShardResourceLabels(rootShard))
 			issuer.Spec = certmanagerv1.IssuerSpec{
 				IssuerConfig: certmanagerv1.IssuerConfig{
 					CA: &certmanagerv1.CAIssuer{
@@ -67,13 +67,13 @@ func CAIssuerReconciler(rootShard *operatorv1alpha1.RootShard, ca operatorv1alph
 	}
 }
 
-func ClientCAIssuerReconciler(rootshard *operatorv1alpha1.RootShard) reconciling.NamedIssuerReconcilerFactory {
-	name := resources.GetRootShardCAName(rootshard, operatorv1alpha1.ClientCA)
+func ClientCAIssuerReconciler(rootshard *operatorv1alpha1.RootShard, names naming.Scheme) reconciling.NamedIssuerReconcilerFactory {
+	name := names.RootShardCAName(rootshard, operatorv1alpha1.ClientCA)
 	secretName := name
 
 	return func() (string, reconciling.IssuerReconciler) {
 		return name, func(issuer *certmanagerv1.Issuer) (*certmanagerv1.Issuer, error) {
-			issuer.SetLabels(resources.GetRootShardResourceLabels(rootshard))
+			issuer.SetLabels(names.RootShardResourceLabels(rootshard))
 			issuer.Spec = certmanagerv1.IssuerSpec{
 				IssuerConfig: certmanagerv1.IssuerConfig{
 					CA: &certmanagerv1.CAIssuer{
@@ -87,13 +87,13 @@ func ClientCAIssuerReconciler(rootshard *operatorv1alpha1.RootShard) reconciling
 	}
 }
 
-func FrontProxyClientCAIssuerReconciler(rootshard *operatorv1alpha1.RootShard) reconciling.NamedIssuerReconcilerFactory {
-	name := resources.GetRootShardCAName(rootshard, operatorv1alpha1.FrontProxyClientCA)
+func FrontProxyClientCAIssuerReconciler(rootshard *operatorv1alpha1.RootShard, names naming.Scheme) reconciling.NamedIssuerReconcilerFactory {
+	name := names.RootShardCAName(rootshard, operatorv1alpha1.FrontProxyClientCA)
 	secretName := name
 
 	return func() (string, reconciling.IssuerReconciler) {
 		return name, func(issuer *certmanagerv1.Issuer) (*certmanagerv1.Issuer, error) {
-			issuer.SetLabels(resources.GetRootShardResourceLabels(rootshard))
+			issuer.SetLabels(names.RootShardResourceLabels(rootshard))
 			issuer.Spec = certmanagerv1.IssuerSpec{
 				IssuerConfig: certmanagerv1.IssuerConfig{
 					CA: &certmanagerv1.CAIssuer{

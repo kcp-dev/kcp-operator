@@ -29,6 +29,7 @@ import (
 	"k8s.io/utils/ptr"
 
 	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	"github.com/kcp-dev/kcp-operator/internal/resources/utils"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
@@ -76,10 +77,10 @@ func getCacheServerClientCertMountPath() string {
 	return "/etc/cache-server/tls/client-certificate"
 }
 
-func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard, kcpVW *operatorv1alpha1.VirtualWorkspace) reconciling.NamedDeploymentReconcilerFactory {
+func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard, kcpVW *operatorv1alpha1.VirtualWorkspace, names naming.Scheme) reconciling.NamedDeploymentReconcilerFactory {
 	return func() (string, reconciling.DeploymentReconciler) {
-		return resources.GetRootShardDeploymentName(rootShard), func(dep *appsv1.Deployment) (*appsv1.Deployment, error) {
-			labels := resources.GetRootShardResourceLabels(rootShard)
+		return names.RootShardDeploymentName(rootShard), func(dep *appsv1.Deployment) (*appsv1.Deployment, error) {
+			labels := names.RootShardResourceLabels(rootShard)
 			dep.SetLabels(labels)
 			dep.Spec.Selector = &metav1.LabelSelector{
 				MatchLabels: labels,
@@ -89,11 +90,11 @@ func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard, kcpVW *operator
 
 			secretMounts := []utils.SecretMount{{
 				VolumeName: "kcp-ca",
-				SecretName: resources.GetRootShardCAName(rootShard, operatorv1alpha1.RootCA),
+				SecretName: names.RootShardCAName(rootShard, operatorv1alpha1.RootCA),
 				MountPath:  getCAMountPath(operatorv1alpha1.RootCA),
 			}}
 
-			args := getArgs(rootShard, kcpVW)
+			args := getArgs(rootShard, kcpVW, names)
 
 			for _, cert := range []operatorv1alpha1.Certificate{
 				// requires server CA and the logical-cluster-admin cert to be mounted
@@ -103,7 +104,7 @@ func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard, kcpVW *operator
 			} {
 				secretMounts = append(secretMounts, utils.SecretMount{
 					VolumeName: fmt.Sprintf("%s-kubeconfig", cert),
-					SecretName: resources.GetRootShardKubeconfigSecret(rootShard, cert),
+					SecretName: names.RootShardKubeconfigSecret(rootShard, cert),
 					MountPath:  getKubeconfigMountPath(cert),
 				})
 			}
@@ -116,7 +117,7 @@ func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard, kcpVW *operator
 			} {
 				secretMounts = append(secretMounts, utils.SecretMount{
 					VolumeName: fmt.Sprintf("%s-ca", ca),
-					SecretName: resources.GetRootShardCAName(rootShard, ca),
+					SecretName: names.RootShardCAName(rootShard, ca),
 					MountPath:  getCAMountPath(ca),
 				})
 			}
@@ -130,7 +131,7 @@ func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard, kcpVW *operator
 			} {
 				secretMounts = append(secretMounts, utils.SecretMount{
 					VolumeName: fmt.Sprintf("%s-cert", cert),
-					SecretName: resources.GetRootShardCertificateName(rootShard, cert),
+					SecretName: names.RootShardCertificateName(rootShard, cert),
 					MountPath:  getCertificateMountPath(cert),
 				})
 			}
@@ -142,7 +143,7 @@ func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard, kcpVW *operator
 			if rootShard.Spec.CABundleSecretRef != nil {
 				secretMounts = append(secretMounts, utils.SecretMount{
 					VolumeName: "ca-bundle",
-					SecretName: fmt.Sprintf("%s-merged-ca-bundle", rootShard.Name),
+					SecretName: names.MergedCABundleName(rootShard.Name),
 					MountPath:  getCAMountPath(operatorv1alpha1.CABundleCA),
 				})
 			}
@@ -152,19 +153,19 @@ func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard, kcpVW *operator
 			if ref := rootShard.Spec.Cache.Reference; ref != nil {
 				secretMounts = append(secretMounts, utils.SecretMount{
 					VolumeName: "cache-server-kubeconfig",
-					SecretName: resources.GetCacheServerKubeconfigName(ref.Name),
+					SecretName: names.CacheServerKubeconfigName(ref.Name),
 					MountPath:  getCacheServerKubeconfigMountPath(),
 				})
 
 				secretMounts = append(secretMounts, utils.SecretMount{
 					VolumeName: "cache-server-ca",
-					SecretName: resources.GetCacheServerCAName(ref.Name, operatorv1alpha1.RootCA),
+					SecretName: names.CacheServerCAName(ref.Name, operatorv1alpha1.RootCA),
 					MountPath:  getCacheServerCAMountPath(operatorv1alpha1.RootCA),
 				})
 
 				secretMounts = append(secretMounts, utils.SecretMount{
 					VolumeName: "cache-server-client-cert",
-					SecretName: fmt.Sprintf("%s-client-certificate", ref.Name),
+					SecretName: names.CacheServerClientCertificateName(ref.Name),
 					MountPath:  getCacheServerClientCertMountPath(),
 				})
 			}
@@ -210,7 +211,7 @@ func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard, kcpVW *operator
 	}
 }
 
-func getArgs(rootShard *operatorv1alpha1.RootShard, kcpVW *operatorv1alpha1.VirtualWorkspace) []string {
+func getArgs(rootShard *operatorv1alpha1.RootShard, kcpVW *operatorv1alpha1.VirtualWorkspace, names naming.Scheme) []string {
 	args := []string{
 		// CA configuration.
 		fmt.Sprintf("--root-ca-file=%s/tls.crt", getCAMountPath(operatorv1alpha1.RootCA)),
@@ -218,6 +219,7 @@ func getArgs(rootShard *operatorv1alpha1.RootShard, kcpVW *operatorv1alpha1.Virt
 
 		// Requestheader configuration.
 		fmt.Sprintf("--requestheader-client-ca-file=%s/tls.crt", getCAMountPath(operatorv1alpha1.RequestHeaderClientCA)),
+		fmt.Sprintf("--requestheader-allowed-names=%s,%s", resources.FrontProxyCommonName, resources.RootShardProxyCommonName),
 		"--requestheader-username-headers=X-Remote-User",
 		"--requestheader-group-headers=X-Remote-Group",
 		"--requestheader-extra-headers-prefix=X-Remote-Extra-",
@@ -230,7 +232,7 @@ func getArgs(rootShard *operatorv1alpha1.RootShard, kcpVW *operatorv1alpha1.Virt
 		"--service-account-lookup=false",
 
 		// General shard configuration.
-		fmt.Sprintf("--shard-base-url=%s", resources.GetRootShardBaseURL(rootShard)),
+		fmt.Sprintf("--shard-base-url=%s", names.RootShardBaseURL(rootShard)),
 		fmt.Sprintf("--shard-external-url=https://%s:%d", rootShard.Spec.External.Hostname, rootShard.Spec.External.Port),
 		fmt.Sprintf("--logical-cluster-admin-kubeconfig=%s/kubeconfig", getKubeconfigMountPath(operatorv1alpha1.LogicalClusterAdminCertificate)),
 		fmt.Sprintf("--external-logical-cluster-admin-kubeconfig=%s/kubeconfig", getKubeconfigMountPath(operatorv1alpha1.ExternalLogicalClusterAdminCertificate)),

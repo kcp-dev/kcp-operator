@@ -22,6 +22,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 
+	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -104,14 +105,14 @@ func ApplyAuthConfiguration(deployment *appsv1.Deployment, config *operatorv1alp
 	return deployment
 }
 
-func ApplyFrontProxyAuthConfiguration(deployment *appsv1.Deployment, config *operatorv1alpha1.AuthSpec, rootShard *operatorv1alpha1.RootShard) *appsv1.Deployment {
+func ApplyFrontProxyAuthConfiguration(deployment *appsv1.Deployment, config *operatorv1alpha1.AuthSpec, rootShard *operatorv1alpha1.RootShard, names naming.Scheme) *appsv1.Deployment {
 	if config == nil {
 		return deployment
 	}
 	deployment = ApplyAuthConfiguration(deployment, config)
 
 	if config.ServiceAccount != nil && config.ServiceAccount.Enabled {
-		deployment = applyServiceAccountAuthentication(deployment, rootShard)
+		deployment = applyServiceAccountAuthentication(deployment, rootShard, names)
 	}
 
 	return deployment

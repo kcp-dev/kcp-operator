@@ -21,6 +21,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"maps"
+	"net/url"
 	"os"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -100,7 +101,7 @@ func applyCertificateSpecTemplate(cert *certmanagerv1.Certificate, tpl *operator
 		cert.Spec.SecretTemplate.Labels = addNewKeys(cert.Spec.SecretTemplate.Labels, secretTpl.Labels)
 	}
 	if tpl.IssuerRef != nil {
-		cert.Spec.IssuerRef = cmmeta.ObjectReference{
+		cert.Spec.IssuerRef = cmmeta.IssuerReference{
 			Name:  tpl.IssuerRef.Name,
 			Kind:  tpl.IssuerRef.Kind,
 			Group: tpl.IssuerRef.Group,
@@ -243,4 +244,19 @@ func MergeCABundlesFiles(caFile1, caFile2 string) ([]byte, error) {
 	merged = append(merged, caFile2Content...)
 
 	return merged, nil
+}
+
+// ExtractHostnameFromURL extracts the hostname from a URL string.
+// Returns empty string if the URL is invalid or empty.
+func ExtractHostnameFromURL(rawURL string) string {
+	if rawURL == "" {
+		return ""
+	}
+
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return ""
+	}
+
+	return parsed.Hostname()
 }

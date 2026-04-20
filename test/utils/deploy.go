@@ -26,7 +26,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/naming"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -126,7 +126,7 @@ func DeployShard(ctx context.Context, t *testing.T, client ctrlruntimeclient.Cli
 	return shard
 }
 
-func DeployRootShard(ctx context.Context, t *testing.T, client ctrlruntimeclient.Client, namespace string, externalHostname string, patches ...func(*operatorv1alpha1.RootShard)) operatorv1alpha1.RootShard {
+func DeployRootShard(ctx context.Context, t *testing.T, client ctrlruntimeclient.Client, names naming.Scheme, namespace string, externalHostname string, patches ...func(*operatorv1alpha1.RootShard)) operatorv1alpha1.RootShard {
 	t.Helper()
 
 	etcd := DeployEtcd(t, "etcd-r00t", namespace)
@@ -136,7 +136,7 @@ func DeployRootShard(ctx context.Context, t *testing.T, client ctrlruntimeclient
 	rootShard.Namespace = namespace
 
 	if externalHostname == "" {
-		externalHostname = resources.GetRootShardBaseHost(&rootShard)
+		externalHostname = names.RootShardBaseHost(&rootShard)
 	}
 
 	rootShard.Spec = operatorv1alpha1.RootShardSpec{
@@ -303,7 +303,7 @@ func DeployCacheServerWithExternalEtcd(ctx context.Context, t *testing.T, client
 	})...)
 }
 
-func DeployVirtualWorkspace(ctx context.Context, t *testing.T, client ctrlruntimeclient.Client, namespace, name string, waitForReady bool, patches ...func(*operatorv1alpha1.VirtualWorkspace)) operatorv1alpha1.VirtualWorkspace {
+func DeployVirtualWorkspace(ctx context.Context, t *testing.T, client ctrlruntimeclient.Client, names naming.Scheme, namespace, name string, waitForReady bool, patches ...func(*operatorv1alpha1.VirtualWorkspace)) operatorv1alpha1.VirtualWorkspace {
 	t.Helper()
 
 	vw := operatorv1alpha1.VirtualWorkspace{}
@@ -311,7 +311,7 @@ func DeployVirtualWorkspace(ctx context.Context, t *testing.T, client ctrlruntim
 	vw.Namespace = namespace
 	vw.Spec = operatorv1alpha1.VirtualWorkspaceSpec{
 		External: operatorv1alpha1.ExternalConfig{
-			Hostname: resources.GetVirtualWorkspaceBaseHost(&vw),
+			Hostname: names.VirtualWorkspaceBaseHost(&vw),
 			Port:     6443,
 		},
 	}
