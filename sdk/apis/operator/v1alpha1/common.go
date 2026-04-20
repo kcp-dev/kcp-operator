@@ -418,8 +418,11 @@ type OIDCConfiguration struct {
 	// ClientID is the OIDC client ID configured on the issuer side for this kcp instance.
 	ClientID string `json:"clientID"`
 
-	// Optionally provide the client secret for the OIDC client. This is not used by kcp itself, but is used to generate
-	// a OIDC kubeconfig that can be shared with users to log in via the OIDC provider.
+	// ClientSecret is the OIDC client secret configured on the issuer side for this kcp instance.
+	// This is not used by kcp itself, but is used to generate a OIDC kubeconfig that can be
+	// shared with users to log in via the OIDC provider.
+	// +optional
+	// Deprecated: kube OIDC is secretless.
 	ClientSecret string `json:"clientSecret,omitempty"`
 
 	// Experimental: Optionally provides a custom claim for fetching groups. The claim must be a string or an array of strings.
