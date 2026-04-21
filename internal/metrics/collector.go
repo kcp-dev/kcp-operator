@@ -217,6 +217,7 @@ func (mc *MetricsCollector) updateKubeconfigCounts(ctx context.Context) {
 	}
 }
 
+// updateVirtualWorkspaceCounts updates metrics for VirtualWorkspace resources.
 func (mc *MetricsCollector) updateVirtualWorkspaceCounts(ctx context.Context) {
 	var virtualWorkspaces operatorv1alpha1.VirtualWorkspaceList
 	if err := mc.client.List(ctx, &virtualWorkspaces); err != nil {
@@ -235,7 +236,7 @@ func (mc *MetricsCollector) updateVirtualWorkspaceCounts(ctx context.Context) {
 	}
 }
 
-// Collect safely reads metrics.
+// Collect safely exposes a consistent snapshot of metrics to Prometheus.
 func (mc *MetricsCollector) Collect(ch chan<- prometheus.Metric) {
 	mc.mu.RLock()
 	defer mc.mu.RUnlock()
