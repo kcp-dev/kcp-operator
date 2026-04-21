@@ -1580,8 +1580,9 @@ the OIDC issuer is not publicly trusted.</p>
 <div class="property-description">
 <p>ClientSecret is the OIDC client secret configured on the issuer side for this kcp instance.
 This is not used by kcp itself, but is used to generate a OIDC kubeconfig that can be
-shared with users to log in via the OIDC provider.
-Deprecated: kube OIDC is secretless.</p>
+shared with users to log in via the OIDC provider.</p>
+
+<p>Deprecated: kube OIDC is secretless.</p>
 
 </div>
 
@@ -5416,8 +5417,9 @@ because it is firewalled. If not set, the value of <code>port</code> is used.</p
 </div>
 
 <div class="property-description">
-<p>Optional: ExternalHostname under which the FrontProxy can be reached. If empty, the RootShard&rsquo;s external hostname will be used only.
-Deprecated: use spec.External for configuration of external access instead.</p>
+<p>Optional: ExternalHostname under which the FrontProxy can be reached. If empty, the RootShard&rsquo;s external hostname will be used only.</p>
+
+<p>Deprecated: use spec.External for configuration of external access instead.</p>
 
 </div>
 
