@@ -126,12 +126,12 @@ func KubeconfigSecretReconciler(
 		switch {
 		case frontProxy.Spec.External.Hostname != "":
 			serverURL = fmt.Sprintf("https://%s:%d", frontProxy.Spec.External.Hostname, frontProxy.Spec.External.Port)
-		case frontProxy.Spec.ExternalHostname != "":
-			_, _, err := net.SplitHostPort(frontProxy.Spec.ExternalHostname)
+		case frontProxy.Spec.ExternalHostname != "": //nolint:staticcheck
+			_, _, err := net.SplitHostPort(frontProxy.Spec.ExternalHostname) //nolint:staticcheck
 			if err == nil {
-				serverURL = fmt.Sprintf("https://%s", frontProxy.Spec.ExternalHostname)
+				serverURL = fmt.Sprintf("https://%s", frontProxy.Spec.ExternalHostname) //nolint:staticcheck
 			} else {
-				serverURL = fmt.Sprintf("https://%s:6443", frontProxy.Spec.ExternalHostname)
+				serverURL = fmt.Sprintf("https://%s:6443", frontProxy.Spec.ExternalHostname) //nolint:staticcheck
 			}
 		default:
 			serverURL = fmt.Sprintf("https://%s:%d", rootShard.Spec.External.Hostname, rootShard.Spec.External.Port)

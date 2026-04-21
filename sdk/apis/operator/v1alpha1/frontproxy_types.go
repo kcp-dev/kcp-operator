@@ -39,6 +39,7 @@ type FrontProxySpec struct {
 	// Optional: Image defines the image to use. Defaults to the latest versioned image during the release of kcp-operator.
 	Image *ImageSpec `json:"image,omitempty"`
 	// Optional: ExternalHostname under which the FrontProxy can be reached. If empty, the RootShard's external hostname will be used only.
+	//
 	// Deprecated: use spec.External for configuration of external access instead.
 	ExternalHostname string `json:"externalHostname,omitempty"`
 

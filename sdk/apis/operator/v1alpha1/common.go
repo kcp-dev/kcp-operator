@@ -422,6 +422,7 @@ type OIDCConfiguration struct {
 	// This is not used by kcp itself, but is used to generate a OIDC kubeconfig that can be
 	// shared with users to log in via the OIDC provider.
 	// +optional
+	//
 	// Deprecated: kube OIDC is secretless.
 	ClientSecret string `json:"clientSecret,omitempty"`
 

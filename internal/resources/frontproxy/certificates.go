@@ -89,8 +89,8 @@ func (r *reconciler) serverCertificateReconciler() reconciling.NamedCertificateR
 
 		// DEPRECATED: keep support for the deprecated ExternalHostname field for now
 		// to not break existing front-proxy installations.
-		if r.frontProxy.Spec.ExternalHostname != "" {
-			dnsNames = append(dnsNames, r.frontProxy.Spec.ExternalHostname)
+		if r.frontProxy.Spec.ExternalHostname != "" { //nolint:staticcheck
+			dnsNames = append(dnsNames, r.frontProxy.Spec.ExternalHostname) //nolint:staticcheck
 		} else if r.frontProxy.Spec.External.Hostname != "" {
 			dnsNames = append(dnsNames, r.frontProxy.Spec.External.Hostname)
 		}
