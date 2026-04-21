@@ -30,7 +30,7 @@ func GetFrontProxyExternalPort(fp *operatorv1alpha1.FrontProxy, r *operatorv1alp
 	}
 
 	// fallback to deprecated ExternalHostname
-	if extName := fp.Spec.ExternalHostname; extName != "" {
+	if extName := fp.Spec.ExternalHostname; extName != "" { //nolint:staticcheck
 		_, port, err := net.SplitHostPort(extName)
 		if err == nil {
 			parsed, err := strconv.Atoi(port)
