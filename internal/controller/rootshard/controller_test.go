@@ -59,6 +59,31 @@ func TestReconciling(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "vanilla with authentication webhook",
+			rootShard: &operatorv1alpha1.RootShard{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rooty",
+					Namespace: namespace,
+				},
+				Spec: operatorv1alpha1.RootShardSpec{
+					External: operatorv1alpha1.ExternalConfig{
+						Hostname: "example.kcp.io",
+						Port:     6443,
+					},
+					CommonShardSpec: operatorv1alpha1.CommonShardSpec{
+						Etcd: operatorv1alpha1.EtcdConfig{
+							Endpoints: []string{"https://localhost:2379"},
+						},
+						Auth: &operatorv1alpha1.AuthSpec{
+							Webhook: &operatorv1alpha1.AuthenticationWebhookSpec{
+								ConfigSecretName: "test-webhook-config",
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	scheme := util.GetTestScheme()
