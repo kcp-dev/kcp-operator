@@ -76,6 +76,9 @@ type AuthSpec struct {
 	// Optional: OIDC configures OpenID Connect Authentication.
 	OIDC *OIDCConfiguration `json:"oidc,omitempty"`
 
+	// Optional: Webhook configures Webhook Authentication.
+	Webhook *AuthenticationWebhookSpec `json:"webhook,omitempty"`
+
 	// Optional: serviceAccountAuthentication configures ServiceAccount Authentication.
 	ServiceAccount *ServiceAccountAuthentication `json:"serviceAccount,omitempty"`
 
@@ -84,6 +87,18 @@ type AuthSpec struct {
 
 	// Optional: PassOnGroups configures groups to be passed on before forwarding requests to Shards
 	PassOnGroups []string `json:"passOnGroups,omitempty"`
+}
+
+type AuthenticationWebhookSpec struct {
+	// The duration to cache the authentication responses from the webhook authenticator.
+	CacheAuthenticationTTL *metav1.Duration `json:"cacheAuthenticationTTL,omitempty"`
+	// Name of a Kubernetes Secret that contains a kubeconfig formatted file that defines the
+	// authentication webhook configuration.
+	// +kubebuilder:validation:Required
+	ConfigSecretName string `json:"configSecretName"`
+	// The API version of the authentication.k8s.io TokenReview to send to and expect from the webhook.
+	// +kubebuilder:validation:Enum=v1beta1;v1
+	Version string `json:"version,omitempty"`
 }
 
 // ServiceAccountAuthentication configures ServiceAccount Authentication.

@@ -101,6 +101,10 @@ func ApplyAuthConfiguration(deployment *appsv1.Deployment, config *operatorv1alp
 		deployment = applyOIDCConfiguration(deployment, *config.OIDC)
 	}
 
+	if config.Webhook != nil {
+		deployment = applyAuthenticationWebhookConfiguration(deployment, *config.Webhook)
+	}
+
 	return deployment
 }
 
