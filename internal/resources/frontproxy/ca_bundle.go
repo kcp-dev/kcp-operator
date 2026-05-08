@@ -18,88 +18,33 @@ package frontproxy
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 
 	k8creconciling "k8c.io/reconciler/pkg/reconciling"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/types"
-	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kcp-dev/kcp-operator/internal/resources"
-	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
-func (r *reconciler) mergedClientCASecretName() string {
+func (r *reconciler) clientCABundleSecretName() string {
 	if r.frontProxy != nil {
 		return fmt.Sprintf("%s-merged-client-ca", r.frontProxy.Name)
 	}
 	return fmt.Sprintf("%s-proxy-merged-client-ca", r.rootShard.Name)
 }
 
-// mergedClientCASecretReconciler creates a single secret with the
+// clientCABundleSecretReconciler creates a single secret with the
 // shard ClientCA and an optional additional client CA bundle concatenated
 // so that the front proxy accepts clients signed by either CA.
-func (r *reconciler) mergedClientCASecretReconciler(ctx context.Context, kubeClient ctrlruntimeclient.Client) k8creconciling.NamedSecretReconcilerFactory {
-	getCA := func(caType operatorv1alpha1.CA) ([]byte, error) {
-		caSecret := &corev1.Secret{}
-		caSecretName := resources.GetRootShardCAName(r.rootShard, caType)
-		if err := kubeClient.Get(ctx, types.NamespacedName{
-			Namespace: r.rootShard.Namespace,
-			Name:      caSecretName,
-		}, caSecret); err != nil {
-			return nil, fmt.Errorf("failed to get %s secret %s: %w", caType, caSecretName, err)
-		}
-
-		cert, ok := caSecret.Data["tls.crt"]
-		if !ok {
-			return nil, fmt.Errorf("%s secret %s missing tls.crt", caType, caSecretName)
-		}
-		return cert, nil
-	}
-
+func (r *reconciler) clientCABundleSecretReconciler(clientCA, additionalClientCABundle []byte) k8creconciling.NamedSecretReconcilerFactory {
 	return func() (string, k8creconciling.SecretReconciler) {
-		return r.mergedClientCASecretName(), func(secret *corev1.Secret) (*corev1.Secret, error) {
+		return r.clientCABundleSecretName(), func(secret *corev1.Secret) (*corev1.Secret, error) {
 			if secret.Data == nil {
 				secret.Data = make(map[string][]byte)
 			}
 
-			clientCA, err := getCA(operatorv1alpha1.ClientCA)
-			if err != nil {
-				return nil, fmt.Errorf("error getting client ca: %w", err)
-			}
-
-			// Get optional additional client CA bundle if specified
-			var additionalClientCABundle []byte
-			clientCABundleRef := r.getClientCABundleSecretRef()
-			if clientCABundleRef != nil {
-				additionalCABundleSecret := &corev1.Secret{}
-				namespace := r.rootShard.Namespace
-				if r.frontProxy != nil {
-					namespace = r.frontProxy.Namespace
-				}
-				err := kubeClient.Get(ctx, types.NamespacedName{
-					Name:      clientCABundleRef.Name,
-					Namespace: namespace,
-				}, additionalCABundleSecret)
-				if err != nil {
-					return nil, fmt.Errorf("failed to get additional client CA bundle secret %s: %w", clientCABundleRef.Name, err)
-				}
-
-				var exists bool
-				additionalClientCABundle, exists = additionalCABundleSecret.Data["tls.crt"]
-				if !exists {
-					return nil, fmt.Errorf("additional client CA bundle secret %s missing tls.crt", clientCABundleRef.Name)
-				}
-			}
-
-			// Merge certificates: ClientCA + optional additional client CA bundle
-			if len(additionalClientCABundle) > 0 {
-				secret.Data["tls.crt"] = bytes.Join([][]byte{clientCA, additionalClientCABundle}, []byte{'\n'})
-			} else {
-				secret.Data["tls.crt"] = clientCA
-			}
+			secret.Data["tls.crt"] = mergeCertificates(clientCA, additionalClientCABundle)
 
 			if secret.Labels == nil {
 				secret.Labels = make(map[string]string)
@@ -115,7 +60,7 @@ func (r *reconciler) mergedClientCASecretReconciler(ctx context.Context, kubeCli
 	}
 }
 
-func (r *reconciler) mergedCABundleSecretName() string {
+func (r *reconciler) backendCABundleSecretName() string {
 	// Validate whether called for frontProxy or rootShardFrontProxy
 	if r.frontProxy != nil {
 		return fmt.Sprintf("%s-merged-ca-bundle", r.frontProxy.Name)
@@ -123,63 +68,14 @@ func (r *reconciler) mergedCABundleSecretName() string {
 	return fmt.Sprintf("%s-proxy-merged-ca-bundle", r.rootShard.Name)
 }
 
-func (r *reconciler) mergedCABundleSecretReconciler(ctx context.Context, kubeClient ctrlruntimeclient.Client) k8creconciling.NamedSecretReconcilerFactory {
+func (r *reconciler) backendCABundleSecretReconciler(serverCACert, userCABundle []byte) k8creconciling.NamedSecretReconcilerFactory {
 	return func() (string, k8creconciling.SecretReconciler) {
-		return r.mergedCABundleSecretName(), func(secret *corev1.Secret) (*corev1.Secret, error) {
+		return r.backendCABundleSecretName(), func(secret *corev1.Secret) (*corev1.Secret, error) {
 			if secret.Data == nil {
 				secret.Data = make(map[string][]byte)
 			}
 
-			// Get ServerCA certificate from the rootshard
-			serverCASecret := &corev1.Secret{}
-			serverCASecretName := resources.GetRootShardCAName(r.rootShard, operatorv1alpha1.ServerCA)
-			err := kubeClient.Get(ctx, types.NamespacedName{
-				Name:      serverCASecretName,
-				Namespace: r.rootShard.Namespace,
-			}, serverCASecret)
-			if err != nil {
-				return nil, fmt.Errorf("failed to get ServerCA secret %s: %w", serverCASecretName, err)
-			}
-
-			serverCACert, exists := serverCASecret.Data["tls.crt"]
-			if !exists {
-				return nil, fmt.Errorf("ServerCA secret %s missing tls.crt", serverCASecretName)
-			}
-
-			// Get user-provided CA bundle if specified
-			var userCABundle []byte
-			caBundleRef := r.getCABundleSecretRef()
-			if caBundleRef != nil {
-				userCABundleSecret := &corev1.Secret{}
-				namespace := r.rootShard.Namespace
-				if r.frontProxy != nil {
-					namespace = r.frontProxy.Namespace
-				}
-				err := kubeClient.Get(ctx, types.NamespacedName{
-					Name:      caBundleRef.Name,
-					Namespace: namespace,
-				}, userCABundleSecret)
-				if err != nil {
-					return nil, fmt.Errorf("failed to get user CA bundle secret %s: %w", caBundleRef.Name, err)
-				}
-
-				var exists bool
-				userCABundle, exists = userCABundleSecret.Data["tls.crt"]
-				if !exists {
-					return nil, fmt.Errorf("user CA bundle secret %s missing tls.crt", caBundleRef.Name)
-				}
-			}
-
-			// Merge certificates: ServerCA + user CA bundle
-			var mergedCA []byte
-			if len(userCABundle) > 0 {
-				mergedCA = append(serverCACert, '\n')
-				mergedCA = append(mergedCA, userCABundle...)
-			} else {
-				mergedCA = serverCACert
-			}
-
-			secret.Data["tls.crt"] = mergedCA
+			secret.Data["tls.crt"] = mergeCertificates(serverCACert, userCABundle)
 
 			// Set labels to identify this as a merged CA bundle
 			if secret.Labels == nil {
@@ -194,4 +90,17 @@ func (r *reconciler) mergedCABundleSecretReconciler(ctx context.Context, kubeCli
 			return secret, nil
 		}
 	}
+}
+
+func mergeCertificates(certs ...[]byte) []byte {
+	merged := [][]byte{}
+
+	// skip nil/empty certs
+	for _, cert := range certs {
+		if len(cert) > 0 {
+			merged = append(merged, cert)
+		}
+	}
+
+	return bytes.Join(merged, []byte{'\n'})
 }

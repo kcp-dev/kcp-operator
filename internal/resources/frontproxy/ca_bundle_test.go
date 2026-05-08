@@ -18,7 +18,6 @@ package frontproxy
 
 import (
 	"bytes"
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -142,13 +141,23 @@ func TestMergedClientCASecretReconciler(t *testing.T) {
 				objects = append(objects, tt.additionalClientCASecret)
 			}
 
-			client := ctrlruntimefakeclient.NewClientBuilder().
+			_ = ctrlruntimefakeclient.NewClientBuilder().
 				WithScheme(scheme).
 				WithObjects(objects...).
 				Build()
 
 			rec := NewFrontProxy(tt.frontProxy, tt.rootShard)
-			reconcilerFactory := rec.mergedClientCASecretReconciler(context.Background(), client)
+
+			// Fetch the ClientCA data
+			clientCACert := tt.clientCASecret.Data["tls.crt"]
+
+			// Fetch additional CA bundle data if configured
+			var additionalClientCABundle []byte
+			if tt.additionalClientCASecret != nil {
+				additionalClientCABundle = tt.additionalClientCASecret.Data["tls.crt"]
+			}
+
+			reconcilerFactory := rec.clientCABundleSecretReconciler(clientCACert, additionalClientCABundle)
 
 			secretName, reconciler := reconcilerFactory()
 			require.Equal(t, "test-front-proxy-merged-client-ca", secretName)
@@ -218,13 +227,13 @@ func TestMergedClientCASecretReconciler_RootShardProxy(t *testing.T) {
 	require.NoError(t, corev1.AddToScheme(scheme))
 	require.NoError(t, operatorv1alpha1.AddToScheme(scheme))
 
-	client := ctrlruntimefakeclient.NewClientBuilder().
-		WithScheme(scheme).
-		WithObjects(rootShard, clientCASecret).
-		Build()
-
 	rec := NewRootShardProxy(rootShard)
-	reconcilerFactory := rec.mergedClientCASecretReconciler(context.Background(), client)
+
+	// Fetch the ClientCA data
+	clientCACert := clientCASecret.Data["tls.crt"]
+
+	// Root shard proxy doesn't support additional CA bundle
+	reconcilerFactory := rec.clientCABundleSecretReconciler(clientCACert, nil)
 
 	secretName, reconciler := reconcilerFactory()
 	require.Equal(t, "test-root-shard-proxy-merged-client-ca", secretName)
