@@ -450,6 +450,71 @@ func TestDeploymentReconciler(t *testing.T) {
 				require.Equal(t, "/etc/kcp/tls/ca/ca-bundle", caBundleMountPath)
 			},
 		},
+		{
+			name: "imagePullSecrets from image spec are passed to deployment",
+			frontProxy: &operatorv1alpha1.FrontProxy{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-front-proxy",
+				},
+				Spec: operatorv1alpha1.FrontProxySpec{
+					RootShard: operatorv1alpha1.RootShardConfig{
+						Reference: &corev1.LocalObjectReference{
+							Name: "test-root-shard",
+						},
+					},
+					Image: &operatorv1alpha1.ImageSpec{
+						Repository: "private-registry.example.com/kcp",
+						Tag:        "v1.0.0",
+						ImagePullSecrets: []corev1.LocalObjectReference{
+							{Name: "registry-secret-1"},
+							{Name: "registry-secret-2"},
+						},
+					},
+				},
+			},
+			rootShard: &operatorv1alpha1.RootShard{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-root-shard",
+				},
+			},
+			expectedName: resources.GetFrontProxyDeploymentName(&operatorv1alpha1.FrontProxy{
+				ObjectMeta: metav1.ObjectMeta{Name: "test-front-proxy"},
+			}),
+			validateDeploy: func(t *testing.T, dep *appsv1.Deployment) {
+				container := dep.Spec.Template.Spec.Containers[0]
+				assert.Equal(t, "private-registry.example.com/kcp:v1.0.0", container.Image)
+
+				require.Len(t, dep.Spec.Template.Spec.ImagePullSecrets, 2)
+				assert.Equal(t, "registry-secret-1", dep.Spec.Template.Spec.ImagePullSecrets[0].Name)
+				assert.Equal(t, "registry-secret-2", dep.Spec.Template.Spec.ImagePullSecrets[1].Name)
+			},
+		},
+		{
+			name: "no imagePullSecrets when image spec has none",
+			frontProxy: &operatorv1alpha1.FrontProxy{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-front-proxy",
+				},
+				Spec: operatorv1alpha1.FrontProxySpec{
+					RootShard: operatorv1alpha1.RootShardConfig{
+						Reference: &corev1.LocalObjectReference{
+							Name: "test-root-shard",
+						},
+					},
+				},
+			},
+			rootShard: &operatorv1alpha1.RootShard{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-root-shard",
+				},
+			},
+			expectedName: resources.GetFrontProxyDeploymentName(&operatorv1alpha1.FrontProxy{
+				ObjectMeta: metav1.ObjectMeta{Name: "test-front-proxy"},
+			}),
+			validateDeploy: func(t *testing.T, dep *appsv1.Deployment) {
+				assert.Empty(t, dep.Spec.Template.Spec.ImagePullSecrets)
+			},
+		},
 	}
 
 	for _, tt := range tests {

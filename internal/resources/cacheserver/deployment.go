@@ -96,8 +96,8 @@ func DeploymentReconciler(server *operatorv1alpha1.CacheServer) reconciling.Name
 
 			dep.Spec.Template.SetLabels(labels)
 
-			// TODO: Why do we discard the imagePullSecrets?
-			image, _, version := resources.GetImageSettings(server.Spec.Image)
+			// Pass imagePullSecrets from the image spec to the pod spec.
+			image, imagePullSecrets, version := resources.GetImageSettings(server.Spec.Image)
 
 			volumes, volumeMounts := getVolumeMounts(server)
 
@@ -163,6 +163,7 @@ func DeploymentReconciler(server *operatorv1alpha1.CacheServer) reconciling.Name
 				},
 			}}
 			dep.Spec.Template.Spec.Volumes = volumes
+			dep.Spec.Template.Spec.ImagePullSecrets = imagePullSecrets
 
 			dep = utils.ApplyDeploymentTemplate(dep, server.Spec.DeploymentTemplate)
 

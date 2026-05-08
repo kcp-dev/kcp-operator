@@ -69,7 +69,7 @@ func (r *reconciler) deploymentReconciler() reconciling.NamedDeploymentReconcile
 			}
 			dep.Spec.Template.SetLabels(r.resourceLabels)
 
-			image, _, _ := resources.GetImageSettings(imageSpec)
+			image, imagePullSecrets, _ := resources.GetImageSettings(imageSpec)
 			args := r.getArgs()
 
 			container := corev1.Container{
@@ -212,6 +212,8 @@ func (r *reconciler) deploymentReconciler() reconciling.NamedDeploymentReconcile
 			dep.Spec.Template.Spec.Containers = []corev1.Container{
 				utils.ApplyResources(container, depResources),
 			}
+
+			dep.Spec.Template.Spec.ImagePullSecrets = imagePullSecrets
 
 			dep = utils.ApplyDeploymentTemplate(dep, template)
 
