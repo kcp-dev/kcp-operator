@@ -65,6 +65,15 @@ type FrontProxySpec struct {
 	// +optional
 	CABundleSecretRef *corev1.LocalObjectReference `json:"caBundleSecretRef,omitempty"`
 
+	// ClientCABundleRef references a v1.Secret object that contains an additional client CA bundle
+	// that should be trusted by the front-proxy for client certificate authentication.
+	// The secret must contain a key named `tls.crt` that holds the PEM encoded CA certificate(s).
+	// This CA bundle will be merged with the root shard's client CA, allowing the front-proxy
+	// to accept client certificates signed by either CA. This is useful for backwards compatibility
+	// during upgrades when migrating from a separate front-proxy client CA to the shared root shard client CA.
+	// +optional
+	ClientCABundleRef *corev1.LocalObjectReference `json:"clientCABundleRef,omitempty"`
+
 	// Optional: ExtraArgs defines additional command line arguments to pass to the front-proxy container.
 	ExtraArgs []string `json:"extraArgs,omitempty"`
 

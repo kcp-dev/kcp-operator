@@ -1023,6 +1023,11 @@ func (in *FrontProxySpec) DeepCopyInto(out *FrontProxySpec) {
 		*out = new(v1.LocalObjectReference)
 		**out = **in
 	}
+	if in.ClientCABundleRef != nil {
+		in, out := &in.ClientCABundleRef, &out.ClientCABundleRef
+		*out = new(v1.LocalObjectReference)
+		**out = **in
+	}
 	if in.ExtraArgs != nil {
 		in, out := &in.ExtraArgs, &out.ExtraArgs
 		*out = make([]string, len(*in))

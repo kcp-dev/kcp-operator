@@ -39,8 +39,8 @@ func (r *reconciler) mergedClientCASecretName() string {
 }
 
 // mergedClientCASecretReconciler creates a single secret with the
-// FrontProxyClientCA and shard ClientCA concatenated so that the front
-// proxy accepts clients signed by either CA.
+// shard ClientCA and an optional additional client CA bundle concatenated
+// so that the front proxy accepts clients signed by either CA.
 func (r *reconciler) mergedClientCASecretReconciler(ctx context.Context, kubeClient ctrlruntimeclient.Client) k8creconciling.NamedSecretReconcilerFactory {
 	getCA := func(caType operatorv1alpha1.CA) ([]byte, error) {
 		caSecret := &corev1.Secret{}
@@ -65,17 +65,41 @@ func (r *reconciler) mergedClientCASecretReconciler(ctx context.Context, kubeCli
 				secret.Data = make(map[string][]byte)
 			}
 
-			fpClientCA, err := getCA(operatorv1alpha1.FrontProxyClientCA)
-			if err != nil {
-				return nil, fmt.Errorf("error getting front proxy client ca: %w", err)
-			}
-
 			clientCA, err := getCA(operatorv1alpha1.ClientCA)
 			if err != nil {
 				return nil, fmt.Errorf("error getting client ca: %w", err)
 			}
 
-			secret.Data["tls.crt"] = bytes.Join([][]byte{fpClientCA, clientCA}, []byte{'\n'})
+			// Get optional additional client CA bundle if specified
+			var additionalClientCABundle []byte
+			clientCABundleRef := r.getClientCABundleSecretRef()
+			if clientCABundleRef != nil {
+				additionalCABundleSecret := &corev1.Secret{}
+				namespace := r.rootShard.Namespace
+				if r.frontProxy != nil {
+					namespace = r.frontProxy.Namespace
+				}
+				err := kubeClient.Get(ctx, types.NamespacedName{
+					Name:      clientCABundleRef.Name,
+					Namespace: namespace,
+				}, additionalCABundleSecret)
+				if err != nil {
+					return nil, fmt.Errorf("failed to get additional client CA bundle secret %s: %w", clientCABundleRef.Name, err)
+				}
+
+				var exists bool
+				additionalClientCABundle, exists = additionalCABundleSecret.Data["tls.crt"]
+				if !exists {
+					return nil, fmt.Errorf("additional client CA bundle secret %s missing tls.crt", clientCABundleRef.Name)
+				}
+			}
+
+			// Merge certificates: ClientCA + optional additional client CA bundle
+			if len(additionalClientCABundle) > 0 {
+				secret.Data["tls.crt"] = bytes.Join([][]byte{clientCA, additionalClientCABundle}, []byte{'\n'})
+			} else {
+				secret.Data["tls.crt"] = clientCA
+			}
 
 			if secret.Labels == nil {
 				secret.Labels = make(map[string]string)

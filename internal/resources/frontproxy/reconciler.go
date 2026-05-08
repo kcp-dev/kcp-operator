@@ -66,6 +66,15 @@ func (r *reconciler) getCABundleSecretRef() *corev1.LocalObjectReference {
 	return r.rootShard.Spec.CABundleSecretRef
 }
 
+// getClientCABundleSecretRef returns the ClientCABundleRef from the FrontProxy spec.
+// This is only used for FrontProxy resources, not for the RootShard internal proxy.
+func (r *reconciler) getClientCABundleSecretRef() *corev1.LocalObjectReference {
+	if r.frontProxy != nil {
+		return r.frontProxy.Spec.ClientCABundleRef
+	}
+	return nil
+}
+
 // +kubebuilder:rbac:groups=core,resources=configmaps;secrets;services,verbs=get;update;patch
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;update;patch
 // +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;update;patch
@@ -99,10 +108,6 @@ func (r *reconciler) Reconcile(ctx context.Context, client ctrlruntimeclient.Cli
 		r.serverCertificateReconciler(),
 		r.kubeconfigCertificateReconciler(),
 		r.requestHeaderCertificateReconciler(),
-	}
-
-	if r.frontProxy != nil {
-		certReconcilers = append(certReconcilers, r.adminKubeconfigCertificateReconciler())
 	}
 
 	deploymentReconcilers := []k8creconciling.NamedDeploymentReconcilerFactory{

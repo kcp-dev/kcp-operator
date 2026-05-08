@@ -90,16 +90,7 @@ func TestReconciling(t *testing.T) {
 
 	for _, testcase := range testcases {
 		t.Run(testcase.name, func(t *testing.T) {
-			// The merged client CA reconciler fetches FrontProxyClientCA and ClientCA.
-			frontProxyClientCASecret := &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      testcase.rootShard.Name + "-front-proxy-client-ca",
-					Namespace: namespace,
-				},
-				Data: map[string][]byte{
-					"tls.crt": []byte("front-proxy-client-ca-cert"),
-				},
-			}
+			// The merged client CA reconciler fetches ClientCA.
 			clientCASecret := &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      testcase.rootShard.Name + "-client-ca",
@@ -114,7 +105,7 @@ func TestReconciling(t *testing.T) {
 				NewClientBuilder().
 				WithScheme(scheme).
 				WithStatusSubresource(testcase.rootShard).
-				WithObjects(testcase.rootShard, frontProxyClientCASecret, clientCASecret).
+				WithObjects(testcase.rootShard, clientCASecret).
 				Build()
 
 			ctx := context.Background()

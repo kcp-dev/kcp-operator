@@ -132,51 +132,6 @@ func (r *reconciler) serverCertificateReconciler() reconciling.NamedCertificateR
 	}
 }
 
-// adminKubeconfigCertificateReconciler is only reconciled for true front-proxies.
-func (r *reconciler) adminKubeconfigCertificateReconciler() reconciling.NamedCertificateReconcilerFactory {
-	const certKind = operatorv1alpha1.AdminKubeconfigClientCertificate
-
-	name := r.certName(certKind)
-	template := r.certTemplateMap().CertificateTemplate(certKind)
-
-	return func() (string, reconciling.CertificateReconciler) {
-		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
-			cert.SetLabels(r.resourceLabels)
-			cert.Spec = certmanagerv1.CertificateSpec{
-				SecretName: name,
-				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
-					Labels: r.certSecretLabels(),
-				},
-				Duration:    &operatorv1alpha1.DefaultCertificateDuration,
-				RenewBefore: &operatorv1alpha1.DefaultCertificateRenewal,
-
-				PrivateKey: &certmanagerv1.CertificatePrivateKey{
-					Algorithm: certmanagerv1.RSAKeyAlgorithm,
-					Size:      4096,
-				},
-
-				CommonName: "external-logical-cluster-admin",
-
-				Usages: []certmanagerv1.KeyUsage{
-					certmanagerv1.UsageClientAuth,
-				},
-
-				Subject: &certmanagerv1.X509Subject{
-					Organizations: []string{"system:kcp:external-logical-cluster-admin"},
-				},
-
-				IssuerRef: certmanagermetav1.IssuerReference{
-					Name:  resources.GetRootShardCAName(r.rootShard, operatorv1alpha1.FrontProxyClientCA),
-					Kind:  "Issuer",
-					Group: "cert-manager.io",
-				},
-			}
-
-			return utils.ApplyCertificateTemplate(cert, &template), nil
-		}
-	}
-}
-
 func (r *reconciler) kubeconfigCertificateReconciler() reconciling.NamedCertificateReconcilerFactory {
 	const certKind = operatorv1alpha1.KubeconfigCertificate
 

@@ -176,7 +176,7 @@ func (r *reconciler) deploymentReconciler() reconciling.NamedDeploymentReconcile
 				mountSecret(r.mergedCABundleSecretName(), getCAMountPath(operatorv1alpha1.CABundleCA), true)
 			}
 
-			// Mount the merged client CA (FrontProxyClientCA + ClientCA) so
+			// Mount the merged client CA (ClientCA + optional ClientCABundleRef) so
 			// that clients signed by either CA are accepted.
 			mountSecret(r.mergedClientCASecretName(), frontProxyBasepath+"/client-ca", true)
 

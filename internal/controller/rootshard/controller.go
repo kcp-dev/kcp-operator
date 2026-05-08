@@ -194,7 +194,6 @@ func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operator
 		operatorv1alpha1.RequestHeaderClientCA,
 		operatorv1alpha1.ClientCA,
 		operatorv1alpha1.ServiceAccountCA,
-		operatorv1alpha1.FrontProxyClientCA,
 	}
 
 	for _, ca := range intermediateCAs {

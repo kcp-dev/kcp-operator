@@ -226,7 +226,7 @@ func (r *KubeconfigReconciler) reconcile(ctx context.Context, kc *operatorv1alph
 			return conditions, err
 		}
 
-		clientCertIssuer = resources.GetRootShardCAName(rootShard, operatorv1alpha1.FrontProxyClientCA)
+		clientCertIssuer = resources.GetRootShardCAName(rootShard, operatorv1alpha1.ClientCA)
 		serverCA = resources.GetRootShardCAName(rootShard, operatorv1alpha1.ServerCA)
 
 		if frontProxy.Spec.CABundleSecretRef != nil {
