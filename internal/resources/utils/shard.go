@@ -139,10 +139,10 @@ func ApplyCommonShardConfig(deployment *appsv1.Deployment, spec *operatorv1alpha
 		deployment.Spec.Replicas = ptr.To[int32](2)
 	}
 
-	// set container image
-	image, _, _ := resources.GetImageSettings(spec.Image)
+	// set container image and imagePullSecrets
+	image, imagePullSecrets, _ := resources.GetImageSettings(spec.Image)
 	container.Image = image
-
+	deployment.Spec.Template.Spec.ImagePullSecrets = imagePullSecrets
 	deployment.Spec.Template.Spec.Containers[0] = container
 
 	deployment = applyEtcdConfiguration(deployment, spec.Etcd)
