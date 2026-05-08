@@ -14,7 +14,6 @@ graph TB
 
     C --> D(kcp-etcd-client-ca):::ca
     C --> E(kcp-etcd-peer-ca):::ca
-    C --> F($rootshard-front-proxy-client-ca):::ca
     C --> G($rootshard-server-ca):::ca
     C --> H($rootshard-requestheaer-client-ca):::ca
     C --> I($rootshard-client-ca):::ca
@@ -22,7 +21,6 @@ graph TB
 
     D --> K([kcp-etcd-client-issuer]):::issuer
     E --> L([kcp-etcd-peer-issuer]):::issuer
-    F --> M([$rootshard-front-proxy-client-ca]):::issuer
     G --> N([$rootshard-server-ca]):::issuer
     H --> O([$rootshard-requestheader-client-ca]):::issuer
     I --> P([$rootshard-client-ca]):::issuer
@@ -30,7 +28,6 @@ graph TB
 
     K --- K1(kcp-etcd):::cert --> K2(kcp-etcd-client):::cert
     L --> L1(kcp-etcd-peer):::cert
-    M --> M1($rootshard-$frontproxy-admin-kubeconfig):::cert
     N --- N1(kcp):::cert --- N2($rootshard-$frontproxy-server):::cert --> N3(kcp-virtual-workspaces):::cert
     O --- O1($rootshard-$frontproxy-requestheader):::cert --> O2("(kcp-front-proxy-vw-client)"):::cert
     P --- P1($rootshard-$frontproxy-kubeconfig):::cert --> P2(kcp-internal-admin-kubeconfig):::cert

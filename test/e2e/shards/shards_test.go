@@ -212,8 +212,8 @@ func TestShardBundleAnnotation(t *testing.T) {
 	t.Log("Successfully verified Bundle was created with correct target")
 
 	// wait for bundle to become ready and have all objects
-	// Note: Shard without CABundleSecretRef has 17 objects (no merged CA bundle)
-	expectedObjects := 17
+	// Note: Shard without CABundleSecretRef has 16 objects (no merged CA bundle)
+	expectedObjects := 16
 	t.Logf("Waiting for Bundle to become Ready with all %d objects...", expectedObjects)
 	timeout := time.After(3 * time.Minute)
 	ticker := time.NewTicker(5 * time.Second)
@@ -276,8 +276,7 @@ bundleReady:
 
 	// verify specific expected objects exist
 	expectedObjectsList := []string{
-		// CA certificates from RootShard (6 objects)
-		fmt.Sprintf("secrets.core.v1:%s/%s-front-proxy-client-ca", namespace.Name, rootShard.Name),
+		// CA certificates from RootShard (5 objects)
 		fmt.Sprintf("secrets.core.v1:%s/%s-requestheader-client-ca", namespace.Name, rootShard.Name),
 		fmt.Sprintf("secrets.core.v1:%s/%s-server-ca", namespace.Name, rootShard.Name),
 		fmt.Sprintf("secrets.core.v1:%s/%s-ca", namespace.Name, rootShard.Name),

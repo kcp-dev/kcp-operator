@@ -40,7 +40,7 @@ For developing controllers against kcp, it is often necessary to access the shar
 
 Kubeconfigs allow the easy creation of credentials to access kcp. As a sharded system, kcp relies on client certificate authentication and the kcp-operator will ensure the correct certificates are generated and then neatly wrapped up in ready-to-use kubeconfig Secrets.
 
-Kubeconfigs can be configured to point to a specific shard or to a front-proxy instance, which affects which client CA is used to generate the certificates.
+Kubeconfigs can be configured to point to a specific shard or to a front-proxy instance. All kubeconfigs use the root shard's client CA for certificate generation, ensuring consistent authentication across the entire kcp installation.
 
 ## Cross-Namespace/Cluster References
 
