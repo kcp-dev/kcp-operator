@@ -188,6 +188,58 @@ func TestReconciling(t *testing.T) {
 				require.Equal(t, "/etc/kcp/tls/ca/ca-bundle/tls.crt", cluster.CertificateAuthority, "should use merged CA bundle path")
 			},
 		},
+		{
+			name: "vanilla with authentication webhook",
+			rootShard: &operatorv1alpha1.RootShard{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rooty",
+					Namespace: namespace,
+				},
+				Spec: operatorv1alpha1.RootShardSpec{
+					External: operatorv1alpha1.ExternalConfig{
+						Hostname: "example.kcp.io",
+						Port:     6443,
+					},
+					CommonShardSpec: operatorv1alpha1.CommonShardSpec{
+						Etcd: operatorv1alpha1.EtcdConfig{
+							Endpoints: []string{"https://localhost:2379"},
+						},
+						Auth: &operatorv1alpha1.AuthSpec{
+							Webhook: &operatorv1alpha1.AuthenticationWebhookSpec{
+								ConfigSecretName: "test-webhook-config",
+							},
+						},
+					},
+				},
+			},
+			shard: &operatorv1alpha1.Shard{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "shardy",
+					Namespace: namespace,
+				},
+				Spec: operatorv1alpha1.ShardSpec{
+					CommonShardSpec: operatorv1alpha1.CommonShardSpec{
+						Etcd: operatorv1alpha1.EtcdConfig{
+							Endpoints: []string{"https://localhost:2379"},
+						},
+					},
+					RootShard: operatorv1alpha1.RootShardConfig{
+						Reference: &corev1.LocalObjectReference{
+							Name: "rooty",
+						},
+					},
+				},
+			},
+			extraObjects: nil,
+			checkFunc: func(t *testing.T, client ctrlruntimeclient.Client, shard *operatorv1alpha1.Shard) {
+				kubeconfigSecret := &corev1.Secret{}
+				err := client.Get(context.Background(), ctrlruntimeclient.ObjectKey{
+					Name:      shard.Name + "-external-logical-cluster-admin-kubeconfig",
+					Namespace: shard.Namespace,
+				}, kubeconfigSecret)
+				require.NoError(t, err)
+			},
+		},
 	}
 
 	scheme := runtime.NewScheme()

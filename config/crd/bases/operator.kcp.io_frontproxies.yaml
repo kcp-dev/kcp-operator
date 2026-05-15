@@ -163,6 +163,28 @@ spec:
                     required:
                     - enabled
                     type: object
+                  webhook:
+                    description: 'Optional: Webhook configures Webhook Authentication.'
+                    properties:
+                      cacheAuthenticationTTL:
+                        description: The duration to cache the authentication responses
+                          from the webhook authenticator.
+                        type: string
+                      configSecretName:
+                        description: |-
+                          Name of a Kubernetes Secret that contains a kubeconfig formatted file that defines the
+                          authentication webhook configuration.
+                        type: string
+                      version:
+                        description: The API version of the authentication.k8s.io
+                          TokenReview to send to and expect from the webhook.
+                        enum:
+                        - v1beta1
+                        - v1
+                        type: string
+                    required:
+                    - configSecretName
+                    type: object
                 type: object
                 x-kubernetes-validations:
                 - message: OIDC requires ServiceAccount auth to be enabled.

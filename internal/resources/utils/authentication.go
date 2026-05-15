@@ -137,3 +137,43 @@ func applyServiceAccountAuthentication(deployment *appsv1.Deployment, rootShard 
 
 	return deployment
 }
+
+func applyAuthenticationWebhookConfiguration(deployment *appsv1.Deployment, config operatorv1alpha1.AuthenticationWebhookSpec) *appsv1.Deployment {
+	podSpec := deployment.Spec.Template.Spec
+
+	var extraArgs []string
+
+	if val := config.CacheAuthenticationTTL; val != nil {
+		extraArgs = append(extraArgs, fmt.Sprintf("--authentication-token-webhook-cache-ttl=%v", val.Duration.String()))
+	}
+
+	if val := config.Version; val != "" {
+		extraArgs = append(extraArgs, fmt.Sprintf("--authentication-token-webhook-version=%s", val))
+	}
+
+	if val := config.ConfigSecretName; val != "" {
+		volumeName := "authentication-webhook-config"
+		mountPath := "/etc/kcp/authentication/webhook"
+
+		extraArgs = append(extraArgs, fmt.Sprintf("--authentication-token-webhook-config-file=%s/kubeconfig", mountPath))
+		podSpec.Containers[0].VolumeMounts = append(podSpec.Containers[0].VolumeMounts, corev1.VolumeMount{
+			Name:      volumeName,
+			ReadOnly:  true,
+			MountPath: mountPath,
+		})
+
+		podSpec.Volumes = append(podSpec.Volumes, corev1.Volume{
+			Name: volumeName,
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: val,
+				},
+			},
+		})
+	}
+
+	podSpec.Containers[0].Args = append(podSpec.Containers[0].Args, extraArgs...)
+	deployment.Spec.Template.Spec = podSpec
+
+	return deployment
+}

@@ -22,6 +22,7 @@ package v1alpha1
 // with apply.
 type AuthSpecApplyConfiguration struct {
 	OIDC           *OIDCConfigurationApplyConfiguration            `json:"oidc,omitempty"`
+	Webhook        *AuthenticationWebhookSpecApplyConfiguration    `json:"webhook,omitempty"`
 	ServiceAccount *ServiceAccountAuthenticationApplyConfiguration `json:"serviceAccount,omitempty"`
 	DropGroups     []string                                        `json:"dropGroups,omitempty"`
 	PassOnGroups   []string                                        `json:"passOnGroups,omitempty"`
@@ -38,6 +39,14 @@ func AuthSpec() *AuthSpecApplyConfiguration {
 // If called multiple times, the OIDC field is set to the value of the last call.
 func (b *AuthSpecApplyConfiguration) WithOIDC(value *OIDCConfigurationApplyConfiguration) *AuthSpecApplyConfiguration {
 	b.OIDC = value
+	return b
+}
+
+// WithWebhook sets the Webhook field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Webhook field is set to the value of the last call.
+func (b *AuthSpecApplyConfiguration) WithWebhook(value *AuthenticationWebhookSpecApplyConfiguration) *AuthSpecApplyConfiguration {
+	b.Webhook = value
 	return b
 }
 

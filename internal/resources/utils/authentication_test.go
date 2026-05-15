@@ -18,6 +18,7 @@ package utils
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -290,6 +291,236 @@ func TestApplyServiceAccountAuthentication(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := applyServiceAccountAuthentication(tt.initialDeploy, tt.rootShard)
+
+			require.NotNil(t, result)
+			assert.Equal(t, tt.initialDeploy, result, "Function should return the same deployment instance")
+
+			tt.validateDeploy(t, result)
+		})
+	}
+}
+
+func TestApplyWebhookAuthentication(t *testing.T) {
+	tests := []struct {
+		name               string
+		initialDeploy      *appsv1.Deployment
+		authenticationSpec *operatorv1alpha1.AuthSpec
+		validateDeploy     func(*testing.T, *appsv1.Deployment)
+	}{
+		{
+			name: "authentication webhook fully configured",
+			initialDeploy: &appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-deployment",
+				},
+				Spec: appsv1.DeploymentSpec{
+					Template: corev1.PodTemplateSpec{
+						Spec: corev1.PodSpec{
+							Containers: []corev1.Container{
+								{
+									Name: "test-container",
+									Args: []string{"--existing-arg=value"},
+								},
+							},
+							Volumes: []corev1.Volume{},
+						},
+					},
+				},
+			},
+			authenticationSpec: &operatorv1alpha1.AuthSpec{
+				Webhook: &operatorv1alpha1.AuthenticationWebhookSpec{
+					CacheAuthenticationTTL: &metav1.Duration{Duration: 60 * time.Second},
+					ConfigSecretName:       "test-webhook-config",
+					Version:                "v1",
+				},
+			},
+			validateDeploy: func(t *testing.T, dep *appsv1.Deployment) {
+				container := dep.Spec.Template.Spec.Containers[0]
+				// assert args
+				args := container.Args
+				assert.Contains(t, args, "--authentication-token-webhook-config-file=/etc/kcp/authentication/webhook/kubeconfig")
+				assert.Contains(t, args, "--authentication-token-webhook-cache-ttl=1m0s")
+				assert.Contains(t, args, "--authentication-token-webhook-version=v1")
+				assert.Contains(t, args, "--existing-arg=value")
+				assert.Len(t, args, 4)
+				// assert volumes
+				assert.Len(t, dep.Spec.Template.Spec.Volumes, 1)
+				volume := dep.Spec.Template.Spec.Volumes[0]
+				assert.Equal(t, "authentication-webhook-config", volume.Name)
+				require.NotNil(t, volume.Secret)
+				assert.Equal(t, "test-webhook-config", volume.Secret.SecretName)
+				// assert volume mounts
+				assert.Len(t, container.VolumeMounts, 1)
+				volumeMount := container.VolumeMounts[0]
+				assert.Equal(t, "authentication-webhook-config", volumeMount.Name)
+				assert.True(t, volumeMount.ReadOnly)
+				assert.Equal(t, "/etc/kcp/authentication/webhook", volumeMount.MountPath)
+			},
+		},
+		{
+			name: "nil authentication spec - should not modify deployment",
+			initialDeploy: &appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-deployment",
+				},
+				Spec: appsv1.DeploymentSpec{
+					Template: corev1.PodTemplateSpec{
+						Spec: corev1.PodSpec{
+							Containers: []corev1.Container{
+								{
+									Name: "test-container",
+									Args: []string{"--existing-arg=value"},
+								},
+							},
+							Volumes: []corev1.Volume{},
+						},
+					},
+				},
+			},
+			authenticationSpec: nil,
+			validateDeploy: func(t *testing.T, dep *appsv1.Deployment) {
+				container := dep.Spec.Template.Spec.Containers[0]
+				// assert args are unchanged
+				args := container.Args
+				assert.Contains(t, args, "--existing-arg=value")
+				assert.Len(t, args, 1)
+				// assert volumes are unchanged
+				assert.Len(t, dep.Spec.Template.Spec.Volumes, 0)
+				// assert volume mounts are unchanged
+				assert.Len(t, container.VolumeMounts, 0)
+			},
+		},
+		{
+			name: "empty authentication spec - should not modify deployment",
+			initialDeploy: &appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-deployment",
+				},
+				Spec: appsv1.DeploymentSpec{
+					Template: corev1.PodTemplateSpec{
+						Spec: corev1.PodSpec{
+							Containers: []corev1.Container{
+								{
+									Name: "test-container",
+									Args: []string{"--existing-arg=value"},
+								},
+							},
+							Volumes: []corev1.Volume{},
+						},
+					},
+				},
+			},
+			authenticationSpec: &operatorv1alpha1.AuthSpec{},
+			validateDeploy: func(t *testing.T, dep *appsv1.Deployment) {
+				container := dep.Spec.Template.Spec.Containers[0]
+				args := container.Args
+				assert.Contains(t, args, "--existing-arg=value")
+				assert.Len(t, args, 1)
+				// assert volumes are unchanged
+				assert.Len(t, dep.Spec.Template.Spec.Volumes, 0)
+				// assert volume mounts are unchanged
+				assert.Len(t, container.VolumeMounts, 0)
+			},
+		},
+		{
+			name: "authentication spec with only webhook",
+			initialDeploy: &appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-deployment",
+				},
+				Spec: appsv1.DeploymentSpec{
+					Template: corev1.PodTemplateSpec{
+						Spec: corev1.PodSpec{
+							Containers: []corev1.Container{
+								{
+									Name: "test-container",
+									Args: []string{"--existing-arg=value"},
+								},
+							},
+							Volumes: []corev1.Volume{},
+						},
+					},
+				},
+			},
+			authenticationSpec: &operatorv1alpha1.AuthSpec{
+				Webhook: &operatorv1alpha1.AuthenticationWebhookSpec{
+					ConfigSecretName: "test-webhook-config",
+				},
+			},
+			validateDeploy: func(t *testing.T, dep *appsv1.Deployment) {
+				container := dep.Spec.Template.Spec.Containers[0]
+				args := container.Args
+				assert.Contains(t, args, "--existing-arg=value")
+				assert.Contains(t, args, "--authentication-token-webhook-config-file=/etc/kcp/authentication/webhook/kubeconfig")
+				assert.Len(t, args, 2)
+				// assert volumes
+				assert.Len(t, dep.Spec.Template.Spec.Volumes, 1)
+				volume := dep.Spec.Template.Spec.Volumes[0]
+				assert.Equal(t, "authentication-webhook-config", volume.Name)
+				require.NotNil(t, volume.Secret)
+				assert.Equal(t, "test-webhook-config", volume.Secret.SecretName)
+				// assert volume mounts
+				assert.Len(t, container.VolumeMounts, 1)
+				volumeMount := container.VolumeMounts[0]
+				assert.Equal(t, "authentication-webhook-config", volumeMount.Name)
+				assert.True(t, volumeMount.ReadOnly)
+				assert.Equal(t, "/etc/kcp/authentication/webhook", volumeMount.MountPath)
+			},
+		},
+		{
+			name: "authentication spec with webhook & oidc",
+			initialDeploy: &appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-deployment",
+				},
+				Spec: appsv1.DeploymentSpec{
+					Template: corev1.PodTemplateSpec{
+						Spec: corev1.PodSpec{
+							Containers: []corev1.Container{
+								{
+									Name: "test-container",
+									Args: []string{"--existing-arg=value"},
+								},
+							},
+							Volumes: []corev1.Volume{},
+						},
+					},
+				},
+			},
+			authenticationSpec: &operatorv1alpha1.AuthSpec{
+				Webhook: &operatorv1alpha1.AuthenticationWebhookSpec{
+					ConfigSecretName: "test-webhook-config",
+				},
+				OIDC: &operatorv1alpha1.OIDCConfiguration{
+					IssuerURL: "https://test-oidc.example.com",
+				},
+			},
+			validateDeploy: func(t *testing.T, dep *appsv1.Deployment) {
+				container := dep.Spec.Template.Spec.Containers[0]
+				args := container.Args
+				assert.Contains(t, args, "--existing-arg=value")
+				assert.Contains(t, args, "--authentication-token-webhook-config-file=/etc/kcp/authentication/webhook/kubeconfig")
+				assert.Contains(t, args, "--oidc-issuer-url=https://test-oidc.example.com")
+				assert.Len(t, args, 3)
+				// assert volumes
+				assert.Len(t, dep.Spec.Template.Spec.Volumes, 1)
+				volume := dep.Spec.Template.Spec.Volumes[0]
+				assert.Equal(t, "authentication-webhook-config", volume.Name)
+				require.NotNil(t, volume.Secret)
+				assert.Equal(t, "test-webhook-config", volume.Secret.SecretName)
+				// assert volume mounts
+				assert.Len(t, container.VolumeMounts, 1)
+				volumeMount := container.VolumeMounts[0]
+				assert.Equal(t, "authentication-webhook-config", volumeMount.Name)
+				assert.True(t, volumeMount.ReadOnly)
+				assert.Equal(t, "/etc/kcp/authentication/webhook", volumeMount.MountPath)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ApplyAuthConfiguration(tt.initialDeploy, tt.authenticationSpec)
 
 			require.NotNil(t, result)
 			assert.Equal(t, tt.initialDeploy, result, "Function should return the same deployment instance")

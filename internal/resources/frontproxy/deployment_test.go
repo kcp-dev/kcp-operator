@@ -17,6 +17,7 @@ limitations under the License.
 package frontproxy
 
 import (
+	"slices"
 	"strings"
 	"testing"
 
@@ -448,6 +449,46 @@ func TestDeploymentReconciler(t *testing.T) {
 				}
 				require.True(t, foundCABundleMount, "CA bundle volume mount not found")
 				require.Equal(t, "/etc/kcp/tls/ca/ca-bundle", caBundleMountPath)
+			},
+		},
+		{
+			name: "authentication webhook configured",
+			frontProxy: &operatorv1alpha1.FrontProxy{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-front-proxy",
+				},
+				Spec: operatorv1alpha1.FrontProxySpec{
+					RootShard: operatorv1alpha1.RootShardConfig{
+						Reference: &corev1.LocalObjectReference{
+							Name: "test-root-shard",
+						},
+					},
+					Auth: &operatorv1alpha1.AuthSpec{
+						Webhook: &operatorv1alpha1.AuthenticationWebhookSpec{
+							ConfigSecretName: "test-webhook-config",
+						},
+					},
+				},
+			},
+			rootShard: &operatorv1alpha1.RootShard{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-root-shard",
+				},
+			},
+			expectedName: resources.GetFrontProxyDeploymentName(&operatorv1alpha1.FrontProxy{
+				ObjectMeta: metav1.ObjectMeta{Name: "test-front-proxy"},
+			}),
+			validateDeploy: func(t *testing.T, dep *appsv1.Deployment) {
+				container := dep.Spec.Template.Spec.Containers[0]
+				assert.Contains(t, container.Args, "--authentication-token-webhook-config-file=/etc/kcp/authentication/webhook/kubeconfig")
+
+				assert.True(t, slices.ContainsFunc(dep.Spec.Template.Spec.Volumes, func(v corev1.Volume) bool {
+					return v.Name == "authentication-webhook-config"
+				}), "Webhook config volume not found")
+
+				assert.True(t, slices.ContainsFunc(container.VolumeMounts, func(m corev1.VolumeMount) bool {
+					return m.Name == "authentication-webhook-config"
+				}), "Webhook config volume mount not found")
 			},
 		},
 	}
