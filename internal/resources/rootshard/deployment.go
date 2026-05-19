@@ -109,7 +109,6 @@ func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard, kcpVW *operator
 			}
 
 			for _, ca := range []operatorv1alpha1.CA{
-				operatorv1alpha1.ClientCA,
 				operatorv1alpha1.ServerCA,
 				operatorv1alpha1.ServiceAccountCA,
 				operatorv1alpha1.RequestHeaderClientCA,
@@ -118,6 +117,21 @@ func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard, kcpVW *operator
 					VolumeName: fmt.Sprintf("%s-ca", ca),
 					SecretName: resources.GetRootShardCAName(rootShard, ca),
 					MountPath:  getCAMountPath(ca),
+				})
+			}
+
+			// ClientCA: use merged secret if ClientCABundleRef is set, otherwise use direct ClientCA
+			if rootShard.Spec.ClientCABundleRef != nil {
+				secretMounts = append(secretMounts, utils.SecretMount{
+					VolumeName: fmt.Sprintf("%s-ca", operatorv1alpha1.ClientCA),
+					SecretName: fmt.Sprintf("%s-merged-client-ca", rootShard.Name),
+					MountPath:  getCAMountPath(operatorv1alpha1.ClientCA),
+				})
+			} else {
+				secretMounts = append(secretMounts, utils.SecretMount{
+					VolumeName: fmt.Sprintf("%s-ca", operatorv1alpha1.ClientCA),
+					SecretName: resources.GetRootShardCAName(rootShard, operatorv1alpha1.ClientCA),
+					MountPath:  getCAMountPath(operatorv1alpha1.ClientCA),
 				})
 			}
 

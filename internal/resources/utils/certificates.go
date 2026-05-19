@@ -17,12 +17,12 @@ limitations under the License.
 package utils
 
 import (
+	"bytes"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
 	"maps"
 	"net/url"
-	"os"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -194,16 +194,28 @@ func ValidatePEMCertificate(data []byte) error {
 	return nil
 }
 
+// MergeCertificates concatenates multiple PEM certificate bundles with newlines.
+// Empty or nil certificates are skipped.
+func MergeCertificates(certs ...[]byte) []byte {
+	merged := [][]byte{}
+	for _, cert := range certs {
+		if len(cert) > 0 {
+			merged = append(merged, cert)
+		}
+	}
+	return bytes.Join(merged, []byte{'\n'})
+}
+
 // MergeCABundles merges the CA certificate data from two secrets.
 func MergeCABundles(caSecret, caBundle *corev1.Secret) ([]byte, error) {
-	var merged []byte
+	certs := [][]byte{}
 
 	if caSecret != nil && caSecret.Data != nil {
 		if caCrt, exists := caSecret.Data["tls.crt"]; exists {
 			if err := ValidatePEMCertificate(caCrt); err != nil {
 				return nil, fmt.Errorf("invalid certificate in caSecret: %w", err)
 			}
-			merged = append(merged, caCrt...)
+			certs = append(certs, caCrt)
 		}
 	}
 
@@ -212,38 +224,11 @@ func MergeCABundles(caSecret, caBundle *corev1.Secret) ([]byte, error) {
 			if err := ValidatePEMCertificate(caCrt); err != nil {
 				return nil, fmt.Errorf("invalid certificate in caBundle: %w", err)
 			}
-			merged = append(merged, caCrt...)
+			certs = append(certs, caCrt)
 		}
 	}
 
-	return merged, nil
-}
-
-// MergeCABundlesFiles merges the CA certificate data from two files.
-func MergeCABundlesFiles(caFile1, caFile2 string) ([]byte, error) {
-	var merged []byte
-
-	// Read and validate the first CA file
-	caFile1Content, err := os.ReadFile(caFile1)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read CA file 1: %w", err)
-	}
-	if err := ValidatePEMCertificate(caFile1Content); err != nil {
-		return nil, fmt.Errorf("invalid certificate in caFile1: %w", err)
-	}
-	merged = append(merged, caFile1Content...)
-
-	// Read and validate the second CA file
-	caFile2Content, err := os.ReadFile(caFile2)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read CA file 2: %w", err)
-	}
-	if err := ValidatePEMCertificate(caFile2Content); err != nil {
-		return nil, fmt.Errorf("invalid certificate in caFile2: %w", err)
-	}
-	merged = append(merged, caFile2Content...)
-
-	return merged, nil
+	return MergeCertificates(certs...), nil
 }
 
 // ExtractHostnameFromURL extracts the hostname from a URL string.

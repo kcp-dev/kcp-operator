@@ -94,7 +94,7 @@ func (r *reconciler) Reconcile(ctx context.Context, client ctrlruntimeclient.Cli
 	revisionLabels := modifier.RelatedRevisionsLabels(ctx, client)
 
 	// Fetch client CA certificates
-	clientCACert, additionalClientCABundle, err := r.fetchClientCACerts(ctx, client)
+	clientCACerts, err := r.fetchClientCACerts(ctx, client)
 	if err != nil {
 		return err
 	}
@@ -105,7 +105,7 @@ func (r *reconciler) Reconcile(ctx context.Context, client ctrlruntimeclient.Cli
 
 	secretReconcilers := []k8creconciling.NamedSecretReconcilerFactory{
 		r.dynamicKubeconfigSecretReconciler(),
-		r.clientCABundleSecretReconciler(clientCACert, additionalClientCABundle),
+		r.clientCABundleSecretReconciler(clientCACerts...),
 	}
 
 	// Fetch server CA bundle if needed
@@ -159,24 +159,38 @@ func (r *reconciler) Reconcile(ctx context.Context, client ctrlruntimeclient.Cli
 }
 
 // fetchClientCACerts fetches the ClientCA certificate and optionally the additional
-// client CA bundle (if configured and if this is not the internal proxy).
-func (r *reconciler) fetchClientCACerts(ctx context.Context, client ctrlruntimeclient.Client) (clientCA, additionalCABundle []byte, err error) {
+// client CA bundles (from RootShard and/or FrontProxy if configured).
+// Returns the certificates in order: ClientCA, RootShard.ClientCABundleRef, FrontProxy.ClientCABundleRef
+func (r *reconciler) fetchClientCACerts(ctx context.Context, client ctrlruntimeclient.Client) ([][]byte, error) {
+	certs := [][]byte{}
+
 	// fetch the shared, global client CA
-	clientCA, err = r.fetchTLSCert(ctx, client, resources.GetRootShardCAName(r.rootShard, operatorv1alpha1.ClientCA))
+	clientCA, err := r.fetchTLSCert(ctx, client, resources.GetRootShardCAName(r.rootShard, operatorv1alpha1.ClientCA))
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to fetch ClientCA certificate: %w", err)
+		return nil, fmt.Errorf("failed to fetch ClientCA certificate: %w", err)
+	}
+	certs = append(certs, clientCA)
+
+	// fetch RootShard's optional client CA bundle (inherited by all components)
+	if r.rootShard.Spec.ClientCABundleRef != nil {
+		rootShardCABundle, err := r.fetchTLSCert(ctx, client, r.rootShard.Spec.ClientCABundleRef.Name)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch RootShard client CA bundle: %w", err)
+		}
+		certs = append(certs, rootShardCABundle)
 	}
 
-	// fetch optional additional client CA bundle if specified
+	// fetch optional additional client CA bundle if specified on FrontProxy
 	// (if this a root proxy, getClientCABundleSecretRef returns nil)
 	if ref := r.getClientCABundleSecretRef(); ref != nil {
-		additionalCABundle, err = r.fetchTLSCert(ctx, client, ref.Name)
+		additionalCABundle, err := r.fetchTLSCert(ctx, client, ref.Name)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to fetch additional client CA bundle: %w", err)
+			return nil, fmt.Errorf("failed to fetch additional client CA bundle: %w", err)
 		}
+		certs = append(certs, additionalCABundle)
 	}
 
-	return clientCA, additionalCABundle, nil
+	return certs, nil
 }
 
 // fetchBackendCAs fetches the ServerCA certificate and the user-provided CA bundle.

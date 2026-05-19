@@ -212,6 +212,14 @@ func (r *Reconciler) reconcile(ctx context.Context, vw *operatorv1alpha1.Virtual
 		return conditions, err
 	}
 
+	if rootShard.Spec.ClientCABundleRef != nil || vw.Spec.ClientCABundleRef != nil {
+		if err := k8creconciling.ReconcileSecrets(ctx, []k8creconciling.NamedSecretReconcilerFactory{
+			virtualworkspace.MergedClientCABundleSecretReconciler(ctx, vw, rootShard, r.Client),
+		}, vw.Namespace, r.Client, ownerRefWrapper); err != nil {
+			return conditions, err
+		}
+	}
+
 	if err := k8creconciling.ReconcileDeployments(ctx, []k8creconciling.NamedDeploymentReconcilerFactory{
 		virtualworkspace.DeploymentReconciler(vw, rootShard, shard),
 	}, vw.Namespace, r.Client, ownerRefWrapper, revisionLabels); err != nil {

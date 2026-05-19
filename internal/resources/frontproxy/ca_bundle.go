@@ -17,7 +17,6 @@ limitations under the License.
 package frontproxy
 
 import (
-	"bytes"
 	"fmt"
 
 	k8creconciling "k8c.io/reconciler/pkg/reconciling"
@@ -25,6 +24,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/utils"
 )
 
 func (r *reconciler) clientCABundleSecretName() string {
@@ -37,14 +37,14 @@ func (r *reconciler) clientCABundleSecretName() string {
 // clientCABundleSecretReconciler creates a single secret with the
 // shard ClientCA and an optional additional client CA bundle concatenated
 // so that the front proxy accepts clients signed by either CA.
-func (r *reconciler) clientCABundleSecretReconciler(clientCA, additionalClientCABundle []byte) k8creconciling.NamedSecretReconcilerFactory {
+func (r *reconciler) clientCABundleSecretReconciler(clientCAs ...[]byte) k8creconciling.NamedSecretReconcilerFactory {
 	return func() (string, k8creconciling.SecretReconciler) {
 		return r.clientCABundleSecretName(), func(secret *corev1.Secret) (*corev1.Secret, error) {
 			if secret.Data == nil {
 				secret.Data = make(map[string][]byte)
 			}
 
-			secret.Data["tls.crt"] = mergeCertificates(clientCA, additionalClientCABundle)
+			secret.Data["tls.crt"] = utils.MergeCertificates(clientCAs...)
 
 			if secret.Labels == nil {
 				secret.Labels = make(map[string]string)
@@ -75,7 +75,7 @@ func (r *reconciler) backendCABundleSecretReconciler(serverCACert, userCABundle 
 				secret.Data = make(map[string][]byte)
 			}
 
-			secret.Data["tls.crt"] = mergeCertificates(serverCACert, userCABundle)
+			secret.Data["tls.crt"] = utils.MergeCertificates(serverCACert, userCABundle)
 
 			// Set labels to identify this as a merged CA bundle
 			if secret.Labels == nil {
@@ -90,17 +90,4 @@ func (r *reconciler) backendCABundleSecretReconciler(serverCACert, userCABundle 
 			return secret, nil
 		}
 	}
-}
-
-func mergeCertificates(certs ...[]byte) []byte {
-	merged := [][]byte{}
-
-	// skip nil/empty certs
-	for _, cert := range certs {
-		if len(cert) > 0 {
-			merged = append(merged, cert)
-		}
-	}
-
-	return bytes.Join(merged, []byte{'\n'})
 }

@@ -91,6 +91,16 @@ type CommonShardSpec struct {
 	// +optional
 	CABundleSecretRef *corev1.LocalObjectReference `json:"caBundleSecretRef,omitempty"`
 
+	// ClientCABundleRef references a v1.Secret containing an additional client CA bundle
+	// for client certificate authentication. The secret must contain a key named `tls.crt`.
+	// This CA bundle will be merged with the root shard's client CA.
+	// If configured on a RootShard, this bundle is automatically inherited by all FrontProxies,
+	// Shards, and VirtualWorkspaces connected to it. Each of those components can additionally
+	// specify their own ClientCABundleRef, which will be merged on top.
+	//
+	// +optional
+	ClientCABundleRef *corev1.LocalObjectReference `json:"clientCABundleRef,omitempty"`
+
 	// Optional: ExtraArgs defines additional command line arguments to pass to the shard container.
 	ExtraArgs []string `json:"extraArgs,omitempty"`
 

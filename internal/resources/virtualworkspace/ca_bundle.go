@@ -1,5 +1,5 @@
 /*
-Copyright 2025 The kcp Authors.
+Copyright 2026 The KCP Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package shard
+package virtualworkspace
 
 import (
 	"context"
@@ -31,45 +31,9 @@ import (
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
-func MergedCABundleSecretReconciler(ctx context.Context, shard *operatorv1alpha1.Shard, kubeClient ctrlruntimeclient.Client) k8creconciling.NamedSecretReconcilerFactory {
+func MergedClientCABundleSecretReconciler(ctx context.Context, vw *operatorv1alpha1.VirtualWorkspace, rootShard *operatorv1alpha1.RootShard, kubeClient ctrlruntimeclient.Client) k8creconciling.NamedSecretReconcilerFactory {
 	return func() (string, k8creconciling.SecretReconciler) {
-		secretName := fmt.Sprintf("%s-merged-ca-bundle", shard.Name)
-		return secretName, func(secret *corev1.Secret) (*corev1.Secret, error) {
-			if secret.Data == nil {
-				secret.Data = make(map[string][]byte)
-			}
-
-			// Get ServerCA certificate
-			serverCACert, err := fetchTLSCert(ctx, kubeClient, shard.Namespace, resources.GetShardCertificateName(shard, operatorv1alpha1.ServerCertificate))
-			if err != nil {
-				return nil, fmt.Errorf("failed to get ServerCA: %w", err)
-			}
-
-			// Get user-provided CA bundle if specified
-			var userCABundle []byte
-			if shard.Spec.CABundleSecretRef != nil {
-				userCABundle, err = fetchTLSCert(ctx, kubeClient, shard.Namespace, shard.Spec.CABundleSecretRef.Name)
-				if err != nil {
-					return nil, fmt.Errorf("failed to get user CA bundle: %w", err)
-				}
-			}
-
-			secret.Data["tls.crt"] = utils.MergeCertificates(serverCACert, userCABundle)
-
-			// Set labels to identify this as a merged CA bundle
-			if secret.Labels == nil {
-				secret.Labels = make(map[string]string)
-			}
-			secret.Labels[resources.ShardLabel] = shard.Name
-
-			return secret, nil
-		}
-	}
-}
-
-func MergedClientCABundleSecretReconciler(ctx context.Context, shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShard, kubeClient ctrlruntimeclient.Client) k8creconciling.NamedSecretReconcilerFactory {
-	return func() (string, k8creconciling.SecretReconciler) {
-		secretName := fmt.Sprintf("%s-merged-client-ca", shard.Name)
+		secretName := fmt.Sprintf("%s-merged-client-ca", vw.Name)
 		return secretName, func(secret *corev1.Secret) (*corev1.Secret, error) {
 			if secret.Data == nil {
 				secret.Data = make(map[string][]byte)
@@ -92,13 +56,13 @@ func MergedClientCABundleSecretReconciler(ctx context.Context, shard *operatorv1
 				certs = append(certs, rootShardCABundle)
 			}
 
-			// Get Shard's own client CA bundle if specified
-			if shard.Spec.ClientCABundleRef != nil {
-				shardCABundle, err := fetchTLSCert(ctx, kubeClient, shard.Namespace, shard.Spec.ClientCABundleRef.Name)
+			// Get VirtualWorkspace's own client CA bundle if specified
+			if vw.Spec.ClientCABundleRef != nil {
+				vwCABundle, err := fetchTLSCert(ctx, kubeClient, vw.Namespace, vw.Spec.ClientCABundleRef.Name)
 				if err != nil {
-					return nil, fmt.Errorf("failed to get Shard client CA bundle: %w", err)
+					return nil, fmt.Errorf("failed to get VirtualWorkspace client CA bundle: %w", err)
 				}
-				certs = append(certs, shardCABundle)
+				certs = append(certs, vwCABundle)
 			}
 
 			secret.Data["tls.crt"] = utils.MergeCertificates(certs...)
@@ -107,7 +71,7 @@ func MergedClientCABundleSecretReconciler(ctx context.Context, shard *operatorv1
 			if secret.Labels == nil {
 				secret.Labels = make(map[string]string)
 			}
-			secret.Labels[resources.ShardLabel] = shard.Name
+			secret.Labels[resources.VirtualWorkspaceLabel] = vw.Name
 
 			return secret, nil
 		}

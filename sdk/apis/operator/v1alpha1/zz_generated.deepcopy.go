@@ -740,6 +740,11 @@ func (in *CommonShardSpec) DeepCopyInto(out *CommonShardSpec) {
 		*out = new(v1.LocalObjectReference)
 		**out = **in
 	}
+	if in.ClientCABundleRef != nil {
+		in, out := &in.ClientCABundleRef, &out.ClientCABundleRef
+		*out = new(v1.LocalObjectReference)
+		**out = **in
+	}
 	if in.ExtraArgs != nil {
 		in, out := &in.ExtraArgs, &out.ExtraArgs
 		*out = make([]string, len(*in))
@@ -2026,6 +2031,11 @@ func (in *VirtualWorkspaceSpec) DeepCopyInto(out *VirtualWorkspaceSpec) {
 	}
 	if in.CABundleSecretRef != nil {
 		in, out := &in.CABundleSecretRef, &out.CABundleSecretRef
+		*out = new(v1.LocalObjectReference)
+		**out = **in
+	}
+	if in.ClientCABundleRef != nil {
+		in, out := &in.ClientCABundleRef, &out.ClientCABundleRef
 		*out = new(v1.LocalObjectReference)
 		**out = **in
 	}

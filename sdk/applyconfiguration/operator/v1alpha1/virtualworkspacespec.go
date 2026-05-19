@@ -36,6 +36,7 @@ type VirtualWorkspaceSpecApplyConfiguration struct {
 	ServiceTemplate      *ServiceTemplateApplyConfiguration        `json:"serviceTemplate,omitempty"`
 	DeploymentTemplate   *DeploymentTemplateApplyConfiguration     `json:"deploymentTemplate,omitempty"`
 	CABundleSecretRef    *v1.LocalObjectReference                  `json:"caBundleSecretRef,omitempty"`
+	ClientCABundleRef    *v1.LocalObjectReference                  `json:"clientCABundleRef,omitempty"`
 	ExtraArgs            []string                                  `json:"extraArgs,omitempty"`
 	Logging              *LoggingSpecApplyConfiguration            `json:"logging,omitempty"`
 	ClusterDomain        *string                                   `json:"clusterDomain,omitempty"`
@@ -116,6 +117,14 @@ func (b *VirtualWorkspaceSpecApplyConfiguration) WithDeploymentTemplate(value *D
 // If called multiple times, the CABundleSecretRef field is set to the value of the last call.
 func (b *VirtualWorkspaceSpecApplyConfiguration) WithCABundleSecretRef(value v1.LocalObjectReference) *VirtualWorkspaceSpecApplyConfiguration {
 	b.CABundleSecretRef = &value
+	return b
+}
+
+// WithClientCABundleRef sets the ClientCABundleRef field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the ClientCABundleRef field is set to the value of the last call.
+func (b *VirtualWorkspaceSpecApplyConfiguration) WithClientCABundleRef(value v1.LocalObjectReference) *VirtualWorkspaceSpecApplyConfiguration {
+	b.ClientCABundleRef = &value
 	return b
 }
 

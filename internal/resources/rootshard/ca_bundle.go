@@ -27,6 +27,7 @@ import (
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/utils"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -39,50 +40,21 @@ func MergedCABundleSecretReconciler(ctx context.Context, rootShard *operatorv1al
 			}
 
 			// Get ServerCA certificate
-			serverCASecret := &corev1.Secret{}
-			serverCASecretName := resources.GetRootShardCAName(rootShard, operatorv1alpha1.ServerCA)
-			err := kubeClient.Get(ctx, types.NamespacedName{
-				Name:      serverCASecretName,
-				Namespace: rootShard.Namespace,
-			}, serverCASecret)
+			serverCACert, err := fetchTLSCert(ctx, kubeClient, rootShard.Namespace, resources.GetRootShardCAName(rootShard, operatorv1alpha1.ServerCA))
 			if err != nil {
-				return nil, fmt.Errorf("failed to get ServerCA secret %s: %w", serverCASecretName, err)
-			}
-
-			serverCACert, exists := serverCASecret.Data["tls.crt"]
-			if !exists {
-				return nil, fmt.Errorf("ServerCA secret %s missing tls.crt", serverCASecretName)
+				return nil, fmt.Errorf("failed to get ServerCA: %w", err)
 			}
 
 			// Get user-provided CA bundle if specified
 			var userCABundle []byte
 			if rootShard.Spec.CABundleSecretRef != nil {
-				userCABundleSecret := &corev1.Secret{}
-				err := kubeClient.Get(ctx, types.NamespacedName{
-					Name:      rootShard.Spec.CABundleSecretRef.Name,
-					Namespace: rootShard.Namespace,
-				}, userCABundleSecret)
+				userCABundle, err = fetchTLSCert(ctx, kubeClient, rootShard.Namespace, rootShard.Spec.CABundleSecretRef.Name)
 				if err != nil {
-					return nil, fmt.Errorf("failed to get user CA bundle secret %s: %w", rootShard.Spec.CABundleSecretRef.Name, err)
-				}
-
-				var exists bool
-				userCABundle, exists = userCABundleSecret.Data["tls.crt"]
-				if !exists {
-					return nil, fmt.Errorf("user CA bundle secret %s missing tls.crt", rootShard.Spec.CABundleSecretRef.Name)
+					return nil, fmt.Errorf("failed to get user CA bundle: %w", err)
 				}
 			}
 
-			// Merge certificates: ServerCA + user CA bundle
-			var mergedCA []byte
-			if len(userCABundle) > 0 {
-				mergedCA = append(serverCACert, '\n')
-				mergedCA = append(mergedCA, userCABundle...)
-			} else {
-				mergedCA = serverCACert
-			}
-
-			secret.Data["tls.crt"] = mergedCA
+			secret.Data["tls.crt"] = utils.MergeCertificates(serverCACert, userCABundle)
 
 			// Set labels to identify this as a merged CA bundle
 			if secret.Labels == nil {
@@ -93,4 +65,54 @@ func MergedCABundleSecretReconciler(ctx context.Context, rootShard *operatorv1al
 			return secret, nil
 		}
 	}
+}
+
+func MergedClientCABundleSecretReconciler(ctx context.Context, rootShard *operatorv1alpha1.RootShard, kubeClient ctrlruntimeclient.Client) k8creconciling.NamedSecretReconcilerFactory {
+	return func() (string, k8creconciling.SecretReconciler) {
+		secretName := fmt.Sprintf("%s-merged-client-ca", rootShard.Name)
+		return secretName, func(secret *corev1.Secret) (*corev1.Secret, error) {
+			if secret.Data == nil {
+				secret.Data = make(map[string][]byte)
+			}
+
+			// Get ClientCA certificate
+			clientCACert, err := fetchTLSCert(ctx, kubeClient, rootShard.Namespace, resources.GetRootShardCAName(rootShard, operatorv1alpha1.ClientCA))
+			if err != nil {
+				return nil, fmt.Errorf("failed to get ClientCA: %w", err)
+			}
+
+			// Get user-provided client CA bundle if specified
+			var userClientCABundle []byte
+			if rootShard.Spec.ClientCABundleRef != nil {
+				userClientCABundle, err = fetchTLSCert(ctx, kubeClient, rootShard.Namespace, rootShard.Spec.ClientCABundleRef.Name)
+				if err != nil {
+					return nil, fmt.Errorf("failed to get user client CA bundle: %w", err)
+				}
+			}
+
+			secret.Data["tls.crt"] = utils.MergeCertificates(clientCACert, userClientCABundle)
+
+			// Set labels to identify this as a merged client CA bundle
+			if secret.Labels == nil {
+				secret.Labels = make(map[string]string)
+			}
+			secret.Labels[resources.RootShardLabel] = rootShard.Name
+
+			return secret, nil
+		}
+	}
+}
+
+func fetchTLSCert(ctx context.Context, client ctrlruntimeclient.Client, namespace, secretName string) ([]byte, error) {
+	secret := &corev1.Secret{}
+	if err := client.Get(ctx, types.NamespacedName{Name: secretName, Namespace: namespace}, secret); err != nil {
+		return nil, fmt.Errorf("failed to get secret %s: %w", secretName, err)
+	}
+
+	data, exists := secret.Data["tls.crt"]
+	if !exists {
+		return nil, fmt.Errorf("secret %s missing tls.crt", secretName)
+	}
+
+	return data, nil
 }

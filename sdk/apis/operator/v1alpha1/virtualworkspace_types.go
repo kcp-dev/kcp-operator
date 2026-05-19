@@ -78,6 +78,14 @@ type VirtualWorkspaceSpec struct {
 	// +optional
 	CABundleSecretRef *corev1.LocalObjectReference `json:"caBundleSecretRef,omitempty"`
 
+	// ClientCABundleRef references a v1.Secret containing an additional client CA bundle
+	// for client certificate authentication. The secret must contain a key named `tls.crt`.
+	// This CA bundle will be merged with the root shard's client CA and its ClientCABundleRef
+	// (if configured).
+	//
+	// +optional
+	ClientCABundleRef *corev1.LocalObjectReference `json:"clientCABundleRef,omitempty"`
+
 	// Optional: ExtraArgs defines additional command line arguments to pass to the server container.
 	ExtraArgs []string `json:"extraArgs,omitempty"`
 

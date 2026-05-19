@@ -220,6 +220,14 @@ func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operator
 		}
 	}
 
+	if rootShard.Spec.ClientCABundleRef != nil {
+		if err := k8creconciling.ReconcileSecrets(ctx, []k8creconciling.NamedSecretReconcilerFactory{
+			rootshard.MergedClientCABundleSecretReconciler(ctx, rootShard, r.Client),
+		}, rootShard.Namespace, r.Client, ownerRefWrapper); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
 	if err := k8creconciling.ReconcileSecrets(ctx, []k8creconciling.NamedSecretReconcilerFactory{
 		rootshard.LogicalClusterAdminKubeconfigReconciler(rootShard),
 		rootshard.ExternalLogicalClusterAdminKubeconfigReconciler(rootShard),
