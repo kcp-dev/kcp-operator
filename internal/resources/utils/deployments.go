@@ -31,8 +31,8 @@ func ApplyDeploymentTemplate(dep *appsv1.Deployment, tpl *operatorv1alpha1.Deplo
 	}
 
 	if metadata := tpl.Metadata; metadata != nil {
-		dep.Annotations = addNewKeys(dep.Annotations, metadata.Annotations)
-		dep.Labels = addNewKeys(dep.Labels, metadata.Labels)
+		dep.Annotations = mergeMaps(dep.Annotations, metadata.Annotations)
+		dep.Labels = mergeMaps(dep.Labels, metadata.Labels)
 	}
 
 	applyDeploymentSpecTemplate(&dep.Spec, tpl.Spec)
@@ -54,8 +54,8 @@ func applyPodTemplateSpec(templateSpec *corev1.PodTemplateSpec, tpl *operatorv1a
 	}
 
 	if metadata := tpl.Metadata; metadata != nil {
-		templateSpec.Annotations = addNewKeys(templateSpec.Annotations, metadata.Annotations)
-		templateSpec.Labels = addNewKeys(templateSpec.Labels, metadata.Labels)
+		templateSpec.Annotations = mergeMaps(templateSpec.Annotations, metadata.Annotations)
+		templateSpec.Labels = mergeMaps(templateSpec.Labels, metadata.Labels)
 	}
 
 	applyPodSpecTemplate(&templateSpec.Spec, tpl.Spec)

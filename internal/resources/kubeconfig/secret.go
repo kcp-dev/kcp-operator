@@ -51,7 +51,7 @@ func KubeconfigSecretReconciler(
 		return nil, fmt.Errorf("the CA bundle secret %s/%s does not contain a `tls.crt` key", caBundle.Namespace, caBundle.Name)
 	}
 
-	caData, err := utils.MergeCABundles(caSecret, caBundle)
+	caData, err := utils.MergeCertificateSecrets(caSecret, caBundle)
 	if err != nil {
 		return nil, fmt.Errorf("failed to merge CA bundles: %w", err)
 	}
