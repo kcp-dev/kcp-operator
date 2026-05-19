@@ -149,3 +149,262 @@ func TestReconciling(t *testing.T) {
 		})
 	}
 }
+
+func TestClientCABundleMerging(t *testing.T) {
+	const namespace = "frontproxy-ca-tests"
+
+	testcases := []struct {
+		name                   string
+		rootShard              *operatorv1alpha1.RootShard
+		frontProxy             *operatorv1alpha1.FrontProxy
+		extraSecrets           []*corev1.Secret
+		expectedMergedContents []string
+	}{
+		{
+			name: "without any clientCABundleRef merged secret contains only ClientCA",
+			rootShard: &operatorv1alpha1.RootShard{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rooty-no-bundle",
+					Namespace: namespace,
+				},
+				Spec: operatorv1alpha1.RootShardSpec{
+					External: operatorv1alpha1.ExternalConfig{
+						Hostname: "example.kcp.io",
+						Port:     6443,
+					},
+					CommonShardSpec: operatorv1alpha1.CommonShardSpec{
+						Etcd: operatorv1alpha1.EtcdConfig{
+							Endpoints: []string{"https://localhost:2379"},
+						},
+					},
+				},
+			},
+			frontProxy: &operatorv1alpha1.FrontProxy{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "fronty-no-bundle",
+					Namespace: namespace,
+				},
+				Spec: operatorv1alpha1.FrontProxySpec{
+					RootShard: operatorv1alpha1.RootShardConfig{
+						Reference: &corev1.LocalObjectReference{
+							Name: "rooty-no-bundle",
+						},
+					},
+				},
+			},
+			expectedMergedContents: []string{"RootClientCA"},
+		},
+		{
+			name: "with rootShard clientCABundleRef only, merged secret contains ClientCA and RootShard bundle",
+			rootShard: &operatorv1alpha1.RootShard{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rooty-with-bundle",
+					Namespace: namespace,
+				},
+				Spec: operatorv1alpha1.RootShardSpec{
+					External: operatorv1alpha1.ExternalConfig{
+						Hostname: "example.kcp.io",
+						Port:     6443,
+					},
+					CommonShardSpec: operatorv1alpha1.CommonShardSpec{
+						Etcd: operatorv1alpha1.EtcdConfig{
+							Endpoints: []string{"https://localhost:2379"},
+						},
+						ClientCABundleRef: &corev1.LocalObjectReference{
+							Name: "rootshard-extra-ca",
+						},
+					},
+				},
+			},
+			frontProxy: &operatorv1alpha1.FrontProxy{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "fronty-inherits",
+					Namespace: namespace,
+				},
+				Spec: operatorv1alpha1.FrontProxySpec{
+					RootShard: operatorv1alpha1.RootShardConfig{
+						Reference: &corev1.LocalObjectReference{
+							Name: "rooty-with-bundle",
+						},
+					},
+				},
+			},
+			extraSecrets: []*corev1.Secret{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "rootshard-extra-ca",
+						Namespace: namespace,
+					},
+					Data: map[string][]byte{
+						"tls.crt": []byte("-----BEGIN CERTIFICATE-----\nRootShardExtraCA\n-----END CERTIFICATE-----"),
+					},
+				},
+			},
+			expectedMergedContents: []string{"RootClientCA", "RootShardExtraCA"},
+		},
+		{
+			name: "with frontProxy clientCABundleRef only, merged secret contains ClientCA and FrontProxy bundle",
+			rootShard: &operatorv1alpha1.RootShard{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rooty-plain",
+					Namespace: namespace,
+				},
+				Spec: operatorv1alpha1.RootShardSpec{
+					External: operatorv1alpha1.ExternalConfig{
+						Hostname: "example.kcp.io",
+						Port:     6443,
+					},
+					CommonShardSpec: operatorv1alpha1.CommonShardSpec{
+						Etcd: operatorv1alpha1.EtcdConfig{
+							Endpoints: []string{"https://localhost:2379"},
+						},
+					},
+				},
+			},
+			frontProxy: &operatorv1alpha1.FrontProxy{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "fronty-own-bundle",
+					Namespace: namespace,
+				},
+				Spec: operatorv1alpha1.FrontProxySpec{
+					RootShard: operatorv1alpha1.RootShardConfig{
+						Reference: &corev1.LocalObjectReference{
+							Name: "rooty-plain",
+						},
+					},
+					ClientCABundleRef: &corev1.LocalObjectReference{
+						Name: "frontproxy-extra-ca",
+					},
+				},
+			},
+			extraSecrets: []*corev1.Secret{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "frontproxy-extra-ca",
+						Namespace: namespace,
+					},
+					Data: map[string][]byte{
+						"tls.crt": []byte("-----BEGIN CERTIFICATE-----\nFrontProxyExtraCA\n-----END CERTIFICATE-----"),
+					},
+				},
+			},
+			expectedMergedContents: []string{"RootClientCA", "FrontProxyExtraCA"},
+		},
+		{
+			name: "with both rootShard and frontProxy clientCABundleRef, merged secret contains all three CAs",
+			rootShard: &operatorv1alpha1.RootShard{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rooty-both",
+					Namespace: namespace,
+				},
+				Spec: operatorv1alpha1.RootShardSpec{
+					External: operatorv1alpha1.ExternalConfig{
+						Hostname: "example.kcp.io",
+						Port:     6443,
+					},
+					CommonShardSpec: operatorv1alpha1.CommonShardSpec{
+						Etcd: operatorv1alpha1.EtcdConfig{
+							Endpoints: []string{"https://localhost:2379"},
+						},
+						ClientCABundleRef: &corev1.LocalObjectReference{
+							Name: "rootshard-ca-both",
+						},
+					},
+				},
+			},
+			frontProxy: &operatorv1alpha1.FrontProxy{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "fronty-both",
+					Namespace: namespace,
+				},
+				Spec: operatorv1alpha1.FrontProxySpec{
+					RootShard: operatorv1alpha1.RootShardConfig{
+						Reference: &corev1.LocalObjectReference{
+							Name: "rooty-both",
+						},
+					},
+					ClientCABundleRef: &corev1.LocalObjectReference{
+						Name: "frontproxy-ca-both",
+					},
+				},
+			},
+			extraSecrets: []*corev1.Secret{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "rootshard-ca-both",
+						Namespace: namespace,
+					},
+					Data: map[string][]byte{
+						"tls.crt": []byte("-----BEGIN CERTIFICATE-----\nRootShardExtraCA\n-----END CERTIFICATE-----"),
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "frontproxy-ca-both",
+						Namespace: namespace,
+					},
+					Data: map[string][]byte{
+						"tls.crt": []byte("-----BEGIN CERTIFICATE-----\nFrontProxyExtraCA\n-----END CERTIFICATE-----"),
+					},
+				},
+			},
+			expectedMergedContents: []string{"RootClientCA", "RootShardExtraCA", "FrontProxyExtraCA"},
+		},
+	}
+
+	scheme := util.GetTestScheme()
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			clientCASecret := &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      tc.rootShard.Name + "-client-ca",
+					Namespace: namespace,
+				},
+				Data: map[string][]byte{
+					"tls.crt": []byte("-----BEGIN CERTIFICATE-----\nRootClientCA\n-----END CERTIFICATE-----"),
+				},
+			}
+
+			objects := []ctrlruntimeclient.Object{tc.rootShard, tc.frontProxy, clientCASecret}
+			for _, s := range tc.extraSecrets {
+				objects = append(objects, s)
+			}
+
+			client := ctrlruntimefakeclient.
+				NewClientBuilder().
+				WithScheme(scheme).
+				WithStatusSubresource(tc.rootShard, tc.frontProxy).
+				WithObjects(objects...).
+				Build()
+
+			ctx := context.Background()
+
+			controllerReconciler := &FrontProxyReconciler{
+				Client: client,
+				Scheme: client.Scheme(),
+			}
+
+			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
+				NamespacedName: ctrlruntimeclient.ObjectKeyFromObject(tc.frontProxy),
+			})
+			require.NoError(t, err)
+
+			// The merged client CA secret is always created for FrontProxy
+			mergedSecret := &corev1.Secret{}
+			mergedSecretName := tc.frontProxy.Name + "-merged-client-ca"
+			err = client.Get(ctx, ctrlruntimeclient.ObjectKey{
+				Name:      mergedSecretName,
+				Namespace: namespace,
+			}, mergedSecret)
+			require.NoError(t, err, "merged client CA secret should exist")
+			require.NotNil(t, mergedSecret.Data["tls.crt"], "merged secret should contain tls.crt")
+
+			mergedData := string(mergedSecret.Data["tls.crt"])
+			for _, expected := range tc.expectedMergedContents {
+				require.Contains(t, mergedData, expected,
+					"merged CA should contain %s", expected)
+			}
+		})
+	}
+}
