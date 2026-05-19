@@ -22,6 +22,8 @@ The kcp front-proxy will build up a runtime map of all shards, workspaces and lo
 
 The proxy can optionally perform authentication, for example using OIDC, and pass authentication information (like username and groups) on to the shard (via HTTP headers). This can be configured for each front-proxy individually. If no authentication is performed, the requests will be passed unauthenticated to their target shards, where then authentication happens.
 
+Additionally, front-proxies can be configured to accept client certificates signed by additional CAs via the `clientCABundleRef` field. This is useful when integrating with external identity systems. See [Certificate Management](pki.md#client-ca-bundle) for more details.
+
 ## RootShard Proxy
 
 The kcp-operator will deploy an internal front-proxy for every `RootShard` (i.e. one for each kcp installation). This internal proxy is solely used by the operator itself to allow it to resolve workspace paths to logicalclusters and provision resources inside those workspaces.
