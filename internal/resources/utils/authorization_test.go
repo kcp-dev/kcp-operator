@@ -158,6 +158,48 @@ func TestApplyAuthorizationConfiguration(t *testing.T) {
 				assert.Len(t, container.VolumeMounts, 0)
 			},
 		},
+		{
+			name: "nil durations in spec - should not modify deployment",
+			initialDeploy: &appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-deployment",
+				},
+				Spec: appsv1.DeploymentSpec{
+					Template: corev1.PodTemplateSpec{
+						Spec: corev1.PodSpec{
+							Containers: []corev1.Container{
+								{
+									Name: "test-container",
+									Args: []string{
+										"--existing-arg=value",
+										"--authorization-webhook-cache-authorized-ttl=5s",
+									},
+								},
+							},
+							Volumes: []corev1.Volume{},
+						},
+					},
+				},
+			},
+			authorizationSpec: &operatorv1alpha1.AuthorizationSpec{
+				Webhook: &operatorv1alpha1.AuthorizationWebhookSpec{
+					CacheAuthorizedTTL:   nil,
+					CacheUnauthorizedTTL: nil,
+				},
+			},
+			validateDeploy: func(t *testing.T, dep *appsv1.Deployment) {
+				container := dep.Spec.Template.Spec.Containers[0]
+				// assert args are unchanged
+				args := container.Args
+				assert.Contains(t, args, "--authorization-webhook-cache-authorized-ttl=5s")
+				assert.Contains(t, args, "--existing-arg=value")
+				assert.Len(t, args, 2)
+				// assert volumes are unchanged
+				assert.Len(t, dep.Spec.Template.Spec.Volumes, 0)
+				// assert volume mounts are unchanged
+				assert.Len(t, container.VolumeMounts, 0)
+			},
+		},
 	}
 
 	for _, tt := range tests {
