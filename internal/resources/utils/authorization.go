@@ -44,11 +44,11 @@ func applyAuthorizationWebhookConfiguration(deployment *appsv1.Deployment, confi
 	}
 
 	if val := config.CacheAuthorizedTTL; val != nil {
-		extraArgs = append(extraArgs, fmt.Sprintf("--authorization-webhook-cache-authorized-ttl=%v", val.String()))
+		extraArgs = append(extraArgs, fmt.Sprintf("--authorization-webhook-cache-authorized-ttl=%v", val.Duration))
 	}
 
 	if val := config.CacheUnauthorizedTTL; val != nil {
-		extraArgs = append(extraArgs, fmt.Sprintf("--authorization-webhook-cache-unauthorized-ttl=%v", val.String()))
+		extraArgs = append(extraArgs, fmt.Sprintf("--authorization-webhook-cache-unauthorized-ttl=%v", val.Duration))
 	}
 
 	if val := config.Version; val != "" {
