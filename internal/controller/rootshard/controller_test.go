@@ -90,16 +90,7 @@ func TestReconciling(t *testing.T) {
 
 	for _, testcase := range testcases {
 		t.Run(testcase.name, func(t *testing.T) {
-			// The merged client CA reconciler fetches FrontProxyClientCA and ClientCA.
-			frontProxyClientCASecret := &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      testcase.rootShard.Name + "-front-proxy-client-ca",
-					Namespace: namespace,
-				},
-				Data: map[string][]byte{
-					"tls.crt": []byte("front-proxy-client-ca-cert"),
-				},
-			}
+			// The merged client CA reconciler fetches ClientCA.
 			clientCASecret := &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      testcase.rootShard.Name + "-client-ca",
@@ -114,7 +105,7 @@ func TestReconciling(t *testing.T) {
 				NewClientBuilder().
 				WithScheme(scheme).
 				WithStatusSubresource(testcase.rootShard).
-				WithObjects(testcase.rootShard, frontProxyClientCASecret, clientCASecret).
+				WithObjects(testcase.rootShard, clientCASecret).
 				Build()
 
 			ctx := context.Background()
@@ -128,6 +119,137 @@ func TestReconciling(t *testing.T) {
 				NamespacedName: ctrlruntimeclient.ObjectKeyFromObject(testcase.rootShard),
 			})
 			require.NoError(t, err)
+		})
+	}
+}
+
+func TestClientCABundleMerging(t *testing.T) {
+	const namespace = "rootshard-ca-tests"
+
+	testcases := []struct {
+		name                   string
+		rootShard              *operatorv1alpha1.RootShard
+		extraSecrets           []*corev1.Secret
+		expectMergedSecret     bool
+		expectedMergedContents []string
+	}{
+		{
+			name: "without clientCABundleRef no merged secret is created",
+			rootShard: &operatorv1alpha1.RootShard{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rooty-no-bundle",
+					Namespace: namespace,
+				},
+				Spec: operatorv1alpha1.RootShardSpec{
+					External: operatorv1alpha1.ExternalConfig{
+						Hostname: "example.kcp.io",
+						Port:     6443,
+					},
+					CommonShardSpec: operatorv1alpha1.CommonShardSpec{
+						Etcd: operatorv1alpha1.EtcdConfig{
+							Endpoints: []string{"https://localhost:2379"},
+						},
+					},
+				},
+			},
+			expectMergedSecret: false,
+		},
+		{
+			name: "with clientCABundleRef merged secret contains both CAs",
+			rootShard: &operatorv1alpha1.RootShard{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rooty-with-bundle",
+					Namespace: namespace,
+				},
+				Spec: operatorv1alpha1.RootShardSpec{
+					External: operatorv1alpha1.ExternalConfig{
+						Hostname: "example.kcp.io",
+						Port:     6443,
+					},
+					CommonShardSpec: operatorv1alpha1.CommonShardSpec{
+						Etcd: operatorv1alpha1.EtcdConfig{
+							Endpoints: []string{"https://localhost:2379"},
+						},
+						ClientCABundleRef: &corev1.LocalObjectReference{
+							Name: "extra-client-ca",
+						},
+					},
+				},
+			},
+			extraSecrets: []*corev1.Secret{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "extra-client-ca",
+						Namespace: namespace,
+					},
+					Data: map[string][]byte{
+						"tls.crt": []byte("-----BEGIN CERTIFICATE-----\nExtraClientCA\n-----END CERTIFICATE-----"),
+					},
+				},
+			},
+			expectMergedSecret:     true,
+			expectedMergedContents: []string{"RootClientCA", "ExtraClientCA"},
+		},
+	}
+
+	scheme := util.GetTestScheme()
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			clientCASecret := &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      tc.rootShard.Name + "-client-ca",
+					Namespace: namespace,
+				},
+				Data: map[string][]byte{
+					"tls.crt": []byte("-----BEGIN CERTIFICATE-----\nRootClientCA\n-----END CERTIFICATE-----"),
+				},
+			}
+
+			objects := []ctrlruntimeclient.Object{tc.rootShard, clientCASecret}
+			for _, s := range tc.extraSecrets {
+				objects = append(objects, s)
+			}
+
+			client := ctrlruntimefakeclient.
+				NewClientBuilder().
+				WithScheme(scheme).
+				WithStatusSubresource(tc.rootShard).
+				WithObjects(objects...).
+				Build()
+
+			ctx := context.Background()
+
+			controllerReconciler := &RootShardReconciler{
+				Client: client,
+				Scheme: client.Scheme(),
+			}
+
+			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
+				NamespacedName: ctrlruntimeclient.ObjectKeyFromObject(tc.rootShard),
+			})
+			require.NoError(t, err)
+
+			// Check if merged secret exists
+			mergedSecret := &corev1.Secret{}
+			mergedSecretName := tc.rootShard.Name + "-merged-client-ca"
+			err = client.Get(ctx, ctrlruntimeclient.ObjectKey{
+				Name:      mergedSecretName,
+				Namespace: namespace,
+			}, mergedSecret)
+
+			if tc.expectMergedSecret {
+				require.NoError(t, err, "merged client CA secret should exist")
+				require.NotNil(t, mergedSecret.Data["tls.crt"], "merged secret should contain tls.crt")
+
+				mergedData := string(mergedSecret.Data["tls.crt"])
+				for _, expected := range tc.expectedMergedContents {
+					require.Contains(t, mergedData, expected,
+						"merged CA should contain %s", expected)
+				}
+			} else {
+				require.Error(t, err, "merged client CA secret should not exist when clientCABundleRef is not set")
+			}
 		})
 	}
 }

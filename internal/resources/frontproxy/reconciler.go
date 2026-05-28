@@ -19,11 +19,13 @@ package frontproxy
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	k8creconciling "k8c.io/reconciler/pkg/reconciling"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -66,6 +68,15 @@ func (r *reconciler) getCABundleSecretRef() *corev1.LocalObjectReference {
 	return r.rootShard.Spec.CABundleSecretRef
 }
 
+// getClientCABundleSecretRef returns the ClientCABundleRef from the FrontProxy spec.
+// This is only used for FrontProxy resources, not for the RootShard internal proxy.
+func (r *reconciler) getClientCABundleSecretRef() *corev1.LocalObjectReference {
+	if r.frontProxy != nil {
+		return r.frontProxy.Spec.ClientCABundleRef
+	}
+	return nil
+}
+
 // +kubebuilder:rbac:groups=core,resources=configmaps;secrets;services,verbs=get;update;patch
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;update;patch
 // +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;update;patch
@@ -82,27 +93,34 @@ func (r *reconciler) Reconcile(ctx context.Context, client ctrlruntimeclient.Cli
 	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*ref)
 	revisionLabels := modifier.RelatedRevisionsLabels(ctx, client)
 
+	// Fetch client CA certificates
+	clientCACerts, err := r.fetchClientCACerts(ctx, client)
+	if err != nil {
+		return err
+	}
+
 	configMapReconcilers := []k8creconciling.NamedConfigMapReconcilerFactory{
 		r.pathMappingConfigMapReconciler(),
 	}
 
 	secretReconcilers := []k8creconciling.NamedSecretReconcilerFactory{
 		r.dynamicKubeconfigSecretReconciler(),
-		r.mergedClientCASecretReconciler(ctx, client),
+		r.clientCABundleSecretReconciler(clientCACerts...),
 	}
 
+	// Fetch server CA bundle if needed
 	if r.getCABundleSecretRef() != nil {
-		secretReconcilers = append(secretReconcilers, r.mergedCABundleSecretReconciler(ctx, client))
+		serverCACert, userCABundle, err := r.fetchBackendCAs(ctx, client)
+		if err != nil {
+			return err
+		}
+		secretReconcilers = append(secretReconcilers, r.backendCABundleSecretReconciler(serverCACert, userCABundle))
 	}
 
 	certReconcilers := []reconciling.NamedCertificateReconcilerFactory{
 		r.serverCertificateReconciler(),
 		r.kubeconfigCertificateReconciler(),
 		r.requestHeaderCertificateReconciler(),
-	}
-
-	if r.frontProxy != nil {
-		certReconcilers = append(certReconcilers, r.adminKubeconfigCertificateReconciler())
 	}
 
 	deploymentReconcilers := []k8creconciling.NamedDeploymentReconcilerFactory{
@@ -138,4 +156,72 @@ func (r *reconciler) Reconcile(ctx context.Context, client ctrlruntimeclient.Cli
 	}
 
 	return kerrors.NewAggregate(errs)
+}
+
+// fetchClientCACerts fetches the ClientCA certificate and optionally the additional
+// client CA bundles (from RootShard and/or FrontProxy if configured).
+// Returns the certificates in order: ClientCA, RootShard.ClientCABundleRef, FrontProxy.ClientCABundleRef
+func (r *reconciler) fetchClientCACerts(ctx context.Context, client ctrlruntimeclient.Client) ([][]byte, error) {
+	certs := [][]byte{}
+
+	// fetch the shared, global client CA
+	clientCA, err := r.fetchTLSCert(ctx, client, resources.GetRootShardCAName(r.rootShard, operatorv1alpha1.ClientCA))
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch ClientCA certificate: %w", err)
+	}
+	certs = append(certs, clientCA)
+
+	// fetch RootShard's optional client CA bundle (inherited by all components)
+	if r.rootShard.Spec.ClientCABundleRef != nil {
+		rootShardCABundle, err := r.fetchTLSCert(ctx, client, r.rootShard.Spec.ClientCABundleRef.Name)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch RootShard client CA bundle: %w", err)
+		}
+		certs = append(certs, rootShardCABundle)
+	}
+
+	// fetch optional additional client CA bundle if specified on FrontProxy
+	// (if this a root proxy, getClientCABundleSecretRef returns nil)
+	if ref := r.getClientCABundleSecretRef(); ref != nil {
+		additionalCABundle, err := r.fetchTLSCert(ctx, client, ref.Name)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch additional client CA bundle: %w", err)
+		}
+		certs = append(certs, additionalCABundle)
+	}
+
+	return certs, nil
+}
+
+// fetchBackendCAs fetches the ServerCA certificate and the user-provided CA bundle.
+func (r *reconciler) fetchBackendCAs(ctx context.Context, client ctrlruntimeclient.Client) (serverCA, userCABundle []byte, err error) {
+	// fetch ServerCA
+	serverCA, err = r.fetchTLSCert(ctx, client, resources.GetRootShardCAName(r.rootShard, operatorv1alpha1.ServerCA))
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to fetch ServerCA certificate: %w", err)
+	}
+
+	// fetch user-provided CA bundle
+	if ref := r.getCABundleSecretRef(); ref != nil {
+		userCABundle, err = r.fetchTLSCert(ctx, client, ref.Name)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to fetch user CA bundle: %w", err)
+		}
+	}
+
+	return serverCA, userCABundle, nil
+}
+
+func (r *reconciler) fetchTLSCert(ctx context.Context, client ctrlruntimeclient.Client, secretName string) ([]byte, error) {
+	secret := &corev1.Secret{}
+	if err := client.Get(ctx, types.NamespacedName{Name: secretName, Namespace: r.rootShard.Namespace}, secret); err != nil {
+		return nil, err
+	}
+
+	data, exists := secret.Data["tls.crt"]
+	if !exists {
+		return nil, fmt.Errorf("the Secret %s contains no tls.crt", secretName)
+	}
+
+	return data, nil
 }

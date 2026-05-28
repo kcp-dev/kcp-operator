@@ -213,6 +213,14 @@ func (r *ShardReconciler) reconcile(ctx context.Context, s *operatorv1alpha1.Sha
 		}
 	}
 
+	if rootShard.Spec.ClientCABundleRef != nil || s.Spec.ClientCABundleRef != nil {
+		if err := k8creconciling.ReconcileSecrets(ctx, []k8creconciling.NamedSecretReconcilerFactory{
+			shard.MergedClientCABundleSecretReconciler(ctx, s, rootShard, r.Client),
+		}, s.Namespace, r.Client, ownerRefWrapper); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
 	// to correctly configure the cache settings, we need to find the (optional) external
 	// kcp virtual workspace
 	var kcpVW *operatorv1alpha1.VirtualWorkspace

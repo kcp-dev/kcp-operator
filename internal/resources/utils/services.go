@@ -28,8 +28,8 @@ func ApplyServiceTemplate(svc *corev1.Service, tpl *operatorv1alpha1.ServiceTemp
 	}
 
 	if metadata := tpl.Metadata; metadata != nil {
-		svc.Annotations = addNewKeys(svc.Annotations, metadata.Annotations)
-		svc.Labels = addNewKeys(svc.Labels, metadata.Labels)
+		svc.Annotations = mergeMaps(svc.Annotations, metadata.Annotations)
+		svc.Labels = mergeMaps(svc.Labels, metadata.Labels)
 	}
 
 	if spec := tpl.Spec; spec != nil {

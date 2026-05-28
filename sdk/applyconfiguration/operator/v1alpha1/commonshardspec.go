@@ -41,6 +41,7 @@ type CommonShardSpecApplyConfiguration struct {
 	ServiceTemplate      *ServiceTemplateApplyConfiguration       `json:"serviceTemplate,omitempty"`
 	DeploymentTemplate   *DeploymentTemplateApplyConfiguration    `json:"deploymentTemplate,omitempty"`
 	CABundleSecretRef    *v1.LocalObjectReference                 `json:"caBundleSecretRef,omitempty"`
+	ClientCABundleRef    *v1.LocalObjectReference                 `json:"clientCABundleRef,omitempty"`
 	ExtraArgs            []string                                 `json:"extraArgs,omitempty"`
 	Logging              *LoggingSpecApplyConfiguration           `json:"logging,omitempty"`
 }
@@ -160,6 +161,14 @@ func (b *CommonShardSpecApplyConfiguration) WithDeploymentTemplate(value *Deploy
 // If called multiple times, the CABundleSecretRef field is set to the value of the last call.
 func (b *CommonShardSpecApplyConfiguration) WithCABundleSecretRef(value v1.LocalObjectReference) *CommonShardSpecApplyConfiguration {
 	b.CABundleSecretRef = &value
+	return b
+}
+
+// WithClientCABundleRef sets the ClientCABundleRef field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the ClientCABundleRef field is set to the value of the last call.
+func (b *CommonShardSpecApplyConfiguration) WithClientCABundleRef(value v1.LocalObjectReference) *CommonShardSpecApplyConfiguration {
+	b.ClientCABundleRef = &value
 	return b
 }
 

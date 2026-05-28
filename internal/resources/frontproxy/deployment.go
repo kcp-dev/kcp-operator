@@ -173,12 +173,12 @@ func (r *reconciler) deploymentReconciler() reconciling.NamedDeploymentReconcile
 			// If caBundleSecretRef is specified, mount the merged CA bundle secret.
 			// This secret contains both kcp root CA and user-provided CA bundle merged together.
 			if r.getCABundleSecretRef() != nil {
-				mountSecret(r.mergedCABundleSecretName(), getCAMountPath(operatorv1alpha1.CABundleCA), true)
+				mountSecret(r.backendCABundleSecretName(), getCAMountPath(operatorv1alpha1.CABundleCA), true)
 			}
 
-			// Mount the merged client CA (FrontProxyClientCA + ClientCA) so
+			// Mount the merged client CA (ClientCA + optional ClientCABundleRef) so
 			// that clients signed by either CA are accepted.
-			mountSecret(r.mergedClientCASecretName(), frontProxyBasepath+"/client-ca", true)
+			mountSecret(r.clientCABundleSecretName(), frontProxyBasepath+"/client-ca", true)
 
 			// front-proxy config
 			{

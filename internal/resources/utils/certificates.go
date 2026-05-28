@@ -17,12 +17,11 @@ limitations under the License.
 package utils
 
 import (
+	"bytes"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
 	"maps"
-	"net/url"
-	"os"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -33,7 +32,7 @@ import (
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
-func addNewKeys(existing, toAdd map[string]string) map[string]string {
+func mergeMaps(existing, toAdd map[string]string) map[string]string {
 	if len(toAdd) == 0 {
 		return existing
 	}
@@ -58,8 +57,8 @@ func ApplyCertificateTemplate(cert *certmanagerv1.Certificate, tpl *operatorv1al
 	}
 
 	if metadata := tpl.Metadata; metadata != nil {
-		cert.Annotations = addNewKeys(cert.Annotations, metadata.Annotations)
-		cert.Labels = addNewKeys(cert.Labels, metadata.Labels)
+		cert.Annotations = mergeMaps(cert.Annotations, metadata.Annotations)
+		cert.Labels = mergeMaps(cert.Labels, metadata.Labels)
 	}
 
 	applyCertificateSpecTemplate(cert, tpl.Spec)
@@ -97,8 +96,8 @@ func applyCertificateSpecTemplate(cert *certmanagerv1.Certificate, tpl *operator
 			cert.Spec.SecretTemplate = &certmanagerv1.CertificateSecretTemplate{}
 		}
 
-		cert.Spec.SecretTemplate.Annotations = addNewKeys(cert.Spec.SecretTemplate.Annotations, secretTpl.Annotations)
-		cert.Spec.SecretTemplate.Labels = addNewKeys(cert.Spec.SecretTemplate.Labels, secretTpl.Labels)
+		cert.Spec.SecretTemplate.Annotations = mergeMaps(cert.Spec.SecretTemplate.Annotations, secretTpl.Annotations)
+		cert.Spec.SecretTemplate.Labels = mergeMaps(cert.Spec.SecretTemplate.Labels, secretTpl.Labels)
 	}
 	if tpl.IssuerRef != nil {
 		cert.Spec.IssuerRef = cmmeta.IssuerReference{
@@ -168,8 +167,8 @@ func applyCertificateSubjectTemplate(subj *certmanagerv1.X509Subject, tpl *opera
 	return subj
 }
 
-// ValidatePEMCertificate validates that the given data contains valid PEM-encoded certificates.
-func ValidatePEMCertificate(data []byte) error {
+// validatePEMCertificate validates that the given data contains valid PEM-encoded certificates.
+func validatePEMCertificate(data []byte) error {
 	if len(data) == 0 {
 		return nil
 	}
@@ -194,69 +193,49 @@ func ValidatePEMCertificate(data []byte) error {
 	return nil
 }
 
-// MergeCABundles merges the CA certificate data from two secrets.
-func MergeCABundles(caSecret, caBundle *corev1.Secret) ([]byte, error) {
-	var merged []byte
+// MergeCertificates concatenates multiple PEM certificate bundles with newlines.
+// Empty or nil certificates are skipped.
+func MergeCertificates(certs ...[]byte) []byte {
+	merged := [][]byte{}
+	for _, cert := range certs {
+		if len(cert) > 0 {
+			merged = append(merged, cert)
+		}
+	}
+	return bytes.Join(merged, []byte{'\n'})
+}
 
-	if caSecret != nil && caSecret.Data != nil {
-		if caCrt, exists := caSecret.Data["tls.crt"]; exists {
-			if err := ValidatePEMCertificate(caCrt); err != nil {
-				return nil, fmt.Errorf("invalid certificate in caSecret: %w", err)
-			}
-			merged = append(merged, caCrt...)
+// MergeCertificateSecrets merges the CA certificate data from multiple secrets.
+func MergeCertificateSecrets(secrets ...*corev1.Secret) ([]byte, error) {
+	certs := [][]byte{}
+
+	for _, secret := range secrets {
+		cert, err := getCertFromSecret(secret)
+		if err != nil {
+			return nil, fmt.Errorf("error getting certificate from Secret %s: %w", secret.Name, err)
+		}
+
+		if cert != nil {
+			certs = append(certs, cert)
 		}
 	}
 
-	if caBundle != nil && caBundle.Data != nil {
-		if caCrt, exists := caBundle.Data["tls.crt"]; exists {
-			if err := ValidatePEMCertificate(caCrt); err != nil {
-				return nil, fmt.Errorf("invalid certificate in caBundle: %w", err)
-			}
-			merged = append(merged, caCrt...)
-		}
-	}
-
-	return merged, nil
+	return MergeCertificates(certs...), nil
 }
 
-// MergeCABundlesFiles merges the CA certificate data from two files.
-func MergeCABundlesFiles(caFile1, caFile2 string) ([]byte, error) {
-	var merged []byte
-
-	// Read and validate the first CA file
-	caFile1Content, err := os.ReadFile(caFile1)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read CA file 1: %w", err)
-	}
-	if err := ValidatePEMCertificate(caFile1Content); err != nil {
-		return nil, fmt.Errorf("invalid certificate in caFile1: %w", err)
-	}
-	merged = append(merged, caFile1Content...)
-
-	// Read and validate the second CA file
-	caFile2Content, err := os.ReadFile(caFile2)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read CA file 2: %w", err)
-	}
-	if err := ValidatePEMCertificate(caFile2Content); err != nil {
-		return nil, fmt.Errorf("invalid certificate in caFile2: %w", err)
-	}
-	merged = append(merged, caFile2Content...)
-
-	return merged, nil
-}
-
-// ExtractHostnameFromURL extracts the hostname from a URL string.
-// Returns empty string if the URL is invalid or empty.
-func ExtractHostnameFromURL(rawURL string) string {
-	if rawURL == "" {
-		return ""
+func getCertFromSecret(secret *corev1.Secret) ([]byte, error) {
+	if secret == nil {
+		return nil, nil
 	}
 
-	parsed, err := url.Parse(rawURL)
-	if err != nil {
-		return ""
+	cert, exists := secret.Data["tls.crt"]
+	if !exists {
+		return nil, nil
 	}
 
-	return parsed.Hostname()
+	if err := validatePEMCertificate(cert); err != nil {
+		return nil, err
+	}
+
+	return cert, nil
 }

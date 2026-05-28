@@ -296,7 +296,7 @@ func ExternalLogicalClusterAdminCertificateReconciler(shard *operatorv1alpha1.Sh
 				},
 
 				IssuerRef: certmanagermetav1.IssuerReference{
-					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.FrontProxyClientCA),
+					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.ClientCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},

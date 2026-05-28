@@ -194,7 +194,6 @@ func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operator
 		operatorv1alpha1.RequestHeaderClientCA,
 		operatorv1alpha1.ClientCA,
 		operatorv1alpha1.ServiceAccountCA,
-		operatorv1alpha1.FrontProxyClientCA,
 	}
 
 	for _, ca := range intermediateCAs {
@@ -216,6 +215,14 @@ func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operator
 	if rootShard.Spec.CABundleSecretRef != nil {
 		if err := k8creconciling.ReconcileSecrets(ctx, []k8creconciling.NamedSecretReconcilerFactory{
 			rootshard.MergedCABundleSecretReconciler(ctx, rootShard, r.Client),
+		}, rootShard.Namespace, r.Client, ownerRefWrapper); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	if rootShard.Spec.ClientCABundleRef != nil {
+		if err := k8creconciling.ReconcileSecrets(ctx, []k8creconciling.NamedSecretReconcilerFactory{
+			rootshard.MergedClientCABundleSecretReconciler(ctx, rootShard, r.Client),
 		}, rootShard.Namespace, r.Client, ownerRefWrapper); err != nil {
 			errs = append(errs, err)
 		}

@@ -115,17 +115,30 @@ func DeploymentReconciler(vw *operatorv1alpha1.VirtualWorkspace, rootShard *oper
 
 			args := getArgs(vw, rootShard, shard)
 
-			// All of these CAs are shared between rootshard and regular shards.
+			// CAs shared between rootshard and regular shards (excluding ClientCA which may need merging)
 			for _, ca := range []operatorv1alpha1.CA{
-				operatorv1alpha1.ClientCA,
 				operatorv1alpha1.ServerCA,
-				// operatorv1alpha1.ServiceAccountCA,
 				operatorv1alpha1.RequestHeaderClientCA,
 			} {
 				secretMounts = append(secretMounts, utils.SecretMount{
 					VolumeName: fmt.Sprintf("%s-ca", ca),
 					SecretName: resources.GetRootShardCAName(rootShard, ca),
 					MountPath:  getCAMountPath(ca),
+				})
+			}
+
+			// ClientCA: use merged secret if any ClientCABundleRef is set (inherited from RootShard or VW's own)
+			if rootShard.Spec.ClientCABundleRef != nil || vw.Spec.ClientCABundleRef != nil {
+				secretMounts = append(secretMounts, utils.SecretMount{
+					VolumeName: fmt.Sprintf("%s-ca", operatorv1alpha1.ClientCA),
+					SecretName: fmt.Sprintf("%s-merged-client-ca", vw.Name),
+					MountPath:  getCAMountPath(operatorv1alpha1.ClientCA),
+				})
+			} else {
+				secretMounts = append(secretMounts, utils.SecretMount{
+					VolumeName: fmt.Sprintf("%s-ca", operatorv1alpha1.ClientCA),
+					SecretName: resources.GetRootShardCAName(rootShard, operatorv1alpha1.ClientCA),
+					MountPath:  getCAMountPath(operatorv1alpha1.ClientCA),
 				})
 			}
 

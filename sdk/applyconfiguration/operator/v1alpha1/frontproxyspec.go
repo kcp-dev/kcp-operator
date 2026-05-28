@@ -39,6 +39,7 @@ type FrontProxySpecApplyConfiguration struct {
 	DeploymentTemplate     *DeploymentTemplateApplyConfiguration    `json:"deploymentTemplate,omitempty"`
 	CertificateTemplates   *operatorv1alpha1.CertificateTemplateMap `json:"certificateTemplates,omitempty"`
 	CABundleSecretRef      *v1.LocalObjectReference                 `json:"caBundleSecretRef,omitempty"`
+	ClientCABundleRef      *v1.LocalObjectReference                 `json:"clientCABundleRef,omitempty"`
 	ExtraArgs              []string                                 `json:"extraArgs,omitempty"`
 	Logging                *LoggingSpecApplyConfiguration           `json:"logging,omitempty"`
 }
@@ -147,6 +148,14 @@ func (b *FrontProxySpecApplyConfiguration) WithCertificateTemplates(value operat
 // If called multiple times, the CABundleSecretRef field is set to the value of the last call.
 func (b *FrontProxySpecApplyConfiguration) WithCABundleSecretRef(value v1.LocalObjectReference) *FrontProxySpecApplyConfiguration {
 	b.CABundleSecretRef = &value
+	return b
+}
+
+// WithClientCABundleRef sets the ClientCABundleRef field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the ClientCABundleRef field is set to the value of the last call.
+func (b *FrontProxySpecApplyConfiguration) WithClientCABundleRef(value v1.LocalObjectReference) *FrontProxySpecApplyConfiguration {
+	b.ClientCABundleRef = &value
 	return b
 }
 

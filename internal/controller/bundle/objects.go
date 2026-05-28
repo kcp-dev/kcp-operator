@@ -70,7 +70,6 @@ func getBundleObjectsForShard(shard *operatorv1alpha1.Shard, rootShardName strin
 
 	objects := []operatorv1alpha1.BundleObject{
 		// CA certificates from RootShard (shared)
-		{GVR: secretGVR, Name: fmt.Sprintf("%s-front-proxy-client-ca", rootShardName), Namespace: namespace},
 		{GVR: secretGVR, Name: fmt.Sprintf("%s-requestheader-client-ca", rootShardName), Namespace: namespace},
 		{GVR: secretGVR, Name: fmt.Sprintf("%s-server-ca", rootShardName), Namespace: namespace},
 		{GVR: secretGVR, Name: fmt.Sprintf("%s-ca", rootShardName), Namespace: namespace},
@@ -128,7 +127,6 @@ func getBundleObjectsForRootShard(rootShard *operatorv1alpha1.RootShard) []opera
 		{GVR: secretGVR, Name: fmt.Sprintf("%s-requestheader-client-ca", rootShardName), Namespace: namespace},
 		{GVR: secretGVR, Name: fmt.Sprintf("%s-client-ca", rootShardName), Namespace: namespace},
 		{GVR: secretGVR, Name: fmt.Sprintf("%s-service-account-ca", rootShardName), Namespace: namespace},
-		{GVR: secretGVR, Name: fmt.Sprintf("%s-front-proxy-client-ca", rootShardName), Namespace: namespace},
 
 		// RootShard certificates
 		{GVR: secretGVR, Name: fmt.Sprintf("%s-server", rootShardName), Namespace: namespace},
@@ -181,7 +179,6 @@ func getBundleObjectsForFrontProxy(frontProxy *operatorv1alpha1.FrontProxy, root
 
 	return []operatorv1alpha1.BundleObject{
 		// CA certificates from RootShard (shared)
-		{GVR: secretGVR, Name: fmt.Sprintf("%s-front-proxy-client-ca", rootShardName), Namespace: namespace},
 		{GVR: secretGVR, Name: fmt.Sprintf("%s-requestheader-client-ca", rootShardName), Namespace: namespace},
 		{GVR: secretGVR, Name: fmt.Sprintf("%s-server-ca", rootShardName), Namespace: namespace},
 		{GVR: secretGVR, Name: fmt.Sprintf("%s-ca", rootShardName), Namespace: namespace},

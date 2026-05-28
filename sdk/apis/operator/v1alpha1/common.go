@@ -108,8 +108,12 @@ const (
 	ServerCA              CA = "server"
 	ServiceAccountCA      CA = "service-account"
 	ClientCA              CA = "client"
-	FrontProxyClientCA    CA = "front-proxy-client"
 	RequestHeaderClientCA CA = "requestheader-client"
+
+	// Deprecated: FrontProxyClientCA is no longer used. The front-proxy now uses the ClientCA
+	// for client certificate authentication. For backwards compatibility during upgrades,
+	// use FrontProxy.Spec.ClientCABundleRef to reference the old front-proxy client CA.
+	FrontProxyClientCA CA = "front-proxy-client"
 
 	// CABundleCA is the CA used to validate the API server's TLS certificate.
 	CABundleCA CA = "ca-bundle"

@@ -276,6 +276,24 @@ spec:
                   CertificateTemplates allows to customize the properties on the generated
                   certificates for this server.
                 type: object
+              clientCABundleRef:
+                description: |-
+                  ClientCABundleRef references a v1.Secret containing an additional client CA bundle
+                  for client certificate authentication. The secret must contain a key named `tls.crt`.
+                  This CA bundle will be merged with the root shard's client CA and its ClientCABundleRef
+                  (if configured).
+                properties:
+                  name:
+                    default: ""
+                    description: |-
+                      Name of the referent.
+                      This field is effectively required, but due to backwards compatibility is
+                      allowed to be empty. Instances of this type with an empty value here are
+                      almost certainly wrong.
+                      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                    type: string
+                type: object
+                x-kubernetes-map-type: atomic
               clusterDomain:
                 description: ClusterDomain is the DNS domain for services in the cluster.
                   Defaults to "cluster.local" if not set.
