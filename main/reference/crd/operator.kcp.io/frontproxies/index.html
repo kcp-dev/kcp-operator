@@ -1888,6 +1888,51 @@ certificates for this front-proxy.</p>
 
 <div class="property depth-1">
 <div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.clientCABundleRef">.spec.clientCABundleRef</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+<div class="property-description">
+<p>ClientCABundleRef references a v1.Secret object that contains an additional client CA bundle
+that should be trusted by the front-proxy for client certificate authentication.
+The secret must contain a key named <code>tls.crt</code> that holds the PEM encoded CA certificate(s).
+This CA bundle will be merged with the root shard&rsquo;s client CA, allowing the front-proxy
+to accept client certificates signed by either CA. This is useful for backwards compatibility
+during upgrades when migrating from a separate front-proxy client CA to the shared root shard client CA.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.clientCABundleRef.name">.spec.clientCABundleRef.name</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+More info: <a href="https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names">https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</a></p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-1">
+<div class="property-header">
 <h3 class="property-path" id="v1alpha1-.spec.deploymentTemplate">.spec.deploymentTemplate</h3>
 </div>
 <div class="property-body">
