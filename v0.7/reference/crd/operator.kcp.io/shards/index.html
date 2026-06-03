@@ -1814,8 +1814,11 @@ the OIDC issuer is not publicly trusted.</p>
 </div>
 
 <div class="property-description">
-<p>Optionally provide the client secret for the OIDC client. This is not used by kcp itself, but is used to generate
-a OIDC kubeconfig that can be shared with users to log in via the OIDC provider.</p>
+<p>ClientSecret is the OIDC client secret configured on the issuer side for this kcp instance.
+This is not used by kcp itself, but is used to generate a OIDC kubeconfig that can be
+shared with users to log in via the OIDC provider.</p>
+
+<p>Deprecated: kube OIDC is secretless.</p>
 
 </div>
 
@@ -1976,6 +1979,79 @@ on the OIDC side will be recognised as &ldquo;oidc:user@example.com&rdquo; in kc
 <div class="property-description">
 <p>Optional: Enabled enables or disables ServiceAccount Authentication.
 If set, it will mount every shard&rsquo;s service account certificate to the front-proxy.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.auth.webhook">.spec.auth.webhook</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+<div class="property-description">
+<p>Optional: Webhook configures Webhook Authentication.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.auth.webhook.cacheAuthenticationTTL">.spec.auth.webhook.cacheAuthenticationTTL</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>The duration to cache the authentication responses from the webhook authenticator.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.auth.webhook.configSecretName">.spec.auth.webhook.configSecretName</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>Name of a Kubernetes Secret that contains a kubeconfig formatted file that defines the
+authentication webhook configuration.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.auth.webhook.version">.spec.auth.webhook.version</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>The API version of the authentication.k8s.io TokenReview to send to and expect from the webhook.</p>
 
 </div>
 
@@ -2232,6 +2308,51 @@ More info: <a href="https://kubernetes.io/docs/concepts/overview/working-with-ob
 <div class="property-description">
 <p>CertificateTemplates allows to customize the properties on the generated
 certificates for this shard.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-1">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.clientCABundleRef">.spec.clientCABundleRef</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+<div class="property-description">
+<p>ClientCABundleRef references a v1.Secret containing an additional client CA bundle
+for client certificate authentication. The secret must contain a key named <code>tls.crt</code>.
+This CA bundle will be merged with the root shard&rsquo;s client CA.
+If configured on a RootShard, this bundle is automatically inherited by all FrontProxies,
+Shards, and VirtualWorkspaces connected to it. Each of those components can additionally
+specify their own ClientCABundleRef, which will be merged on top.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.clientCABundleRef.name">.spec.clientCABundleRef.name</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+More info: <a href="https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names">https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</a></p>
 
 </div>
 
