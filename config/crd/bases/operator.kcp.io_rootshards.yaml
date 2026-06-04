@@ -225,6 +225,23 @@ spec:
                     required:
                     - enabled
                     type: object
+                  tokenAuthFile:
+                    description: |-
+                      Optional: TokenAuthFile configures static token file authentication (the kcp
+                      `--token-auth-file` flag). It is supported by shards, the root shard and the front-proxy.
+                    properties:
+                      key:
+                        description: Key in the secret that holds the token CSV file.
+                          Defaults to "token.csv".
+                        type: string
+                      secretName:
+                        description: |-
+                          SecretName is the name of a Kubernetes Secret that contains the token authentication
+                          CSV file. Each line of the file has the format: token,user,uid,"group1,group2,group3".
+                        type: string
+                    required:
+                    - secretName
+                    type: object
                   webhook:
                     description: 'Optional: Webhook configures Webhook Authentication.'
                     properties:

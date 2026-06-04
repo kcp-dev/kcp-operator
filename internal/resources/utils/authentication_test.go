@@ -516,6 +516,84 @@ func TestApplyWebhookAuthentication(t *testing.T) {
 				assert.Equal(t, "/etc/kcp/authentication/webhook", volumeMount.MountPath)
 			},
 		},
+		{
+			name: "authentication spec with token auth file (default key)",
+			initialDeploy: &appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-deployment",
+				},
+				Spec: appsv1.DeploymentSpec{
+					Template: corev1.PodTemplateSpec{
+						Spec: corev1.PodSpec{
+							Containers: []corev1.Container{
+								{
+									Name: "test-container",
+									Args: []string{"--existing-arg=value"},
+								},
+							},
+							Volumes: []corev1.Volume{},
+						},
+					},
+				},
+			},
+			authenticationSpec: &operatorv1alpha1.AuthSpec{
+				TokenAuthFile: &operatorv1alpha1.TokenAuthFileSpec{
+					SecretName: "test-token-auth",
+				},
+			},
+			validateDeploy: func(t *testing.T, dep *appsv1.Deployment) {
+				container := dep.Spec.Template.Spec.Containers[0]
+				args := container.Args
+				assert.Contains(t, args, "--existing-arg=value")
+				assert.Contains(t, args, "--token-auth-file=/etc/kcp/authentication/token/token.csv")
+				assert.Len(t, args, 2)
+				// assert volumes
+				assert.Len(t, dep.Spec.Template.Spec.Volumes, 1)
+				volume := dep.Spec.Template.Spec.Volumes[0]
+				assert.Equal(t, "token-auth-file", volume.Name)
+				require.NotNil(t, volume.Secret)
+				assert.Equal(t, "test-token-auth", volume.Secret.SecretName)
+				// assert volume mounts
+				assert.Len(t, container.VolumeMounts, 1)
+				volumeMount := container.VolumeMounts[0]
+				assert.Equal(t, "token-auth-file", volumeMount.Name)
+				assert.True(t, volumeMount.ReadOnly)
+				assert.Equal(t, "/etc/kcp/authentication/token", volumeMount.MountPath)
+			},
+		},
+		{
+			name: "authentication spec with token auth file (custom key)",
+			initialDeploy: &appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-deployment",
+				},
+				Spec: appsv1.DeploymentSpec{
+					Template: corev1.PodTemplateSpec{
+						Spec: corev1.PodSpec{
+							Containers: []corev1.Container{
+								{
+									Name: "test-container",
+									Args: []string{"--existing-arg=value"},
+								},
+							},
+							Volumes: []corev1.Volume{},
+						},
+					},
+				},
+			},
+			authenticationSpec: &operatorv1alpha1.AuthSpec{
+				TokenAuthFile: &operatorv1alpha1.TokenAuthFileSpec{
+					SecretName: "test-token-auth",
+					Key:        "tokens.csv",
+				},
+			},
+			validateDeploy: func(t *testing.T, dep *appsv1.Deployment) {
+				container := dep.Spec.Template.Spec.Containers[0]
+				args := container.Args
+				assert.Contains(t, args, "--token-auth-file=/etc/kcp/authentication/token/tokens.csv")
+				assert.Len(t, args, 2)
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -528,4 +606,46 @@ func TestApplyWebhookAuthentication(t *testing.T) {
 			tt.validateDeploy(t, result)
 		})
 	}
+}
+
+// TestApplyFrontProxyAuthConfiguration verifies that the front-proxy applies the shared
+// authentication options (including token-auth-file) but never applies structured authentication
+// configuration (--authentication-config), which the front-proxy binary does not support.
+func TestApplyFrontProxyAuthConfiguration(t *testing.T) {
+	rootShard := &operatorv1alpha1.RootShard{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-root-shard"},
+		Status:     operatorv1alpha1.RootShardStatus{Shards: []operatorv1alpha1.ShardReference{}},
+	}
+
+	newDeploy := func() *appsv1.Deployment {
+		return &appsv1.Deployment{
+			ObjectMeta: metav1.ObjectMeta{Name: "test-deployment"},
+			Spec: appsv1.DeploymentSpec{
+				Template: corev1.PodTemplateSpec{
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{
+							{
+								Name: "test-container",
+								Args: []string{"--existing-arg=value"},
+							},
+						},
+						Volumes: []corev1.Volume{},
+					},
+				},
+			},
+		}
+	}
+
+	t.Run("token auth file is applied", func(t *testing.T) {
+		dep := ApplyFrontProxyAuthConfiguration(newDeploy(), &operatorv1alpha1.AuthSpec{
+			TokenAuthFile: &operatorv1alpha1.TokenAuthFileSpec{SecretName: "test-token-auth"},
+		}, rootShard)
+
+		args := dep.Spec.Template.Spec.Containers[0].Args
+		assert.Contains(t, args, "--token-auth-file=/etc/kcp/authentication/token/token.csv")
+		require.Len(t, dep.Spec.Template.Spec.Volumes, 1)
+		assert.Equal(t, "token-auth-file", dep.Spec.Template.Spec.Volumes[0].Name)
+		require.NotNil(t, dep.Spec.Template.Spec.Volumes[0].Secret)
+		assert.Equal(t, "test-token-auth", dep.Spec.Template.Spec.Volumes[0].Secret.SecretName)
+	})
 }
