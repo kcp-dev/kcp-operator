@@ -195,7 +195,7 @@ func DeploymentReconciler(vw *operatorv1alpha1.VirtualWorkspace, rootShard *oper
 				volumeMounts = append(volumeMounts, vm)
 			}
 
-			image, _, _ := resources.GetImageSettings(vw.Spec.Image)
+			image, imagePullSecrets, _ := resources.GetImageSettings(vw.Spec.Image)
 
 			container := corev1.Container{
 				Name:         ServerContainerName,
@@ -209,6 +209,7 @@ func DeploymentReconciler(vw *operatorv1alpha1.VirtualWorkspace, rootShard *oper
 
 			dep.Spec.Template.Spec.Containers = []corev1.Container{container}
 			dep.Spec.Template.Spec.Volumes = volumes
+			dep.Spec.Template.Spec.ImagePullSecrets = imagePullSecrets
 
 			if vw.Spec.Replicas != nil {
 				dep.Spec.Replicas = vw.Spec.Replicas
