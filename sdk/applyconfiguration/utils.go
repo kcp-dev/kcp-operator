@@ -159,6 +159,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &operatorv1alpha1.ShardSpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ShardStatus"):
 		return &operatorv1alpha1.ShardStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("TokenAuthFileSpec"):
+		return &operatorv1alpha1.TokenAuthFileSpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("VirtualWorkspace"):
 		return &operatorv1alpha1.VirtualWorkspaceApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("VirtualWorkspaceSpec"):

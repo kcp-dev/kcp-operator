@@ -138,6 +138,39 @@ func applyServiceAccountAuthentication(deployment *appsv1.Deployment, rootShard 
 	return deployment
 }
 
+func applyTokenAuthFile(deployment *appsv1.Deployment, config operatorv1alpha1.TokenAuthFileSpec) *appsv1.Deployment {
+	podSpec := deployment.Spec.Template.Spec
+
+	volumeName := "token-auth-file"
+	mountPath := "/etc/kcp/authentication/token"
+
+	key := config.Key
+	if key == "" {
+		key = "token.csv"
+	}
+
+	podSpec.Containers[0].Args = append(podSpec.Containers[0].Args, fmt.Sprintf("--token-auth-file=%s/%s", mountPath, key))
+
+	podSpec.Containers[0].VolumeMounts = append(podSpec.Containers[0].VolumeMounts, corev1.VolumeMount{
+		Name:      volumeName,
+		ReadOnly:  true,
+		MountPath: mountPath,
+	})
+
+	podSpec.Volumes = append(podSpec.Volumes, corev1.Volume{
+		Name: volumeName,
+		VolumeSource: corev1.VolumeSource{
+			Secret: &corev1.SecretVolumeSource{
+				SecretName: config.SecretName,
+			},
+		},
+	})
+
+	deployment.Spec.Template.Spec = podSpec
+
+	return deployment
+}
+
 func applyAuthenticationWebhookConfiguration(deployment *appsv1.Deployment, config operatorv1alpha1.AuthenticationWebhookSpec) *appsv1.Deployment {
 	podSpec := deployment.Spec.Template.Spec
 

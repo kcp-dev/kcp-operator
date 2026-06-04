@@ -23,6 +23,7 @@ package v1alpha1
 type AuthSpecApplyConfiguration struct {
 	OIDC           *OIDCConfigurationApplyConfiguration            `json:"oidc,omitempty"`
 	Webhook        *AuthenticationWebhookSpecApplyConfiguration    `json:"webhook,omitempty"`
+	TokenAuthFile  *TokenAuthFileSpecApplyConfiguration            `json:"tokenAuthFile,omitempty"`
 	ServiceAccount *ServiceAccountAuthenticationApplyConfiguration `json:"serviceAccount,omitempty"`
 	DropGroups     []string                                        `json:"dropGroups,omitempty"`
 	PassOnGroups   []string                                        `json:"passOnGroups,omitempty"`
@@ -47,6 +48,14 @@ func (b *AuthSpecApplyConfiguration) WithOIDC(value *OIDCConfigurationApplyConfi
 // If called multiple times, the Webhook field is set to the value of the last call.
 func (b *AuthSpecApplyConfiguration) WithWebhook(value *AuthenticationWebhookSpecApplyConfiguration) *AuthSpecApplyConfiguration {
 	b.Webhook = value
+	return b
+}
+
+// WithTokenAuthFile sets the TokenAuthFile field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the TokenAuthFile field is set to the value of the last call.
+func (b *AuthSpecApplyConfiguration) WithTokenAuthFile(value *TokenAuthFileSpecApplyConfiguration) *AuthSpecApplyConfiguration {
+	b.TokenAuthFile = value
 	return b
 }
 

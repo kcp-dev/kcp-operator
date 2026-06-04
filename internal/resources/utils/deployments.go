@@ -105,6 +105,10 @@ func ApplyAuthConfiguration(deployment *appsv1.Deployment, config *operatorv1alp
 		deployment = applyAuthenticationWebhookConfiguration(deployment, *config.Webhook)
 	}
 
+	if config.TokenAuthFile != nil {
+		deployment = applyTokenAuthFile(deployment, *config.TokenAuthFile)
+	}
+
 	return deployment
 }
 

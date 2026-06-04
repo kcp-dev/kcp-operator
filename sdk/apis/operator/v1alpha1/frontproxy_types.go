@@ -88,6 +88,10 @@ type AuthSpec struct {
 	// Optional: Webhook configures Webhook Authentication.
 	Webhook *AuthenticationWebhookSpec `json:"webhook,omitempty"`
 
+	// Optional: TokenAuthFile configures static token file authentication (the kcp
+	// `--token-auth-file` flag). It is supported by shards, the root shard and the front-proxy.
+	TokenAuthFile *TokenAuthFileSpec `json:"tokenAuthFile,omitempty"`
+
 	// Optional: serviceAccountAuthentication configures ServiceAccount Authentication.
 	ServiceAccount *ServiceAccountAuthentication `json:"serviceAccount,omitempty"`
 
@@ -96,6 +100,18 @@ type AuthSpec struct {
 
 	// Optional: PassOnGroups configures groups to be passed on before forwarding requests to Shards
 	PassOnGroups []string `json:"passOnGroups,omitempty"`
+}
+
+// TokenAuthFileSpec configures static token file authentication via the kcp
+// `--token-auth-file` flag.
+type TokenAuthFileSpec struct {
+	// SecretName is the name of a Kubernetes Secret that contains the token authentication
+	// CSV file. Each line of the file has the format: token,user,uid,"group1,group2,group3".
+	// +kubebuilder:validation:Required
+	SecretName string `json:"secretName"`
+	// Key in the secret that holds the token CSV file. Defaults to "token.csv".
+	// +optional
+	Key string `json:"key,omitempty"`
 }
 
 type AuthenticationWebhookSpec struct {
