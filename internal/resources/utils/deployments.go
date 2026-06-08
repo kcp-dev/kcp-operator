@@ -94,10 +94,7 @@ func ApplyResources(container corev1.Container, resources *corev1.ResourceRequir
 
 // ApplyAuthConfiguration applies the auth configuration to a deployment,
 // including ServiceAccount authentication, which loads every shard's
-// service-account public key (see applyServiceAccountAuthentication). Components
-// that external clients authenticate against directly — the front-proxy AND the
-// shards (whose virtual-workspace endpoint URLs are reached shard-direct) — must
-// validate ServiceAccount tokens issued by any shard.
+// service-account public key.
 func ApplyAuthConfiguration(deployment *appsv1.Deployment, config *operatorv1alpha1.AuthSpec, rootShard *operatorv1alpha1.RootShard) *appsv1.Deployment {
 	if config == nil {
 		return deployment
