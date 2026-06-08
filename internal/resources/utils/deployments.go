@@ -92,7 +92,7 @@ func ApplyResources(container corev1.Container, resources *corev1.ResourceRequir
 	return container
 }
 
-func ApplyAuthConfiguration(deployment *appsv1.Deployment, config *operatorv1alpha1.AuthSpec) *appsv1.Deployment {
+func applyAuthConfiguration(deployment *appsv1.Deployment, config *operatorv1alpha1.AuthSpec) *appsv1.Deployment {
 	if config == nil {
 		return deployment
 	}
@@ -122,7 +122,7 @@ func ApplyAuthConfigurationWithServiceAccount(deployment *appsv1.Deployment, con
 	if config == nil {
 		return deployment
 	}
-	deployment = ApplyAuthConfiguration(deployment, config)
+	deployment = applyAuthConfiguration(deployment, config)
 
 	if config.ServiceAccount != nil && config.ServiceAccount.Enabled {
 		deployment = applyServiceAccountAuthentication(deployment, rootShard)

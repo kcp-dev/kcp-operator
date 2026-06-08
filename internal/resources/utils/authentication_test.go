@@ -598,7 +598,7 @@ func TestApplyWebhookAuthentication(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := ApplyAuthConfiguration(tt.initialDeploy, tt.authenticationSpec)
+			result := applyAuthConfiguration(tt.initialDeploy, tt.authenticationSpec)
 
 			require.NotNil(t, result)
 			assert.Equal(t, tt.initialDeploy, result, "Function should return the same deployment instance")
