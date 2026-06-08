@@ -209,7 +209,7 @@ func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard, kcpVW *operator
 			// endpoints shard-direct via its VirtualWorkspaceURL, bypassing the
 			// front-proxy, so the shard itself must validate ServiceAccount
 			// tokens issued by any shard.
-			dep = utils.ApplyAuthConfigurationWithServiceAccount(dep, rootShard.Spec.Auth, rootShard)
+			dep = utils.ApplyAuthConfiguration(dep, rootShard.Spec.Auth, rootShard)
 
 			// If rootshard has bundle annotation, store desired replicas in annotation then scale deployment to 0 locally
 			if rootShard.Annotations != nil && rootShard.Annotations[resources.BundleAnnotation] != "" {

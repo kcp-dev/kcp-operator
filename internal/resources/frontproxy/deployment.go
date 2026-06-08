@@ -218,7 +218,7 @@ func (r *reconciler) deploymentReconciler() reconciling.NamedDeploymentReconcile
 			dep = utils.ApplyDeploymentTemplate(dep, template)
 
 			if r.frontProxy != nil {
-				dep = utils.ApplyAuthConfigurationWithServiceAccount(dep, r.frontProxy.Spec.Auth, r.rootShard)
+				dep = utils.ApplyAuthConfiguration(dep, r.frontProxy.Spec.Auth, r.rootShard)
 
 				// If frontproxy has bundle annotation, store desired replicas in annotation then scale deployment to 0 locally
 				if r.frontProxy.Annotations != nil && r.frontProxy.Annotations[resources.BundleAnnotation] != "" {
