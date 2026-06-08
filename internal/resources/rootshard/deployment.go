@@ -204,7 +204,7 @@ func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard, kcpVW *operator
 			dep = utils.ApplyCommonShardDeploymentProperties(dep)
 			dep = utils.ApplyCommonShardConfig(dep, &rootShard.Spec.CommonShardSpec)
 			dep = utils.ApplyDeploymentTemplate(dep, rootShard.Spec.DeploymentTemplate)
-			dep = utils.ApplyAuthConfiguration(dep, rootShard.Spec.Auth)
+			dep = utils.ApplyAuthConfiguration(dep, rootShard.Spec.Auth, rootShard)
 
 			// If rootshard has bundle annotation, store desired replicas in annotation then scale deployment to 0 locally
 			if rootShard.Annotations != nil && rootShard.Annotations[resources.BundleAnnotation] != "" {
@@ -244,6 +244,16 @@ func getArgs(rootShard *operatorv1alpha1.RootShard, kcpVW *operatorv1alpha1.Virt
 		fmt.Sprintf("--service-account-private-key-file=%s/tls.key", getCertificateMountPath(operatorv1alpha1.ServiceAccountCertificate)),
 		"--service-account-lookup=false",
 
+		// Client certificate used by the shard to forward requests to virtual
+		// workspace endpoints (e.g. CachedResource replication VWs). Required for
+		// both embedded and external virtual workspaces: the advertised endpoint
+		// URL is the shard's external, SNI-routed VirtualWorkspaceURL, which the
+		// loopback client config cannot reach (loopback bearer token is rejected
+		// and the loopback ServerName breaks SNI routing). Set unconditionally,
+		// matching the non-root shard deployment.
+		fmt.Sprintf("--shard-client-key-file=%s/tls.key", getCertificateMountPath(operatorv1alpha1.ClientCertificate)),
+		fmt.Sprintf("--shard-client-cert-file=%s/tls.crt", getCertificateMountPath(operatorv1alpha1.ClientCertificate)),
+
 		// General shard configuration.
 		fmt.Sprintf("--shard-base-url=%s", resources.GetRootShardBaseURL(rootShard)),
 		fmt.Sprintf("--shard-external-url=https://%s:%d", rootShard.Spec.External.Hostname, rootShard.Spec.External.Port),
@@ -270,10 +280,6 @@ func getArgs(rootShard *operatorv1alpha1.RootShard, kcpVW *operatorv1alpha1.Virt
 			"--run-virtual-workspaces=false",
 			fmt.Sprintf("--shard-virtual-workspace-url=https://%s:%d", kcpVW.Spec.External.Hostname, kcpVW.Spec.External.Port),
 			fmt.Sprintf("--shard-virtual-workspace-ca-file=%s/tls.crt", getCAMountPath(operatorv1alpha1.ServerCA)),
-
-			// these two become mandatory when the in-process VW server is disabled
-			fmt.Sprintf("--shard-client-key-file=%s/tls.key", getCertificateMountPath(operatorv1alpha1.ClientCertificate)),
-			fmt.Sprintf("--shard-client-cert-file=%s/tls.crt", getCertificateMountPath(operatorv1alpha1.ClientCertificate)),
 		)
 	}
 

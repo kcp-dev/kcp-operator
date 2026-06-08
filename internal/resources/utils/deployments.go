@@ -92,7 +92,10 @@ func ApplyResources(container corev1.Container, resources *corev1.ResourceRequir
 	return container
 }
 
-func ApplyAuthConfiguration(deployment *appsv1.Deployment, config *operatorv1alpha1.AuthSpec) *appsv1.Deployment {
+// ApplyAuthConfiguration applies the auth configuration to a deployment,
+// including ServiceAccount authentication, which loads every shard's
+// service-account public key.
+func ApplyAuthConfiguration(deployment *appsv1.Deployment, config *operatorv1alpha1.AuthSpec, rootShard *operatorv1alpha1.RootShard) *appsv1.Deployment {
 	if config == nil {
 		return deployment
 	}
@@ -108,15 +111,6 @@ func ApplyAuthConfiguration(deployment *appsv1.Deployment, config *operatorv1alp
 	if config.TokenAuthFile != nil {
 		deployment = applyTokenAuthFile(deployment, *config.TokenAuthFile)
 	}
-
-	return deployment
-}
-
-func ApplyFrontProxyAuthConfiguration(deployment *appsv1.Deployment, config *operatorv1alpha1.AuthSpec, rootShard *operatorv1alpha1.RootShard) *appsv1.Deployment {
-	if config == nil {
-		return deployment
-	}
-	deployment = ApplyAuthConfiguration(deployment, config)
 
 	if config.ServiceAccount != nil && config.ServiceAccount.Enabled {
 		deployment = applyServiceAccountAuthentication(deployment, rootShard)

@@ -215,7 +215,7 @@ func DeploymentReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1al
 			dep = utils.ApplyCommonShardDeploymentProperties(dep)
 			dep = utils.ApplyCommonShardConfig(dep, &shard.Spec.CommonShardSpec)
 			dep = utils.ApplyDeploymentTemplate(dep, shard.Spec.DeploymentTemplate)
-			dep = utils.ApplyAuthConfiguration(dep, shard.Spec.Auth)
+			dep = utils.ApplyAuthConfiguration(dep, shard.Spec.Auth, rootShard)
 
 			// If shard has bundle annotation, store desired replicas in annotation then scale deployment to 0 locally
 			if shard.Annotations != nil && shard.Annotations[resources.BundleAnnotation] != "" {

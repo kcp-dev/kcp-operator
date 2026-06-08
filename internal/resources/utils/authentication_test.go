@@ -598,7 +598,7 @@ func TestApplyWebhookAuthentication(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := ApplyAuthConfiguration(tt.initialDeploy, tt.authenticationSpec)
+			result := ApplyAuthConfiguration(tt.initialDeploy, tt.authenticationSpec, nil)
 
 			require.NotNil(t, result)
 			assert.Equal(t, tt.initialDeploy, result, "Function should return the same deployment instance")
@@ -637,7 +637,7 @@ func TestApplyFrontProxyAuthConfiguration(t *testing.T) {
 	}
 
 	t.Run("token auth file is applied", func(t *testing.T) {
-		dep := ApplyFrontProxyAuthConfiguration(newDeploy(), &operatorv1alpha1.AuthSpec{
+		dep := ApplyAuthConfiguration(newDeploy(), &operatorv1alpha1.AuthSpec{
 			TokenAuthFile: &operatorv1alpha1.TokenAuthFileSpec{SecretName: "test-token-auth"},
 		}, rootShard)
 
