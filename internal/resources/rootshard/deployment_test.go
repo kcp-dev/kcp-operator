@@ -139,6 +139,35 @@ func TestDeploymentReconciler(t *testing.T) {
 				assert.Contains(t, container.Args, "--authentication-token-webhook-config-file=/etc/kcp/authentication/webhook/kubeconfig")
 			},
 		},
+		{
+			name: "serviceAccount auth loads every shard's signing key",
+			rootShard: &operatorv1alpha1.RootShard{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "rooty",
+				},
+				Spec: operatorv1alpha1.RootShardSpec{
+					CommonShardSpec: operatorv1alpha1.CommonShardSpec{
+						Auth: &operatorv1alpha1.AuthSpec{
+							ServiceAccount: &operatorv1alpha1.ServiceAccountAuthentication{Enabled: true},
+						},
+					},
+				},
+				Status: operatorv1alpha1.RootShardStatus{
+					Shards: []operatorv1alpha1.ShardReference{{Name: "theseus"}},
+				},
+			},
+			expectedName: resources.GetRootShardDeploymentName(&operatorv1alpha1.RootShard{
+				ObjectMeta: metav1.ObjectMeta{Name: "rooty"},
+			}),
+			validateDeploy: func(t *testing.T, dep *appsv1.Deployment) {
+				container := dep.Spec.Template.Spec.Containers[0]
+				// The root shard must be able to validate ServiceAccount tokens
+				// issued by ANY shard, because external clients reach its virtual
+				// workspace endpoints shard-direct (bypassing the front-proxy).
+				assert.Contains(t, container.Args, "--service-account-key-file=/etc/kcp/tls/rooty/service-account/tls.crt")
+				assert.Contains(t, container.Args, "--service-account-key-file=/etc/kcp/tls/theseus/service-account/tls.crt")
+			},
+		},
 	}
 
 	for _, tt := range tests {

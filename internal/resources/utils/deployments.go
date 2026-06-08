@@ -112,7 +112,13 @@ func ApplyAuthConfiguration(deployment *appsv1.Deployment, config *operatorv1alp
 	return deployment
 }
 
-func ApplyFrontProxyAuthConfiguration(deployment *appsv1.Deployment, config *operatorv1alpha1.AuthSpec, rootShard *operatorv1alpha1.RootShard) *appsv1.Deployment {
+// ApplyAuthConfigurationWithServiceAccount applies the common auth configuration
+// plus ServiceAccount authentication, which loads every shard's service-account
+// public key (see applyServiceAccountAuthentication). Components that external
+// clients authenticate against directly — the front-proxy AND the shards (whose
+// virtual-workspace endpoint URLs are reached shard-direct) — must validate
+// ServiceAccount tokens issued by any shard, so they all use this variant.
+func ApplyAuthConfigurationWithServiceAccount(deployment *appsv1.Deployment, config *operatorv1alpha1.AuthSpec, rootShard *operatorv1alpha1.RootShard) *appsv1.Deployment {
 	if config == nil {
 		return deployment
 	}

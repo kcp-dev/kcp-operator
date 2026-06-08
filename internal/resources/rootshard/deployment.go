@@ -204,7 +204,12 @@ func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard, kcpVW *operator
 			dep = utils.ApplyCommonShardDeploymentProperties(dep)
 			dep = utils.ApplyCommonShardConfig(dep, &rootShard.Spec.CommonShardSpec)
 			dep = utils.ApplyDeploymentTemplate(dep, rootShard.Spec.DeploymentTemplate)
-			dep = utils.ApplyAuthConfiguration(dep, rootShard.Spec.Auth)
+			// Use the ServiceAccount-aware variant: external clients (e.g. the
+			// kro kcp-apiexport provider) reach this shard's virtual-workspace
+			// endpoints shard-direct via its VirtualWorkspaceURL, bypassing the
+			// front-proxy, so the shard itself must validate ServiceAccount
+			// tokens issued by any shard.
+			dep = utils.ApplyAuthConfigurationWithServiceAccount(dep, rootShard.Spec.Auth, rootShard)
 
 			// If rootshard has bundle annotation, store desired replicas in annotation then scale deployment to 0 locally
 			if rootShard.Annotations != nil && rootShard.Annotations[resources.BundleAnnotation] != "" {

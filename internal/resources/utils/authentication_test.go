@@ -637,7 +637,7 @@ func TestApplyFrontProxyAuthConfiguration(t *testing.T) {
 	}
 
 	t.Run("token auth file is applied", func(t *testing.T) {
-		dep := ApplyFrontProxyAuthConfiguration(newDeploy(), &operatorv1alpha1.AuthSpec{
+		dep := ApplyAuthConfigurationWithServiceAccount(newDeploy(), &operatorv1alpha1.AuthSpec{
 			TokenAuthFile: &operatorv1alpha1.TokenAuthFileSpec{SecretName: "test-token-auth"},
 		}, rootShard)
 
