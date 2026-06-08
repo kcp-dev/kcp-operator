@@ -75,6 +75,14 @@ func TestDeploymentReconciler(t *testing.T) {
 					assert.True(t, volumeMountNames[expectedMount], "Expected volume mount %s not found", expectedMount)
 				}
 
+				// The shard client certificate flags must be set even with an
+				// embedded virtual workspace (kcpVW == nil here): the shard
+				// forwards CachedResource requests to its own external,
+				// SNI-routed VirtualWorkspaceURL and cannot use the loopback
+				// client config for that.
+				assert.Contains(t, container.Args, "--shard-client-cert-file=/etc/kcp/tls/client/tls.crt")
+				assert.Contains(t, container.Args, "--shard-client-key-file=/etc/kcp/tls/client/tls.key")
+
 				// Check readiness probe
 				assert.NotNil(t, container.ReadinessProbe)
 				assert.Equal(t, "/readyz", container.ReadinessProbe.HTTPGet.Path)
