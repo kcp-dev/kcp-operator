@@ -17,6 +17,11 @@ limitations under the License.
 package resources
 
 import (
+	"bufio"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/Masterminds/semver/v3"
@@ -25,6 +30,10 @@ import (
 )
 
 func TestGetImageSettings(t *testing.T) {
+	// Derive the expected default values from the ImageTag constant so this test
+	// does not need to be updated on every version bump.
+	defaultVersion := semver.MustParse(ImageTag)
+
 	tests := []struct {
 		name            string
 		imageSpec       *operatorv1alpha1.ImageSpec
@@ -34,8 +43,8 @@ func TestGetImageSettings(t *testing.T) {
 		{
 			name:            "default settings",
 			imageSpec:       nil,
-			expectedImage:   "ghcr.io/kcp-dev/kcp:v0.32.0",
-			expectedVersion: "0.32",
+			expectedImage:   fmt.Sprintf("%s:%s", ImageRepository, ImageTag),
+			expectedVersion: fmt.Sprintf("%d.%d", defaultVersion.Major(), defaultVersion.Minor()),
 		},
 		{
 			name: "custom tag with valid semver",
@@ -81,4 +90,82 @@ func TestGetImageSettings(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestImageTagMatchesSDKVersion ensures the default kcp image tag stays in sync
+// with the github.com/kcp-dev/sdk dependency. When bumping kcp to a new minor
+// version, both the go.mod dependency and the ImageTag constant must be updated
+// together; this test (run as part of CI) guards against forgetting one of them.
+func TestImageTagMatchesSDKVersion(t *testing.T) {
+	const sdkModule = "github.com/kcp-dev/sdk"
+
+	sdkVersion, err := requiredModuleVersion(sdkModule)
+	if err != nil {
+		t.Fatalf("could not determine %s version: %v", sdkModule, err)
+	}
+
+	sdkSemver, err := semver.NewVersion(sdkVersion)
+	if err != nil {
+		t.Fatalf("could not parse %s version %q: %v", sdkModule, sdkVersion, err)
+	}
+
+	imageSemver, err := semver.NewVersion(ImageTag)
+	if err != nil {
+		t.Fatalf("could not parse ImageTag %q: %v", ImageTag, err)
+	}
+
+	if imageSemver.Major() != sdkSemver.Major() || imageSemver.Minor() != sdkSemver.Minor() {
+		t.Errorf("ImageTag %q (%d.%d) does not match %s %q (%d.%d); update internal/resources/resources.go and .prow.yaml when bumping the kcp SDK",
+			ImageTag, imageSemver.Major(), imageSemver.Minor(),
+			sdkModule, sdkVersion, sdkSemver.Major(), sdkSemver.Minor())
+	}
+}
+
+// requiredModuleVersion reads the module's go.mod (found by walking up from the
+// working directory) and returns the version of the given required module.
+func requiredModuleVersion(module string) (string, error) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	var goModPath string
+	for {
+		candidate := filepath.Join(dir, "go.mod")
+		if _, err := os.Stat(candidate); err == nil {
+			goModPath = candidate
+			break
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", fmt.Errorf("could not locate go.mod above working directory")
+		}
+		dir = parent
+	}
+
+	file, err := os.Open(goModPath)
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = file.Close() }()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		// Strip the optional "require " prefix and any inline comment.
+		line := strings.TrimSpace(scanner.Text())
+		line = strings.TrimPrefix(line, "require ")
+		if idx := strings.Index(line, "//"); idx >= 0 {
+			line = strings.TrimSpace(line[:idx])
+		}
+
+		fields := strings.Fields(line)
+		if len(fields) == 2 && fields[0] == module {
+			return fields[1], nil
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return "", err
+	}
+
+	return "", fmt.Errorf("module %s not found in %s", module, goModPath)
 }
