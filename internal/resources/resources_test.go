@@ -34,8 +34,8 @@ func TestGetImageSettings(t *testing.T) {
 		{
 			name:            "default settings",
 			imageSpec:       nil,
-			expectedImage:   "ghcr.io/kcp-dev/kcp:v0.31.2",
-			expectedVersion: "0.31",
+			expectedImage:   "ghcr.io/kcp-dev/kcp:v0.32.0",
+			expectedVersion: "0.32",
 		},
 		{
 			name: "custom tag with valid semver",
