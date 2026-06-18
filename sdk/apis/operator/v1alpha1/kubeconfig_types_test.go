@@ -38,6 +38,53 @@ func TestGetTargetWorkspace(t *testing.T) {
 			expected: logicalcluster.NewPath("root:org:team"),
 		},
 		{
+			name: "deprecated cluster does NOT affect URL",
+			kc: &Kubeconfig{
+				Spec: KubeconfigSpec{
+					Authorization: &KubeconfigAuthorization{
+						ClusterRoleBindings: KubeconfigClusterRoleBindings{
+							Cluster: "root:legacy:workspace",
+						},
+					},
+				},
+			},
+			expected: logicalcluster.NewPath("root"),
+		},
+		{
+			name: "both empty defaults to root",
+			kc: &Kubeconfig{
+				Spec: KubeconfigSpec{},
+			},
+			expected: logicalcluster.NewPath("root"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.kc.GetTargetWorkspace()
+			if !got.Equal(tt.expected) {
+				t.Errorf("got %q, want %q", got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestGetRBACTargetWorkspace(t *testing.T) {
+	tests := []struct {
+		name     string
+		kc       *Kubeconfig
+		expected logicalcluster.Path
+	}{
+		{
+			name: "targetWorkspace set",
+			kc: &Kubeconfig{
+				Spec: KubeconfigSpec{
+					TargetWorkspace: "root:org:team",
+				},
+			},
+			expected: logicalcluster.NewPath("root:org:team"),
+		},
+		{
 			name: "targetWorkspace empty, deprecated cluster set",
 			kc: &Kubeconfig{
 				Spec: KubeconfigSpec{
@@ -88,7 +135,7 @@ func TestGetTargetWorkspace(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := tt.kc.GetTargetWorkspace()
+			got := tt.kc.GetRBACTargetWorkspace()
 			if !got.Equal(tt.expected) {
 				t.Errorf("got %q, want %q", got, tt.expected)
 			}

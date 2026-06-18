@@ -125,10 +125,21 @@ func (k *Kubeconfig) GetCertificateName() string {
 	return fmt.Sprintf("kubeconfig-cert-%s", k.Name)
 }
 
-// GetTargetWorkspace returns the resolved workspace path for this kubeconfig.
+// GetTargetWorkspace returns the workspace path for the generated kubeconfig URL.
+// Only spec.targetWorkspace is considered; defaults to "root".
+// The deprecated authorization.clusterRoleBindings.cluster field does NOT influence
+// the URL to avoid breaking existing users.
+func (k *Kubeconfig) GetTargetWorkspace() logicalcluster.Path {
+	if k.Spec.TargetWorkspace != "" {
+		return logicalcluster.NewPath(k.Spec.TargetWorkspace)
+	}
+	return logicalcluster.NewPath("root")
+}
+
+// GetRBACTargetWorkspace returns the workspace path for RBAC provisioning.
 // It checks spec.targetWorkspace first, then falls back to
 // spec.authorization.clusterRoleBindings.cluster (deprecated), and defaults to "root".
-func (k *Kubeconfig) GetTargetWorkspace() logicalcluster.Path {
+func (k *Kubeconfig) GetRBACTargetWorkspace() logicalcluster.Path {
 	if k.Spec.TargetWorkspace != "" {
 		return logicalcluster.NewPath(k.Spec.TargetWorkspace)
 	}
