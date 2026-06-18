@@ -27,6 +27,7 @@ import (
 // with apply.
 type KubeconfigSpecApplyConfiguration struct {
 	Target              *KubeconfigTargetApplyConfiguration        `json:"target,omitempty"`
+	TargetWorkspace     *string                                    `json:"targetWorkspace,omitempty"`
 	Username            *string                                    `json:"username,omitempty"`
 	Groups              []string                                   `json:"groups,omitempty"`
 	Validity            *v1.Duration                               `json:"validity,omitempty"`
@@ -46,6 +47,14 @@ func KubeconfigSpec() *KubeconfigSpecApplyConfiguration {
 // If called multiple times, the Target field is set to the value of the last call.
 func (b *KubeconfigSpecApplyConfiguration) WithTarget(value *KubeconfigTargetApplyConfiguration) *KubeconfigSpecApplyConfiguration {
 	b.Target = value
+	return b
+}
+
+// WithTargetWorkspace sets the TargetWorkspace field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the TargetWorkspace field is set to the value of the last call.
+func (b *KubeconfigSpecApplyConfiguration) WithTargetWorkspace(value string) *KubeconfigSpecApplyConfiguration {
+	b.TargetWorkspace = &value
 	return b
 }
 

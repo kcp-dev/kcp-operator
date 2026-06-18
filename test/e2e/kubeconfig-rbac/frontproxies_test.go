@@ -87,83 +87,117 @@ func TestProvisionFrontProxyRBAC(t *testing.T) {
 		t.Fatalf("Failed to wait for workspace to become available: %v", err)
 	}
 
-	// create my-config kubeconfig
-	configSecretName := "kubeconfig-my-config-e2e"
-
-	// as of now, this Kubeconfig will not grant any permissions yet
-	fpConfig := operatorv1alpha1.Kubeconfig{}
-	fpConfig.Name = "my-config"
-	fpConfig.Namespace = namespace.Name
-	fpConfig.Spec = operatorv1alpha1.KubeconfigSpec{
-		Target: operatorv1alpha1.KubeconfigTarget{
-			FrontProxyRef: &corev1.LocalObjectReference{
-				Name: frontProxy.Name,
+	testcases := []struct {
+		name       string
+		applyRBAC  func(kc *operatorv1alpha1.Kubeconfig)
+		removeRBAC func(kc *operatorv1alpha1.Kubeconfig)
+	}{
+		{
+			name: "using spec.targetWorkspace",
+			applyRBAC: func(kc *operatorv1alpha1.Kubeconfig) {
+				kc.Spec.TargetWorkspace = dummyCluster.String()
+				kc.Spec.Authorization = &operatorv1alpha1.KubeconfigAuthorization{
+					ClusterRoleBindings: operatorv1alpha1.KubeconfigClusterRoleBindings{
+						ClusterRoles: []string{"cluster-admin"},
+					},
+				}
+			},
+			removeRBAC: func(kc *operatorv1alpha1.Kubeconfig) {
+				kc.Spec.TargetWorkspace = ""
+				kc.Spec.Authorization = nil
 			},
 		},
-		Username: "e2e",
-		Validity: metav1.Duration{Duration: 2 * time.Hour},
-		SecretRef: corev1.LocalObjectReference{
-			Name: configSecretName,
+		{
+			name: "using deprecated authorization.clusterRoleBindings.cluster",
+			applyRBAC: func(kc *operatorv1alpha1.Kubeconfig) {
+				kc.Spec.Authorization = &operatorv1alpha1.KubeconfigAuthorization{
+					ClusterRoleBindings: operatorv1alpha1.KubeconfigClusterRoleBindings{
+						Cluster:      dummyCluster.String(),
+						ClusterRoles: []string{"cluster-admin"},
+					},
+				}
+			},
+			removeRBAC: func(kc *operatorv1alpha1.Kubeconfig) {
+				kc.Spec.Authorization = nil
+			},
 		},
 	}
 
-	t.Log("Creating kubeconfig with no permissions attached…")
-	if err := client.Create(ctx, &fpConfig); err != nil {
-		t.Fatal(err)
-	}
-	utils.WaitForObject(t, ctx, client, &corev1.Secret{}, types.NamespacedName{Namespace: fpConfig.Namespace, Name: fpConfig.Spec.SecretRef.Name})
+	for i, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			configSecretName := fmt.Sprintf("kubeconfig-rbac-e2e-%d", i)
 
-	t.Log("Connecting to FrontProxy…")
-	kcpClient := utils.ConnectWithKubeconfig(t, ctx, client, namespace.Name, fpConfig.Name, dummyCluster)
+			// as of now, this Kubeconfig will not grant any permissions yet
+			fpConfig := operatorv1alpha1.Kubeconfig{}
+			fpConfig.Name = fmt.Sprintf("rbac-test-%d", i)
+			fpConfig.Namespace = namespace.Name
+			fpConfig.Spec = operatorv1alpha1.KubeconfigSpec{
+				Target: operatorv1alpha1.KubeconfigTarget{
+					FrontProxyRef: &corev1.LocalObjectReference{
+						Name: frontProxy.Name,
+					},
+				},
+				Username: "e2e",
+				Validity: metav1.Duration{Duration: 2 * time.Hour},
+				SecretRef: corev1.LocalObjectReference{
+					Name: configSecretName,
+				},
+			}
 
-	// This should not work yet.
-	t.Logf("Should not be able to list Secrets in %v.", dummyCluster)
-	if err := kcpClient.List(ctx, &corev1.SecretList{}); err == nil {
-		t.Fatal("Should not have been able to list Secrets, but was. Where have my permissions come from?")
-	}
+			t.Log("Creating kubeconfig with no permissions attached…")
+			if err := client.Create(ctx, &fpConfig); err != nil {
+				t.Fatal(err)
+			}
+			utils.WaitForObject(t, ctx, client, &corev1.Secret{}, types.NamespacedName{Namespace: fpConfig.Namespace, Name: fpConfig.Spec.SecretRef.Name})
 
-	// Now we extend the Kubeconfig with additional permissions.
-	if err := client.Get(ctx, ctrlruntimeclient.ObjectKeyFromObject(&fpConfig), &fpConfig); err != nil {
-		t.Fatal(err)
-	}
+			t.Log("Connecting to FrontProxy…")
+			kcpClient := utils.ConnectWithKubeconfig(t, ctx, client, namespace.Name, fpConfig.Name, dummyCluster)
 
-	fpConfig.Spec.Authorization = &operatorv1alpha1.KubeconfigAuthorization{
-		ClusterRoleBindings: operatorv1alpha1.KubeconfigClusterRoleBindings{
-			Cluster:      dummyCluster.String(),
-			ClusterRoles: []string{"cluster-admin"},
-		},
-	}
+			// This should not work yet.
+			t.Logf("Should not be able to list Secrets in %v.", dummyCluster)
+			if err := kcpClient.List(ctx, &corev1.SecretList{}); err == nil {
+				t.Fatal("Should not have been able to list Secrets, but was. Where have my permissions come from?")
+			}
 
-	t.Log("Updating kubeconfig with permissions attached…")
-	if err := client.Update(ctx, &fpConfig); err != nil {
-		t.Fatal(err)
-	}
+			// Now we extend the Kubeconfig with additional permissions.
+			if err := client.Get(ctx, ctrlruntimeclient.ObjectKeyFromObject(&fpConfig), &fpConfig); err != nil {
+				t.Fatal(err)
+			}
 
-	t.Logf("Should now be able to list Secrets in %v.", dummyCluster)
-	err = wait.PollUntilContextTimeout(ctx, 500*time.Millisecond, 30*time.Second, false, func(ctx context.Context) (done bool, err error) {
-		return kcpClient.List(ctx, &corev1.SecretList{}) == nil, nil
-	})
-	if err != nil {
-		t.Fatalf("Failed to list Secrets in dummy workspace: %v", err)
-	}
+			tc.applyRBAC(&fpConfig)
 
-	// And now we remove the permissions again.
-	t.Log("Updating kubeconfig to remove the attached permissions…")
-	if err := client.Get(ctx, ctrlruntimeclient.ObjectKeyFromObject(&fpConfig), &fpConfig); err != nil {
-		t.Fatal(err)
-	}
+			t.Log("Updating kubeconfig with permissions attached…")
+			if err := client.Update(ctx, &fpConfig); err != nil {
+				t.Fatal(err)
+			}
 
-	fpConfig.Spec.Authorization = nil
+			t.Logf("Should now be able to list Secrets in %v.", dummyCluster)
+			err := wait.PollUntilContextTimeout(ctx, 500*time.Millisecond, 30*time.Second, false, func(ctx context.Context) (done bool, err error) {
+				return kcpClient.List(ctx, &corev1.SecretList{}) == nil, nil
+			})
+			if err != nil {
+				t.Fatalf("Failed to list Secrets in dummy workspace: %v", err)
+			}
 
-	if err := client.Update(ctx, &fpConfig); err != nil {
-		t.Fatal(err)
-	}
+			// And now we remove the permissions again.
+			t.Log("Updating kubeconfig to remove the attached permissions…")
+			if err := client.Get(ctx, ctrlruntimeclient.ObjectKeyFromObject(&fpConfig), &fpConfig); err != nil {
+				t.Fatal(err)
+			}
 
-	t.Logf("Should no longer be able to list Secrets in %v.", dummyCluster)
-	err = wait.PollUntilContextTimeout(ctx, 500*time.Millisecond, 30*time.Second, false, func(ctx context.Context) (done bool, err error) {
-		return kcpClient.List(ctx, &corev1.SecretList{}) != nil, nil
-	})
-	if err != nil {
-		t.Fatalf("Failed to wait for permissions to be gone: %v", err)
+			tc.removeRBAC(&fpConfig)
+
+			if err := client.Update(ctx, &fpConfig); err != nil {
+				t.Fatal(err)
+			}
+
+			t.Logf("Should no longer be able to list Secrets in %v.", dummyCluster)
+			err = wait.PollUntilContextTimeout(ctx, 500*time.Millisecond, 30*time.Second, false, func(ctx context.Context) (done bool, err error) {
+				return kcpClient.List(ctx, &corev1.SecretList{}) != nil, nil
+			})
+			if err != nil {
+				t.Fatalf("Failed to wait for permissions to be gone: %v", err)
+			}
+		})
 	}
 }
