@@ -19,14 +19,25 @@ package v1alpha1
 import (
 	"fmt"
 
+	"github.com/kcp-dev/logicalcluster/v3"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // KubeconfigSpec defines the desired state of Kubeconfig.
+// +kubebuilder:validation:XValidation:rule="!(has(self.targetWorkspace) && has(self.authorization) && has(self.authorization.clusterRoleBindings.cluster))",message="Cannot set both targetWorkspace and authorization.clusterRoleBindings.cluster. Use targetWorkspace only."
 type KubeconfigSpec struct {
 	// Target configures which kcp-operator object this kubeconfig should be generated for (shard or front-proxy).
 	Target KubeconfigTarget `json:"target"`
+
+	// TargetWorkspace specifies the workspace path this kubeconfig targets.
+	// Used in the generated kubeconfig server URL and as the default RBAC provisioning target.
+	// Accepts kcp workspace paths like "root:org:team".
+	// Defaults to "root" if unset.
+	// +optional
+	// +kubebuilder:validation:Pattern=`^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(:[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*$`
+	TargetWorkspace string `json:"targetWorkspace,omitempty"`
 
 	// Username defines the username embedded in the TLS certificate generated for this kubeconfig.
 	Username string `json:"username"`
@@ -59,7 +70,12 @@ type KubeconfigAuthorization struct {
 
 type KubeconfigClusterRoleBindings struct {
 	// Cluster can be either a cluster name or a workspace path.
-	Cluster      string   `json:"cluster"`
+	//
+	// Deprecated: Use spec.targetWorkspace instead. This field is kept for backward
+	// compatibility but cannot be set together with spec.targetWorkspace.
+	// +optional
+	Cluster string `json:"cluster,omitempty"`
+
 	ClusterRoles []string `json:"clusterRoles"`
 }
 
@@ -107,6 +123,30 @@ type Kubeconfig struct {
 
 func (k *Kubeconfig) GetCertificateName() string {
 	return fmt.Sprintf("kubeconfig-cert-%s", k.Name)
+}
+
+// GetTargetWorkspace returns the workspace path for the generated kubeconfig URL.
+// Only spec.targetWorkspace is considered; defaults to "root".
+// The deprecated authorization.clusterRoleBindings.cluster field does NOT influence
+// the URL to avoid breaking existing users.
+func (k *Kubeconfig) GetTargetWorkspace() logicalcluster.Path {
+	if k.Spec.TargetWorkspace != "" {
+		return logicalcluster.NewPath(k.Spec.TargetWorkspace)
+	}
+	return logicalcluster.NewPath("root")
+}
+
+// GetRBACTargetWorkspace returns the workspace path for RBAC provisioning.
+// It checks spec.targetWorkspace first, then falls back to
+// spec.authorization.clusterRoleBindings.cluster (deprecated), and defaults to "root".
+func (k *Kubeconfig) GetRBACTargetWorkspace() logicalcluster.Path {
+	if k.Spec.TargetWorkspace != "" {
+		return logicalcluster.NewPath(k.Spec.TargetWorkspace)
+	}
+	if auth := k.Spec.Authorization; auth != nil && auth.ClusterRoleBindings.Cluster != "" {
+		return logicalcluster.NewPath(auth.ClusterRoleBindings.Cluster)
+	}
+	return logicalcluster.NewPath("root")
 }
 
 // +kubebuilder:object:root=true

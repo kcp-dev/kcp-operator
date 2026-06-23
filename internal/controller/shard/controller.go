@@ -338,7 +338,7 @@ func (r *ShardReconciler) handleDeletion(ctx context.Context, s *operatorv1alpha
 	}
 
 	// Create client to root shard
-	kcpClient, err := client.NewRootShardClient(ctx, r.Client, rootShard, logicalcluster.Name("root"), r.Scheme)
+	kcpClient, err := client.NewRootShardClient(ctx, r.Client, rootShard, logicalcluster.NewPath("root"), r.Scheme)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create root shard client: %w", err)
 	}

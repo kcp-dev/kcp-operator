@@ -87,7 +87,7 @@ func KubeconfigSecretReconciler(
 		}
 
 		serverURL := resources.GetRootShardBaseURL(rootShard)
-		defaultURL, err := url.JoinPath(serverURL, "clusters", "root")
+		defaultURL, err := url.JoinPath(serverURL, kubeconfig.GetTargetWorkspace().RequestPath())
 		if err != nil {
 			return nil, err
 		}
@@ -105,7 +105,7 @@ func KubeconfigSecretReconciler(
 		}
 
 		serverURL := resources.GetShardBaseURL(shard)
-		defaultURL, err := url.JoinPath(serverURL, "clusters", "root")
+		defaultURL, err := url.JoinPath(serverURL, kubeconfig.GetTargetWorkspace().RequestPath())
 		if err != nil {
 			return nil, err
 		}
@@ -137,7 +137,7 @@ func KubeconfigSecretReconciler(
 			serverURL = fmt.Sprintf("https://%s:%d", rootShard.Spec.External.Hostname, rootShard.Spec.External.Port)
 		}
 
-		defaultURL, err := url.JoinPath(serverURL, "clusters", "root")
+		defaultURL, err := url.JoinPath(serverURL, kubeconfig.GetTargetWorkspace().RequestPath())
 		if err != nil {
 			return nil, err
 		}

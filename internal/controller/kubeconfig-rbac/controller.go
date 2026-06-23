@@ -84,8 +84,8 @@ func (r *KubeconfigRBACReconciler) reconcile(ctx context.Context, config *operat
 	if auth := config.Status.Authorization; auth != nil {
 		oldCluster = auth.ProvisionedCluster
 	}
-	if auth := config.Spec.Authorization; auth != nil {
-		newCluster = auth.ClusterRoleBindings.Cluster
+	if config.Spec.Authorization != nil {
+		newCluster = config.GetRBACTargetWorkspace().String()
 	}
 
 	// All `return nil` here are because the Kubeconfig has been modified and will be requeued anyway.
@@ -132,7 +132,7 @@ func (r *KubeconfigRBACReconciler) reconcile(ctx context.Context, config *operat
 }
 
 func (r *KubeconfigRBACReconciler) reconcileBindings(ctx context.Context, kc *operatorv1alpha1.Kubeconfig) error {
-	targetClient, err := client.NewInternalKubeconfigClient(ctx, r.Client, kc, logicalcluster.Name(kc.Spec.Authorization.ClusterRoleBindings.Cluster), nil)
+	targetClient, err := client.NewInternalKubeconfigClient(ctx, r.Client, kc, kc.GetRBACTargetWorkspace(), nil)
 	if err != nil {
 		return fmt.Errorf("failed to create client to kubeconfig target: %w", err)
 	}
@@ -207,7 +207,7 @@ func (r *KubeconfigRBACReconciler) unprovisionCluster(ctx context.Context, kc *o
 		return nil
 	}
 
-	targetClient, err := client.NewInternalKubeconfigClient(ctx, r.Client, kc, logicalcluster.Name(cluster), nil)
+	targetClient, err := client.NewInternalKubeconfigClient(ctx, r.Client, kc, logicalcluster.NewPath(cluster), nil)
 	if err != nil {
 		return fmt.Errorf("failed to create client to kubeconfig target: %w", err)
 	}
