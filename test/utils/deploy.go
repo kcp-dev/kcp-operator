@@ -43,7 +43,11 @@ func DeployEtcd(t *testing.T, name, namespace string) string {
 		helmCommand = "helm"
 	}
 
-	if err := exec.Command(helmCommand, args...).Run(); err != nil {
+	cmd := exec.Command(helmCommand, args...)
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+
+	if err := cmd.Run(); err != nil {
 		t.Fatalf("Failed to deploy etcd: %v", err)
 	}
 
