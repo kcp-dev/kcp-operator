@@ -671,6 +671,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#target-workspace" class="md-nav__link">
+    <span class="md-ellipsis">
+      Target Workspace
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#authorization" class="md-nav__link">
     <span class="md-ellipsis">
       Authorization
@@ -1181,6 +1190,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#target-workspace" class="md-nav__link">
+    <span class="md-ellipsis">
+      Target Workspace
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#authorization" class="md-nav__link">
     <span class="md-ellipsis">
       Authorization
@@ -1235,10 +1253,15 @@
 <a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="w">    </span><span class="nt">frontProxyRef</span><span class="p">:</span>
 <a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-front-proxy</span>
 <a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>
-<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="w">  </span><span class="c1"># Required: how long the certificate should be valid for;</span>
-<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="w">  </span><span class="c1"># the operator will automatically renew the certificate, after which the</span>
-<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a><span class="w">  </span><span class="c1"># Secret will be renewed and have to be re-downloaded.</span>
-<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a><span class="w">  </span><span class="nt">validity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8766h</span>
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="w">  </span><span class="c1"># Optional: specifies the workspace path this kubeconfig targets.</span>
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="w">  </span><span class="c1"># Used in the generated kubeconfig server URL and as the default RBAC</span>
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a><span class="w">  </span><span class="c1"># provisioning target. Defaults to &quot;root&quot; if unset.</span>
+<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a><span class="w">  </span><span class="nt">targetWorkspace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">root:orga:teamb</span>
+<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>
+<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a><span class="w">  </span><span class="c1"># Required: how long the certificate should be valid for;</span>
+<a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a><span class="w">  </span><span class="c1"># the operator will automatically renew the certificate, after which the</span>
+<a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a><span class="w">  </span><span class="c1"># Secret will be renewed and have to be re-downloaded.</span>
+<a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a><span class="w">  </span><span class="nt">validity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8766h</span>
 </code></pre></div>
 <p><code>Kubeconfig</code> objects must exist in the same namespace as the kcp installation they are meant for.</p>
 <p>Once the <code>Kubeconfig</code> has been created, you can observe its status to wait for it to be ready. After that, retrieve the Secret mentioned in the <code>secretRef</code> to find the finished kubeconfig, ready to use.</p>
@@ -1251,27 +1274,42 @@
 <p class="admonition-title">Note</p>
 <p>The <code>Kubeconfig</code>'s name is embedded into the certificate in form of a group (organization) named <code>kubeconfig:&lt;name&gt;</code>. This is to allow a unique mapping from RBAC rules to <code>Kubeconfig</code> objects for the authorization (see further down). Take note that this means the <code>Kubeconfig</code>' name is leaked to whoever gets the kubeconfig.</p>
 </div>
+<h2 id="target-workspace">Target Workspace</h2>
+<p>By default, the generated kubeconfig's server URL points to the <code>root</code> workspace. To target a different workspace, set <code>spec.targetWorkspace</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">spec</span><span class="p">:</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">targetWorkspace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">root:orga:teamb</span>
+</code></pre></div>
+<p>This affects two things:</p>
+<ol>
+<li><strong>Server URL</strong>: The generated kubeconfig will contain a server URL pointing to the specified workspace (e.g. <code>https://.../clusters/root:orga:teamb</code>).</li>
+<li><strong>RBAC target</strong>: When authorization is configured (see below), the RBAC rules will be provisioned in this workspace by default.</li>
+</ol>
+<p>The field accepts kcp workspace paths like <code>root</code>, <code>root:org</code>, or <code>root:org:team</code>.</p>
 <h2 id="authorization">Authorization</h2>
 <p>Without any further configuration than shown in the basics section above, the created identity (username + groups) will not get any permissions in kcp. So while the kubeconfig is valid and allows proper authentication, pretty much no actions will be permitted yet.</p>
 <p>The administrator has to either rely on externally-managed RBAC rules to provide permissions, or use the kcp-operator to provision such RBAC in a workspace.</p>
 <p>To make the kcp-operator manage RBAC, use <code>spec.authorization</code> inside a <code>Kubeconfig</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">operator.kcp.io/v1alpha1</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Kubeconfig</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nt">metadata</span><span class="p">:</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">susan</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-kcp</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="nt">spec</span><span class="p">:</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">  </span><span class="c1">#...snip...</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">  </span><span class="nt">authorization</span><span class="p">:</span>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">    </span><span class="nt">clusterRoleBindings</span><span class="p">:</span>
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">      </span><span class="c1"># This can be a workspace path (root:something) or a cluster name (ID).</span>
-<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">      </span><span class="nt">cluster</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">root:initech:teamgibbons</span>
-<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">      </span><span class="nt">clusterRoles</span><span class="p">:</span>
-<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster-admin</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">operator.kcp.io/v1alpha1</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Kubeconfig</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">susan</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-kcp</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="nt">spec</span><span class="p">:</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">  </span><span class="c1">#...snip...</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">  </span><span class="nt">targetWorkspace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">root:orga:teamb</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">  </span><span class="nt">authorization</span><span class="p">:</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="w">    </span><span class="nt">clusterRoleBindings</span><span class="p">:</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="w">      </span><span class="nt">clusterRoles</span><span class="p">:</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster-admin</span>
 </code></pre></div>
-<p>This configuration would bind the group <code>kubeconfig:susan</code> to the ClusterRole <code>cluster-admin</code> inside the given workspace. Note that this is specifically not bound to the user (common name), so that two <code>Kubeconfig</code> objects that both have the same <code>spec.name</code> to not have colliding RBAC.</p>
+<p>This configuration would bind the group <code>kubeconfig:susan</code> to the ClusterRole <code>cluster-admin</code> inside the workspace specified in <code>spec.targetWorkspace</code>. Note that this is specifically not bound to the user (common name), so that two <code>Kubeconfig</code> objects that both have the same <code>spec.name</code> to not have colliding RBAC.</p>
 <p>When deleting a <code>Kubeconfig</code> with authorization settings, the kcp-operator will first unprovision (delete) the <code>ClusterRoleBindings</code> before the <code>Kubeconfig</code> can be deleted.</p>
+<div class="admonition note">
+<p class="admonition-title">Deprecated: <code>authorization.clusterRoleBindings.cluster</code></p>
+<p>Previously, the target workspace for RBAC was specified via <code>spec.authorization.clusterRoleBindings.cluster</code>. This field is now deprecated in favor of <code>spec.targetWorkspace</code>. The two fields cannot be set together. Existing resources using the deprecated field will continue to work for RBAC provisioning, but note that the deprecated field does <strong>not</strong> influence the kubeconfig server URL (which always defaults to <code>root</code> unless <code>spec.targetWorkspace</code> is set).</p>
+</div>
 
 
 
