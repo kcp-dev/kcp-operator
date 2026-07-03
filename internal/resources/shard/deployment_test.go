@@ -143,6 +143,109 @@ func TestDeploymentReconciler(t *testing.T) {
 				assert.Contains(t, container.Args, "--authentication-token-webhook-config-file=/etc/kcp/authentication/webhook/kubeconfig")
 			},
 		},
+		{
+			name: "new kcp version includes mount-proxy flags and mount",
+			shard: &operatorv1alpha1.Shard{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "shardy",
+				},
+				Spec: operatorv1alpha1.ShardSpec{
+					CommonShardSpec: operatorv1alpha1.CommonShardSpec{
+						Image: &operatorv1alpha1.ImageSpec{
+							Tag: "v0.32.3",
+						},
+					},
+				},
+			},
+			rootShard: &operatorv1alpha1.RootShard{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "rooty",
+				},
+			},
+			expectedName: resources.GetShardDeploymentName(&operatorv1alpha1.Shard{
+				ObjectMeta: metav1.ObjectMeta{Name: "shardy"},
+			}),
+			validateDeploy: func(t *testing.T, dep *appsv1.Deployment) {
+				container := dep.Spec.Template.Spec.Containers[0]
+
+				volumeMountNames := make(map[string]bool)
+				for _, vm := range container.VolumeMounts {
+					volumeMountNames[vm.Name] = true
+				}
+				assert.True(t, volumeMountNames["mounts-proxy-cert"], "mount-proxy cert should be mounted for new kcp")
+
+				assert.Contains(t, container.Args, "--mount-proxy-client-cert-file=/etc/kcp/tls/mounts-proxy/tls.crt")
+				assert.Contains(t, container.Args, "--mount-proxy-client-key-file=/etc/kcp/tls/mounts-proxy/tls.key")
+			},
+		},
+		{
+			name: "old kcp version omits mount-proxy flags and mount",
+			shard: &operatorv1alpha1.Shard{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "shardy",
+				},
+				Spec: operatorv1alpha1.ShardSpec{
+					CommonShardSpec: operatorv1alpha1.CommonShardSpec{
+						Image: &operatorv1alpha1.ImageSpec{
+							Tag: "v0.32.2",
+						},
+					},
+				},
+			},
+			rootShard: &operatorv1alpha1.RootShard{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "rooty",
+				},
+			},
+			expectedName: resources.GetShardDeploymentName(&operatorv1alpha1.Shard{
+				ObjectMeta: metav1.ObjectMeta{Name: "shardy"},
+			}),
+			validateDeploy: func(t *testing.T, dep *appsv1.Deployment) {
+				container := dep.Spec.Template.Spec.Containers[0]
+
+				for _, vm := range container.VolumeMounts {
+					assert.NotEqual(t, "mounts-proxy-cert", vm.Name, "mount-proxy cert must not be mounted for old kcp")
+				}
+
+				assert.NotContains(t, container.Args, "--mount-proxy-client-cert-file=/etc/kcp/tls/mounts-proxy/tls.crt")
+				assert.NotContains(t, container.Args, "--mount-proxy-client-key-file=/etc/kcp/tls/mounts-proxy/tls.key")
+			},
+		},
+		{
+			name: "backported kcp version includes mount-proxy flags and mount",
+			shard: &operatorv1alpha1.Shard{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "shardy",
+				},
+				Spec: operatorv1alpha1.ShardSpec{
+					CommonShardSpec: operatorv1alpha1.CommonShardSpec{
+						Image: &operatorv1alpha1.ImageSpec{
+							Tag: "v0.31.6",
+						},
+					},
+				},
+			},
+			rootShard: &operatorv1alpha1.RootShard{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "rooty",
+				},
+			},
+			expectedName: resources.GetShardDeploymentName(&operatorv1alpha1.Shard{
+				ObjectMeta: metav1.ObjectMeta{Name: "shardy"},
+			}),
+			validateDeploy: func(t *testing.T, dep *appsv1.Deployment) {
+				container := dep.Spec.Template.Spec.Containers[0]
+
+				volumeMountNames := make(map[string]bool)
+				for _, vm := range container.VolumeMounts {
+					volumeMountNames[vm.Name] = true
+				}
+				assert.True(t, volumeMountNames["mounts-proxy-cert"], "mount-proxy cert should be mounted for backported kcp")
+
+				assert.Contains(t, container.Args, "--mount-proxy-client-cert-file=/etc/kcp/tls/mounts-proxy/tls.crt")
+				assert.Contains(t, container.Args, "--mount-proxy-client-key-file=/etc/kcp/tls/mounts-proxy/tls.key")
+			},
+		},
 	}
 
 	for _, tt := range tests {

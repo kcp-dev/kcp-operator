@@ -33,6 +33,10 @@ const (
 	// RootShardProxyCommonName is the CommonName used in the requestheader client certificate for a RootShard's built-in proxy.
 	RootShardProxyCommonName = "kcp-root-shard-proxy"
 
+	// MountsProxyCommonName is the CommonName used in the client certificate that a shard's
+	// local proxy presents when it re-enters the front-proxy to serve a mounted workspace.
+	MountsProxyCommonName = "kcp-mounts-proxy"
+
 	ImageRepository = "ghcr.io/kcp-dev/kcp"
 
 	// ImageTag is the default tag to be used for any kcp component.
