@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Masterminds/semver/v3"
 	"k8c.io/reconciler/pkg/reconciling"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -69,8 +70,8 @@ func (r *reconciler) deploymentReconciler() reconciling.NamedDeploymentReconcile
 			}
 			dep.Spec.Template.SetLabels(r.resourceLabels)
 
-			image, imagePullSecrets, _ := resources.GetImageSettings(imageSpec)
-			args := r.getArgs()
+			image, imagePullSecrets, version := resources.GetImageSettings(imageSpec)
+			args := r.getArgs(version)
 
 			container := corev1.Container{
 				Name:    "kcp-front-proxy",
@@ -170,6 +171,13 @@ func (r *reconciler) deploymentReconciler() reconciling.NamedDeploymentReconcile
 			// kcp rootshard root ca
 			mountSecret(resources.GetRootShardCAName(r.rootShard, operatorv1alpha1.RootCA), kcpBasepath+"/tls/ca", true)
 
+			// requestheader CA, used to verify clients (e.g. a shard's mounts proxy) that
+			// re-enter the front-proxy and assert identity via X-Remote-* headers. Only mount
+			// it for kcp versions that support the mount-proxy re-entry flow.
+			if supportsMountProxy(version) {
+				mountSecret(resources.GetRootShardCAName(r.rootShard, operatorv1alpha1.RequestHeaderClientCA), getCAMountPath(operatorv1alpha1.RequestHeaderClientCA), true)
+			}
+
 			// If caBundleSecretRef is specified, mount the merged CA bundle secret.
 			// This secret contains both kcp root CA and user-provided CA bundle merged together.
 			if r.getCABundleSecretRef() != nil {
@@ -261,10 +269,30 @@ var defaultArgs = []string{
 	"--mapping-file=/etc/kcp-front-proxy/config/path-mapping.yaml",
 }
 
-func (r *reconciler) getArgs() []string {
+func supportsMountProxy(version *semver.Version) bool {
+	if version == nil {
+		return true
+	}
+
+	constraint, _ := semver.NewConstraint("~0.31.6 || >=0.32.3")
+
+	return constraint.Check(version)
+}
+
+func (r *reconciler) getArgs(version *semver.Version) []string {
 	args := defaultArgs
 
 	args = append(args, fmt.Sprintf("--client-ca-file=%s/client-ca/tls.crt", frontProxyBasepath))
+
+	if supportsMountProxy(version) {
+		args = append(args,
+			fmt.Sprintf("--requestheader-client-ca-file=%s/tls.crt", getCAMountPath(operatorv1alpha1.RequestHeaderClientCA)),
+			fmt.Sprintf("--requestheader-allowed-names=%s,%s", r.certCommonName(), resources.MountsProxyCommonName),
+			"--requestheader-username-headers=X-Remote-User",
+			"--requestheader-group-headers=X-Remote-Group",
+			"--requestheader-extra-headers-prefix=X-Remote-Extra-",
+		)
+	}
 
 	// rootshard proxy mode
 	if r.frontProxy == nil {

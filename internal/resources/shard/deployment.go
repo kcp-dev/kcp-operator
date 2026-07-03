@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Masterminds/semver/v3"
 	"k8c.io/reconciler/pkg/reconciling"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -105,7 +106,9 @@ func DeploymentReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1al
 				MountPath:  getCAMountPath(operatorv1alpha1.RootCA),
 			}}
 
-			args := getArgs(shard, rootShard, kcpVW)
+			_, _, version := resources.GetImageSettings(shard.Spec.Image)
+
+			args := getArgs(shard, rootShard, kcpVW, version)
 
 			for _, cert := range []operatorv1alpha1.Certificate{
 				// requires server CA and the shard client cert to be mounted
@@ -148,13 +151,19 @@ func DeploymentReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1al
 				})
 			}
 
-			for _, cert := range []operatorv1alpha1.Certificate{
+			certs := []operatorv1alpha1.Certificate{
 				operatorv1alpha1.ServerCertificate,
 				operatorv1alpha1.ServiceAccountCertificate,
 				operatorv1alpha1.ClientCertificate,
 				operatorv1alpha1.LogicalClusterAdminCertificate,
 				operatorv1alpha1.ExternalLogicalClusterAdminCertificate,
-			} {
+			}
+
+			if supportsMountProxy(version) {
+				certs = append(certs, operatorv1alpha1.MountsProxyClientCertificate)
+			}
+
+			for _, cert := range certs {
 				secretMounts = append(secretMounts, utils.SecretMount{
 					VolumeName: fmt.Sprintf("%s-cert", cert),
 					SecretName: resources.GetShardCertificateName(shard, cert),
@@ -235,7 +244,17 @@ func DeploymentReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1al
 	}
 }
 
-func getArgs(shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShard, kcpVW *operatorv1alpha1.VirtualWorkspace) []string {
+func supportsMountProxy(version *semver.Version) bool {
+	if version == nil {
+		return true
+	}
+
+	constraint, _ := semver.NewConstraint("~0.31.6 || >=0.32.3")
+
+	return constraint.Check(version)
+}
+
+func getArgs(shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShard, kcpVW *operatorv1alpha1.VirtualWorkspace, version *semver.Version) []string {
 	// Configure the cache kubeconfig to point either to an explicitly configured cache (maybe on the
 	// shard, maybe on the root shard), or the root shard itself (in case no external cache is configured).
 	var cacheKubeconfigMount string
@@ -283,6 +302,13 @@ func getArgs(shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShar
 		"--root-directory=",
 		"--enable-leader-election=true",
 		"--logging-format=json",
+	}
+
+	if supportsMountProxy(version) {
+		args = append(args,
+			fmt.Sprintf("--mount-proxy-client-cert-file=%s/tls.crt", getCertificateMountPath(operatorv1alpha1.MountsProxyClientCertificate)),
+			fmt.Sprintf("--mount-proxy-client-key-file=%s/tls.key", getCertificateMountPath(operatorv1alpha1.MountsProxyClientCertificate)),
+		)
 	}
 
 	args = append(args, utils.GetLoggingArgs(shard.Spec.Logging)...)
