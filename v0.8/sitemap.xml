@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+    <url>
+        <loc>https://docs.kcp.io/kcp-operator/v0.8/</loc>
+        <lastmod>2026-07-07</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://docs.kcp.io/kcp-operator/v0.8/"/>
+    </url>
+    <url>
+        <loc>https://docs.kcp.io/kcp-operator/v0.8/architecture/</loc>
+        <lastmod>2026-07-07</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://docs.kcp.io/kcp-operator/v0.8/architecture/"/>
+    </url>
+    <url>
+        <loc>https://docs.kcp.io/kcp-operator/v0.8/architecture/basics/</loc>
+        <lastmod>2026-07-07</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://docs.kcp.io/kcp-operator/v0.8/architecture/basics/"/>
+    </url>
+    <url>
+        <loc>https://docs.kcp.io/kcp-operator/v0.8/architecture/cache-server/</loc>
+        <lastmod>2026-07-07</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://docs.kcp.io/kcp-operator/v0.8/architecture/cache-server/"/>
+    </url>
+    <url>
+        <loc>https://docs.kcp.io/kcp-operator/v0.8/architecture/front-proxy/</loc>
+        <lastmod>2026-07-07</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://docs.kcp.io/kcp-operator/v0.8/architecture/front-proxy/"/>
+    </url>
+    <url>
+        <loc>https://docs.kcp.io/kcp-operator/v0.8/architecture/kubeconfig/</loc>
+        <lastmod>2026-07-07</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://docs.kcp.io/kcp-operator/v0.8/architecture/kubeconfig/"/>
+    </url>
+    <url>
+        <loc>https://docs.kcp.io/kcp-operator/v0.8/architecture/pki/</loc>
+        <lastmod>2026-07-07</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://docs.kcp.io/kcp-operator/v0.8/architecture/pki/"/>
+    </url>
+    <url>
+        <loc>https://docs.kcp.io/kcp-operator/v0.8/contributing/</loc>
+        <lastmod>2026-07-07</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://docs.kcp.io/kcp-operator/v0.8/contributing/"/>
+    </url>
+    <url>
+        <loc>https://docs.kcp.io/kcp-operator/v0.8/contributing/local-setup/</loc>
+        <lastmod>2026-07-07</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://docs.kcp.io/kcp-operator/v0.8/contributing/local-setup/"/>
+    </url>
+    <url>
+        <loc>https://docs.kcp.io/kcp-operator/v0.8/contributing/releasing/</loc>
+        <lastmod>2026-07-07</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://docs.kcp.io/kcp-operator/v0.8/contributing/releasing/"/>
+    </url>
+    <url>
+        <loc>https://docs.kcp.io/kcp-operator/v0.8/contributing/continuous-integration/</loc>
+        <lastmod>2026-07-07</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://docs.kcp.io/kcp-operator/v0.8/contributing/continuous-integration/"/>
+    </url>
+    <url>
+        <loc>https://docs.kcp.io/kcp-operator/v0.8/reference/</loc>
+        <lastmod>2026-07-07</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://docs.kcp.io/kcp-operator/v0.8/reference/"/>
+    </url>
+    <url>
+        <loc>https://docs.kcp.io/kcp-operator/v0.8/reference/crd/operator.kcp.io/frontproxies/</loc>
+        <lastmod>2026-07-07</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://docs.kcp.io/kcp-operator/v0.8/reference/crd/operator.kcp.io/frontproxies/"/>
+    </url>
+    <url>
+        <loc>https://docs.kcp.io/kcp-operator/v0.8/reference/crd/operator.kcp.io/kubeconfigs/</loc>
+        <lastmod>2026-07-07</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://docs.kcp.io/kcp-operator/v0.8/reference/crd/operator.kcp.io/kubeconfigs/"/>
+    </url>
+    <url>
+        <loc>https://docs.kcp.io/kcp-operator/v0.8/reference/crd/operator.kcp.io/rootshards/</loc>
+        <lastmod>2026-07-07</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://docs.kcp.io/kcp-operator/v0.8/reference/crd/operator.kcp.io/rootshards/"/>
+    </url>
+    <url>
+        <loc>https://docs.kcp.io/kcp-operator/v0.8/reference/crd/operator.kcp.io/shards/</loc>
+        <lastmod>2026-07-07</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://docs.kcp.io/kcp-operator/v0.8/reference/crd/operator.kcp.io/shards/"/>
+    </url>
+    <url>
+        <loc>https://docs.kcp.io/kcp-operator/v0.8/setup/</loc>
+        <lastmod>2026-07-07</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://docs.kcp.io/kcp-operator/v0.8/setup/"/>
+    </url>
+    <url>
+        <loc>https://docs.kcp.io/kcp-operator/v0.8/setup/quickstart/</loc>
+        <lastmod>2026-07-07</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://docs.kcp.io/kcp-operator/v0.8/setup/quickstart/"/>
+    </url>
+</urlset>
