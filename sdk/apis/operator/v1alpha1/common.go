@@ -91,6 +91,7 @@ const (
 	ServiceAccountCertificate              Certificate = "service-account"
 	VirtualWorkspacesCertificate           Certificate = "virtual-workspaces"
 	RequestHeaderClientCertificate         Certificate = "requestheader"
+	MountsProxyClientCertificate           Certificate = "mounts-proxy"
 	KubeconfigCertificate                  Certificate = "kubeconfig"
 	AdminKubeconfigClientCertificate       Certificate = "admin-kubeconfig"
 	LogicalClusterAdminCertificate         Certificate = "logical-cluster-admin"
