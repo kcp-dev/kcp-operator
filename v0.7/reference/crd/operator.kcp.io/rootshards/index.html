@@ -2019,6 +2019,62 @@ If set, it will mount every shard&rsquo;s service account certificate to the fro
 
 <div class="property depth-2">
 <div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.auth.tokenAuthFile">.spec.auth.tokenAuthFile</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+<div class="property-description">
+<p>Optional: TokenAuthFile configures static token file authentication (the kcp
+<code>--token-auth-file</code> flag). It is supported by shards, the root shard and the front-proxy.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.auth.tokenAuthFile.key">.spec.auth.tokenAuthFile.key</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>Key in the secret that holds the token CSV file. Defaults to &ldquo;token.csv&rdquo;.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.auth.tokenAuthFile.secretName">.spec.auth.tokenAuthFile.secretName</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>SecretName is the name of a Kubernetes Secret that contains the token authentication
+CSV file. Each line of the file has the format: token,user,uid,&ldquo;group1,group2,group3&rdquo;.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
 <h3 class="property-path" id="v1alpha1-.spec.auth.webhook">.spec.auth.webhook</h3>
 </div>
 <div class="property-body">
