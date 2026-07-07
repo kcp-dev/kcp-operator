@@ -34,7 +34,7 @@ func TestGetImageSettings(t *testing.T) {
 		{
 			name:            "default settings",
 			imageSpec:       nil,
-			expectedImage:   "ghcr.io/kcp-dev/kcp:v0.32.2",
+			expectedImage:   "ghcr.io/kcp-dev/kcp:v0.32.3",
 			expectedVersion: "0.32",
 		},
 		{
