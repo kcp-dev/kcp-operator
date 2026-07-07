@@ -20,6 +20,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -99,6 +100,44 @@ func TestDeploymentReconciler(t *testing.T) {
 				assert.NotNil(t, container.LivenessProbe)
 				assert.Equal(t, "/livez", container.LivenessProbe.HTTPGet.Path)
 				assert.Equal(t, "https", container.LivenessProbe.HTTPGet.Port.StrVal)
+			},
+		},
+		{
+			name: "new kcp version mounts requestheader CA",
+			frontProxy: &operatorv1alpha1.FrontProxy{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-front-proxy",
+				},
+				Spec: operatorv1alpha1.FrontProxySpec{
+					RootShard: operatorv1alpha1.RootShardConfig{
+						Reference: &corev1.LocalObjectReference{
+							Name: "test-root-shard",
+						},
+					},
+					Image: &operatorv1alpha1.ImageSpec{
+						Tag: "v0.32.3",
+					},
+				},
+			},
+			rootShard: &operatorv1alpha1.RootShard{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-root-shard",
+				},
+			},
+			expectedName: resources.GetFrontProxyDeploymentName(&operatorv1alpha1.FrontProxy{
+				ObjectMeta: metav1.ObjectMeta{Name: "test-front-proxy"},
+			}),
+			validateDeploy: func(t *testing.T, dep *appsv1.Deployment) {
+				container := dep.Spec.Template.Spec.Containers[0]
+
+				volumeMountNames := make(map[string]bool)
+				for _, vm := range container.VolumeMounts {
+					volumeMountNames[vm.Name] = true
+				}
+				assert.True(t, volumeMountNames[resources.GetRootShardCAName(&operatorv1alpha1.RootShard{ObjectMeta: metav1.ObjectMeta{Name: "test-root-shard"}}, operatorv1alpha1.RequestHeaderClientCA)], "requestheader CA should be mounted for new kcp")
+
+				assert.Contains(t, container.Args, "--requestheader-client-ca-file=/etc/kcp/tls/ca/requestheader-client/tls.crt")
+				assert.Contains(t, container.Args, "--requestheader-allowed-names=kcp-front-proxy,kcp-mounts-proxy")
 			},
 		},
 		{
@@ -493,6 +532,7 @@ func TestGetArgs(t *testing.T) {
 	tests := []struct {
 		name     string
 		spec     *operatorv1alpha1.FrontProxySpec
+		version  *semver.Version
 		expected []string
 	}{
 		{
@@ -506,6 +546,11 @@ func TestGetArgs(t *testing.T) {
 				"--tls-cert-file=/etc/kcp-front-proxy/tls/tls.crt",
 				"--mapping-file=/etc/kcp-front-proxy/config/path-mapping.yaml",
 				"--client-ca-file=/etc/kcp-front-proxy/client-ca/tls.crt",
+				"--requestheader-client-ca-file=/etc/kcp/tls/ca/requestheader-client/tls.crt",
+				"--requestheader-allowed-names=kcp-front-proxy,kcp-mounts-proxy",
+				"--requestheader-username-headers=X-Remote-User",
+				"--requestheader-group-headers=X-Remote-Group",
+				"--requestheader-extra-headers-prefix=X-Remote-Extra-",
 			},
 		},
 		{
@@ -523,6 +568,11 @@ func TestGetArgs(t *testing.T) {
 				"--tls-cert-file=/etc/kcp-front-proxy/tls/tls.crt",
 				"--mapping-file=/etc/kcp-front-proxy/config/path-mapping.yaml",
 				"--client-ca-file=/etc/kcp-front-proxy/client-ca/tls.crt",
+				"--requestheader-client-ca-file=/etc/kcp/tls/ca/requestheader-client/tls.crt",
+				"--requestheader-allowed-names=kcp-front-proxy,kcp-mounts-proxy",
+				"--requestheader-username-headers=X-Remote-User",
+				"--requestheader-group-headers=X-Remote-Group",
+				"--requestheader-extra-headers-prefix=X-Remote-Extra-",
 				"--authentication-drop-groups=\"group1,group2\"",
 			},
 		},
@@ -541,6 +591,11 @@ func TestGetArgs(t *testing.T) {
 				"--tls-cert-file=/etc/kcp-front-proxy/tls/tls.crt",
 				"--mapping-file=/etc/kcp-front-proxy/config/path-mapping.yaml",
 				"--client-ca-file=/etc/kcp-front-proxy/client-ca/tls.crt",
+				"--requestheader-client-ca-file=/etc/kcp/tls/ca/requestheader-client/tls.crt",
+				"--requestheader-allowed-names=kcp-front-proxy,kcp-mounts-proxy",
+				"--requestheader-username-headers=X-Remote-User",
+				"--requestheader-group-headers=X-Remote-Group",
+				"--requestheader-extra-headers-prefix=X-Remote-Extra-",
 				"--authentication-pass-on-groups=\"group3,group4\"",
 			},
 		},
@@ -560,8 +615,46 @@ func TestGetArgs(t *testing.T) {
 				"--tls-cert-file=/etc/kcp-front-proxy/tls/tls.crt",
 				"--mapping-file=/etc/kcp-front-proxy/config/path-mapping.yaml",
 				"--client-ca-file=/etc/kcp-front-proxy/client-ca/tls.crt",
+				"--requestheader-client-ca-file=/etc/kcp/tls/ca/requestheader-client/tls.crt",
+				"--requestheader-allowed-names=kcp-front-proxy,kcp-mounts-proxy",
+				"--requestheader-username-headers=X-Remote-User",
+				"--requestheader-group-headers=X-Remote-Group",
+				"--requestheader-extra-headers-prefix=X-Remote-Extra-",
 				"--authentication-drop-groups=\"group1\"",
 				"--authentication-pass-on-groups=\"group2\"",
+			},
+		},
+		{
+			name:    "old kcp version omits requestheader flags",
+			spec:    &operatorv1alpha1.FrontProxySpec{},
+			version: semver.MustParse("0.32.2"),
+			expected: []string{
+				"--secure-port=6443",
+				"--root-kubeconfig=/etc/kcp-front-proxy/kubeconfig/kubeconfig",
+				"--shards-kubeconfig=/etc/kcp-front-proxy/kubeconfig/kubeconfig",
+				"--tls-private-key-file=/etc/kcp-front-proxy/tls/tls.key",
+				"--tls-cert-file=/etc/kcp-front-proxy/tls/tls.crt",
+				"--mapping-file=/etc/kcp-front-proxy/config/path-mapping.yaml",
+				"--client-ca-file=/etc/kcp-front-proxy/client-ca/tls.crt",
+			},
+		},
+		{
+			name:    "backported kcp version wires requestheader flags",
+			spec:    &operatorv1alpha1.FrontProxySpec{},
+			version: semver.MustParse("0.31.6"),
+			expected: []string{
+				"--secure-port=6443",
+				"--root-kubeconfig=/etc/kcp-front-proxy/kubeconfig/kubeconfig",
+				"--shards-kubeconfig=/etc/kcp-front-proxy/kubeconfig/kubeconfig",
+				"--tls-private-key-file=/etc/kcp-front-proxy/tls/tls.key",
+				"--tls-cert-file=/etc/kcp-front-proxy/tls/tls.crt",
+				"--mapping-file=/etc/kcp-front-proxy/config/path-mapping.yaml",
+				"--client-ca-file=/etc/kcp-front-proxy/client-ca/tls.crt",
+				"--requestheader-client-ca-file=/etc/kcp/tls/ca/requestheader-client/tls.crt",
+				"--requestheader-allowed-names=kcp-front-proxy,kcp-mounts-proxy",
+				"--requestheader-username-headers=X-Remote-User",
+				"--requestheader-group-headers=X-Remote-Group",
+				"--requestheader-extra-headers-prefix=X-Remote-Extra-",
 			},
 		},
 	}
@@ -573,7 +666,7 @@ func TestGetArgs(t *testing.T) {
 				&operatorv1alpha1.RootShard{},
 			)
 
-			result := rec.getArgs()
+			result := rec.getArgs(tt.version)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
