@@ -38,7 +38,7 @@ func TestApplyAuthorizationConfiguration(t *testing.T) {
 		validateDeploy    func(*testing.T, *appsv1.Deployment)
 	}{
 		{
-			name: "authorization webhook fully configured",
+			name: "authorization fully configured",
 			initialDeploy: &appsv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-deployment",
@@ -58,8 +58,9 @@ func TestApplyAuthorizationConfiguration(t *testing.T) {
 				},
 			},
 			authorizationSpec: &operatorv1alpha1.AuthorizationSpec{
+				AllowPaths: &[]string{"/healthz", "/readyz", "/livez"},
+				Order:      &[]string{"AlwaysAllowGroups", "AlwaysAllowPaths", "RBAC", "Webhook"},
 				Webhook: &operatorv1alpha1.AuthorizationWebhookSpec{
-					AllowPaths: []string{"/healthz", "/readyz", "/livez"},
 					CacheAuthorizedTTL: &metav1.Duration{
 						Duration: time.Second * 5,
 					},
@@ -73,12 +74,13 @@ func TestApplyAuthorizationConfiguration(t *testing.T) {
 				container := dep.Spec.Template.Spec.Containers[0]
 				// assert args
 				args := container.Args
-				assert.Contains(t, args, "--authorization-webhook-config-file=/etc/kcp/authorization/webhook/kubeconfig")
 				assert.Contains(t, args, "--authorization-always-allow-paths=/healthz,/readyz,/livez")
+				assert.Contains(t, args, "--authorization-order=AlwaysAllowGroups,AlwaysAllowPaths,RBAC,Webhook")
+				assert.Contains(t, args, "--authorization-webhook-config-file=/etc/kcp/authorization/webhook/kubeconfig")
 				assert.Contains(t, args, "--authorization-webhook-cache-authorized-ttl=5s")
 				assert.Contains(t, args, "--authorization-webhook-cache-unauthorized-ttl=10s")
 				assert.Contains(t, args, "--existing-arg=value")
-				assert.Len(t, args, 5)
+				assert.Len(t, args, 6)
 				// assert volumes
 				assert.Len(t, dep.Spec.Template.Spec.Volumes, 1)
 				volume := dep.Spec.Template.Spec.Volumes[0]
@@ -91,6 +93,80 @@ func TestApplyAuthorizationConfiguration(t *testing.T) {
 				assert.Equal(t, "authorization-webhook-config", volumeMount.Name)
 				assert.True(t, volumeMount.ReadOnly)
 				assert.Equal(t, "/etc/kcp/authorization/webhook", volumeMount.MountPath)
+			},
+		},
+		{
+			name: "empty order and empty allow paths set empty flag",
+			initialDeploy: &appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-deployment",
+				},
+				Spec: appsv1.DeploymentSpec{
+					Template: corev1.PodTemplateSpec{
+						Spec: corev1.PodSpec{
+							Containers: []corev1.Container{
+								{
+									Name: "test-container",
+									Args: []string{"--existing-arg=value"},
+								},
+							},
+							Volumes: []corev1.Volume{},
+						},
+					},
+				},
+			},
+			authorizationSpec: &operatorv1alpha1.AuthorizationSpec{
+				AllowPaths: &[]string{},
+				Order:      &[]string{},
+			},
+			validateDeploy: func(t *testing.T, dep *appsv1.Deployment) {
+				container := dep.Spec.Template.Spec.Containers[0]
+				// assert args
+				args := container.Args
+				assert.Contains(t, args, "--authorization-always-allow-paths=")
+				assert.Contains(t, args, "--authorization-order=")
+				assert.Contains(t, args, "--existing-arg=value")
+				assert.Len(t, args, 3)
+				// assert volumes are unchanged
+				assert.Len(t, dep.Spec.Template.Spec.Volumes, 0)
+				// assert volume mounts are unchanged
+				assert.Len(t, container.VolumeMounts, 0)
+			},
+		},
+		{
+			name: "nil order and nil allow paths do not set flag",
+			initialDeploy: &appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-deployment",
+				},
+				Spec: appsv1.DeploymentSpec{
+					Template: corev1.PodTemplateSpec{
+						Spec: corev1.PodSpec{
+							Containers: []corev1.Container{
+								{
+									Name: "test-container",
+									Args: []string{"--existing-arg=value"},
+								},
+							},
+							Volumes: []corev1.Volume{},
+						},
+					},
+				},
+			},
+			authorizationSpec: &operatorv1alpha1.AuthorizationSpec{
+				AllowPaths: nil,
+				Order:      nil,
+			},
+			validateDeploy: func(t *testing.T, dep *appsv1.Deployment) {
+				container := dep.Spec.Template.Spec.Containers[0]
+				// assert args
+				args := container.Args
+				assert.Contains(t, args, "--existing-arg=value")
+				assert.Len(t, args, 1)
+				// assert volumes are unchanged
+				assert.Len(t, dep.Spec.Template.Spec.Volumes, 0)
+				// assert volume mounts are unchanged
+				assert.Len(t, container.VolumeMounts, 0)
 			},
 		},
 		{
