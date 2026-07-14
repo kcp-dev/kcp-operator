@@ -25,7 +25,6 @@ import (
 // AuthorizationWebhookSpecApplyConfiguration represents a declarative configuration of the AuthorizationWebhookSpec type for use
 // with apply.
 type AuthorizationWebhookSpecApplyConfiguration struct {
-	AllowPaths           []string     `json:"allowPaths,omitempty"`
 	CacheAuthorizedTTL   *v1.Duration `json:"cacheAuthorizedTTL,omitempty"`
 	CacheUnauthorizedTTL *v1.Duration `json:"cacheUnauthorizedTTL,omitempty"`
 	ConfigSecretName     *string      `json:"configSecretName,omitempty"`
@@ -36,16 +35,6 @@ type AuthorizationWebhookSpecApplyConfiguration struct {
 // apply.
 func AuthorizationWebhookSpec() *AuthorizationWebhookSpecApplyConfiguration {
 	return &AuthorizationWebhookSpecApplyConfiguration{}
-}
-
-// WithAllowPaths adds the given value to the AllowPaths field in the declarative configuration
-// and returns the receiver, so that objects can be build by chaining "With" function invocations.
-// If called multiple times, values provided by each call will be appended to the AllowPaths field.
-func (b *AuthorizationWebhookSpecApplyConfiguration) WithAllowPaths(values ...string) *AuthorizationWebhookSpecApplyConfiguration {
-	for i := range values {
-		b.AllowPaths = append(b.AllowPaths, values[i])
-	}
-	return b
 }
 
 // WithCacheAuthorizedTTL sets the CacheAuthorizedTTL field in the declarative configuration to the given value

@@ -27,21 +27,40 @@ import (
 )
 
 func applyAuthorizationConfiguration(deployment *appsv1.Deployment, config *operatorv1alpha1.AuthorizationSpec) *appsv1.Deployment {
-	if config == nil || config.Webhook == nil {
+	if config == nil {
 		return deployment
 	}
 
-	return applyAuthorizationWebhookConfiguration(deployment, *config.Webhook)
+	if config.Webhook != nil {
+		deployment = applyAuthorizationWebhookConfiguration(deployment, *config.Webhook)
+	}
+
+	return applyAuthorizationBaseConfiguration(deployment, config)
+
+}
+
+func applyAuthorizationBaseConfiguration(deployment *appsv1.Deployment, config *operatorv1alpha1.AuthorizationSpec) *appsv1.Deployment {
+	podSpec := deployment.Spec.Template.Spec
+
+	var extraArgs []string
+
+	if config.AllowPaths != nil {
+		extraArgs = append(extraArgs, fmt.Sprintf("--authorization-always-allow-paths=%s", strings.Join(*config.AllowPaths, ",")))
+	}
+
+	if config.Order != nil {
+		extraArgs = append(extraArgs, fmt.Sprintf("--authorization-order=%s", strings.Join(*config.Order, ",")))
+	}
+
+	podSpec.Containers[0].Args = append(podSpec.Containers[0].Args, extraArgs...)
+
+	return deployment
 }
 
 func applyAuthorizationWebhookConfiguration(deployment *appsv1.Deployment, config operatorv1alpha1.AuthorizationWebhookSpec) *appsv1.Deployment {
 	podSpec := deployment.Spec.Template.Spec
 
 	var extraArgs []string
-
-	if vals := config.AllowPaths; len(vals) > 0 {
-		extraArgs = append(extraArgs, fmt.Sprintf("--authorization-always-allow-paths=%s", strings.Join(vals, ",")))
-	}
 
 	if val := config.CacheAuthorizedTTL; val != nil {
 		extraArgs = append(extraArgs, fmt.Sprintf("--authorization-webhook-cache-authorized-ttl=%v", val.Duration))

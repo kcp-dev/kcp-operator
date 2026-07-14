@@ -267,15 +267,23 @@ spec:
                 type: object
               authorization:
                 properties:
+                  allowPaths:
+                    description: |-
+                      A list of HTTP paths to skip during authorization, i.e. these are authorized without contacting the 'core' kubernetes server.
+                      If specified, completely overwrites the default of [/healthz,/readyz,/livez].
+                    items:
+                      type: string
+                    type: array
+                  order:
+                    description: |-
+                      A list of authorizers that should be enabled, allowing administrator rearrange the default order.
+                      The default order is: [AlwaysAllowGroups,AlwaysAllowPaths,RBAC,Webhook]
+                    items:
+                      type: string
+                    type: array
                   webhook:
+                    description: Authorization Webhook configuration.
                     properties:
-                      allowPaths:
-                        description: |-
-                          A list of HTTP paths to skip during authorization, i.e. these are authorized without contacting the 'core' kubernetes server.
-                          If specified, completely overwrites the default of [/healthz,/readyz,/livez].
-                        items:
-                          type: string
-                        type: array
                       cacheAuthorizedTTL:
                         description: The duration to cache 'authorized' responses
                           from the webhook authorizer.
