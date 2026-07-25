@@ -146,6 +146,9 @@ func TestCreateShard(t *testing.T) {
 }
 
 func TestShardBundleAnnotation(t *testing.T) {
+	// Bundling is only allowed if the config and workload controllers run on the same cluster.
+	utils.SkipUnlessTopology(t, utils.TopologySingle)
+
 	ctrlruntime.SetLogger(logr.Discard())
 
 	configClient := utils.GetConfigKubeClient(t)
