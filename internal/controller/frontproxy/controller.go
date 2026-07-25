@@ -24,13 +24,11 @@ import (
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	k8creconciling "k8c.io/reconciler/pkg/reconciling"
 
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -43,8 +41,9 @@ import (
 	"github.com/kcp-dev/kcp-operator/internal/controller/util"
 	"github.com/kcp-dev/kcp-operator/internal/metrics"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
-	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/reconciling/modifier"
 	"github.com/kcp-dev/kcp-operator/internal/resources/frontproxy"
+	deployv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/deploy/v1alpha1"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -78,10 +77,8 @@ func (r *FrontProxyReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("frontproxy").
 		For(&operatorv1alpha1.FrontProxy{}).
-		Owns(&appsv1.Deployment{}).
-		Owns(&corev1.ConfigMap{}).
+		Owns(&deployv1alpha1.CompiledFrontProxy{}).
 		Owns(&corev1.Secret{}).
-		Owns(&corev1.Service{}).
 		Owns(&certmanagerv1.Certificate{}).
 		Watches(&operatorv1alpha1.RootShard{}, rootShardHandler).
 		Complete(r)
@@ -151,15 +148,20 @@ func (r *FrontProxyReconciler) reconcile(ctx context.Context, frontProxy *operat
 
 	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*metav1.NewControllerRef(frontProxy, operatorv1alpha1.SchemeGroupVersion.WithKind("FrontProxy")))
 
-	if err := reconciling.ReconcileCompiledFrontProxys(ctx, []reconciling.NamedCompiledFrontProxyReconcilerFactory{
-		frontproxy.CompiledFrontProxyReconciler(frontProxy, rootShard, nil),
-	}, frontProxy.Namespace, r.Client, ownerRefWrapper); err != nil {
-		errs = append(errs, err)
+	var certs []*certmanagerv1.Certificate
+	if err := fpReconciler.ReconcileConfig(ctx, r.Client, frontProxy.Namespace, modifier.Capture(&certs)); err != nil {
+		errs = append(errs, fmt.Errorf("failed to reconcile: %w", err))
 	}
 
-	// Deployment will be scaled to 0 if bundle annotation is present
-	if err := fpReconciler.Reconcile(ctx, r.Client, frontProxy.Namespace); err != nil {
-		errs = append(errs, fmt.Errorf("failed to reconcile: %w", err))
+	revisions, ready := util.CertificateRevisions(certs)
+	if !ready {
+		return conditions, kerrors.NewAggregate(errs)
+	}
+
+	if err := reconciling.ReconcileCompiledFrontProxys(ctx, []reconciling.NamedCompiledFrontProxyReconcilerFactory{
+		frontproxy.CompiledFrontProxyReconciler(frontProxy, rootShard, util.MutateKeys(revisions, "cert-", "-revision")),
+	}, frontProxy.Namespace, r.Client, ownerRefWrapper); err != nil {
+		errs = append(errs, err)
 	}
 
 	return conditions, kerrors.NewAggregate(errs)
@@ -176,14 +178,13 @@ func (r *FrontProxyReconciler) reconcileStatus(ctx context.Context, oldFrontProx
 	// Check if frontproxy is bundled (has bundle annotation with Ready bundle)
 	isBundled := bundleCond.Status == metav1.ConditionTrue && bundleCond.Reason == "BundleReady"
 
-	// Only check deployment status if not bundled
+	// Only check availability if not bundled
 	if !isBundled {
-		depKey := types.NamespacedName{Namespace: frontProxy.Namespace, Name: resources.GetFrontProxyDeploymentName(frontProxy)}
-		cond, err := util.GetDeploymentAvailableCondition(ctx, r.Client, depKey)
-		if err != nil {
+		compiled := &deployv1alpha1.CompiledFrontProxy{}
+		if err := r.Get(ctx, ctrlruntimeclient.ObjectKeyFromObject(frontProxy), compiled); ctrlruntimeclient.IgnoreNotFound(err) != nil {
 			errs = append(errs, err)
 		} else {
-			conditions = append(conditions, cond)
+			conditions = append(conditions, util.GetCompiledAvailableCondition(compiled.Status.Conditions, fmt.Sprintf("CompiledFrontProxy %s", frontProxy.Name)))
 		}
 	}
 
