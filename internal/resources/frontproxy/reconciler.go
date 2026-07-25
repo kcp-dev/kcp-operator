@@ -84,23 +84,37 @@ func (r *reconciler) getClientCABundleSecretRef() *corev1.LocalObjectReference {
 func (r *reconciler) Reconcile(ctx context.Context, client ctrlruntimeclient.Client, namespace string) error {
 	var errs []error
 
-	var ref *metav1.OwnerReference
-	if r.frontProxy != nil {
-		ref = metav1.NewControllerRef(r.frontProxy, operatorv1alpha1.SchemeGroupVersion.WithKind("FrontProxy"))
-	} else {
-		ref = metav1.NewControllerRef(r.rootShard, operatorv1alpha1.SchemeGroupVersion.WithKind("RootShard"))
+	if err := r.ReconcileConfig(ctx, client, namespace); err != nil {
+		errs = append(errs, err)
 	}
-	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*ref)
-	revisionLabels := modifier.RelatedRevisionsLabels(ctx, client)
+
+	// The requeue signal is ignored because the caller watches Secrets.
+	if _, err := r.ReconcileWorkload(ctx, client, namespace, r.ownerRef()); err != nil {
+		errs = append(errs, err)
+	}
+
+	return kerrors.NewAggregate(errs)
+}
+
+func (r *reconciler) ownerRef() metav1.OwnerReference {
+	if r.frontProxy != nil {
+		return *metav1.NewControllerRef(r.frontProxy, operatorv1alpha1.SchemeGroupVersion.WithKind("FrontProxy"))
+	}
+
+	return *metav1.NewControllerRef(r.rootShard, operatorv1alpha1.SchemeGroupVersion.WithKind("RootShard"))
+}
+
+// ReconcileConfig reconciles the certificates and the secrets derived from them.
+// certModifiers are applied to the Certificate reconcilers.
+func (r *reconciler) ReconcileConfig(ctx context.Context, client ctrlruntimeclient.Client, namespace string, certModifiers ...k8creconciling.ObjectModifier) error {
+	var errs []error
+
+	ownerRefWrapper := k8creconciling.OwnerRefWrapper(r.ownerRef())
 
 	// Fetch client CA certificates
 	clientCACerts, err := r.fetchClientCACerts(ctx, client)
 	if err != nil {
 		return err
-	}
-
-	configMapReconcilers := []k8creconciling.NamedConfigMapReconcilerFactory{
-		r.pathMappingConfigMapReconciler(),
 	}
 
 	secretReconcilers := []k8creconciling.NamedSecretReconcilerFactory{
@@ -123,6 +137,29 @@ func (r *reconciler) Reconcile(ctx context.Context, client ctrlruntimeclient.Cli
 		r.requestHeaderCertificateReconciler(),
 	}
 
+	if err := k8creconciling.ReconcileSecrets(ctx, secretReconcilers, namespace, client, ownerRefWrapper); err != nil {
+		errs = append(errs, err)
+	}
+
+	if err := reconciling.ReconcileCertificates(ctx, certReconcilers, namespace, client, append([]k8creconciling.ObjectModifier{ownerRefWrapper}, certModifiers...)...); err != nil {
+		errs = append(errs, err)
+	}
+
+	return kerrors.NewAggregate(errs)
+}
+
+// ReconcileWorkload reconciles the ConfigMap, Deployment and Service, owned by ownerRef.
+// It signals a requeue when a mounted Secret or ConfigMap does not exist yet.
+func (r *reconciler) ReconcileWorkload(ctx context.Context, client ctrlruntimeclient.Client, namespace string, ownerRef metav1.OwnerReference) (requeue bool, err error) {
+	var errs []error
+
+	ownerRefWrapper := k8creconciling.OwnerRefWrapper(ownerRef)
+	revisionLabels := modifier.RelatedRevisionsLabels(ctx, client)
+
+	configMapReconcilers := []k8creconciling.NamedConfigMapReconcilerFactory{
+		r.pathMappingConfigMapReconciler(),
+	}
+
 	deploymentReconcilers := []k8creconciling.NamedDeploymentReconcilerFactory{
 		r.deploymentReconciler(),
 	}
@@ -135,18 +172,11 @@ func (r *reconciler) Reconcile(ctx context.Context, client ctrlruntimeclient.Cli
 		errs = append(errs, err)
 	}
 
-	if err := k8creconciling.ReconcileSecrets(ctx, secretReconcilers, namespace, client, ownerRefWrapper); err != nil {
-		errs = append(errs, err)
-	}
-
-	if err := reconciling.ReconcileCertificates(ctx, certReconcilers, namespace, client, ownerRefWrapper); err != nil {
-		errs = append(errs, err)
-	}
-
 	// must happen after the Secrets and Certificates have been reconciled, since it can fail as long as those do not exist
 	if err := k8creconciling.ReconcileDeployments(ctx, deploymentReconcilers, namespace, client, ownerRefWrapper, revisionLabels); err != nil {
-		// swallow errors and rely on the caller watching Secrets and re-reconciling whenever they change
-		if !errors.Is(err, modifier.ErrMountNotFound) {
+		if errors.Is(err, modifier.ErrMountNotFound) {
+			requeue = true
+		} else {
 			errs = append(errs, err)
 		}
 	}
@@ -155,7 +185,7 @@ func (r *reconciler) Reconcile(ctx context.Context, client ctrlruntimeclient.Cli
 		errs = append(errs, err)
 	}
 
-	return kerrors.NewAggregate(errs)
+	return requeue, kerrors.NewAggregate(errs)
 }
 
 // fetchClientCACerts fetches the ClientCA certificate and optionally the additional
