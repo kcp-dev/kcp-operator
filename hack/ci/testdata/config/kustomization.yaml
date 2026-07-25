@@ -1,7 +1,7 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - ../../../config/default
+  - ../../../../config/default
 images:
   - name: ghcr.io/kcp-dev/kcp-operator
     newTag: local
@@ -10,6 +10,9 @@ patches:
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --feature-gates=ConfigurationBundle=true
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --enabled-controller-groups=config
     target:
       kind: Deployment
       name: controller-manager

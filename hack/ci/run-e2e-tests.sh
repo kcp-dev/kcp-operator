@@ -76,33 +76,66 @@ export IMAGE_TAG=local
 echo "Building container images..."
 ARCHITECTURES=arm64 DRY_RUN=yes ./hack/ci/build-image.sh
 
-# create a local kind cluster
-KIND_CLUSTER_NAME=e2e
+# create the local kind cluster(s)
+export E2E_TOPOLOGY="${E2E_TOPOLOGY:-config-workload}"
+
+case "$E2E_TOPOLOGY" in
+  single)
+    # a single cluster runs both controller groups
+    CONFIG_CLUSTER_NAME=e2e
+    WORKLOAD_CLUSTER_NAME=""
+    ;;
+  config-workload)
+    # a config cluster runs the config controller group, a workload cluster the workload group
+    CONFIG_CLUSTER_NAME=e2e-config
+    WORKLOAD_CLUSTER_NAME=e2e-workload
+    ;;
+  *)
+    echo "ERROR: E2E_TOPOLOGY must be 'single' or 'config-workload', got '$E2E_TOPOLOGY'"
+    exit 1
+    ;;
+esac
 
 echo "Preloading the kindest/node image..."
 docker load --input /kindest.tar
 
 export KUBECONFIG=$(mktemp)
-echo "Creating kind cluster $KIND_CLUSTER_NAME..."
-create_kind_cluster "$KIND_CLUSTER_NAME" kindest/node:v1.32.2
+echo "Creating kind cluster $CONFIG_CLUSTER_NAME..."
+create_kind_cluster "$CONFIG_CLUSTER_NAME" kindest/node:v1.32.2
 chmod 600 "$KUBECONFIG"
+
+if [[ -n "$WORKLOAD_CLUSTER_NAME" ]]; then
+  export WORKLOAD_KUBECONFIG=$(mktemp)
+  echo "Creating kind cluster $WORKLOAD_CLUSTER_NAME..."
+  KUBECONFIG="$WORKLOAD_KUBECONFIG" create_kind_cluster "$WORKLOAD_CLUSTER_NAME" kindest/node:v1.32.2
+  chmod 600 "$WORKLOAD_KUBECONFIG"
+else
+  export WORKLOAD_KUBECONFIG="$KUBECONFIG"
+fi
 
 # preload the custom kcp image, if requested
 if [[ -n "$PRELOAD_IMAGE" ]]; then
-  echo "Preloading kcp image $PRELOAD_IMAGE into kind cluster..."
-  retry_linear 1 5 kind load docker-image "$PRELOAD_IMAGE" --name "$KIND_CLUSTER_NAME"
+  echo "Preloading kcp image $PRELOAD_IMAGE into kind clusters..."
+  retry_linear 1 5 kind load docker-image "$PRELOAD_IMAGE" --name "$CONFIG_CLUSTER_NAME"
+  if [[ -n "$WORKLOAD_CLUSTER_NAME" ]]; then
+    retry_linear 1 5 kind load docker-image "$PRELOAD_IMAGE" --name "$WORKLOAD_CLUSTER_NAME"
+  fi
 fi
 
-# apply kernel limits job first and wait for completion
+# apply kernel limits job on the workload cluster (where the kcp pods run)
+# first and wait for completion
 echo "Applying kernel limits job…"
 KUBECTL="$(UGET_PRINT_PATH=absolute make --no-print-directory install-kubectl)"
-"$KUBECTL" apply --filename hack/ci/kernel.yaml
-"$KUBECTL" wait --for=condition=Complete job/kernel-limits --timeout=300s
+KUBECONFIG="$WORKLOAD_KUBECONFIG" "$KUBECTL" apply --filename hack/ci/kernel.yaml
+KUBECONFIG="$WORKLOAD_KUBECONFIG" "$KUBECTL" wait --for=condition=Complete job/kernel-limits --timeout=300s
 echo "Kernel limits job completed."
 
 # store logs as artifacts (optional; protokol may not be available)
 if PROTOKOL="$(UGET_PRINT_PATH=absolute make --no-print-directory install-protokol 2>/dev/null)"; then
   "$PROTOKOL" --output "$ARTIFACTS/logs" --namespace 'kcp-*' --namespace 'e2e-*' >/dev/null 2>&1 &
+  if [[ -n "$WORKLOAD_CLUSTER_NAME" ]]; then
+    KUBECONFIG="$WORKLOAD_KUBECONFIG" "$PROTOKOL" --output "$ARTIFACTS/logs-workload" --namespace 'kcp-*' --namespace 'e2e-*' >/dev/null 2>&1 &
+  fi
 else
   echo "WARNING: failed to install protokol, logs will not be collected as artifacts"
 fi
@@ -110,19 +143,42 @@ fi
 # need Helm to setup etcd
 HELM="$(UGET_PRINT_PATH=absolute make --no-print-directory install-helm)"
 
-# load the operator image into the kind cluster
+# load the operator image into the kind clusters
 image="ghcr.io/kcp-dev/kcp-operator:$IMAGE_TAG"
 archive=operator.tar
 
 echo "Loading operator image into kind..."
 buildah manifest push --all "$image" "oci-archive:$archive:$image"
-kind load image-archive "$archive" --name "$KIND_CLUSTER_NAME"
+kind load image-archive "$archive" --name "$CONFIG_CLUSTER_NAME"
+if [[ -n "$WORKLOAD_CLUSTER_NAME" ]]; then
+  kind load image-archive "$archive" --name "$WORKLOAD_CLUSTER_NAME"
+fi
 
-# deploy the operator
-echo "Deploying operator..."
-"$KUBECTL" kustomize hack/ci/testdata | "$KUBECTL" apply --server-side --filename -
-"$KUBECTL" --namespace kcp-operator-system wait deployment kcp-operator-controller-manager --for condition=Available
-"$KUBECTL" --namespace kcp-operator-system wait pod --all --for condition=Ready
+if [[ "$E2E_TOPOLOGY" == config-workload ]]; then
+  # deploy the config cluster operator
+  echo "Deploying config operator..."
+  "$KUBECTL" kustomize hack/ci/testdata/config | "$KUBECTL" apply --server-side --filename -
+  "$KUBECTL" --namespace kcp-operator-system wait deployment kcp-operator-controller-manager --for condition=Available
+  "$KUBECTL" --namespace kcp-operator-system wait pod --all --for condition=Ready
+
+  # the workload cluster only needs the deploy.operator.kcp.io CRDs
+  echo "Deploying workload cluster operator..."
+  KUBECONFIG="$WORKLOAD_KUBECONFIG" "$KUBECTL" apply --server-side --kustomize config/crd/deploy
+  "$KUBECTL" kustomize hack/ci/testdata/workload | KUBECONFIG="$WORKLOAD_KUBECONFIG" "$KUBECTL" apply --server-side --filename -
+  KUBECONFIG="$WORKLOAD_KUBECONFIG" "$KUBECTL" --namespace kcp-operator-system wait deployment kcp-operator-controller-manager --for condition=Available
+  KUBECONFIG="$WORKLOAD_KUBECONFIG" "$KUBECTL" --namespace kcp-operator-system wait pod --all --for condition=Ready
+
+  # the syncer plays the role of an external GitOps tool, copying compiled
+  # resources and secrets from the config to the workload cluster
+  echo "Starting e2e syncer..."
+  go build -o "$ARTIFACTS/e2e-syncer" ./test/syncer
+  "$ARTIFACTS/e2e-syncer" --config-kubeconfig "$KUBECONFIG" --workload-kubeconfig "$WORKLOAD_KUBECONFIG" >"$ARTIFACTS/syncer.log" 2>&1 &
+else
+  echo "Deploying operator..."
+  "$KUBECTL" kustomize hack/ci/testdata/single | "$KUBECTL" apply --server-side --filename -
+  "$KUBECTL" --namespace kcp-operator-system wait deployment kcp-operator-controller-manager --for condition=Available
+  "$KUBECTL" --namespace kcp-operator-system wait pod --all --for condition=Ready
+fi
 
 # deploying cert-manager
 echo "Deploying cert-manager..."
