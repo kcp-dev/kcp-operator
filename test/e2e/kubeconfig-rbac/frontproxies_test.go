@@ -40,6 +40,11 @@ import (
 )
 
 func TestProvisionFrontProxyRBAC(t *testing.T) {
+	// TODO(ntnn): This needs some re-engineering. The RBAC controller
+	// uses the internal root proxy, but it isn't available in the
+	// config/workload topology.
+	utils.SkipUnlessTopology(t, utils.TopologySingle)
+
 	ctrlruntime.SetLogger(logr.Discard())
 
 	configClient := utils.GetConfigKubeClient(t)
