@@ -70,6 +70,36 @@ func NewShardClient(ctx context.Context, c ctrlruntimeclient.Client, shard *oper
 	return newClient(ctx, c, baseUrl, scheme, rootShard)
 }
 
+// NewRootShardClientWithShardCert returns a new client for talking to a kcp root shard using the shards client certificate.
+func NewRootShardClientWithShardCert(ctx context.Context, c ctrlruntimeclient.Client, shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShard, cluster logicalcluster.Path, scheme *runtime.Scheme) (ctrlruntimeclient.Client, error) {
+	baseUrl := fmt.Sprintf("https://%s.%s.svc.cluster.local:6443", resources.GetRootShardServiceName(rootShard), rootShard.Namespace)
+
+	if !cluster.Empty() {
+		baseUrl += cluster.RequestPath()
+	}
+
+	caSecret := &corev1.Secret{}
+	if err := c.Get(ctx, types.NamespacedName{Namespace: rootShard.Namespace, Name: resources.GetRootShardCAName(rootShard, operatorv1alpha1.ServerCA)}, caSecret); err != nil {
+		return nil, fmt.Errorf("failed to get root shard server CA Secret: %w", err)
+	}
+
+	certSecret := &corev1.Secret{}
+	if err := c.Get(ctx, types.NamespacedName{Namespace: shard.Namespace, Name: resources.GetShardCertificateName(shard, operatorv1alpha1.ClientCertificate)}, certSecret); err != nil {
+		return nil, fmt.Errorf("failed to get shard client certificate Secret: %w", err)
+	}
+
+	cfg := &rest.Config{
+		Host: baseUrl,
+		TLSClientConfig: rest.TLSClientConfig{
+			CAData:   caSecret.Data["tls.crt"],
+			CertData: certSecret.Data["tls.crt"],
+			KeyData:  certSecret.Data["tls.key"],
+		},
+	}
+
+	return ctrlruntimeclient.New(cfg, ctrlruntimeclient.Options{Scheme: scheme})
+}
+
 func newClient(
 	ctx context.Context,
 	c ctrlruntimeclient.Client,

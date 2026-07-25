@@ -44,6 +44,14 @@ rules:
   - update
   - watch
 - apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
   - deploy.operator.kcp.io
   resources:
   - compiledcacheservers
@@ -63,9 +71,16 @@ rules:
   - deploy.operator.kcp.io
   resources:
   - compiledrootshards/status
+  - compiledshards/status
   verbs:
   - get
   - patch
+  - update
+- apiGroups:
+  - deploy.operator.kcp.io
+  resources:
+  - compiledshards/finalizers
+  verbs:
   - update
 - apiGroups:
   - operator.kcp.io
