@@ -24,6 +24,12 @@ resourceTypes:
   - { package: github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1, resourceName: CacheServer }
   - { package: github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1, resourceName: FrontProxy }
   - { package: github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1, resourceName: Kubeconfig }
+  # deploy.operator.kcp.io/v1alpha1
+  - { package: github.com/kcp-dev/kcp-operator/sdk/apis/deploy/v1alpha1, resourceName: CompiledRootShard }
+  - { package: github.com/kcp-dev/kcp-operator/sdk/apis/deploy/v1alpha1, resourceName: CompiledShard }
+  - { package: github.com/kcp-dev/kcp-operator/sdk/apis/deploy/v1alpha1, resourceName: CompiledCacheServer }
+  - { package: github.com/kcp-dev/kcp-operator/sdk/apis/deploy/v1alpha1, resourceName: CompiledFrontProxy }
+  - { package: github.com/kcp-dev/kcp-operator/sdk/apis/deploy/v1alpha1, resourceName: CompiledVirtualWorkspace }
   # cert-manager.io/v1
   - { package: github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1, resourceName: Certificate }
   - { package: github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1, resourceName: Issuer }
