@@ -29,6 +29,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/kcp-dev/kcp-operator/internal/controller/util"
+	"github.com/kcp-dev/kcp-operator/internal/resources"
+	deployv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/deploy/v1alpha1"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -146,6 +148,18 @@ func TestReconciling(t *testing.T) {
 				NamespacedName: ctrlruntimeclient.ObjectKeyFromObject(testcase.frontProxy),
 			})
 			require.NoError(t, err)
+
+			compiled := &deployv1alpha1.CompiledFrontProxy{}
+			err = client.Get(ctx, ctrlruntimeclient.ObjectKeyFromObject(testcase.frontProxy), compiled)
+			require.NoError(t, err)
+			require.Equal(t, testcase.frontProxy.Spec, compiled.Spec.FrontProxy)
+			require.Equal(t, testcase.rootShard.Name, compiled.Spec.RootShard.Name)
+			require.Equal(t, testcase.rootShard.Spec, compiled.Spec.RootShard.Spec)
+			require.Equal(t, testcase.rootShard.Name, compiled.Labels[resources.RootShardLabel])
+			require.Equal(t, testcase.frontProxy.Name, compiled.Labels[resources.FrontProxyLabel])
+			require.Len(t, compiled.OwnerReferences, 1)
+			require.Equal(t, "FrontProxy", compiled.OwnerReferences[0].Kind)
+			require.Equal(t, testcase.frontProxy.Name, compiled.OwnerReferences[0].Name)
 		})
 	}
 }

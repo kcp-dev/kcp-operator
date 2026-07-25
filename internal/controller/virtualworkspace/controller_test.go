@@ -18,17 +18,22 @@ package virtualworkspace
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/stretchr/testify/require"
 
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 	ctrlruntimefakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/kcp-dev/kcp-operator/internal/controller/util"
+	"github.com/kcp-dev/kcp-operator/internal/resources"
+	deployv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/deploy/v1alpha1"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -102,6 +107,36 @@ func TestReconciling(t *testing.T) {
 				NamespacedName: ctrlruntimeclient.ObjectKeyFromObject(testcase.virtualWorkspace),
 			})
 			require.NoError(t, err)
+
+			compiled := &deployv1alpha1.CompiledVirtualWorkspace{}
+			err = client.Get(ctx, ctrlruntimeclient.ObjectKeyFromObject(testcase.virtualWorkspace), compiled)
+			require.True(t, apierrors.IsNotFound(err))
+
+			require.NoError(t, util.MarkCertificatesReady(ctx, client, namespace))
+
+			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{
+				NamespacedName: ctrlruntimeclient.ObjectKeyFromObject(testcase.virtualWorkspace),
+			})
+			require.NoError(t, err)
+
+			err = client.Get(ctx, ctrlruntimeclient.ObjectKeyFromObject(testcase.virtualWorkspace), compiled)
+			require.NoError(t, err)
+			require.Equal(t, testcase.virtualWorkspace.Spec, compiled.Spec.VirtualWorkspace)
+			require.Equal(t, testcase.rootShard.Name, compiled.Spec.RootShard.Name)
+			require.Equal(t, testcase.rootShard.Spec, compiled.Spec.RootShard.Spec)
+			require.Nil(t, compiled.Spec.Shard)
+			require.Equal(t, testcase.rootShard.Name, compiled.Labels[resources.RootShardLabel])
+			require.Equal(t, testcase.virtualWorkspace.Name, compiled.Labels[resources.VirtualWorkspaceLabel])
+			require.Len(t, compiled.OwnerReferences, 1)
+			require.Equal(t, "VirtualWorkspace", compiled.OwnerReferences[0].Kind)
+			require.Equal(t, testcase.virtualWorkspace.Name, compiled.OwnerReferences[0].Name)
+
+			certs := &certmanagerv1.CertificateList{}
+			require.NoError(t, client.List(ctx, certs, ctrlruntimeclient.InNamespace(namespace)))
+			require.NotEmpty(t, certs.Items)
+			for _, cert := range certs.Items {
+				require.Equal(t, "1", compiled.Annotations[fmt.Sprintf("operator.kcp.io/cert-%s-revision", cert.Name)])
+			}
 		})
 	}
 }

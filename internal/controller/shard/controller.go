@@ -119,6 +119,7 @@ func (r *ShardReconciler) SetupWithManager(mgr ctrl.Manager) error {
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=shards,verbs=get;list;watch;update;patch
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=shards/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=shards/finalizers,verbs=update
+// +kubebuilder:rbac:groups=deploy.operator.kcp.io,resources=compiledshards,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=secrets;services,verbs=get;list;watch;create;update;patch;delete
@@ -194,7 +195,8 @@ func (r *ShardReconciler) reconcile(ctx context.Context, s *operatorv1alpha1.Sha
 		shard.ExternalLogicalClusterAdminCertificateReconciler(s, rootShard),
 	}
 
-	if err := reconciling.ReconcileCertificates(ctx, certReconcilers, s.Namespace, r.Client, ownerRefWrapper); err != nil {
+	var certs []*certmanagerv1.Certificate
+	if err := reconciling.ReconcileCertificates(ctx, certReconcilers, s.Namespace, r.Client, ownerRefWrapper, modifier.Capture(&certs)); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -237,8 +239,16 @@ func (r *ShardReconciler) reconcile(ctx context.Context, s *operatorv1alpha1.Sha
 		}
 	}
 
+	revisions, ready := util.CertificateRevisions(certs)
+
 	// Deployment will be scaled to 0 if bundle annotation is present
-	if vwConfigValid {
+	if vwConfigValid && ready {
+		if err := reconciling.ReconcileCompiledShards(ctx, []reconciling.NamedCompiledShardReconcilerFactory{
+			shard.CompiledShardReconciler(s, rootShard, kcpVW, util.MutateKeys(revisions, "cert-", "-revision")),
+		}, s.Namespace, r.Client, ownerRefWrapper); err != nil {
+			errs = append(errs, err)
+		}
+
 		if err := k8creconciling.ReconcileDeployments(ctx, []k8creconciling.NamedDeploymentReconcilerFactory{
 			shard.DeploymentReconciler(s, rootShard, kcpVW),
 		}, s.Namespace, r.Client, ownerRefWrapper, revisionLabels); err != nil {

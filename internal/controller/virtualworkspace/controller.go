@@ -70,6 +70,7 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=virtualworkspaces,verbs=get;list;watch;update;patch
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=virtualworkspaces/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=deploy.operator.kcp.io,resources=compiledvirtualworkspaces,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=shards,verbs=get;list;watch
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=rootshards,verbs=get;list;watch
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
@@ -197,10 +198,11 @@ func (r *Reconciler) reconcile(ctx context.Context, vw *operatorv1alpha1.Virtual
 	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*metav1.NewControllerRef(vw, operatorv1alpha1.SchemeGroupVersion.WithKind("VirtualWorkspace")))
 	revisionLabels := modifier.RelatedRevisionsLabels(ctx, r.Client)
 
+	var certs []*certmanagerv1.Certificate
 	if err := reconciling.ReconcileCertificates(ctx, []reconciling.NamedCertificateReconcilerFactory{
 		virtualworkspace.ClientCertificateReconciler(vw, rootShard),
 		virtualworkspace.ServerCertificateReconciler(vw, rootShard),
-	}, vw.Namespace, r.Client, ownerRefWrapper); err != nil {
+	}, vw.Namespace, r.Client, ownerRefWrapper, modifier.Capture(&certs)); err != nil {
 		return conditions, err
 	}
 
@@ -210,6 +212,17 @@ func (r *Reconciler) reconcile(ctx context.Context, vw *operatorv1alpha1.Virtual
 		}, vw.Namespace, r.Client, ownerRefWrapper); err != nil {
 			return conditions, err
 		}
+	}
+
+	revisions, ready := util.CertificateRevisions(certs)
+	if !ready {
+		return conditions, nil
+	}
+
+	if err := reconciling.ReconcileCompiledVirtualWorkspaces(ctx, []reconciling.NamedCompiledVirtualWorkspaceReconcilerFactory{
+		virtualworkspace.CompiledVirtualWorkspaceReconciler(vw, rootShard, shard, util.MutateKeys(revisions, "cert-", "-revision")),
+	}, vw.Namespace, r.Client, ownerRefWrapper); err != nil {
+		return conditions, err
 	}
 
 	if err := k8creconciling.ReconcileDeployments(ctx, []k8creconciling.NamedDeploymentReconcilerFactory{

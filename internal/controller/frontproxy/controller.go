@@ -22,6 +22,7 @@ import (
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	k8creconciling "k8c.io/reconciler/pkg/reconciling"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -41,6 +42,7 @@ import (
 	bundlehelper "github.com/kcp-dev/kcp-operator/internal/controller/bundle"
 	"github.com/kcp-dev/kcp-operator/internal/controller/util"
 	"github.com/kcp-dev/kcp-operator/internal/metrics"
+	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
 	"github.com/kcp-dev/kcp-operator/internal/resources/frontproxy"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
@@ -88,6 +90,7 @@ func (r *FrontProxyReconciler) SetupWithManager(mgr ctrl.Manager) error {
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=frontproxies,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=frontproxies/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=frontproxies/finalizers,verbs=update
+// +kubebuilder:rbac:groups=deploy.operator.kcp.io,resources=compiledfrontproxies,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=services;configmaps;secrets,verbs=get;list;watch;create;update;patch;delete
@@ -145,6 +148,14 @@ func (r *FrontProxyReconciler) reconcile(ctx context.Context, frontProxy *operat
 	}
 
 	fpReconciler := frontproxy.NewFrontProxy(frontProxy, rootShard)
+
+	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*metav1.NewControllerRef(frontProxy, operatorv1alpha1.SchemeGroupVersion.WithKind("FrontProxy")))
+
+	if err := reconciling.ReconcileCompiledFrontProxys(ctx, []reconciling.NamedCompiledFrontProxyReconcilerFactory{
+		frontproxy.CompiledFrontProxyReconciler(frontProxy, rootShard, nil),
+	}, frontProxy.Namespace, r.Client, ownerRefWrapper); err != nil {
+		errs = append(errs, err)
+	}
 
 	// Deployment will be scaled to 0 if bundle annotation is present
 	if err := fpReconciler.Reconcile(ctx, r.Client, frontProxy.Namespace); err != nil {

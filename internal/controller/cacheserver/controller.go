@@ -31,6 +31,7 @@ import (
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/kcp-dev/kcp-operator/internal/controller/util"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling/modifier"
 	"github.com/kcp-dev/kcp-operator/internal/resources/cacheserver"
@@ -57,6 +58,7 @@ func (r *CacheServerReconciler) SetupWithManager(mgr ctrlruntime.Manager) error 
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=cacheservers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=cacheservers/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=cacheservers/finalizers,verbs=update
+// +kubebuilder:rbac:groups=deploy.operator.kcp.io,resources=compiledcacheservers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;watch;create;update;patch
 // +kubebuilder:rbac:groups=cert-manager.io,resources=issuers,verbs=get;list;watch;create;update;patch
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch
@@ -87,11 +89,14 @@ func (r *CacheServerReconciler) reconcile(ctx context.Context, server *operatorv
 	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*metav1.NewControllerRef(server, operatorv1alpha1.SchemeGroupVersion.WithKind("CacheServer")))
 	revisionLabels := modifier.RelatedRevisionsLabels(ctx, r.Client)
 
-	if err := reconciling.ReconcileCertificates(ctx, []reconciling.NamedCertificateReconcilerFactory{
+	certReconcilers := []reconciling.NamedCertificateReconcilerFactory{
 		cacheserver.RootCACertificateReconciler(server),
 		cacheserver.ServerCertificateReconciler(server),
 		cacheserver.ClientCertificateReconciler(server),
-	}, server.Namespace, r.Client, ownerRefWrapper); err != nil {
+	}
+
+	var certs []*certmanagerv1.Certificate
+	if err := reconciling.ReconcileCertificates(ctx, certReconcilers, server.Namespace, r.Client, ownerRefWrapper, modifier.Capture(&certs)); err != nil {
 		return err
 	}
 
@@ -103,6 +108,17 @@ func (r *CacheServerReconciler) reconcile(ctx context.Context, server *operatorv
 
 	if err := k8creconciling.ReconcileSecrets(ctx, []k8creconciling.NamedSecretReconcilerFactory{
 		cacheserver.KubeconfigReconciler(server),
+	}, server.Namespace, r.Client, ownerRefWrapper); err != nil {
+		return err
+	}
+
+	revisions, ready := util.CertificateRevisions(certs)
+	if !ready {
+		return nil
+	}
+
+	if err := reconciling.ReconcileCompiledCacheServers(ctx, []reconciling.NamedCompiledCacheServerReconcilerFactory{
+		cacheserver.CompiledCacheServerReconciler(server, util.MutateKeys(revisions, "cert-", "-revision")),
 	}, server.Namespace, r.Client, ownerRefWrapper); err != nil {
 		return err
 	}

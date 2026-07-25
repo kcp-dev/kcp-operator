@@ -111,6 +111,7 @@ func (r *RootShardReconciler) SetupWithManager(mgr ctrl.Manager) error {
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=virtualworkspaces,verbs=get;list;watch
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=rootshards/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=rootshards/finalizers,verbs=update
+// +kubebuilder:rbac:groups=deploy.operator.kcp.io,resources=compiledrootshards,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=cert-manager.io,resources=issuers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
@@ -252,6 +253,12 @@ func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operator
 
 	// Deployment will be scaled to 0 if bundle annotation is present
 	if vwConfigValid {
+		if err := reconciling.ReconcileCompiledRootShards(ctx, []reconciling.NamedCompiledRootShardReconcilerFactory{
+			rootshard.CompiledRootShardReconciler(rootShard, kcpVW, nil),
+		}, rootShard.Namespace, r.Client, ownerRefWrapper); err != nil {
+			errs = append(errs, err)
+		}
+
 		if err := k8creconciling.ReconcileDeployments(ctx, []k8creconciling.NamedDeploymentReconcilerFactory{
 			rootshard.DeploymentReconciler(rootShard, kcpVW),
 		}, rootShard.Namespace, r.Client, ownerRefWrapper, revisionLabels); err != nil {

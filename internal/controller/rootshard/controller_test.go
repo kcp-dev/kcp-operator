@@ -29,6 +29,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/kcp-dev/kcp-operator/internal/controller/util"
+	"github.com/kcp-dev/kcp-operator/internal/resources"
+	deployv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/deploy/v1alpha1"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -119,6 +121,16 @@ func TestReconciling(t *testing.T) {
 				NamespacedName: ctrlruntimeclient.ObjectKeyFromObject(testcase.rootShard),
 			})
 			require.NoError(t, err)
+
+			compiled := &deployv1alpha1.CompiledRootShard{}
+			err = client.Get(ctx, ctrlruntimeclient.ObjectKeyFromObject(testcase.rootShard), compiled)
+			require.NoError(t, err)
+			require.Equal(t, testcase.rootShard.Spec, compiled.Spec.RootShard)
+			require.Nil(t, compiled.Spec.VirtualWorkspace)
+			require.Equal(t, testcase.rootShard.Name, compiled.Labels[resources.RootShardLabel])
+			require.Len(t, compiled.OwnerReferences, 1)
+			require.Equal(t, "RootShard", compiled.OwnerReferences[0].Kind)
+			require.Equal(t, testcase.rootShard.Name, compiled.OwnerReferences[0].Name)
 		})
 	}
 }

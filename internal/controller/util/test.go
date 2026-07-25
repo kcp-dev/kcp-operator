@@ -17,14 +17,20 @@ limitations under the License.
 package util
 
 import (
+	"context"
+
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	certmanagermetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/utils/ptr"
+	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
+	deployv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/deploy/v1alpha1"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -33,8 +39,31 @@ func GetTestScheme() *runtime.Scheme {
 	utilruntime.Must(metav1.AddMetaToScheme(scheme))
 	utilruntime.Must(corev1.AddToScheme(scheme))
 	utilruntime.Must(operatorv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(deployv1alpha1.AddToScheme(scheme))
 	utilruntime.Must(certmanagerv1.AddToScheme(scheme))
 	utilruntime.Must(appsv1.AddToScheme(scheme))
 
 	return scheme
+}
+
+// MarkCertificatesReady sets all Ready=true certificates in the given namespace.
+func MarkCertificatesReady(ctx context.Context, client ctrlruntimeclient.Client, namespace string) error {
+	certs := &certmanagerv1.CertificateList{}
+	if err := client.List(ctx, certs, ctrlruntimeclient.InNamespace(namespace)); err != nil {
+		return err
+	}
+
+	for i := range certs.Items {
+		cert := &certs.Items[i]
+		cert.Status.Revision = ptr.To(1)
+		cert.Status.Conditions = []certmanagerv1.CertificateCondition{{
+			Type:   certmanagerv1.CertificateConditionReady,
+			Status: certmanagermetav1.ConditionTrue,
+		}}
+		if err := client.Update(ctx, cert); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
