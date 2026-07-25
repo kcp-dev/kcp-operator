@@ -30,27 +30,41 @@ import (
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
+func workloadKubeconfig(t *testing.T) string {
+	t.Helper()
+
+	kubeconfig := os.Getenv("WORKLOAD_KUBECONFIG")
+	if kubeconfig == "" {
+		t.Fatal("WORKLOAD_KUBECONFIG is not set.")
+	}
+
+	return kubeconfig
+}
+
+// DeployEtcd deploys etcd onto the workload cluster, where the kcp pods run.
 func DeployEtcd(t *testing.T, name, namespace string) string {
 	t.Helper()
 
 	helmChart := os.Getenv("ETCD_HELM_CHART")
+	kubeconfig := workloadKubeconfig(t)
 
 	t.Logf("Installing etcd %q into %s...", name, namespace)
-	args := []string{"install", "--namespace", namespace, "--atomic", name, helmChart}
+	args := []string{"install", "--kubeconfig", kubeconfig, "--namespace", namespace, "--create-namespace", "--atomic", name, helmChart}
 
 	helmCommand := os.Getenv("HELM_BINARY")
 	if helmCommand == "" {
 		helmCommand = "helm"
 	}
 
-	if err := exec.Command(helmCommand, args...).Run(); err != nil {
-		t.Fatalf("Failed to deploy etcd: %v", err)
+	if out, err := exec.Command(helmCommand, args...).CombinedOutput(); err != nil {
+		t.Fatalf("Failed to deploy etcd: %v\n%s", err, out)
 	}
 
 	t.Log("Waiting for etcd to get ready...")
 	args = []string{
 		"wait",
 		"pods",
+		"--kubeconfig", kubeconfig,
 		"--namespace", namespace,
 		"--selector", fmt.Sprintf("app.kubernetes.io/name=etcd,app.kubernetes.io/instance=%s", name),
 		"--for", "condition=Ready",
@@ -83,7 +97,7 @@ func applyShardEnv(spec operatorv1alpha1.CommonShardSpec) operatorv1alpha1.Commo
 	return spec
 }
 
-func DeployShard(ctx context.Context, t *testing.T, client ctrlruntimeclient.Client, namespace, name, rootShard string, patches ...func(*operatorv1alpha1.Shard)) operatorv1alpha1.Shard {
+func DeployShard(ctx context.Context, t *testing.T, configClient, workloadClient ctrlruntimeclient.Client, namespace, name, rootShard string, patches ...func(*operatorv1alpha1.Shard)) operatorv1alpha1.Shard {
 	t.Helper()
 
 	etcd := DeployEtcd(t, "etcd-"+name, namespace)
@@ -110,7 +124,7 @@ func DeployShard(ctx context.Context, t *testing.T, client ctrlruntimeclient.Cli
 	}
 
 	t.Logf("Creating Shard %s...", shard.Name)
-	if err := client.Create(ctx, &shard); err != nil {
+	if err := configClient.Create(ctx, &shard); err != nil {
 		t.Fatal(err)
 	}
 
@@ -121,12 +135,12 @@ func DeployShard(ctx context.Context, t *testing.T, client ctrlruntimeclient.Cli
 			"app.kubernetes.io/instance":  shard.Name,
 		},
 	}
-	WaitForPods(t, ctx, client, opts...)
+	WaitForPods(t, ctx, workloadClient, opts...)
 
 	return shard
 }
 
-func DeployRootShard(ctx context.Context, t *testing.T, client ctrlruntimeclient.Client, namespace string, externalHostname string, patches ...func(*operatorv1alpha1.RootShard)) operatorv1alpha1.RootShard {
+func DeployRootShard(ctx context.Context, t *testing.T, configClient, workloadClient ctrlruntimeclient.Client, namespace string, externalHostname string, patches ...func(*operatorv1alpha1.RootShard)) operatorv1alpha1.RootShard {
 	t.Helper()
 
 	etcd := DeployEtcd(t, "etcd-r00t", namespace)
@@ -181,7 +195,7 @@ func DeployRootShard(ctx context.Context, t *testing.T, client ctrlruntimeclient
 	}
 
 	t.Logf("Creating RootShard %s...", rootShard.Name)
-	if err := client.Create(ctx, &rootShard); err != nil {
+	if err := configClient.Create(ctx, &rootShard); err != nil {
 		t.Fatal(err)
 	}
 
@@ -192,12 +206,12 @@ func DeployRootShard(ctx context.Context, t *testing.T, client ctrlruntimeclient
 			"app.kubernetes.io/instance":  rootShard.Name,
 		},
 	}
-	WaitForPods(t, ctx, client, opts...)
+	WaitForPods(t, ctx, workloadClient, opts...)
 
 	return rootShard
 }
 
-func DeployFrontProxy(ctx context.Context, t *testing.T, client ctrlruntimeclient.Client, namespace string, rootShardName string, externalHostname string, patches ...func(*operatorv1alpha1.FrontProxy)) operatorv1alpha1.FrontProxy {
+func DeployFrontProxy(ctx context.Context, t *testing.T, configClient, workloadClient ctrlruntimeclient.Client, namespace string, rootShardName string, externalHostname string, patches ...func(*operatorv1alpha1.FrontProxy)) operatorv1alpha1.FrontProxy {
 	t.Helper()
 
 	frontProxy := operatorv1alpha1.FrontProxy{}
@@ -234,7 +248,7 @@ func DeployFrontProxy(ctx context.Context, t *testing.T, client ctrlruntimeclien
 	}
 
 	t.Logf("Creating FrontProxy %s...", frontProxy.Name)
-	if err := client.Create(ctx, &frontProxy); err != nil {
+	if err := configClient.Create(ctx, &frontProxy); err != nil {
 		t.Fatal(err)
 	}
 
@@ -245,12 +259,12 @@ func DeployFrontProxy(ctx context.Context, t *testing.T, client ctrlruntimeclien
 			"app.kubernetes.io/instance":  frontProxy.Name,
 		},
 	}
-	WaitForPods(t, ctx, client, opts...)
+	WaitForPods(t, ctx, workloadClient, opts...)
 
 	return frontProxy
 }
 
-func DeployCacheServer(ctx context.Context, t *testing.T, client ctrlruntimeclient.Client, namespace string, patches ...func(*operatorv1alpha1.CacheServer)) operatorv1alpha1.CacheServer {
+func DeployCacheServer(ctx context.Context, t *testing.T, configClient, workloadClient ctrlruntimeclient.Client, namespace string, patches ...func(*operatorv1alpha1.CacheServer)) operatorv1alpha1.CacheServer {
 	t.Helper()
 
 	server := operatorv1alpha1.CacheServer{}
@@ -274,7 +288,7 @@ func DeployCacheServer(ctx context.Context, t *testing.T, client ctrlruntimeclie
 	}
 
 	t.Logf("Creating CacheServer %s...", server.Name)
-	if err := client.Create(ctx, &server); err != nil {
+	if err := configClient.Create(ctx, &server); err != nil {
 		t.Fatal(err)
 	}
 
@@ -285,17 +299,17 @@ func DeployCacheServer(ctx context.Context, t *testing.T, client ctrlruntimeclie
 			"app.kubernetes.io/instance":  server.Name,
 		},
 	}
-	WaitForPods(t, ctx, client, opts...)
+	WaitForPods(t, ctx, workloadClient, opts...)
 
 	return server
 }
 
-func DeployCacheServerWithExternalEtcd(ctx context.Context, t *testing.T, client ctrlruntimeclient.Client, namespace string, replicas int32, patches ...func(*operatorv1alpha1.CacheServer)) operatorv1alpha1.CacheServer {
+func DeployCacheServerWithExternalEtcd(ctx context.Context, t *testing.T, configClient, workloadClient ctrlruntimeclient.Client, namespace string, replicas int32, patches ...func(*operatorv1alpha1.CacheServer)) operatorv1alpha1.CacheServer {
 	t.Helper()
 
 	etcd := DeployEtcd(t, "kachy-etcd", namespace)
 
-	return DeployCacheServer(ctx, t, client, namespace, append(patches, func(server *operatorv1alpha1.CacheServer) {
+	return DeployCacheServer(ctx, t, configClient, workloadClient, namespace, append(patches, func(server *operatorv1alpha1.CacheServer) {
 		server.Spec.Replicas = &replicas
 		server.Spec.Etcd = &operatorv1alpha1.EtcdConfig{
 			Endpoints: []string{etcd},
@@ -303,7 +317,7 @@ func DeployCacheServerWithExternalEtcd(ctx context.Context, t *testing.T, client
 	})...)
 }
 
-func DeployVirtualWorkspace(ctx context.Context, t *testing.T, client ctrlruntimeclient.Client, namespace, name string, waitForReady bool, patches ...func(*operatorv1alpha1.VirtualWorkspace)) operatorv1alpha1.VirtualWorkspace {
+func DeployVirtualWorkspace(ctx context.Context, t *testing.T, configClient, workloadClient ctrlruntimeclient.Client, namespace, name string, waitForReady bool, patches ...func(*operatorv1alpha1.VirtualWorkspace)) operatorv1alpha1.VirtualWorkspace {
 	t.Helper()
 
 	vw := operatorv1alpha1.VirtualWorkspace{}
@@ -327,7 +341,7 @@ func DeployVirtualWorkspace(ctx context.Context, t *testing.T, client ctrlruntim
 	}
 
 	t.Logf("Creating VirtualWorkspace %s...", vw.Name)
-	if err := client.Create(ctx, &vw); err != nil {
+	if err := configClient.Create(ctx, &vw); err != nil {
 		t.Fatal(err)
 	}
 
@@ -339,7 +353,7 @@ func DeployVirtualWorkspace(ctx context.Context, t *testing.T, client ctrlruntim
 				"app.kubernetes.io/instance":  vw.Name,
 			},
 		}
-		WaitForPods(t, ctx, client, opts...)
+		WaitForPods(t, ctx, workloadClient, opts...)
 	}
 
 	return vw

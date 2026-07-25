@@ -39,19 +39,20 @@ import (
 func TestCreateFrontProxy(t *testing.T) {
 	ctrlruntime.SetLogger(logr.Discard())
 
-	client := utils.GetKubeClient(t)
+	configClient := utils.GetConfigKubeClient(t)
+	workloadClient := utils.GetWorkloadKubeClient(t)
 	ctx := context.Background()
 
-	namespace := utils.CreateSelfDestructingNamespace(t, ctx, client, "create-frontproxy")
+	namespace := utils.CreateSelfDestructingNamespace(t, ctx, configClient, "create-frontproxy")
 
 	// externalHostname must match whatever DeployFrontProxy chooses as the name for the FrontProxy
 	externalHostname := fmt.Sprintf("front-proxy-front-proxy.%s.svc.cluster.local", namespace.Name)
 
 	// deploy rootshard
-	rootShard := utils.DeployRootShard(ctx, t, client, namespace.Name, externalHostname)
+	rootShard := utils.DeployRootShard(ctx, t, configClient, workloadClient, namespace.Name, externalHostname)
 
 	// deploy front-proxy
-	frontProxy := utils.DeployFrontProxy(ctx, t, client, namespace.Name, rootShard.Name, externalHostname)
+	frontProxy := utils.DeployFrontProxy(ctx, t, configClient, workloadClient, namespace.Name, rootShard.Name, externalHostname)
 
 	// create front-proxy kubeconfig
 	configSecretName := "kubeconfig-front-proxy-e2e"
@@ -74,14 +75,14 @@ func TestCreateFrontProxy(t *testing.T) {
 	}
 
 	t.Log("Creating kubeconfig for FrontProxy...")
-	if err := client.Create(ctx, &fpConfig); err != nil {
+	if err := configClient.Create(ctx, &fpConfig); err != nil {
 		t.Fatal(err)
 	}
-	utils.WaitForObject(t, ctx, client, &corev1.Secret{}, types.NamespacedName{Namespace: fpConfig.Namespace, Name: fpConfig.Spec.SecretRef.Name})
+	utils.WaitForObject(t, ctx, configClient, &corev1.Secret{}, types.NamespacedName{Namespace: fpConfig.Namespace, Name: fpConfig.Spec.SecretRef.Name})
 
 	// verify that we can use frontproxy kubeconfig to access rootshard workspaces
 	t.Log("Connecting to FrontProxy...")
-	kcpClient := utils.ConnectWithKubeconfig(t, ctx, client, namespace.Name, fpConfig.Name, logicalcluster.None)
+	kcpClient := utils.ConnectWithKubeconfig(t, ctx, configClient, namespace.Name, fpConfig.Name, logicalcluster.None)
 	// proof of life: list something every logicalcluster in kcp has
 	t.Log("Should be able to list Secrets.")
 	secrets := &corev1.SecretList{}

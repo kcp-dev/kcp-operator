@@ -40,9 +40,11 @@ if $USE_EXISTING_CLUSTER; then
   fi
   # Convert to absolute path if relative
   export KUBECONFIG="$(realpath "$KUBECONFIG")"
+  export WORKLOAD_KUBECONFIG="$(realpath "$KUBECONFIG")"
   echo "Using KUBECONFIG: $KUBECONFIG"
 else
   export KUBECONFIG="$DATA_DIR/kind.kubeconfig"
+  export WORKLOAD_KUBECONFIG="$DATA_DIR/kind.kubeconfig"
   echo "Creating kind cluster $KIND_CLUSTER_NAME (set \$USE_EXISTING_CLUSTER to true to use your own)"
   kind create cluster --name "$KIND_CLUSTER_NAME"
   chmod 600 "$KUBECONFIG"

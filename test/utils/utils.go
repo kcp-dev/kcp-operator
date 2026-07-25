@@ -37,6 +37,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/scale/scheme"
 	"k8s.io/client-go/tools/clientcmd"
@@ -44,6 +45,7 @@ import (
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kcp-dev/kcp-operator/internal/resources"
+	deployv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/deploy/v1alpha1"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -73,19 +75,26 @@ func GetSelfSignedIssuerRef() *operatorv1alpha1.ObjectReference {
 	}
 }
 
-func GetKubeClient(t *testing.T) ctrlruntimeclient.Client {
+func newKubeScheme(t *testing.T) *runtime.Scheme {
 	t.Helper()
 
 	sc := runtime.NewScheme()
-	if err := scheme.AddToScheme(sc); err != nil {
-		t.Fatal(err)
-	}
-	if err := corev1.AddToScheme(sc); err != nil {
+	if err := clientgoscheme.AddToScheme(sc); err != nil {
 		t.Fatal(err)
 	}
 	if err := operatorv1alpha1.AddToScheme(sc); err != nil {
 		t.Fatal(err)
 	}
+	if err := deployv1alpha1.AddToScheme(sc); err != nil {
+		t.Fatal(err)
+	}
+
+	return sc
+}
+
+// GetConfigKubeClient returns a client for the config cluster.
+func GetConfigKubeClient(t *testing.T) ctrlruntimeclient.Client {
+	t.Helper()
 
 	config, err := ctrlruntime.GetConfig()
 	if err != nil {
@@ -93,7 +102,26 @@ func GetKubeClient(t *testing.T) ctrlruntimeclient.Client {
 	}
 
 	c, err := ctrlruntimeclient.New(config, ctrlruntimeclient.Options{
-		Scheme: sc,
+		Scheme: newKubeScheme(t),
+	})
+	if err != nil {
+		t.Fatalf("Failed to create client: %v", err)
+	}
+
+	return c
+}
+
+// GetWorkloadKubeClient returns a client for the workload cluster.
+func GetWorkloadKubeClient(t *testing.T) ctrlruntimeclient.Client {
+	t.Helper()
+
+	config, err := clientcmd.BuildConfigFromFlags("", workloadKubeconfig(t))
+	if err != nil {
+		t.Fatalf("Failed to get workload kubeconfig: %v", err)
+	}
+
+	c, err := ctrlruntimeclient.New(config, ctrlruntimeclient.Options{
+		Scheme: newKubeScheme(t),
 	})
 	if err != nil {
 		t.Fatalf("Failed to create client: %v", err)
@@ -123,6 +151,8 @@ func CreateSelfDestructingNamespace(t *testing.T, ctx context.Context, client ct
 	return &ns
 }
 
+// SelfDestuctingPortForward forwards a port on the workload cluster,
+// where the kcp pods run, to a local port.
 func SelfDestuctingPortForward(
 	t *testing.T,
 	ctx context.Context,
@@ -135,6 +165,7 @@ func SelfDestuctingPortForward(
 
 	args := []string{
 		"port-forward",
+		"--kubeconfig", workloadKubeconfig(t),
 		"--namespace", namespace,
 		target,
 		fmt.Sprintf("%d:%d", localPort, targetPort),
@@ -192,20 +223,20 @@ func getPort(t *testing.T) int {
 	return portNum
 }
 
-func getGeneratedKubeconfig(t *testing.T, ctx context.Context, client ctrlruntimeclient.Client, namespace string, kubeconfigName string) *rest.Config {
+func getGeneratedKubeconfig(t *testing.T, ctx context.Context, configClient ctrlruntimeclient.Client, namespace string, kubeconfigName string) *rest.Config {
 	t.Helper()
 
 	// get kubeconfig
 	config := &operatorv1alpha1.Kubeconfig{}
 	key := types.NamespacedName{Namespace: namespace, Name: kubeconfigName}
-	if err := client.Get(ctx, key, config); err != nil {
+	if err := configClient.Get(ctx, key, config); err != nil {
 		t.Fatal(err)
 	}
 
 	// get the kubeconfig's secret
 	secret := &corev1.Secret{}
 	key = types.NamespacedName{Namespace: namespace, Name: config.Spec.SecretRef.Name}
-	if err := client.Get(ctx, key, secret); err != nil {
+	if err := configClient.Get(ctx, key, secret); err != nil {
 		t.Fatal(err)
 	}
 
@@ -221,7 +252,7 @@ func getGeneratedKubeconfig(t *testing.T, ctx context.Context, client ctrlruntim
 func ConnectWithKubeconfig(
 	t *testing.T,
 	ctx context.Context,
-	client ctrlruntimeclient.Client,
+	configClient ctrlruntimeclient.Client,
 	namespace string,
 	kubeconfigName string,
 	cluster logicalcluster.Path,
@@ -229,7 +260,7 @@ func ConnectWithKubeconfig(
 	t.Helper()
 
 	// get kubeconfig
-	clientConfig := getGeneratedKubeconfig(t, ctx, client, namespace, kubeconfigName)
+	clientConfig := getGeneratedKubeconfig(t, ctx, configClient, namespace, kubeconfigName)
 
 	// deduce service name from the hostname
 	parsed, err := url.Parse(clientConfig.Host)
@@ -261,14 +292,14 @@ func ConnectWithKubeconfig(
 func KubeconfigClusterClient(
 	t *testing.T,
 	ctx context.Context,
-	client ctrlruntimeclient.Client,
+	configClient ctrlruntimeclient.Client,
 	namespace string,
 	kubeconfigName string,
 ) ClusterClient {
 	t.Helper()
 
 	// get kubeconfig
-	clientConfig := getGeneratedKubeconfig(t, ctx, client, namespace, kubeconfigName)
+	clientConfig := getGeneratedKubeconfig(t, ctx, configClient, namespace, kubeconfigName)
 
 	// deduce service name from the hostname
 	parsed, err := url.Parse(clientConfig.Host)
@@ -291,7 +322,7 @@ func KubeconfigClusterClient(
 func ConnectWithRootShardProxy(
 	t *testing.T,
 	ctx context.Context,
-	client ctrlruntimeclient.Client,
+	configClient ctrlruntimeclient.Client,
 	rootShard *operatorv1alpha1.RootShard,
 	cluster logicalcluster.Path,
 ) ctrlruntimeclient.Client {
@@ -304,7 +335,7 @@ func ConnectWithRootShardProxy(
 	}
 
 	certSecret := &corev1.Secret{}
-	if err := client.Get(ctx, key, certSecret); err != nil {
+	if err := configClient.Get(ctx, key, certSecret); err != nil {
 		t.Fatalf("Failed to get root shard proxy Secret: %v", err)
 	}
 

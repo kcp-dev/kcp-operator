@@ -40,17 +40,18 @@ import (
 func TestCacheWithRootShard(t *testing.T) {
 	ctrlruntime.SetLogger(logr.Discard())
 
-	client := utils.GetKubeClient(t)
+	configClient := utils.GetConfigKubeClient(t)
+	workloadClient := utils.GetWorkloadKubeClient(t)
 	ctx := context.Background()
 
 	// create namespace
-	namespace := utils.CreateSelfDestructingNamespace(t, ctx, client, "cache-rootshard")
+	namespace := utils.CreateSelfDestructingNamespace(t, ctx, configClient, "cache-rootshard")
 
 	// deploy the cache server
-	cacheServer := utils.DeployCacheServer(ctx, t, client, namespace.Name)
+	cacheServer := utils.DeployCacheServer(ctx, t, configClient, workloadClient, namespace.Name)
 
 	// deploy a root shard that uses our cache
-	rootShard := utils.DeployRootShard(ctx, t, client, namespace.Name, "", func(rs *operatorv1alpha1.RootShard) {
+	rootShard := utils.DeployRootShard(ctx, t, configClient, workloadClient, namespace.Name, "", func(rs *operatorv1alpha1.RootShard) {
 		rs.Spec.Cache.Reference = &corev1.LocalObjectReference{
 			Name: cacheServer.Name,
 		}
@@ -78,13 +79,13 @@ func TestCacheWithRootShard(t *testing.T) {
 	}
 
 	t.Log("Creating kubeconfig for RootShard...")
-	if err := client.Create(ctx, &rsConfig); err != nil {
+	if err := configClient.Create(ctx, &rsConfig); err != nil {
 		t.Fatal(err)
 	}
-	utils.WaitForObject(t, ctx, client, &corev1.Secret{}, types.NamespacedName{Namespace: rsConfig.Namespace, Name: rsConfig.Spec.SecretRef.Name})
+	utils.WaitForObject(t, ctx, configClient, &corev1.Secret{}, types.NamespacedName{Namespace: rsConfig.Namespace, Name: rsConfig.Spec.SecretRef.Name})
 
 	t.Log("Connecting to RootShard...")
-	rootShardClient := utils.ConnectWithKubeconfig(t, ctx, client, namespace.Name, rsConfig.Name, logicalcluster.NewPath("root"))
+	rootShardClient := utils.ConnectWithKubeconfig(t, ctx, configClient, namespace.Name, rsConfig.Name, logicalcluster.NewPath("root"))
 
 	// proof of life: list something every logicalcluster in kcp has
 	t.Log("Should be able to list Secrets.")
@@ -102,17 +103,18 @@ func TestCacheWithExternalEtcdAndRootShard(t *testing.T) {
 
 	ctrlruntime.SetLogger(logr.Discard())
 
-	client := utils.GetKubeClient(t)
+	configClient := utils.GetConfigKubeClient(t)
+	workloadClient := utils.GetWorkloadKubeClient(t)
 	ctx := context.Background()
 
 	// create namespace
-	namespace := utils.CreateSelfDestructingNamespace(t, ctx, client, "cache-with-etcd-rootshard")
+	namespace := utils.CreateSelfDestructingNamespace(t, ctx, configClient, "cache-with-etcd-rootshard")
 
 	// deploy the cache server
-	cacheServer := utils.DeployCacheServerWithExternalEtcd(ctx, t, client, namespace.Name, 2)
+	cacheServer := utils.DeployCacheServerWithExternalEtcd(ctx, t, configClient, workloadClient, namespace.Name, 2)
 
 	// deploy a root shard that uses our cache
-	rootShard := utils.DeployRootShard(ctx, t, client, namespace.Name, "", func(rs *operatorv1alpha1.RootShard) {
+	rootShard := utils.DeployRootShard(ctx, t, configClient, workloadClient, namespace.Name, "", func(rs *operatorv1alpha1.RootShard) {
 		rs.Spec.Cache.Reference = &corev1.LocalObjectReference{
 			Name: cacheServer.Name,
 		}
@@ -140,13 +142,13 @@ func TestCacheWithExternalEtcdAndRootShard(t *testing.T) {
 	}
 
 	t.Log("Creating kubeconfig for RootShard...")
-	if err := client.Create(ctx, &rsConfig); err != nil {
+	if err := configClient.Create(ctx, &rsConfig); err != nil {
 		t.Fatal(err)
 	}
-	utils.WaitForObject(t, ctx, client, &corev1.Secret{}, types.NamespacedName{Namespace: rsConfig.Namespace, Name: rsConfig.Spec.SecretRef.Name})
+	utils.WaitForObject(t, ctx, configClient, &corev1.Secret{}, types.NamespacedName{Namespace: rsConfig.Namespace, Name: rsConfig.Spec.SecretRef.Name})
 
 	t.Log("Connecting to RootShard...")
-	rootShardClient := utils.ConnectWithKubeconfig(t, ctx, client, namespace.Name, rsConfig.Name, logicalcluster.NewPath("root"))
+	rootShardClient := utils.ConnectWithKubeconfig(t, ctx, configClient, namespace.Name, rsConfig.Name, logicalcluster.NewPath("root"))
 
 	// proof of life: list something every logicalcluster in kcp has
 	t.Log("Should be able to list Secrets.")
@@ -159,17 +161,18 @@ func TestCacheWithExternalEtcdAndRootShard(t *testing.T) {
 func TestCacheWithMultipleExplicitShards(t *testing.T) {
 	ctrlruntime.SetLogger(logr.Discard())
 
-	client := utils.GetKubeClient(t)
+	configClient := utils.GetConfigKubeClient(t)
+	workloadClient := utils.GetWorkloadKubeClient(t)
 	ctx := context.Background()
 
 	// create namespace
-	namespace := utils.CreateSelfDestructingNamespace(t, ctx, client, "cache-sharded-explicit")
+	namespace := utils.CreateSelfDestructingNamespace(t, ctx, configClient, "cache-sharded-explicit")
 
 	// deploy the cache server
-	cacheServer := utils.DeployCacheServer(ctx, t, client, namespace.Name)
+	cacheServer := utils.DeployCacheServer(ctx, t, configClient, workloadClient, namespace.Name)
 
 	// deploy a root shard that uses our cache
-	rootShard := utils.DeployRootShard(ctx, t, client, namespace.Name, "", func(rs *operatorv1alpha1.RootShard) {
+	rootShard := utils.DeployRootShard(ctx, t, configClient, workloadClient, namespace.Name, "", func(rs *operatorv1alpha1.RootShard) {
 		rs.Spec.Cache.Reference = &corev1.LocalObjectReference{
 			Name: cacheServer.Name,
 		}
@@ -177,7 +180,7 @@ func TestCacheWithMultipleExplicitShards(t *testing.T) {
 
 	// deploy a 2nd shard incl. etcd
 	shardName := "aadvark"
-	utils.DeployShard(ctx, t, client, namespace.Name, shardName, rootShard.Name, func(s *operatorv1alpha1.Shard) {
+	utils.DeployShard(ctx, t, configClient, workloadClient, namespace.Name, shardName, rootShard.Name, func(s *operatorv1alpha1.Shard) {
 		s.Spec.Cache = &operatorv1alpha1.ShardCacheConfig{
 			Reference: &corev1.LocalObjectReference{
 				Name: cacheServer.Name,
@@ -207,13 +210,13 @@ func TestCacheWithMultipleExplicitShards(t *testing.T) {
 	}
 
 	t.Log("Creating kubeconfig for RootShard...")
-	if err := client.Create(ctx, &rsConfig); err != nil {
+	if err := configClient.Create(ctx, &rsConfig); err != nil {
 		t.Fatal(err)
 	}
-	utils.WaitForObject(t, ctx, client, &corev1.Secret{}, types.NamespacedName{Namespace: rsConfig.Namespace, Name: rsConfig.Spec.SecretRef.Name})
+	utils.WaitForObject(t, ctx, configClient, &corev1.Secret{}, types.NamespacedName{Namespace: rsConfig.Namespace, Name: rsConfig.Spec.SecretRef.Name})
 
 	t.Log("Connecting to RootShard...")
-	rootShardClient := utils.ConnectWithKubeconfig(t, ctx, client, namespace.Name, rsConfig.Name, logicalcluster.NewPath("root"))
+	rootShardClient := utils.ConnectWithKubeconfig(t, ctx, configClient, namespace.Name, rsConfig.Name, logicalcluster.NewPath("root"))
 
 	// proof of life: list something every logicalcluster in kcp has
 	t.Log("Should be able to list Secrets.")
@@ -226,17 +229,18 @@ func TestCacheWithMultipleExplicitShards(t *testing.T) {
 func TestCacheWithMultipleShardsInheritingConfig(t *testing.T) {
 	ctrlruntime.SetLogger(logr.Discard())
 
-	client := utils.GetKubeClient(t)
+	configClient := utils.GetConfigKubeClient(t)
+	workloadClient := utils.GetWorkloadKubeClient(t)
 	ctx := context.Background()
 
 	// create namespace
-	namespace := utils.CreateSelfDestructingNamespace(t, ctx, client, "cache-sharded-inherit")
+	namespace := utils.CreateSelfDestructingNamespace(t, ctx, configClient, "cache-sharded-inherit")
 
 	// deploy the cache server
-	cacheServer := utils.DeployCacheServer(ctx, t, client, namespace.Name)
+	cacheServer := utils.DeployCacheServer(ctx, t, configClient, workloadClient, namespace.Name)
 
 	// deploy a root shard that uses our cache
-	rootShard := utils.DeployRootShard(ctx, t, client, namespace.Name, "", func(rs *operatorv1alpha1.RootShard) {
+	rootShard := utils.DeployRootShard(ctx, t, configClient, workloadClient, namespace.Name, "", func(rs *operatorv1alpha1.RootShard) {
 		rs.Spec.Cache.Reference = &corev1.LocalObjectReference{
 			Name: cacheServer.Name,
 		}
@@ -245,7 +249,7 @@ func TestCacheWithMultipleShardsInheritingConfig(t *testing.T) {
 	// deploy a 2nd shard incl. etcd, but WITHOUT an explicit cache config
 	// (it should inherit the cache config from the root shard)
 	shardName := "aadvark"
-	utils.DeployShard(ctx, t, client, namespace.Name, shardName, rootShard.Name)
+	utils.DeployShard(ctx, t, configClient, workloadClient, namespace.Name, shardName, rootShard.Name)
 
 	// create a kubeconfig to access the root shard
 	configSecretName := fmt.Sprintf("%s-shard-kubeconfig", rootShard.Name)
@@ -269,13 +273,13 @@ func TestCacheWithMultipleShardsInheritingConfig(t *testing.T) {
 	}
 
 	t.Log("Creating kubeconfig for RootShard...")
-	if err := client.Create(ctx, &rsConfig); err != nil {
+	if err := configClient.Create(ctx, &rsConfig); err != nil {
 		t.Fatal(err)
 	}
-	utils.WaitForObject(t, ctx, client, &corev1.Secret{}, types.NamespacedName{Namespace: rsConfig.Namespace, Name: rsConfig.Spec.SecretRef.Name})
+	utils.WaitForObject(t, ctx, configClient, &corev1.Secret{}, types.NamespacedName{Namespace: rsConfig.Namespace, Name: rsConfig.Spec.SecretRef.Name})
 
 	t.Log("Connecting to RootShard...")
-	rootShardClient := utils.ConnectWithKubeconfig(t, ctx, client, namespace.Name, rsConfig.Name, logicalcluster.NewPath("root"))
+	rootShardClient := utils.ConnectWithKubeconfig(t, ctx, configClient, namespace.Name, rsConfig.Name, logicalcluster.NewPath("root"))
 
 	// proof of life: list something every logicalcluster in kcp has
 	t.Log("Should be able to list Secrets.")
