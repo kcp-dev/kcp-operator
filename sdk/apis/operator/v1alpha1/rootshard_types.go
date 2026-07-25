@@ -40,6 +40,25 @@ type RootShardSpec struct {
 	Certificates Certificates `json:"certificates"`
 }
 
+// RootShardTemplateSpec mirrors RootShardSpec with all fields optional.
+type RootShardTemplateSpec struct {
+	CommonShardSpecTemplate `json:",inline"`
+
+	External *ExternalConfig `json:"external,omitempty"`
+
+	// Cache configures the cache server (with a Kubernetes-like API) used by a sharded kcp instance.
+	Cache *RootShardCacheConfig `json:"cache,omitempty"`
+
+	// Proxy configures the internal front-proxy that is only (supposed to be) used by the kcp-operator
+	// to manage all shards belonging to a root shard instance. No external traffic should ever be
+	// routed through this proxy, use a dedicated FrontProxy for that purpose.
+	Proxy *RootShardProxySpec `json:"proxy,omitempty"`
+
+	// Certificates configures how the operator should create the kcp root CA, from which it will
+	// then create all other sub CAs and leaf certificates.
+	Certificates *Certificates `json:"certificates,omitempty"`
+}
+
 type RootShardProxySpec struct {
 	// Optional: Image allows to override the container image used for this proxy.
 	Image *ImageSpec `json:"image,omitempty"`

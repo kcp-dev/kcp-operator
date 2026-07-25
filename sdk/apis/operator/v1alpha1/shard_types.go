@@ -108,6 +108,90 @@ type CommonShardSpec struct {
 	Logging *LoggingSpec `json:"logging,omitempty"`
 }
 
+// Template types are all-optional mirrors of the admin-facing spec types. They are meant to be
+// embedded by higher-level tooling as user-supplied partial specs that get merged onto the
+// rendered custom resources; the required fields are owned by that tooling. The template types
+// are not consumed by the kcp-operator itself and are kept in sync with the spec types by
+// TestTemplateSpecMirrors.
+
+// CommonShardSpecTemplate mirrors CommonShardSpec with all fields optional.
+type CommonShardSpecTemplate struct {
+	// ClusterDomain is the DNS domain for services in the cluster. Defaults to "cluster.local" if not set.
+	ClusterDomain string `json:"clusterDomain,omitempty"`
+
+	// ShardBaseURL is the base URL under which this shard should be reachable. This is used to configure
+	// the external URL. If not provided, the operator will use kubernetes service address to generate it.
+	ShardBaseURL string `json:"shardBaseURL,omitempty"`
+
+	// Etcd configures the etcd cluster that this shard should be using.
+	Etcd *EtcdConfig `json:"etcd,omitempty"`
+
+	Image *ImageSpec `json:"image,omitempty"`
+
+	// Replicas configures how many instances of this shard run in parallel. Defaults to 2 if not set.
+	Replicas *int32 `json:"replicas,omitempty"`
+
+	// Resources overrides the default resource requests and limits.
+	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
+
+	Audit         *AuditSpec         `json:"audit,omitempty"`
+	Authorization *AuthorizationSpec `json:"authorization,omitempty"`
+
+	// Optional: Auth configures various aspects of Authentication and Authorization for this shard.
+	Auth *AuthSpec `json:"auth,omitempty"`
+
+	// Optionally the kcp virtual-workspace can be deployed standalone. In this case, the Shard or
+	// RootShard will need to be configured to point to the VirtualWorkspace that serve the kcp
+	// virtual workspaces (apiexport, initializingworkspaces etc.). If this field is left blank, kcp
+	// the kcp-operator assumes that the in-process virtual workspace should be enabled on this shard.
+	KCPVirtualWorkspace *corev1.LocalObjectReference `json:"kcpVirtualWorkspace,omitempty"`
+
+	// CertificateTemplates allows to customize the properties on the generated
+	// certificates for this shard.
+	CertificateTemplates CertificateTemplateMap `json:"certificateTemplates,omitempty"`
+
+	// Optional: ServiceTemplate configures the Kubernetes Service created for this shard.
+	ServiceTemplate *ServiceTemplate `json:"serviceTemplate,omitempty"`
+
+	// Optional: DeploymentTemplate configures the Kubernetes Deployment created for this shard.
+	DeploymentTemplate *DeploymentTemplate `json:"deploymentTemplate,omitempty"`
+
+	// CABundle references a v1.Secret object that contains the CA bundle that should be used
+	// to validate the API server's TLS certificate. The secret must contain a key named `tls.crt`
+	// that holds the PEM encoded CA certificate. It will be merged into the
+	// "external-logical-cluster-admin-kubeconfig" kubeconfig under the `certificate-authority-data`
+	// field.
+	// If not specified, the kubeconfig will use the CA bundle of the root shard or front-proxy
+	// referenced in the Target field. It will NOT be used to configure the API server's own TLS
+	// certificate or any other component.
+	CABundleSecretRef *corev1.LocalObjectReference `json:"caBundleSecretRef,omitempty"`
+
+	// ClientCABundleRef references a v1.Secret containing an additional client CA bundle
+	// for client certificate authentication. The secret must contain a key named `tls.crt`.
+	// This CA bundle will be merged with the root shard's client CA.
+	// If configured on a RootShard, this bundle is automatically inherited by all FrontProxies,
+	// Shards, and VirtualWorkspaces connected to it. Each of those components can additionally
+	// specify their own ClientCABundleRef, which will be merged on top.
+	ClientCABundleRef *corev1.LocalObjectReference `json:"clientCABundleRef,omitempty"`
+
+	// Optional: ExtraArgs defines additional command line arguments to pass to the shard container.
+	ExtraArgs []string `json:"extraArgs,omitempty"`
+
+	// Optional: Logging configures the logging settings for the shard.
+	Logging *LoggingSpec `json:"logging,omitempty"`
+}
+
+// ShardTemplateSpec mirrors ShardSpec with all fields optional.
+type ShardTemplateSpec struct {
+	CommonShardSpecTemplate `json:",inline"`
+
+	RootShard *RootShardConfig `json:"rootShard,omitempty"`
+
+	// Optional: Configure an external cache server for this shard. If not configured, the cache
+	// settings of the RootShard will be used.
+	Cache *ShardCacheConfig `json:"cache,omitempty"`
+}
+
 type AuditSpec struct {
 	Webhook *AuditWebhookSpec `json:"webhook,omitempty"`
 

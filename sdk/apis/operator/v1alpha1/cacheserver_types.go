@@ -58,6 +58,42 @@ type CacheServerSpec struct {
 	Etcd *EtcdConfig `json:"etcd,omitempty"`
 }
 
+// CacheServerTemplateSpec mirrors CacheServerSpec with all fields optional.
+type CacheServerTemplateSpec struct {
+	// ClusterDomain is the DNS domain for services in the cluster. Defaults to "cluster.local" if not set.
+	ClusterDomain string `json:"clusterDomain,omitempty"`
+
+	// Optional: Image overwrites the container image used to deploy the cache server.
+	Image *ImageSpec `json:"image,omitempty"`
+
+	// Optional: Replicas configures the replica count for the cache-server Deployment.
+	// With an embedded etcd, the replica count defafults to one, and users are not allowed
+	// to set the replica count to more than one.
+	// With an external etcd, the replica count defaults to two.
+	Replicas *int32 `json:"replicas,omitempty"`
+
+	// Optional: Logging configures the logging settings for the cache server.
+	Logging *LoggingSpec `json:"logging,omitempty"`
+
+	// Certificates configures how the operator should create the kcp root CA, from which it will
+	// then create all other sub CAs and leaf certificates.
+	Certificates *Certificates `json:"certificates,omitempty"`
+
+	// CertificateTemplates allows to customize the properties on the generated
+	// certificates for this cache server.
+	CertificateTemplates CertificateTemplateMap `json:"certificateTemplates,omitempty"`
+
+	// Optional: ServiceTemplate configures the Kubernetes Service created for this cache server.
+	ServiceTemplate *ServiceTemplate `json:"serviceTemplate,omitempty"`
+
+	// Optional: DeploymentTemplate configures the Kubernetes Deployment created for this cache server.
+	DeploymentTemplate *DeploymentTemplate `json:"deploymentTemplate,omitempty"`
+
+	// Optional: Etcd configures an external etcd connection for this cache server.
+	// If not provided, an embedded etcd is used.
+	Etcd *EtcdConfig `json:"etcd,omitempty"`
+}
+
 // CacheServerStatus defines the observed state of CacheServer
 type CacheServerStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster

@@ -81,6 +81,59 @@ type FrontProxySpec struct {
 	Logging *LoggingSpec `json:"logging,omitempty"`
 }
 
+// FrontProxyTemplateSpec mirrors FrontProxySpec with all fields optional.
+// The deprecated externalHostname field is intentionally not mirrored.
+type FrontProxyTemplateSpec struct {
+	// RootShard configures the kcp root shard that this front-proxy instance should connect to.
+	RootShard *RootShardConfig `json:"rootShard,omitempty"`
+	// Optional: Replicas configures the replica count for the front-proxy Deployment.
+	Replicas *int32 `json:"replicas,omitempty"`
+	// Resources overrides the default resource requests and limits.
+	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
+	// Optional: Auth configures various aspects of Authentication and Authorization for this front-proxy instance.
+	// If OIDC is enabled, it also requires enabling ServiceAccount authentication (as front-proxy will start validating JWT tokens, which includes ServiceAccount tokens).
+	Auth *AuthSpec `json:"auth,omitempty"`
+	// Optional: AdditionalPathMappings configures // TODO ?
+	AdditionalPathMappings []PathMappingEntry `json:"additionalPathMappings,omitempty"`
+	// Optional: Image defines the image to use. Defaults to the latest versioned image during the release of kcp-operator.
+	Image *ImageSpec `json:"image,omitempty"`
+
+	// Optional: External configures how this front-proxy should be exposed to the outside world.  If empty, the RootShard's external hostname will be used only.
+	External *ExternalConfig `json:"external,omitempty"`
+
+	// Optional: ServiceTemplate configures the Kubernetes Service created for this front-proxy instance.
+	ServiceTemplate *ServiceTemplate `json:"serviceTemplate,omitempty"`
+
+	// Optional: DeploymentTemplate configures the Kubernetes Deployment created for this shard.
+	DeploymentTemplate *DeploymentTemplate `json:"deploymentTemplate,omitempty"`
+
+	// CertificateTemplates allows to customize the properties on the generated
+	// certificates for this front-proxy.
+	CertificateTemplates CertificateTemplateMap `json:"certificateTemplates,omitempty"`
+
+	// CABundle references a v1.Secret object that contains the CA bundle
+	// that should be used to validate the API server's TLS certificate.
+	// The secret must contain a key named `tls.crt` that holds the PEM encoded CA certificate.
+	// It will be merged into the "external-logical-cluster-admin-kubeconfig" kubeconfig under the `certificate-authority-data` field.
+	// If not specified, the kubeconfig will use the CA bundle of the root shard or front-proxy referenced in the Target field.
+	// It will NOT be used to configure the API server's own TLS certificate or any other component.
+	CABundleSecretRef *corev1.LocalObjectReference `json:"caBundleSecretRef,omitempty"`
+
+	// ClientCABundleRef references a v1.Secret object that contains an additional client CA bundle
+	// that should be trusted by the front-proxy for client certificate authentication.
+	// The secret must contain a key named `tls.crt` that holds the PEM encoded CA certificate(s).
+	// This CA bundle will be merged with the root shard's client CA, allowing the front-proxy
+	// to accept client certificates signed by either CA. This is useful for backwards compatibility
+	// during upgrades when migrating from a separate front-proxy client CA to the shared root shard client CA.
+	ClientCABundleRef *corev1.LocalObjectReference `json:"clientCABundleRef,omitempty"`
+
+	// Optional: ExtraArgs defines additional command line arguments to pass to the front-proxy container.
+	ExtraArgs []string `json:"extraArgs,omitempty"`
+
+	// Optional: Logging configures the logging settings for the front-proxy.
+	Logging *LoggingSpec `json:"logging,omitempty"`
+}
+
 type AuthSpec struct {
 	// Optional: OIDC configures OpenID Connect Authentication.
 	OIDC *OIDCConfiguration `json:"oidc,omitempty"`

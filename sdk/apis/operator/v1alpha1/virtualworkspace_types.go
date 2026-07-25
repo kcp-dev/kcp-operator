@@ -98,6 +98,62 @@ type VirtualWorkspaceSpec struct {
 	ClusterDomain string `json:"clusterDomain,omitempty"`
 }
 
+// VirtualWorkspaceTemplateSpec mirrors VirtualWorkspaceSpec with all fields optional.
+type VirtualWorkspaceTemplateSpec struct {
+	// Target configures to which shard this virtual workspace belongs.
+	Target *VirtualWorkspaceTarget `json:"target,omitempty"`
+
+	// External configures the domain and port under which this virtual workspace should be reachable.
+	// This is important to allow kcp to generate the correct URLs for clients of virtual workspaces.
+	External *ExternalConfig `json:"external,omitempty"`
+
+	// Optional: Image overwrites the container image used to deploy the server.
+	// If not specified, kcp's own virtual-workspace server will be deployed.
+	Image *ImageSpec `json:"image,omitempty"`
+
+	// Replicas configures how many instances of this server run in parallel.
+	// Defaults to 2 if not set.
+	Replicas *int32 `json:"replicas,omitempty"`
+
+	// Resources overrides the default resource requests and limits.
+	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
+
+	// CertificateTemplates allows to customize the properties on the generated
+	// certificates for this server.
+	CertificateTemplates CertificateTemplateMap `json:"certificateTemplates,omitempty"`
+
+	// Optional: ServiceTemplate configures the Kubernetes Service created for this server.
+	ServiceTemplate *ServiceTemplate `json:"serviceTemplate,omitempty"`
+
+	// Optional: DeploymentTemplate configures the Kubernetes Deployment created for this server.
+	DeploymentTemplate *DeploymentTemplate `json:"deploymentTemplate,omitempty"`
+
+	// CABundle references a v1.Secret object that contains the CA bundle that should be used
+	// to validate the API server's TLS certificate. The secret must contain a key named `tls.crt`
+	// that holds the PEM encoded CA certificate. It will be merged into the
+	// "external-logical-cluster-admin-kubeconfig" kubeconfig under the `certificate-authority-data`
+	// field.
+	// If not specified, the kubeconfig will use the CA bundle of the root shard or front-proxy
+	// referenced in the Target field. It will NOT be used to configure the API server's own TLS
+	// certificate or any other component.
+	CABundleSecretRef *corev1.LocalObjectReference `json:"caBundleSecretRef,omitempty"`
+
+	// ClientCABundleRef references a v1.Secret containing an additional client CA bundle
+	// for client certificate authentication. The secret must contain a key named `tls.crt`.
+	// This CA bundle will be merged with the root shard's client CA and its ClientCABundleRef
+	// (if configured).
+	ClientCABundleRef *corev1.LocalObjectReference `json:"clientCABundleRef,omitempty"`
+
+	// Optional: ExtraArgs defines additional command line arguments to pass to the server container.
+	ExtraArgs []string `json:"extraArgs,omitempty"`
+
+	// Optional: Logging configures the logging settings for the server.
+	Logging *LoggingSpec `json:"logging,omitempty"`
+
+	// ClusterDomain is the DNS domain for services in the cluster. Defaults to "cluster.local" if not set.
+	ClusterDomain string `json:"clusterDomain,omitempty"`
+}
+
 // VirtualWorkspaceTarget configures which shard or root shard a virtual workspace is connected to.
 // This influences the certificates and CAs mounted to it.
 // +kubebuilder:validation:XValidation:rule="(has(self.rootShardRef) && !has(self.shardRef)) || (!has(self.rootShardRef) && has(self.shardRef))",message="Must specify exactly one of rootShardRef or shardRef"
