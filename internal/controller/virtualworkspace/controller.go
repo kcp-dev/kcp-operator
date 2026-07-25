@@ -119,9 +119,8 @@ func (r *Reconciler) reconcile(ctx context.Context, vw *operatorv1alpha1.Virtual
 	var conditions []metav1.Condition
 
 	var (
-		rootShard        *operatorv1alpha1.RootShard
-		shard            *operatorv1alpha1.Shard
-		clientCertIssuer string
+		rootShard *operatorv1alpha1.RootShard
+		shard     *operatorv1alpha1.Shard
 	)
 
 	switch {
@@ -138,9 +137,6 @@ func (r *Reconciler) reconcile(ctx context.Context, vw *operatorv1alpha1.Virtual
 			})
 			return conditions, err
 		}
-
-		clientCertIssuer = resources.GetRootShardCAName(rootShard, operatorv1alpha1.ClientCA)
-		// serverCA = resources.GetRootShardCAName(rootShard, operatorv1alpha1.ServerCA)
 
 	case vw.Spec.Target.ShardRef != nil:
 		shard = &operatorv1alpha1.Shard{}
@@ -180,10 +176,6 @@ func (r *Reconciler) reconcile(ctx context.Context, vw *operatorv1alpha1.Virtual
 			return conditions, err
 		}
 
-		// The client CA is shared among all shards and owned by the root shard.
-		clientCertIssuer = resources.GetRootShardCAName(rootShard, operatorv1alpha1.ClientCA)
-		// serverCA = resources.GetRootShardCAName(rootShard, operatorv1alpha1.ServerCA)
-
 	default:
 		err := errors.New("no valid target for VirtualWorkspace found")
 		conditions = append(conditions, metav1.Condition{
@@ -206,7 +198,7 @@ func (r *Reconciler) reconcile(ctx context.Context, vw *operatorv1alpha1.Virtual
 	revisionLabels := modifier.RelatedRevisionsLabels(ctx, r.Client)
 
 	if err := reconciling.ReconcileCertificates(ctx, []reconciling.NamedCertificateReconcilerFactory{
-		virtualworkspace.ClientCertificateReconciler(vw, clientCertIssuer),
+		virtualworkspace.ClientCertificateReconciler(vw, rootShard),
 		virtualworkspace.ServerCertificateReconciler(vw, rootShard),
 	}, vw.Namespace, r.Client, ownerRefWrapper); err != nil {
 		return conditions, err
