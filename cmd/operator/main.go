@@ -45,6 +45,7 @@ import (
 	"github.com/kcp-dev/kcp-operator/internal/config"
 	"github.com/kcp-dev/kcp-operator/internal/controller/bundle"
 	"github.com/kcp-dev/kcp-operator/internal/controller/cacheserver"
+	"github.com/kcp-dev/kcp-operator/internal/controller/compiledcacheserver"
 	"github.com/kcp-dev/kcp-operator/internal/controller/compiledrootshard"
 	"github.com/kcp-dev/kcp-operator/internal/controller/compiledshard"
 	"github.com/kcp-dev/kcp-operator/internal/controller/frontproxy"
@@ -302,6 +303,13 @@ func setupWorkloadControllers(mgr ctrl.Manager, client ctrlruntimeclient.Client)
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("unable to create controller %s: %w", "CompiledShard", err)
+	}
+
+	if err := (&compiledcacheserver.Reconciler{
+		Client: client,
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("unable to create controller %s: %w", "CompiledCacheServer", err)
 	}
 
 	return nil
