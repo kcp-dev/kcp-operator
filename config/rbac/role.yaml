@@ -60,6 +60,14 @@ rules:
   - update
   - watch
 - apiGroups:
+  - deploy.operator.kcp.io
+  resources:
+  - compiledrootshards/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
   - operator.kcp.io
   resources:
   - bundles

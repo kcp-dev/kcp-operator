@@ -45,6 +45,7 @@ import (
 	"github.com/kcp-dev/kcp-operator/internal/config"
 	"github.com/kcp-dev/kcp-operator/internal/controller/bundle"
 	"github.com/kcp-dev/kcp-operator/internal/controller/cacheserver"
+	"github.com/kcp-dev/kcp-operator/internal/controller/compiledrootshard"
 	"github.com/kcp-dev/kcp-operator/internal/controller/frontproxy"
 	"github.com/kcp-dev/kcp-operator/internal/controller/kubeconfig"
 	kubeconfigrbac "github.com/kcp-dev/kcp-operator/internal/controller/kubeconfig-rbac"
@@ -209,6 +210,11 @@ func run(ctx context.Context) error {
 			return err
 		}
 	}
+	if controllerGroups.Has(config.ControllerGroupWorkload) {
+		if err := setupWorkloadControllers(mgr, client); err != nil {
+			return err
+		}
+	}
 	// +kubebuilder:scaffold:builder
 
 	metrics.RegisterMetrics()
@@ -277,6 +283,17 @@ func setupConfigControllers(mgr ctrl.Manager, client ctrlruntimeclient.Client) e
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("unable to create controller %s: %w", "KubeconfigRBAC", err)
+	}
+
+	return nil
+}
+
+func setupWorkloadControllers(mgr ctrl.Manager, client ctrlruntimeclient.Client) error {
+	if err := (&compiledrootshard.Reconciler{
+		Client: client,
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("unable to create controller %s: %w", "CompiledRootShard", err)
 	}
 
 	return nil
