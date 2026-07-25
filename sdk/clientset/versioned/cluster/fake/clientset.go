@@ -31,9 +31,12 @@ import (
 
 	client "github.com/kcp-dev/kcp-operator/sdk/clientset/versioned"
 	kcpclient "github.com/kcp-dev/kcp-operator/sdk/clientset/versioned/cluster"
+	kcpdeployv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/clientset/versioned/cluster/typed/deploy/v1alpha1"
+	fakedeployv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/clientset/versioned/cluster/typed/deploy/v1alpha1/fake"
 	kcpoperatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/clientset/versioned/cluster/typed/operator/v1alpha1"
 	fakeoperatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/clientset/versioned/cluster/typed/operator/v1alpha1/fake"
 	clientscheme "github.com/kcp-dev/kcp-operator/sdk/clientset/versioned/scheme"
+	deployv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/clientset/versioned/typed/deploy/v1alpha1"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/clientset/versioned/typed/operator/v1alpha1"
 )
 
@@ -71,6 +74,11 @@ func (c *ClusterClientset) Tracker() kcptesting.ObjectTracker {
 	return c.tracker
 }
 
+// DeployV1alpha1 retrieves the DeployV1alpha1ClusterClient.
+func (c *ClusterClientset) DeployV1alpha1() kcpdeployv1alpha1.DeployV1alpha1ClusterInterface {
+	return &fakedeployv1alpha1.DeployV1alpha1ClusterClient{Fake: c.Fake}
+}
+
 // OperatorV1alpha1 retrieves the OperatorV1alpha1ClusterClient.
 func (c *ClusterClientset) OperatorV1alpha1() kcpoperatorv1alpha1.OperatorV1alpha1ClusterInterface {
 	return &fakeoperatorv1alpha1.OperatorV1alpha1ClusterClient{Fake: c.Fake}
@@ -106,6 +114,11 @@ func (c *Clientset) Discovery() discovery.DiscoveryInterface {
 
 func (c *Clientset) Tracker() kcptesting.ScopedObjectTracker {
 	return c.tracker
+}
+
+// DeployV1alpha1 retrieves the DeployV1alpha1Client.
+func (c *Clientset) DeployV1alpha1() deployv1alpha1.DeployV1alpha1Interface {
+	return &fakedeployv1alpha1.DeployV1alpha1Client{Fake: c.Fake, ClusterPath: c.clusterPath}
 }
 
 // OperatorV1alpha1 retrieves the OperatorV1alpha1Client.

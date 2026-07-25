@@ -21,6 +21,7 @@ source_repositories:
     commit_reference: main
     crd_paths:
       - config/crd/bases
+      - config/crd/deploy/bases
     cr_paths:
       - config/samples
     metadata:

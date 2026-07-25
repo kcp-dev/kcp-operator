@@ -127,7 +127,7 @@ echo "Kernel limits job completed."
 
 # deploying operator CRDs
 echo "Deploying operator CRDs..."
-"$KUBECTL" apply --kustomize config/crd
+"$KUBECTL" apply --server-side --kustomize config/crd
 
 # deploying cert-manager
 echo "Deploying cert-manager..."

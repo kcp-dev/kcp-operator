@@ -36,6 +36,7 @@ import (
 
 	scopedclientset "github.com/kcp-dev/kcp-operator/sdk/clientset/versioned"
 	clientset "github.com/kcp-dev/kcp-operator/sdk/clientset/versioned/cluster"
+	deployinformers "github.com/kcp-dev/kcp-operator/sdk/informers/externalversions/deploy"
 	"github.com/kcp-dev/kcp-operator/sdk/informers/externalversions/internalinterfaces"
 	operatorinformers "github.com/kcp-dev/kcp-operator/sdk/informers/externalversions/operator"
 )
@@ -269,7 +270,12 @@ type SharedInformerFactory interface {
 	// InformerFor returns the SharedIndexInformer for obj.
 	InformerFor(obj runtime.Object, newFunc internalinterfaces.NewInformerFunc) kcpcache.ScopeableSharedIndexInformer
 
+	Deploy() deployinformers.ClusterInterface
 	Operator() operatorinformers.ClusterInterface
+}
+
+func (f *sharedInformerFactory) Deploy() deployinformers.ClusterInterface {
+	return deployinformers.New(f, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Operator() operatorinformers.ClusterInterface {
@@ -420,7 +426,12 @@ type SharedScopedInformerFactory interface {
 	ForResource(resource schema.GroupVersionResource) (GenericInformer, error)
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
+	Deploy() deployinformers.Interface
 	Operator() operatorinformers.Interface
+}
+
+func (f *sharedScopedInformerFactory) Deploy() deployinformers.Interface {
+	return deployinformers.NewScoped(f, f.namespace, f.tweakListOptions)
 }
 
 func (f *sharedScopedInformerFactory) Operator() operatorinformers.Interface {
