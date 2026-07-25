@@ -18,11 +18,14 @@ package rootshard
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/stretchr/testify/require"
 
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 	ctrlruntimefakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -124,6 +127,16 @@ func TestReconciling(t *testing.T) {
 
 			compiled := &deployv1alpha1.CompiledRootShard{}
 			err = client.Get(ctx, ctrlruntimeclient.ObjectKeyFromObject(testcase.rootShard), compiled)
+			require.True(t, apierrors.IsNotFound(err))
+
+			require.NoError(t, util.MarkCertificatesReady(ctx, client, namespace))
+
+			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{
+				NamespacedName: ctrlruntimeclient.ObjectKeyFromObject(testcase.rootShard),
+			})
+			require.NoError(t, err)
+
+			err = client.Get(ctx, ctrlruntimeclient.ObjectKeyFromObject(testcase.rootShard), compiled)
 			require.NoError(t, err)
 			require.Equal(t, testcase.rootShard.Spec, compiled.Spec.RootShard)
 			require.Nil(t, compiled.Spec.VirtualWorkspace)
@@ -131,6 +144,13 @@ func TestReconciling(t *testing.T) {
 			require.Len(t, compiled.OwnerReferences, 1)
 			require.Equal(t, "RootShard", compiled.OwnerReferences[0].Kind)
 			require.Equal(t, testcase.rootShard.Name, compiled.OwnerReferences[0].Name)
+
+			certs := &certmanagerv1.CertificateList{}
+			require.NoError(t, client.List(ctx, certs, ctrlruntimeclient.InNamespace(namespace)))
+			require.NotEmpty(t, certs.Items)
+			for _, cert := range certs.Items {
+				require.Equal(t, "1", compiled.Annotations[fmt.Sprintf("operator.kcp.io/cert-%s-revision", cert.Name)])
+			}
 		})
 	}
 }

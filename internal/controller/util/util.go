@@ -106,6 +106,21 @@ func GetDeploymentAvailableCondition(ctx context.Context, client ctrlruntimeclie
 	}, nil
 }
 
+// GetCompiledAvailableCondition returns the Available condition reported on a compiled resource,
+// or a fallback condition if the compiled resource has not reported availability yet.
+func GetCompiledAvailableCondition(conditions []metav1.Condition, objName string) metav1.Condition {
+	if cond := apimeta.FindStatusCondition(conditions, string(operatorv1alpha1.ConditionTypeAvailable)); cond != nil {
+		return *cond
+	}
+
+	return metav1.Condition{
+		Type:    string(operatorv1alpha1.ConditionTypeAvailable),
+		Status:  metav1.ConditionFalse,
+		Reason:  string(operatorv1alpha1.ConditionReasonDeploymentUnavailable),
+		Message: fmt.Sprintf("%s has not reported availability.", objName),
+	}
+}
+
 func UpdateCondition(conditions []metav1.Condition, newCondition metav1.Condition) []metav1.Condition {
 	if conditions == nil {
 		conditions = make([]metav1.Condition, 0)
