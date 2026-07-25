@@ -70,6 +70,7 @@ rules:
 - apiGroups:
   - deploy.operator.kcp.io
   resources:
+  - compiledfrontproxies/status
   - compiledrootshards/status
   - compiledshards/status
   verbs:
