@@ -18,45 +18,35 @@ package shard
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"slices"
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/kcp-dev/logicalcluster/v3"
-	kcpcorev1alpha1 "github.com/kcp-dev/sdk/apis/core/v1alpha1"
 	k8creconciling "k8c.io/reconciler/pkg/reconciling"
 
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/apimachinery/pkg/util/sets"
 	ctrl "sigs.k8s.io/controller-runtime"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/kcp-dev/kcp-operator/internal/client"
 	bundlehelper "github.com/kcp-dev/kcp-operator/internal/controller/bundle"
 	"github.com/kcp-dev/kcp-operator/internal/controller/util"
 	"github.com/kcp-dev/kcp-operator/internal/metrics"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling/modifier"
-	"github.com/kcp-dev/kcp-operator/internal/resources"
 	"github.com/kcp-dev/kcp-operator/internal/resources/shard"
+	deployv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/deploy/v1alpha1"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
-
-const cleanupFinalizer = "operator.kcp.io/cleanup-shard"
 
 // ShardReconciler reconciles a Shard object
 type ShardReconciler struct {
@@ -107,9 +97,8 @@ func (r *ShardReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("shard").
 		For(&operatorv1alpha1.Shard{}).
-		Owns(&appsv1.Deployment{}).
+		Owns(&deployv1alpha1.CompiledShard{}).
 		Owns(&corev1.Secret{}).
-		Owns(&corev1.Service{}).
 		Owns(&certmanagerv1.Certificate{}).
 		Watches(&operatorv1alpha1.RootShard{}, rootShardHandler).
 		Watches(&operatorv1alpha1.VirtualWorkspace{}, vwHandler).
@@ -118,7 +107,6 @@ func (r *ShardReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=shards,verbs=get;list;watch;update;patch
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=shards/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=operator.kcp.io,resources=shards/finalizers,verbs=update
 // +kubebuilder:rbac:groups=deploy.operator.kcp.io,resources=compiledshards,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
@@ -160,14 +148,7 @@ func (r *ShardReconciler) reconcile(ctx context.Context, s *operatorv1alpha1.Sha
 	)
 
 	if s.DeletionTimestamp != nil {
-		return r.handleDeletion(ctx, s)
-	}
-
-	// Ensure finalizer before any other work
-	if updated, err := r.ensureFinalizer(ctx, s); err != nil {
-		return conditions, fmt.Errorf("failed to ensure cleanup finalizer: %w", err)
-	} else if updated {
-		return conditions, nil // Will be requeued
+		return conditions, nil
 	}
 
 	// Ensure Bundle object exists if annotation is present
@@ -183,7 +164,6 @@ func (r *ShardReconciler) reconcile(ctx context.Context, s *operatorv1alpha1.Sha
 	}
 
 	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*metav1.NewControllerRef(s, operatorv1alpha1.SchemeGroupVersion.WithKind("Shard")))
-	revisionLabels := modifier.RelatedRevisionsLabels(ctx, r.Client)
 
 	certReconcilers := []reconciling.NamedCertificateReconcilerFactory{
 		shard.ServerCertificateReconciler(s, rootShard),
@@ -241,28 +221,12 @@ func (r *ShardReconciler) reconcile(ctx context.Context, s *operatorv1alpha1.Sha
 
 	revisions, ready := util.CertificateRevisions(certs)
 
-	// Deployment will be scaled to 0 if bundle annotation is present
 	if vwConfigValid && ready {
 		if err := reconciling.ReconcileCompiledShards(ctx, []reconciling.NamedCompiledShardReconcilerFactory{
 			shard.CompiledShardReconciler(s, rootShard, kcpVW, util.MutateKeys(revisions, "cert-", "-revision")),
 		}, s.Namespace, r.Client, ownerRefWrapper); err != nil {
 			errs = append(errs, err)
 		}
-
-		if err := k8creconciling.ReconcileDeployments(ctx, []k8creconciling.NamedDeploymentReconcilerFactory{
-			shard.DeploymentReconciler(s, rootShard, kcpVW),
-		}, s.Namespace, r.Client, ownerRefWrapper, revisionLabels); err != nil {
-			// Swallow these errors and instead rely on us watching Secrets and re-reconciling whenever they change.
-			if !errors.Is(err, modifier.ErrMountNotFound) {
-				errs = append(errs, err)
-			}
-		}
-	}
-
-	if err := k8creconciling.ReconcileServices(ctx, []k8creconciling.NamedServiceReconcilerFactory{
-		shard.ServiceReconciler(s),
-	}, s.Namespace, r.Client, ownerRefWrapper); err != nil {
-		errs = append(errs, err)
 	}
 
 	return conditions, kerrors.NewAggregate(errs)
@@ -280,14 +244,13 @@ func (r *ShardReconciler) reconcileStatus(ctx context.Context, oldShard *operato
 	// Check if shard is bundled (has bundle annotation with Ready bundle)
 	isBundled := bundleCond.Status == metav1.ConditionTrue && bundleCond.Reason == "BundleReady"
 
-	// Only check deployment status if not bundled
+	// Only check availability if not bundled
 	if !isBundled {
-		depKey := types.NamespacedName{Namespace: newShard.Namespace, Name: resources.GetShardDeploymentName(newShard)}
-		cond, err := util.GetDeploymentAvailableCondition(ctx, r.Client, depKey)
-		if err != nil {
+		compiled := &deployv1alpha1.CompiledShard{}
+		if err := r.Get(ctx, ctrlruntimeclient.ObjectKeyFromObject(newShard), compiled); ctrlruntimeclient.IgnoreNotFound(err) != nil {
 			errs = append(errs, err)
 		} else {
-			conditions = append(conditions, cond)
+			conditions = append(conditions, util.GetCompiledAvailableCondition(compiled.Status.Conditions, fmt.Sprintf("CompiledShard %s", newShard.Name)))
 		}
 	}
 
@@ -328,78 +291,4 @@ func (r *ShardReconciler) reconcileStatus(ctx context.Context, oldShard *operato
 	}
 
 	return kerrors.NewAggregate(errs)
-}
-
-func (r *ShardReconciler) handleDeletion(ctx context.Context, s *operatorv1alpha1.Shard) ([]metav1.Condition, error) {
-	logger := log.FromContext(ctx)
-
-	if !slices.Contains(s.Finalizers, cleanupFinalizer) {
-		return nil, nil
-	}
-
-	// Fetch RootShard
-	cond, rootShard := util.FetchRootShard(ctx, r.Client, s.Namespace, s.Spec.RootShard.Reference)
-	if rootShard == nil {
-		logger.Info("RootShard not found, cannot clean up kcp Shard object", "condition", cond.Message)
-		// Remove finalizer anyway - we can't clean up without the root shard
-		if err := r.removeFinalizer(ctx, s); err != nil {
-			return []metav1.Condition{cond}, fmt.Errorf("failed to remove finalizer: %w", err)
-		}
-		return []metav1.Condition{cond}, nil
-	}
-
-	// Create client to root shard
-	kcpClient, err := client.NewRootShardClient(ctx, r.Client, rootShard, logicalcluster.NewPath("root"), r.Scheme)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create root shard client: %w", err)
-	}
-
-	// Delete the kcp Shard object
-	kcpShard := &kcpcorev1alpha1.Shard{}
-	kcpShard.Name = s.Name
-
-	logger.Info("Deleting kcp Shard object from root workspace", "name", s.Name)
-	if err := kcpClient.Delete(ctx, kcpShard); err != nil {
-		if !apierrors.IsNotFound(err) {
-			return nil, fmt.Errorf("failed to delete kcp Shard: %w", err)
-		}
-		logger.V(2).Info("kcp Shard object already deleted")
-	}
-
-	// Remove finalizer
-	if err := r.removeFinalizer(ctx, s); err != nil {
-		return nil, fmt.Errorf("failed to remove finalizer: %w", err)
-	}
-
-	return nil, nil
-}
-
-func (r *ShardReconciler) ensureFinalizer(ctx context.Context, s *operatorv1alpha1.Shard) (bool, error) {
-	finalizers := sets.New(s.GetFinalizers()...)
-	if finalizers.Has(cleanupFinalizer) {
-		return false, nil
-	}
-
-	original := s.DeepCopy()
-	finalizers.Insert(cleanupFinalizer)
-	s.SetFinalizers(sets.List(finalizers))
-
-	if err := r.Patch(ctx, s, ctrlruntimeclient.MergeFrom(original)); err != nil {
-		return false, err
-	}
-
-	return true, nil
-}
-
-func (r *ShardReconciler) removeFinalizer(ctx context.Context, s *operatorv1alpha1.Shard) error {
-	finalizers := sets.New(s.GetFinalizers()...)
-	if !finalizers.Has(cleanupFinalizer) {
-		return nil
-	}
-
-	original := s.DeepCopy()
-	finalizers.Delete(cleanupFinalizer)
-	s.SetFinalizers(sets.List(finalizers))
-
-	return r.Patch(ctx, s, ctrlruntimeclient.MergeFrom(original))
 }

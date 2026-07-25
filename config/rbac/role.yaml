@@ -104,7 +104,6 @@ rules:
   - frontproxies/finalizers
   - kubeconfigs/finalizers
   - rootshards/finalizers
-  - shards/finalizers
   verbs:
   - update
 - apiGroups:
