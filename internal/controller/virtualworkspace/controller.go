@@ -26,7 +26,6 @@ import (
 	"k8c.io/reconciler/pkg/equality"
 	k8creconciling "k8c.io/reconciler/pkg/reconciling"
 
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -44,6 +43,7 @@ import (
 	"github.com/kcp-dev/kcp-operator/internal/reconciling/modifier"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
 	"github.com/kcp-dev/kcp-operator/internal/resources/virtualworkspace"
+	deployv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/deploy/v1alpha1"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -61,10 +61,10 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(&operatorv1alpha1.RootShard{}, handler.EnqueueRequestsFromMapFunc(r.mapRootShardToVirtualWorkspaces)).
 		Watches(&operatorv1alpha1.Shard{}, handler.EnqueueRequestsFromMapFunc(r.mapShardToVirtualWorkspaces)).
 		Watches(&certmanagerv1.Issuer{}, handler.EnqueueRequestsFromMapFunc(r.mapIssuerToVirtualWorkspaces)).
+		Owns(&deployv1alpha1.CompiledVirtualWorkspace{}).
 		Owns(&corev1.Secret{}).
 		Owns(&corev1.Service{}).
 		Owns(&certmanagerv1.Certificate{}).
-		Owns(&appsv1.Deployment{}).
 		Complete(r)
 }
 
@@ -196,7 +196,6 @@ func (r *Reconciler) reconcile(ctx context.Context, vw *operatorv1alpha1.Virtual
 	})
 
 	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*metav1.NewControllerRef(vw, operatorv1alpha1.SchemeGroupVersion.WithKind("VirtualWorkspace")))
-	revisionLabels := modifier.RelatedRevisionsLabels(ctx, r.Client)
 
 	var certs []*certmanagerv1.Certificate
 	if err := reconciling.ReconcileCertificates(ctx, []reconciling.NamedCertificateReconcilerFactory{
@@ -225,34 +224,15 @@ func (r *Reconciler) reconcile(ctx context.Context, vw *operatorv1alpha1.Virtual
 		return conditions, err
 	}
 
-	if err := k8creconciling.ReconcileDeployments(ctx, []k8creconciling.NamedDeploymentReconcilerFactory{
-		virtualworkspace.DeploymentReconciler(vw, rootShard, shard),
-	}, vw.Namespace, r.Client, ownerRefWrapper, revisionLabels); err != nil {
-		// Swallow these errors and instead rely on us watching Secrets and re-reconciling whenever they change.
-		if errors.Is(err, modifier.ErrMountNotFound) {
-			err = nil
-		}
-
-		return conditions, err
-	}
-
-	if err := k8creconciling.ReconcileServices(ctx, []k8creconciling.NamedServiceReconcilerFactory{
-		virtualworkspace.ServiceReconciler(vw),
-	}, vw.Namespace, r.Client, ownerRefWrapper); err != nil {
-		return conditions, err
-	}
-
 	return conditions, nil
 }
 
 func (r *Reconciler) reconcileStatus(ctx context.Context, oldVW *operatorv1alpha1.VirtualWorkspace, vw *operatorv1alpha1.VirtualWorkspace, conditions []metav1.Condition) error {
-	// Check deployment status
-	depKey := types.NamespacedName{Namespace: vw.Namespace, Name: resources.GetVirtualWorkspaceDeploymentName(vw)}
-	cond, err := util.GetDeploymentAvailableCondition(ctx, r.Client, depKey)
-	if err != nil {
+	compiled := &deployv1alpha1.CompiledVirtualWorkspace{}
+	if err := r.Get(ctx, ctrlruntimeclient.ObjectKeyFromObject(vw), compiled); ctrlruntimeclient.IgnoreNotFound(err) != nil {
 		return err
 	}
-	conditions = append(conditions, cond)
+	conditions = append(conditions, util.GetCompiledAvailableCondition(compiled.Status.Conditions, fmt.Sprintf("CompiledVirtualWorkspace %s", vw.Name)))
 
 	for _, condition := range conditions {
 		condition.ObservedGeneration = vw.Generation
