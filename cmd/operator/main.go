@@ -49,6 +49,7 @@ import (
 	"github.com/kcp-dev/kcp-operator/internal/controller/compiledfrontproxy"
 	"github.com/kcp-dev/kcp-operator/internal/controller/compiledrootshard"
 	"github.com/kcp-dev/kcp-operator/internal/controller/compiledshard"
+	"github.com/kcp-dev/kcp-operator/internal/controller/compiledvirtualworkspace"
 	"github.com/kcp-dev/kcp-operator/internal/controller/frontproxy"
 	"github.com/kcp-dev/kcp-operator/internal/controller/kubeconfig"
 	kubeconfigrbac "github.com/kcp-dev/kcp-operator/internal/controller/kubeconfig-rbac"
@@ -318,6 +319,13 @@ func setupWorkloadControllers(mgr ctrl.Manager, client ctrlruntimeclient.Client)
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("unable to create controller %s: %w", "CompiledFrontProxy", err)
+	}
+
+	if err := (&compiledvirtualworkspace.Reconciler{
+		Client: client,
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("unable to create controller %s: %w", "CompiledVirtualWorkspace", err)
 	}
 
 	return nil

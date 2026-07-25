@@ -73,6 +73,7 @@ rules:
   - compiledfrontproxies/status
   - compiledrootshards/status
   - compiledshards/status
+  - compiledvirtualworkspaces/status
   verbs:
   - get
   - patch
