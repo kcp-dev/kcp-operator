@@ -1580,6 +1580,11 @@ spec:
                     items:
                       type: string
                     type: array
+                  prefix:
+                    description: Prefix is the etcd key prefix under which the component
+                      stores its data. If unset, the components default prefix is
+                      used.
+                    type: string
                   tlsConfig:
                     description: ClientCert configures the client certificate used
                       to access etcd.

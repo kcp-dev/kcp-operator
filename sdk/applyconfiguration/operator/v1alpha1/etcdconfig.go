@@ -23,6 +23,7 @@ package v1alpha1
 type EtcdConfigApplyConfiguration struct {
 	Endpoints []string                         `json:"endpoints,omitempty"`
 	TLSConfig *EtcdTLSConfigApplyConfiguration `json:"tlsConfig,omitempty"`
+	Prefix    *string                          `json:"prefix,omitempty"`
 }
 
 // EtcdConfigApplyConfiguration constructs a declarative configuration of the EtcdConfig type for use with
@@ -46,5 +47,13 @@ func (b *EtcdConfigApplyConfiguration) WithEndpoints(values ...string) *EtcdConf
 // If called multiple times, the TLSConfig field is set to the value of the last call.
 func (b *EtcdConfigApplyConfiguration) WithTLSConfig(value *EtcdTLSConfigApplyConfiguration) *EtcdConfigApplyConfiguration {
 	b.TLSConfig = value
+	return b
+}
+
+// WithPrefix sets the Prefix field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Prefix field is set to the value of the last call.
+func (b *EtcdConfigApplyConfiguration) WithPrefix(value string) *EtcdConfigApplyConfiguration {
+	b.Prefix = &value
 	return b
 }
