@@ -228,6 +228,11 @@ func getArgs(server *operatorv1alpha1.CacheServer, version *semver.Version) []st
 		args = append(args,
 			fmt.Sprintf("--etcd-servers=%s", strings.Join(server.Spec.Etcd.Endpoints, ",")),
 		)
+		if server.Spec.Etcd.Prefix != "" {
+			args = append(args,
+				fmt.Sprintf("--etcd-prefix=%s", server.Spec.Etcd.Prefix),
+			)
+		}
 		if server.Spec.Etcd.TLSConfig != nil {
 			args = append(args,
 				fmt.Sprintf("--etcd-cafile=%s/ca.crt", getEtcdCertificateMountPath()),
