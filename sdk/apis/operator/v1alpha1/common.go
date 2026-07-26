@@ -51,6 +51,9 @@ type EtcdConfig struct {
 	// ClientCert configures the client certificate used to access etcd.
 	// +optional
 	TLSConfig *EtcdTLSConfig `json:"tlsConfig,omitempty"`
+	// Prefix is the etcd key prefix under which the component stores its data. If unset, the components default prefix is used.
+	// +optional
+	Prefix string `json:"prefix,omitempty"`
 }
 
 type EtcdTLSConfig struct {
