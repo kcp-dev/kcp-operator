@@ -160,6 +160,13 @@ func applyEtcdConfiguration(deployment *appsv1.Deployment, config operatorv1alph
 		fmt.Sprintf("--etcd-servers=%s", strings.Join(config.Endpoints, ",")),
 	)
 
+	if config.Prefix != "" {
+		podSpec.Containers[0].Args = append(
+			podSpec.Containers[0].Args,
+			fmt.Sprintf("--etcd-prefix=%s", config.Prefix),
+		)
+	}
+
 	if config.TLSConfig != nil {
 		volumeName := "etcd-client-cert"
 		mountPath := "/etc/etcd/tls"

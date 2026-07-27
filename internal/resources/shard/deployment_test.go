@@ -246,6 +246,63 @@ func TestDeploymentReconciler(t *testing.T) {
 				assert.Contains(t, container.Args, "--mount-proxy-client-key-file=/etc/kcp/tls/mounts-proxy/tls.key")
 			},
 		},
+		{
+			name: "etcd prefix is wired when set",
+			shard: &operatorv1alpha1.Shard{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "shardy",
+				},
+				Spec: operatorv1alpha1.ShardSpec{
+					CommonShardSpec: operatorv1alpha1.CommonShardSpec{
+						Etcd: operatorv1alpha1.EtcdConfig{
+							Endpoints: []string{"https://etcd:2379"},
+							Prefix:    "/custom-prefix",
+						},
+					},
+				},
+			},
+			rootShard: &operatorv1alpha1.RootShard{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "rooty",
+				},
+			},
+			expectedName: resources.GetShardDeploymentName(&operatorv1alpha1.Shard{
+				ObjectMeta: metav1.ObjectMeta{Name: "shardy"},
+			}),
+			validateDeploy: func(t *testing.T, dep *appsv1.Deployment) {
+				container := dep.Spec.Template.Spec.Containers[0]
+				assert.Contains(t, container.Args, "--etcd-prefix=/custom-prefix")
+			},
+		},
+		{
+			name: "etcd prefix is omitted when unset",
+			shard: &operatorv1alpha1.Shard{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "shardy",
+				},
+				Spec: operatorv1alpha1.ShardSpec{
+					CommonShardSpec: operatorv1alpha1.CommonShardSpec{
+						Etcd: operatorv1alpha1.EtcdConfig{
+							Endpoints: []string{"https://etcd:2379"},
+						},
+					},
+				},
+			},
+			rootShard: &operatorv1alpha1.RootShard{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "rooty",
+				},
+			},
+			expectedName: resources.GetShardDeploymentName(&operatorv1alpha1.Shard{
+				ObjectMeta: metav1.ObjectMeta{Name: "shardy"},
+			}),
+			validateDeploy: func(t *testing.T, dep *appsv1.Deployment) {
+				container := dep.Spec.Template.Spec.Containers[0]
+				for _, arg := range container.Args {
+					assert.NotContains(t, arg, "--etcd-prefix")
+				}
+			},
+		},
 	}
 
 	for _, tt := range tests {
