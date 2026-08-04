@@ -38,10 +38,11 @@ import (
 type reconciler struct {
 	frontProxy     *operatorv1alpha1.FrontProxy
 	rootShard      *operatorv1alpha1.RootShard
+	shards         []operatorv1alpha1.Shard
 	resourceLabels map[string]string
 }
 
-func NewFrontProxy(frontProxy *operatorv1alpha1.FrontProxy, rootShard *operatorv1alpha1.RootShard) *reconciler {
+func NewFrontProxy(frontProxy *operatorv1alpha1.FrontProxy, rootShard *operatorv1alpha1.RootShard, shards []operatorv1alpha1.Shard) *reconciler {
 	if frontProxy == nil {
 		panic("Use NewRootShardProxy instead.")
 	}
@@ -49,6 +50,7 @@ func NewFrontProxy(frontProxy *operatorv1alpha1.FrontProxy, rootShard *operatorv
 	return &reconciler{
 		frontProxy:     frontProxy,
 		rootShard:      rootShard,
+		shards:         shards,
 		resourceLabels: resources.GetFrontProxyResourceLabels(frontProxy),
 	}
 }

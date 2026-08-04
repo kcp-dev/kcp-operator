@@ -307,7 +307,7 @@ func TestDeploymentReconciler(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			factory := DeploymentReconciler(tt.shard, tt.rootShard, nil)
+			factory := DeploymentReconciler(tt.shard, tt.rootShard, nil, nil)
 			name, reconcilerFunc := factory()
 
 			assert.Equal(t, tt.expectedName, name)

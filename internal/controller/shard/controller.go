@@ -237,10 +237,15 @@ func (r *ShardReconciler) reconcile(ctx context.Context, s *operatorv1alpha1.Sha
 		}
 	}
 
+	shards, shardsErr := util.GetRootShardChildren(ctx, r.Client, rootShard)
+	if shardsErr != nil {
+		errs = append(errs, fmt.Errorf("failed to list shards: %w", shardsErr))
+	}
+
 	// Deployment will be scaled to 0 if bundle annotation is present
-	if vwConfigValid {
+	if vwConfigValid && shardsErr == nil {
 		if err := k8creconciling.ReconcileDeployments(ctx, []k8creconciling.NamedDeploymentReconcilerFactory{
-			shard.DeploymentReconciler(s, rootShard, kcpVW),
+			shard.DeploymentReconciler(s, rootShard, kcpVW, shards),
 		}, s.Namespace, r.Client, ownerRefWrapper, revisionLabels); err != nil {
 			// Swallow these errors and instead rely on us watching Secrets and re-reconciling whenever they change.
 			if !errors.Is(err, modifier.ErrMountNotFound) {

@@ -144,7 +144,12 @@ func (r *FrontProxyReconciler) reconcile(ctx context.Context, frontProxy *operat
 		return conditions, nil
 	}
 
-	fpReconciler := frontproxy.NewFrontProxy(frontProxy, rootShard)
+	shards, err := util.GetRootShardChildren(ctx, r.Client, rootShard)
+	if err != nil {
+		return conditions, fmt.Errorf("failed to list shards: %w", err)
+	}
+
+	fpReconciler := frontproxy.NewFrontProxy(frontProxy, rootShard, shards)
 
 	// Deployment will be scaled to 0 if bundle annotation is present
 	if err := fpReconciler.Reconcile(ctx, r.Client, frontProxy.Namespace); err != nil {

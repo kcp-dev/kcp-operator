@@ -34,6 +34,7 @@ func TestDeploymentReconciler(t *testing.T) {
 	tests := []struct {
 		name           string
 		rootShard      *operatorv1alpha1.RootShard
+		shards         []operatorv1alpha1.Shard
 		expectedName   string
 		validateDeploy func(*testing.T, *appsv1.Deployment)
 	}{
@@ -152,9 +153,9 @@ func TestDeploymentReconciler(t *testing.T) {
 						},
 					},
 				},
-				Status: operatorv1alpha1.RootShardStatus{
-					Shards: []operatorv1alpha1.ShardReference{{Name: "theseus"}},
-				},
+			},
+			shards: []operatorv1alpha1.Shard{
+				{ObjectMeta: metav1.ObjectMeta{Name: "theseus"}},
 			},
 			expectedName: resources.GetRootShardDeploymentName(&operatorv1alpha1.RootShard{
 				ObjectMeta: metav1.ObjectMeta{Name: "rooty"},
@@ -219,7 +220,7 @@ func TestDeploymentReconciler(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			factory := DeploymentReconciler(tt.rootShard, nil)
+			factory := DeploymentReconciler(tt.rootShard, nil, tt.shards)
 			name, reconcilerFunc := factory()
 
 			assert.Equal(t, tt.expectedName, name)

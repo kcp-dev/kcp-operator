@@ -93,9 +93,9 @@ func ApplyResources(container corev1.Container, resources *corev1.ResourceRequir
 }
 
 // ApplyAuthConfiguration applies the auth configuration to a deployment,
-// including ServiceAccount authentication, which loads every shard's
-// service-account public key.
-func ApplyAuthConfiguration(deployment *appsv1.Deployment, config *operatorv1alpha1.AuthSpec, rootShard *operatorv1alpha1.RootShard) *appsv1.Deployment {
+// including ServiceAccount authentication, which loads the service-account
+// public key of the root shard and of every shard in shards.
+func ApplyAuthConfiguration(deployment *appsv1.Deployment, config *operatorv1alpha1.AuthSpec, rootShard *operatorv1alpha1.RootShard, shards []operatorv1alpha1.Shard) *appsv1.Deployment {
 	if config == nil {
 		return deployment
 	}
@@ -113,7 +113,7 @@ func ApplyAuthConfiguration(deployment *appsv1.Deployment, config *operatorv1alp
 	}
 
 	if config.ServiceAccount != nil && config.ServiceAccount.Enabled {
-		deployment = applyServiceAccountAuthentication(deployment, rootShard)
+		deployment = applyServiceAccountAuthentication(deployment, rootShard, shards)
 	}
 
 	return deployment

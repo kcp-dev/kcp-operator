@@ -83,7 +83,7 @@ func TestDefaultPathMappings(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rec := NewFrontProxy(tt.frontProxy, tt.rootShard)
+			rec := NewFrontProxy(tt.frontProxy, tt.rootShard, nil)
 			mappings := rec.defaultPathMappings()
 
 			require.Len(t, mappings, 2)

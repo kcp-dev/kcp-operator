@@ -21,7 +21,6 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kcp-dev/kcp-operator/internal/resources"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
@@ -81,7 +80,7 @@ func applyOIDCConfiguration(deployment *appsv1.Deployment, config operatorv1alph
 	return deployment
 }
 
-func applyServiceAccountAuthentication(deployment *appsv1.Deployment, rootShard *operatorv1alpha1.RootShard) *appsv1.Deployment {
+func applyServiceAccountAuthentication(deployment *appsv1.Deployment, rootShard *operatorv1alpha1.RootShard, shards []operatorv1alpha1.Shard) *appsv1.Deployment {
 	// Secrets and volumes
 
 	volumes := []corev1.Volume{}
@@ -103,17 +102,19 @@ func applyServiceAccountAuthentication(deployment *appsv1.Deployment, rootShard 
 		MountPath: fmt.Sprintf("/etc/kcp/tls/%s/%s", rootShard.Name, string(operatorv1alpha1.ServiceAccountCertificate)),
 	})
 
-	for _, shard := range rootShard.Status.Shards {
+	for _, shard := range shards {
+		certName := resources.GetShardCertificateName(&shard, operatorv1alpha1.ServiceAccountCertificate)
+
 		volumes = append(volumes, corev1.Volume{
-			Name: resources.GetShardCertificateName(&operatorv1alpha1.Shard{ObjectMeta: metav1.ObjectMeta{Name: shard.Name}}, operatorv1alpha1.ServiceAccountCertificate),
+			Name: certName,
 			VolumeSource: corev1.VolumeSource{
 				Secret: &corev1.SecretVolumeSource{
-					SecretName: resources.GetShardCertificateName(&operatorv1alpha1.Shard{ObjectMeta: metav1.ObjectMeta{Name: shard.Name}}, operatorv1alpha1.ServiceAccountCertificate),
+					SecretName: certName,
 				},
 			},
 		})
 		volumeMounts = append(volumeMounts, corev1.VolumeMount{
-			Name:      resources.GetShardCertificateName(&operatorv1alpha1.Shard{ObjectMeta: metav1.ObjectMeta{Name: shard.Name}}, operatorv1alpha1.ServiceAccountCertificate),
+			Name:      certName,
 			ReadOnly:  true,
 			MountPath: fmt.Sprintf("/etc/kcp/tls/%s/%s", shard.Name, string(operatorv1alpha1.ServiceAccountCertificate)),
 		})
@@ -128,7 +129,7 @@ func applyServiceAccountAuthentication(deployment *appsv1.Deployment, rootShard 
 	extraArgs = append(extraArgs, "--service-account-lookup=false")
 	extraArgs = append(extraArgs, fmt.Sprintf("--service-account-key-file=/etc/kcp/tls/%s/service-account/tls.crt", rootShard.Name))
 
-	for _, shard := range rootShard.Status.Shards {
+	for _, shard := range shards {
 		extraArgs = append(extraArgs, fmt.Sprintf("--service-account-key-file=/etc/kcp/tls/%s/service-account/tls.crt", shard.Name))
 	}
 

@@ -89,7 +89,7 @@ func getEffectiveCacheRef(shard *operatorv1alpha1.Shard, rootShard *operatorv1al
 	return ""
 }
 
-func DeploymentReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShard, kcpVW *operatorv1alpha1.VirtualWorkspace) reconciling.NamedDeploymentReconcilerFactory {
+func DeploymentReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShard, kcpVW *operatorv1alpha1.VirtualWorkspace, shards []operatorv1alpha1.Shard) reconciling.NamedDeploymentReconcilerFactory {
 	return func() (string, reconciling.DeploymentReconciler) {
 		return resources.GetShardDeploymentName(shard), func(dep *appsv1.Deployment) (*appsv1.Deployment, error) {
 			labels := resources.GetShardResourceLabels(shard)
@@ -224,7 +224,7 @@ func DeploymentReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1al
 			dep = utils.ApplyCommonShardDeploymentProperties(dep)
 			dep = utils.ApplyCommonShardConfig(dep, &shard.Spec.CommonShardSpec)
 			dep = utils.ApplyDeploymentTemplate(dep, shard.Spec.DeploymentTemplate)
-			dep = utils.ApplyAuthConfiguration(dep, shard.Spec.Auth, rootShard)
+			dep = utils.ApplyAuthConfiguration(dep, shard.Spec.Auth, rootShard, shards)
 
 			// If shard has bundle annotation, store desired replicas in annotation then scale deployment to 0 locally
 			if shard.Annotations != nil && shard.Annotations[resources.BundleAnnotation] != "" {

@@ -249,10 +249,15 @@ func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operator
 		}
 	}
 
+	shards, shardsErr := util.GetRootShardChildren(ctx, r.Client, rootShard)
+	if shardsErr != nil {
+		errs = append(errs, fmt.Errorf("failed to list shards: %w", shardsErr))
+	}
+
 	// Deployment will be scaled to 0 if bundle annotation is present
-	if vwConfigValid {
+	if vwConfigValid && shardsErr == nil {
 		if err := k8creconciling.ReconcileDeployments(ctx, []k8creconciling.NamedDeploymentReconcilerFactory{
-			rootshard.DeploymentReconciler(rootShard, kcpVW),
+			rootshard.DeploymentReconciler(rootShard, kcpVW, shards),
 		}, rootShard.Namespace, r.Client, ownerRefWrapper, revisionLabels); err != nil {
 			// Swallow these errors and instead rely on us watching Secrets and re-reconciling whenever they change.
 			if !errors.Is(err, modifier.ErrMountNotFound) {
@@ -334,7 +339,7 @@ func (r *RootShardReconciler) reconcileStatus(ctx context.Context, oldRootShard 
 		}
 	}
 
-	// only patch the status if there are actual changes.
+	// No reconciler reads Status.Shards, but this write is what wakes the Shard and FrontProxy controllers through their RootShard watches.
 	if !equality.Semantic.DeepEqual(oldRootShard.Status, rootShard.Status) {
 		if err := r.Status().Patch(ctx, rootShard, ctrlruntimeclient.MergeFrom(oldRootShard)); err != nil {
 			errs = append(errs, err)
