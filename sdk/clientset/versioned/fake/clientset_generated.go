@@ -26,6 +26,8 @@ import (
 	"k8s.io/client-go/testing"
 
 	clientset "github.com/kcp-dev/kcp-operator/sdk/clientset/versioned"
+	deployv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/clientset/versioned/typed/deploy/v1alpha1"
+	fakedeployv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/clientset/versioned/typed/deploy/v1alpha1/fake"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/clientset/versioned/typed/operator/v1alpha1"
 	fakeoperatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/clientset/versioned/typed/operator/v1alpha1/fake"
 )
@@ -83,6 +85,11 @@ var (
 	_ clientset.Interface = &Clientset{}
 	_ testing.FakeClient  = &Clientset{}
 )
+
+// DeployV1alpha1 retrieves the DeployV1alpha1Client
+func (c *Clientset) DeployV1alpha1() deployv1alpha1.DeployV1alpha1Interface {
+	return &fakedeployv1alpha1.FakeDeployV1alpha1{Fake: &c.Fake}
+}
 
 // OperatorV1alpha1 retrieves the OperatorV1alpha1Client
 func (c *Clientset) OperatorV1alpha1() operatorv1alpha1.OperatorV1alpha1Interface {
