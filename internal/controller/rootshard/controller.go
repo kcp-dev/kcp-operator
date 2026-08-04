@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sort"
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -334,10 +333,6 @@ func (r *RootShardReconciler) reconcileStatus(ctx context.Context, oldRootShard 
 			rootShard.Status.Shards[i] = operatorv1alpha1.ShardReference{Name: shard.Name}
 		}
 	}
-	// sort the shards by name for equality comparison
-	sort.Slice(rootShard.Status.Shards, func(i, j int) bool {
-		return rootShard.Status.Shards[i].Name < rootShard.Status.Shards[j].Name
-	})
 
 	// only patch the status if there are actual changes.
 	if !equality.Semantic.DeepEqual(oldRootShard.Status, rootShard.Status) {

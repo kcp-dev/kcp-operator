@@ -19,6 +19,8 @@ package util
 import (
 	"context"
 	"fmt"
+	"slices"
+	"strings"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -120,6 +122,7 @@ func FetchRootShard(ctx context.Context, client ctrlruntimeclient.Client, namesp
 }
 
 // GetRootShardChildren returns all shards that are currently registered with the given root shard.
+// The shards are sorted by name before returning.
 func GetRootShardChildren(ctx context.Context, client ctrlruntimeclient.Client, rootShard *operatorv1alpha1.RootShard) ([]operatorv1alpha1.Shard, error) {
 	var errs []error
 
@@ -137,6 +140,10 @@ func GetRootShardChildren(ctx context.Context, client ctrlruntimeclient.Client, 
 			result = append(result, shard)
 		}
 	}
+
+	slices.SortFunc(result, func(a, b operatorv1alpha1.Shard) int {
+		return strings.Compare(a.Name, b.Name)
+	})
 
 	return result, kerrors.NewAggregate(errs)
 }
