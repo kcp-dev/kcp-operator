@@ -23,6 +23,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
+	deployv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/deploy/v1alpha1"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -100,7 +101,23 @@ func GetRootShardDeploymentName(r *operatorv1alpha1.RootShard) string {
 	return fmt.Sprintf("%s-kcp", r.Name)
 }
 
+func GetCompiledRootShardDeploymentName(r *deployv1alpha1.CompiledRootShard) string {
+	return fmt.Sprintf("%s-kcp", r.Name)
+}
+
+func GetNamedRootShardDeploymentName(r deployv1alpha1.NamedRootShardSpec) string {
+	return fmt.Sprintf("%s-kcp", r.Name)
+}
+
 func GetRootShardProxyDeploymentName(r *operatorv1alpha1.RootShard) string {
+	return fmt.Sprintf("%s-proxy", r.Name)
+}
+
+func GetCompiledRootShardProxyDeploymentName(r *deployv1alpha1.CompiledRootShard) string {
+	return fmt.Sprintf("%s-proxy", r.Name)
+}
+
+func GetNamedRootShardProxyDeploymentName(r deployv1alpha1.NamedRootShardSpec) string {
 	return fmt.Sprintf("%s-proxy", r.Name)
 }
 
@@ -108,7 +125,19 @@ func GetShardDeploymentName(s *operatorv1alpha1.Shard) string {
 	return fmt.Sprintf("%s-shard-kcp", s.Name)
 }
 
+func GetCompiledShardDeploymentName(s *deployv1alpha1.CompiledShard) string {
+	return fmt.Sprintf("%s-shard-kcp", s.Name)
+}
+
+func GetNamedShardDeploymentName(s deployv1alpha1.NamedShardSpec) string {
+	return fmt.Sprintf("%s-shard-kcp", s.Name)
+}
+
 func GetCacheServerDeploymentName(s *operatorv1alpha1.CacheServer) string {
+	return fmt.Sprintf("%s-cache-server", s.Name)
+}
+
+func GetCompiledCacheServerDeploymentName(s *deployv1alpha1.CompiledCacheServer) string {
 	return fmt.Sprintf("%s-cache-server", s.Name)
 }
 
@@ -116,7 +145,23 @@ func GetVirtualWorkspaceDeploymentName(vw *operatorv1alpha1.VirtualWorkspace) st
 	return fmt.Sprintf("%s-virtual-workspace", vw.Name)
 }
 
+func GetCompiledVirtualWorkspaceDeploymentName(vw *deployv1alpha1.CompiledVirtualWorkspace) string {
+	return fmt.Sprintf("%s-virtual-workspace", vw.Name)
+}
+
+func GetNamedVirtualWorkspaceDeploymentName(vw deployv1alpha1.NamedVirtualWorkspaceSpec) string {
+	return fmt.Sprintf("%s-virtual-workspace", vw.Name)
+}
+
 func GetRootShardServiceName(r *operatorv1alpha1.RootShard) string {
+	return fmt.Sprintf("%s-kcp", r.Name)
+}
+
+func GetCompiledRootShardServiceName(r *deployv1alpha1.CompiledRootShard) string {
+	return fmt.Sprintf("%s-kcp", r.Name)
+}
+
+func GetNamedRootShardServiceName(r deployv1alpha1.NamedRootShardSpec) string {
 	return fmt.Sprintf("%s-kcp", r.Name)
 }
 
@@ -124,8 +169,24 @@ func GetShardServiceName(s *operatorv1alpha1.Shard) string {
 	return fmt.Sprintf("%s-shard-kcp", s.Name)
 }
 
+func GetCompiledShardServiceName(s *deployv1alpha1.CompiledShard) string {
+	return fmt.Sprintf("%s-shard-kcp", s.Name)
+}
+
+func GetNamedShardServiceName(s deployv1alpha1.NamedShardSpec) string {
+	return fmt.Sprintf("%s-shard-kcp", s.Name)
+}
+
 func GetCacheServerServiceName(s *operatorv1alpha1.CacheServer) string {
 	return fmt.Sprintf("%s-cache-server", s.Name)
+}
+
+func GetCompiledCacheServerServiceName(s *deployv1alpha1.CompiledCacheServer) string {
+	return fmt.Sprintf("%s-cache-server", s.Name)
+}
+
+func GetCompiledVirtualWorkspaceServiceName(vw *deployv1alpha1.CompiledVirtualWorkspace) string {
+	return fmt.Sprintf("%s-virtual-workspace", vw.Name)
 }
 
 func getResourceLabels(instance, component string) map[string]string {
@@ -141,7 +202,23 @@ func GetRootShardResourceLabels(r *operatorv1alpha1.RootShard) map[string]string
 	return getResourceLabels(r.Name, "rootshard")
 }
 
+func GetCompiledRootShardResourceLabels(r *deployv1alpha1.CompiledRootShard) map[string]string {
+	return getResourceLabels(r.Name, "rootshard")
+}
+
+func GetNamedRootShardResourceLabels(r deployv1alpha1.NamedRootShardSpec) map[string]string {
+	return getResourceLabels(r.Name, "rootshard")
+}
+
 func GetRootShardProxyResourceLabels(r *operatorv1alpha1.RootShard) map[string]string {
+	return getResourceLabels(r.Name, "rootshard-proxy")
+}
+
+func GetCompiledRootShardProxyResourceLabels(r *deployv1alpha1.CompiledRootShard) map[string]string {
+	return getResourceLabels(r.Name, "rootshard-proxy")
+}
+
+func GetNamedRootShardProxyResourceLabels(r deployv1alpha1.NamedRootShardSpec) map[string]string {
 	return getResourceLabels(r.Name, "rootshard-proxy")
 }
 
@@ -149,11 +226,31 @@ func GetShardResourceLabels(s *operatorv1alpha1.Shard) map[string]string {
 	return getResourceLabels(s.Name, "shard")
 }
 
+func GetCompiledShardResourceLabels(s *deployv1alpha1.CompiledShard) map[string]string {
+	return getResourceLabels(s.Name, "shard")
+}
+
+func GetNamedShardResourceLabels(s deployv1alpha1.NamedShardSpec) map[string]string {
+	return getResourceLabels(s.Name, "shard")
+}
+
 func GetCacheServerResourceLabels(s *operatorv1alpha1.CacheServer) map[string]string {
 	return getResourceLabels(s.Name, "cache-server")
 }
 
+func GetCompiledCacheServerResourceLabels(s *deployv1alpha1.CompiledCacheServer) map[string]string {
+	return getResourceLabels(s.Name, "cache-server")
+}
+
 func GetVirtualWorkspaceResourceLabels(vw *operatorv1alpha1.VirtualWorkspace) map[string]string {
+	return getResourceLabels(vw.Name, "virtual-workspace")
+}
+
+func GetCompiledVirtualWorkspaceResourceLabels(vw *deployv1alpha1.CompiledVirtualWorkspace) map[string]string {
+	return getResourceLabels(vw.Name, "virtual-workspace")
+}
+
+func GetNamedVirtualWorkspaceResourceLabels(vw deployv1alpha1.NamedVirtualWorkspaceSpec) map[string]string {
 	return getResourceLabels(vw.Name, "virtual-workspace")
 }
 
@@ -166,11 +263,43 @@ func GetRootShardBaseHost(r *operatorv1alpha1.RootShard) string {
 	return fmt.Sprintf("%s-kcp.%s.svc.%s", r.Name, r.Namespace, clusterDomain)
 }
 
+func GetCompiledRootShardBaseHost(r *deployv1alpha1.CompiledRootShard) string {
+	clusterDomain := r.Spec.RootShard.ClusterDomain
+	if clusterDomain == "" {
+		clusterDomain = defaultClusterDomain
+	}
+
+	return fmt.Sprintf("%s-kcp.%s.svc.%s", r.Name, r.Namespace, clusterDomain)
+}
+
+func GetNamedRootShardBaseHost(r deployv1alpha1.NamedRootShardSpec, namespace string) string {
+	clusterDomain := r.Spec.ClusterDomain
+	if clusterDomain == "" {
+		clusterDomain = defaultClusterDomain
+	}
+
+	return fmt.Sprintf("%s-kcp.%s.svc.%s", r.Name, namespace, clusterDomain)
+}
+
 func GetRootShardBaseURL(r *operatorv1alpha1.RootShard) string {
 	if r.Spec.ShardBaseURL != "" {
 		return r.Spec.ShardBaseURL
 	}
 	return fmt.Sprintf("https://%s:6443", GetRootShardBaseHost(r))
+}
+
+func GetCompiledRootShardBaseURL(r *deployv1alpha1.CompiledRootShard) string {
+	if r.Spec.RootShard.ShardBaseURL != "" {
+		return r.Spec.RootShard.ShardBaseURL
+	}
+	return fmt.Sprintf("https://%s:6443", GetCompiledRootShardBaseHost(r))
+}
+
+func GetNamedRootShardBaseURL(r deployv1alpha1.NamedRootShardSpec, namespace string) string {
+	if r.Spec.ShardBaseURL != "" {
+		return r.Spec.ShardBaseURL
+	}
+	return fmt.Sprintf("https://%s:6443", GetNamedRootShardBaseHost(r, namespace))
 }
 
 func GetShardBaseHost(s *operatorv1alpha1.Shard) string {
@@ -182,11 +311,43 @@ func GetShardBaseHost(s *operatorv1alpha1.Shard) string {
 	return fmt.Sprintf("%s-shard-kcp.%s.svc.%s", s.Name, s.Namespace, clusterDomain)
 }
 
+func GetCompiledShardBaseHost(s *deployv1alpha1.CompiledShard) string {
+	clusterDomain := s.Spec.Shard.ClusterDomain
+	if clusterDomain == "" {
+		clusterDomain = defaultClusterDomain
+	}
+
+	return fmt.Sprintf("%s-shard-kcp.%s.svc.%s", s.Name, s.Namespace, clusterDomain)
+}
+
+func GetNamedShardBaseHost(s deployv1alpha1.NamedShardSpec, namespace string) string {
+	clusterDomain := s.Spec.ClusterDomain
+	if clusterDomain == "" {
+		clusterDomain = defaultClusterDomain
+	}
+
+	return fmt.Sprintf("%s-shard-kcp.%s.svc.%s", s.Name, namespace, clusterDomain)
+}
+
 func GetShardBaseURL(s *operatorv1alpha1.Shard) string {
 	if s.Spec.ShardBaseURL != "" {
 		return s.Spec.ShardBaseURL
 	}
 	return fmt.Sprintf("https://%s:6443", GetShardBaseHost(s))
+}
+
+func GetCompiledShardBaseURL(s *deployv1alpha1.CompiledShard) string {
+	if s.Spec.Shard.ShardBaseURL != "" {
+		return s.Spec.Shard.ShardBaseURL
+	}
+	return fmt.Sprintf("https://%s:6443", GetCompiledShardBaseHost(s))
+}
+
+func GetNamedShardBaseURL(s deployv1alpha1.NamedShardSpec, namespace string) string {
+	if s.Spec.ShardBaseURL != "" {
+		return s.Spec.ShardBaseURL
+	}
+	return fmt.Sprintf("https://%s:6443", GetNamedShardBaseHost(s, namespace))
 }
 
 func GetCacheServerBaseHost(s *operatorv1alpha1.CacheServer) string {
@@ -198,8 +359,21 @@ func GetCacheServerBaseHost(s *operatorv1alpha1.CacheServer) string {
 	return fmt.Sprintf("%s-cache-server.%s.svc.%s", s.Name, s.Namespace, clusterDomain)
 }
 
+func GetCompiledCacheServerBaseHost(s *deployv1alpha1.CompiledCacheServer) string {
+	clusterDomain := s.Spec.CacheServer.ClusterDomain
+	if clusterDomain == "" {
+		clusterDomain = defaultClusterDomain
+	}
+
+	return fmt.Sprintf("%s-cache-server.%s.svc.%s", s.Name, s.Namespace, clusterDomain)
+}
+
 func GetCacheServerBaseURL(s *operatorv1alpha1.CacheServer) string {
 	return fmt.Sprintf("https://%s:6443", GetCacheServerBaseHost(s))
+}
+
+func GetCompiledCacheServerBaseURL(s *deployv1alpha1.CompiledCacheServer) string {
+	return fmt.Sprintf("https://%s:6443", GetCompiledCacheServerBaseHost(s))
 }
 
 func GetVirtualWorkspaceBaseHost(s *operatorv1alpha1.VirtualWorkspace) string {
@@ -211,11 +385,45 @@ func GetVirtualWorkspaceBaseHost(s *operatorv1alpha1.VirtualWorkspace) string {
 	return fmt.Sprintf("%s-virtual-workspace.%s.svc.%s", s.Name, s.Namespace, clusterDomain)
 }
 
+func GetCompiledVirtualWorkspaceBaseHost(s *deployv1alpha1.CompiledVirtualWorkspace) string {
+	clusterDomain := s.Spec.VirtualWorkspace.ClusterDomain
+	if clusterDomain == "" {
+		clusterDomain = defaultClusterDomain
+	}
+
+	return fmt.Sprintf("%s-virtual-workspace.%s.svc.%s", s.Name, s.Namespace, clusterDomain)
+}
+
+func GetNamedVirtualWorkspaceBaseHost(vw deployv1alpha1.NamedVirtualWorkspaceSpec, namespace string) string {
+	clusterDomain := vw.Spec.ClusterDomain
+	if clusterDomain == "" {
+		clusterDomain = defaultClusterDomain
+	}
+
+	return fmt.Sprintf("%s-virtual-workspace.%s.svc.%s", vw.Name, namespace, clusterDomain)
+}
+
 func GetVirtualWorkspaceBaseURL(s *operatorv1alpha1.VirtualWorkspace) string {
 	return fmt.Sprintf("https://%s:6443", GetVirtualWorkspaceBaseHost(s))
 }
 
+func GetCompiledVirtualWorkspaceBaseURL(s *deployv1alpha1.CompiledVirtualWorkspace) string {
+	return fmt.Sprintf("https://%s:6443", GetCompiledVirtualWorkspaceBaseHost(s))
+}
+
+func GetNamedVirtualWorkspaceBaseURL(vw deployv1alpha1.NamedVirtualWorkspaceSpec, namespace string) string {
+	return fmt.Sprintf("https://%s:6443", GetNamedVirtualWorkspaceBaseHost(vw, namespace))
+}
+
 func GetRootShardCertificateName(r *operatorv1alpha1.RootShard, certName operatorv1alpha1.Certificate) string {
+	return fmt.Sprintf("%s-%s", r.Name, certName)
+}
+
+func GetCompiledRootShardCertificateName(r *deployv1alpha1.CompiledRootShard, certName operatorv1alpha1.Certificate) string {
+	return fmt.Sprintf("%s-%s", r.Name, certName)
+}
+
+func GetNamedRootShardCertificateName(r deployv1alpha1.NamedRootShardSpec, certName operatorv1alpha1.Certificate) string {
 	return fmt.Sprintf("%s-%s", r.Name, certName)
 }
 
@@ -223,7 +431,23 @@ func GetRootShardProxyCertificateName(r *operatorv1alpha1.RootShard, certName op
 	return fmt.Sprintf("%s-proxy-%s", r.Name, certName)
 }
 
+func GetCompiledRootShardProxyCertificateName(r *deployv1alpha1.CompiledRootShard, certName operatorv1alpha1.Certificate) string {
+	return fmt.Sprintf("%s-proxy-%s", r.Name, certName)
+}
+
+func GetNamedRootShardProxyCertificateName(r deployv1alpha1.NamedRootShardSpec, certName operatorv1alpha1.Certificate) string {
+	return fmt.Sprintf("%s-proxy-%s", r.Name, certName)
+}
+
 func GetShardCertificateName(s *operatorv1alpha1.Shard, certName operatorv1alpha1.Certificate) string {
+	return fmt.Sprintf("%s-%s", s.Name, certName)
+}
+
+func GetCompiledShardCertificateName(s *deployv1alpha1.CompiledShard, certName operatorv1alpha1.Certificate) string {
+	return fmt.Sprintf("%s-%s", s.Name, certName)
+}
+
+func GetNamedShardCertificateName(s deployv1alpha1.NamedShardSpec, certName operatorv1alpha1.Certificate) string {
 	return fmt.Sprintf("%s-%s", s.Name, certName)
 }
 
@@ -231,11 +455,37 @@ func GetCacheServerCertificateName(s *operatorv1alpha1.CacheServer, certName ope
 	return fmt.Sprintf("%s-%s", s.Name, certName)
 }
 
+func GetCompiledCacheServerCertificateName(s *deployv1alpha1.CompiledCacheServer, certName operatorv1alpha1.Certificate) string {
+	return fmt.Sprintf("%s-%s", s.Name, certName)
+}
+
 func GetVirtualWorkspaceCertificateName(vw *operatorv1alpha1.VirtualWorkspace, certName operatorv1alpha1.Certificate) string {
 	return fmt.Sprintf("%s-%s", vw.Name, certName)
 }
 
+func GetCompiledVirtualWorkspaceCertificateName(vw *deployv1alpha1.CompiledVirtualWorkspace, certName operatorv1alpha1.Certificate) string {
+	return fmt.Sprintf("%s-%s", vw.Name, certName)
+}
+
+func GetNamedVirtualWorkspaceCertificateName(vw deployv1alpha1.NamedVirtualWorkspaceSpec, certName operatorv1alpha1.Certificate) string {
+	return fmt.Sprintf("%s-%s", vw.Name, certName)
+}
+
 func GetRootShardCAName(r *operatorv1alpha1.RootShard, caName operatorv1alpha1.CA) string {
+	if caName == operatorv1alpha1.RootCA {
+		return fmt.Sprintf("%s-ca", r.Name)
+	}
+	return fmt.Sprintf("%s-%s-ca", r.Name, caName)
+}
+
+func GetCompiledRootShardCAName(r *deployv1alpha1.CompiledRootShard, caName operatorv1alpha1.CA) string {
+	if caName == operatorv1alpha1.RootCA {
+		return fmt.Sprintf("%s-ca", r.Name)
+	}
+	return fmt.Sprintf("%s-%s-ca", r.Name, caName)
+}
+
+func GetNamedRootShardCAName(r deployv1alpha1.NamedRootShardSpec, caName operatorv1alpha1.CA) string {
 	if caName == operatorv1alpha1.RootCA {
 		return fmt.Sprintf("%s-ca", r.Name)
 	}
@@ -253,7 +503,15 @@ func GetFrontProxyResourceLabels(f *operatorv1alpha1.FrontProxy) map[string]stri
 	return getResourceLabels(f.Name, "front-proxy")
 }
 
+func GetCompiledFrontProxyResourceLabels(f *deployv1alpha1.CompiledFrontProxy) map[string]string {
+	return getResourceLabels(f.Name, "front-proxy")
+}
+
 func GetFrontProxyDeploymentName(f *operatorv1alpha1.FrontProxy) string {
+	return fmt.Sprintf("%s-front-proxy", f.Name)
+}
+
+func GetCompiledFrontProxyDeploymentName(f *deployv1alpha1.CompiledFrontProxy) string {
 	return fmt.Sprintf("%s-front-proxy", f.Name)
 }
 
@@ -261,7 +519,19 @@ func GetFrontProxyCertificateName(r *operatorv1alpha1.RootShard, f *operatorv1al
 	return fmt.Sprintf("%s-%s-%s", r.Name, f.Name, certName)
 }
 
+func GetCompiledFrontProxyCertificateName(f *deployv1alpha1.CompiledFrontProxy, certName operatorv1alpha1.Certificate) string {
+	return fmt.Sprintf("%s-%s-%s", f.Spec.RootShard.Name, f.Name, certName)
+}
+
 func GetRootShardProxyDynamicKubeconfigName(r *operatorv1alpha1.RootShard) string {
+	return fmt.Sprintf("%s-proxy-dynamic-kubeconfig", r.Name)
+}
+
+func GetCompiledRootShardProxyDynamicKubeconfigName(r *deployv1alpha1.CompiledRootShard) string {
+	return fmt.Sprintf("%s-proxy-dynamic-kubeconfig", r.Name)
+}
+
+func GetNamedRootShardProxyDynamicKubeconfigName(r deployv1alpha1.NamedRootShardSpec) string {
 	return fmt.Sprintf("%s-proxy-dynamic-kubeconfig", r.Name)
 }
 
@@ -269,7 +539,15 @@ func GetFrontProxyDynamicKubeconfigName(r *operatorv1alpha1.RootShard, f *operat
 	return fmt.Sprintf("%s-%s-dynamic-kubeconfig", r.Name, f.Name)
 }
 
+func GetCompiledFrontProxyDynamicKubeconfigName(f *deployv1alpha1.CompiledFrontProxy) string {
+	return fmt.Sprintf("%s-%s-dynamic-kubeconfig", f.Spec.RootShard.Name, f.Name)
+}
+
 func GetCacheServerClientCertificateName(s *operatorv1alpha1.CacheServer) string {
+	return fmt.Sprintf("%s-client-certificate", s.Name)
+}
+
+func GetCompiledCacheServerClientCertificateName(s *deployv1alpha1.CompiledCacheServer) string {
 	return fmt.Sprintf("%s-client-certificate", s.Name)
 }
 
@@ -281,7 +559,19 @@ func GetRootShardProxyConfigName(r *operatorv1alpha1.RootShard) string {
 	return fmt.Sprintf("%s-proxy-config", r.Name)
 }
 
+func GetCompiledRootShardProxyConfigName(r *deployv1alpha1.CompiledRootShard) string {
+	return fmt.Sprintf("%s-proxy-config", r.Name)
+}
+
+func GetNamedRootShardProxyConfigName(r deployv1alpha1.NamedRootShardSpec) string {
+	return fmt.Sprintf("%s-proxy-config", r.Name)
+}
+
 func GetFrontProxyConfigName(f *operatorv1alpha1.FrontProxy) string {
+	return fmt.Sprintf("%s-config", f.Name)
+}
+
+func GetCompiledFrontProxyConfigName(f *deployv1alpha1.CompiledFrontProxy) string {
 	return fmt.Sprintf("%s-config", f.Name)
 }
 
@@ -289,7 +579,19 @@ func GetFrontProxyServiceName(f *operatorv1alpha1.FrontProxy) string {
 	return fmt.Sprintf("%s-front-proxy", f.Name)
 }
 
+func GetCompiledFrontProxyServiceName(f *deployv1alpha1.CompiledFrontProxy) string {
+	return fmt.Sprintf("%s-front-proxy", f.Name)
+}
+
 func GetRootShardProxyServiceName(r *operatorv1alpha1.RootShard) string {
+	return fmt.Sprintf("%s-proxy", r.Name)
+}
+
+func GetCompiledRootShardProxyServiceName(r *deployv1alpha1.CompiledRootShard) string {
+	return fmt.Sprintf("%s-proxy", r.Name)
+}
+
+func GetNamedRootShardProxyServiceName(r deployv1alpha1.NamedRootShardSpec) string {
 	return fmt.Sprintf("%s-proxy", r.Name)
 }
 
@@ -297,7 +599,23 @@ func GetRootShardKubeconfigSecret(r *operatorv1alpha1.RootShard, cert operatorv1
 	return fmt.Sprintf("%s-%s-kubeconfig", r.Name, cert)
 }
 
+func GetCompiledRootShardKubeconfigSecret(r *deployv1alpha1.CompiledRootShard, cert operatorv1alpha1.Certificate) string {
+	return fmt.Sprintf("%s-%s-kubeconfig", r.Name, cert)
+}
+
+func GetNamedRootShardKubeconfigSecret(r deployv1alpha1.NamedRootShardSpec, cert operatorv1alpha1.Certificate) string {
+	return fmt.Sprintf("%s-%s-kubeconfig", r.Name, cert)
+}
+
 func GetShardKubeconfigSecret(shard *operatorv1alpha1.Shard, cert operatorv1alpha1.Certificate) string {
+	return fmt.Sprintf("%s-%s-kubeconfig", shard.Name, cert)
+}
+
+func GetCompiledShardKubeconfigSecret(shard *deployv1alpha1.CompiledShard, cert operatorv1alpha1.Certificate) string {
+	return fmt.Sprintf("%s-%s-kubeconfig", shard.Name, cert)
+}
+
+func GetNamedShardKubeconfigSecret(shard deployv1alpha1.NamedShardSpec, cert operatorv1alpha1.Certificate) string {
 	return fmt.Sprintf("%s-%s-kubeconfig", shard.Name, cert)
 }
 
