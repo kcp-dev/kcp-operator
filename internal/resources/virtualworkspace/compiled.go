@@ -28,6 +28,13 @@ import (
 func CompiledVirtualWorkspaceReconciler(vw *operatorv1alpha1.VirtualWorkspace, rootShard *operatorv1alpha1.RootShard, shard *operatorv1alpha1.Shard) reconciling.NamedCompiledVirtualWorkspaceReconcilerFactory {
 	return func() (string, reconciling.CompiledVirtualWorkspaceReconciler) {
 		return vw.Name, func(obj *deployv1alpha1.CompiledVirtualWorkspace) (*deployv1alpha1.CompiledVirtualWorkspace, error) {
+			// The syncer selects the Secrets a compiled object needs by these labels.
+			if obj.Labels == nil {
+				obj.Labels = make(map[string]string)
+			}
+			obj.Labels[resources.VirtualWorkspaceLabel] = vw.Name
+			obj.Labels[resources.RootShardLabel] = rootShard.Name
+
 			obj.Spec.VirtualWorkspace = vw.Spec
 
 			obj.Spec.RootShard = deployv1alpha1.NamedRootShardSpec{

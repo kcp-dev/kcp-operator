@@ -29,6 +29,13 @@ import (
 func CompiledFrontProxyReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootShard *operatorv1alpha1.RootShard, shards []operatorv1alpha1.Shard) reconciling.NamedCompiledFrontProxyReconcilerFactory {
 	return func() (string, reconciling.CompiledFrontProxyReconciler) {
 		return frontProxy.Name, func(obj *deployv1alpha1.CompiledFrontProxy) (*deployv1alpha1.CompiledFrontProxy, error) {
+			// The syncer selects the Secrets a compiled object needs by these labels.
+			if obj.Labels == nil {
+				obj.Labels = make(map[string]string)
+			}
+			obj.Labels[resources.FrontProxyLabel] = frontProxy.Name
+			obj.Labels[resources.RootShardLabel] = rootShard.Name
+
 			obj.Spec.FrontProxy = frontProxy.Spec
 
 			obj.Spec.RootShard = deployv1alpha1.NamedRootShardSpec{

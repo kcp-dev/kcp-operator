@@ -29,6 +29,13 @@ import (
 func CompiledShardReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShard, kcpVW *operatorv1alpha1.VirtualWorkspace, shards []operatorv1alpha1.Shard) reconciling.NamedCompiledShardReconcilerFactory {
 	return func() (string, reconciling.CompiledShardReconciler) {
 		return shard.Name, func(obj *deployv1alpha1.CompiledShard) (*deployv1alpha1.CompiledShard, error) {
+			// The syncer selects the Secrets a compiled object needs by these labels.
+			if obj.Labels == nil {
+				obj.Labels = make(map[string]string)
+			}
+			obj.Labels[resources.ShardLabel] = shard.Name
+			obj.Labels[resources.RootShardLabel] = rootShard.Name
+
 			obj.Spec.Shard = shard.Spec
 
 			obj.Spec.RootShard = deployv1alpha1.NamedRootShardSpec{

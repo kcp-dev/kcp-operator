@@ -28,6 +28,12 @@ import (
 func CompiledCacheServerReconciler(server *operatorv1alpha1.CacheServer) reconciling.NamedCompiledCacheServerReconcilerFactory {
 	return func() (string, reconciling.CompiledCacheServerReconciler) {
 		return server.Name, func(obj *deployv1alpha1.CompiledCacheServer) (*deployv1alpha1.CompiledCacheServer, error) {
+			// The syncer selects the Secrets a compiled object needs by these labels.
+			if obj.Labels == nil {
+				obj.Labels = make(map[string]string)
+			}
+			obj.Labels[resources.CacheServerLabel] = server.Name
+
 			obj.Spec.CacheServer = server.Spec
 
 			resources.CopyBundleAnnotation(server, obj)
