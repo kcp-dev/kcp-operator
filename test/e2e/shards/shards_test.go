@@ -39,6 +39,12 @@ import (
 )
 
 func TestCreateShard(t *testing.T) {
+	// TODO: Same limitation as TestProvisionFrontProxyRBAC. Deleting the Shard runs a
+	// finalizer that deregisters it through the kcp API, which the config controllers
+	// reach at <svc>.<ns>.svc.cluster.local - unresolvable from the config cluster once
+	// kcp runs on the workload one.
+	utils.SkipUnlessTopology(t, utils.TopologySingle)
+
 	ctrlruntime.SetLogger(logr.Discard())
 
 	configClient := utils.GetConfigKubeClient(t)
