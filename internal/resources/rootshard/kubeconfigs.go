@@ -44,6 +44,11 @@ func LogicalClusterAdminKubeconfigReconciler(rootShard *operatorv1alpha1.RootSha
 		return kubeconfigSecret(rootShard, operatorv1alpha1.LogicalClusterAdminCertificate), func(secret *corev1.Secret) (*corev1.Secret, error) {
 			var config *clientcmdapi.Config
 
+			if secret.Labels == nil {
+				secret.Labels = make(map[string]string)
+			}
+			secret.Labels[resources.RootShardLabel] = rootShard.Name
+
 			if secret.Data == nil {
 				secret.Data = make(map[string][]byte)
 			}
@@ -92,6 +97,11 @@ func ExternalLogicalClusterAdminKubeconfigReconciler(rootShard *operatorv1alpha1
 	return func() (string, k8creconciling.SecretReconciler) {
 		return kubeconfigSecret(rootShard, operatorv1alpha1.ExternalLogicalClusterAdminCertificate), func(secret *corev1.Secret) (*corev1.Secret, error) {
 			var config *clientcmdapi.Config
+
+			if secret.Labels == nil {
+				secret.Labels = make(map[string]string)
+			}
+			secret.Labels[resources.RootShardLabel] = rootShard.Name
 
 			if secret.Data == nil {
 				secret.Data = make(map[string][]byte)

@@ -32,7 +32,7 @@ func commonName(vw *operatorv1alpha1.VirtualWorkspace) string {
 	return fmt.Sprintf("%s-virtual-workspace", vw.Name)
 }
 
-func ClientCertificateReconciler(vw *operatorv1alpha1.VirtualWorkspace, issuerName string) reconciling.NamedCertificateReconcilerFactory {
+func ClientCertificateReconciler(vw *operatorv1alpha1.VirtualWorkspace, rootShard *operatorv1alpha1.RootShard) reconciling.NamedCertificateReconcilerFactory {
 	const certKind = operatorv1alpha1.ClientCertificate
 
 	template := vw.Spec.CertificateTemplates.CertificateTemplate(certKind)
@@ -45,6 +45,7 @@ func ClientCertificateReconciler(vw *operatorv1alpha1.VirtualWorkspace, issuerNa
 				SecretName: name,
 				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
 					Labels: map[string]string{
+						resources.RootShardLabel:        rootShard.Name,
 						resources.VirtualWorkspaceLabel: vw.Name,
 					},
 				},
@@ -69,7 +70,7 @@ func ClientCertificateReconciler(vw *operatorv1alpha1.VirtualWorkspace, issuerNa
 				},
 
 				IssuerRef: certmanagermetav1.IssuerReference{
-					Name:  issuerName,
+					Name:  resources.GetRootShardCAName(rootShard, operatorv1alpha1.ClientCA),
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
 				},
@@ -93,6 +94,7 @@ func ServerCertificateReconciler(vw *operatorv1alpha1.VirtualWorkspace, rootShar
 				SecretName: name,
 				SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
 					Labels: map[string]string{
+						resources.RootShardLabel:        rootShard.Name,
 						resources.VirtualWorkspaceLabel: vw.Name,
 					},
 				},

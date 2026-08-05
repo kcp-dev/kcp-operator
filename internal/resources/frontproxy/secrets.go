@@ -44,6 +44,9 @@ func (r *reconciler) dynamicKubeconfigSecretReconciler() reconciling.NamedSecret
 	return func() (string, reconciling.SecretReconciler) {
 		return name, func(obj *corev1.Secret) (*corev1.Secret, error) {
 			obj.SetLabels(r.resourceLabels)
+			for k, v := range r.certSecretLabels() {
+				obj.Labels[k] = v
+			}
 
 			kubeconfig, err := r.dynamicKubeconfig()
 			if err != nil {

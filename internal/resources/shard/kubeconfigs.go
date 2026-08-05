@@ -43,6 +43,13 @@ func RootShardClientKubeconfigReconciler(shard *operatorv1alpha1.Shard, rootShar
 	return func() (string, k8creconciling.SecretReconciler) {
 		return kubeconfigSecret(shard, operatorv1alpha1.ClientCertificate), func(secret *corev1.Secret) (*corev1.Secret, error) {
 			var config *clientcmdapi.Config
+
+			if secret.Labels == nil {
+				secret.Labels = make(map[string]string)
+			}
+			secret.Labels[resources.RootShardLabel] = rootShard.Name
+			secret.Labels[resources.ShardLabel] = shard.Name
+
 			if secret.Data == nil {
 				secret.Data = make(map[string][]byte)
 			}
@@ -92,6 +99,12 @@ func LogicalClusterAdminKubeconfigReconciler(shard *operatorv1alpha1.Shard, root
 		return kubeconfigSecret(shard, operatorv1alpha1.LogicalClusterAdminCertificate), func(secret *corev1.Secret) (*corev1.Secret, error) {
 			var config *clientcmdapi.Config
 
+			if secret.Labels == nil {
+				secret.Labels = make(map[string]string)
+			}
+			secret.Labels[resources.RootShardLabel] = rootShard.Name
+			secret.Labels[resources.ShardLabel] = shard.Name
+
 			if secret.Data == nil {
 				secret.Data = make(map[string][]byte)
 			}
@@ -140,6 +153,12 @@ func ExternalLogicalClusterAdminKubeconfigReconciler(shard *operatorv1alpha1.Sha
 	return func() (string, k8creconciling.SecretReconciler) {
 		return kubeconfigSecret(shard, operatorv1alpha1.ExternalLogicalClusterAdminCertificate), func(secret *corev1.Secret) (*corev1.Secret, error) {
 			var config *clientcmdapi.Config
+
+			if secret.Labels == nil {
+				secret.Labels = make(map[string]string)
+			}
+			secret.Labels[resources.RootShardLabel] = rootShard.Name
+			secret.Labels[resources.ShardLabel] = shard.Name
 
 			if secret.Data == nil {
 				secret.Data = make(map[string][]byte)

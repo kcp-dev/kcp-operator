@@ -71,6 +71,7 @@ func MergedClientCABundleSecretReconciler(ctx context.Context, vw *operatorv1alp
 			if secret.Labels == nil {
 				secret.Labels = make(map[string]string)
 			}
+			secret.Labels[resources.RootShardLabel] = rootShard.Name
 			secret.Labels[resources.VirtualWorkspaceLabel] = vw.Name
 
 			return secret, nil

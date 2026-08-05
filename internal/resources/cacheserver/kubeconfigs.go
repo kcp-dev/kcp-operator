@@ -36,6 +36,12 @@ func KubeconfigReconciler(server *operatorv1alpha1.CacheServer) k8creconciling.N
 	return func() (string, k8creconciling.SecretReconciler) {
 		return resources.GetCacheServerKubeconfigName(server.Name), func(secret *corev1.Secret) (*corev1.Secret, error) {
 			var config *clientcmdapi.Config
+
+			if secret.Labels == nil {
+				secret.Labels = make(map[string]string)
+			}
+			secret.Labels[resources.CacheServerLabel] = server.Name
+
 			if secret.Data == nil {
 				secret.Data = make(map[string][]byte)
 			}
