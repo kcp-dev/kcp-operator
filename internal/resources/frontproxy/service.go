@@ -39,7 +39,7 @@ func (r *reconciler) serviceName() string {
 func (r *reconciler) getExternalPort() int {
 	// We're reconciling a regular FrontProxy.
 	if r.frontProxy != nil {
-		return utils.GetFrontProxyExternalPort(r.frontProxy, r.rootShard)
+		return utils.GetFrontProxyExternalPort(r.frontProxy.Spec, r.rootShard.Spec)
 	}
 
 	// We're reconciling the rootshard's internal proxy.
