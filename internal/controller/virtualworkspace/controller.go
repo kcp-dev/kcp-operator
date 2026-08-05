@@ -213,14 +213,14 @@ func (r *Reconciler) reconcile(ctx context.Context, vw *operatorv1alpha1.Virtual
 
 	// Only publish the render input once every Certificate is ready, so that whoever consumes
 	// it can rely on the Secrets it mounts already existing.
-	_, certsReady := util.CertificateRevisions(certs)
+	revisions, certsReady := util.CertificateRevisions(certs)
 	if !certsReady {
 		return conditions, nil
 	}
 
 	// The workloads themselves are rendered by the CompiledVirtualWorkspace controller.
 	if err := reconciling.ReconcileCompiledVirtualWorkspaces(ctx, []reconciling.NamedCompiledVirtualWorkspaceReconcilerFactory{
-		virtualworkspace.CompiledVirtualWorkspaceReconciler(vw, rootShard, shard),
+		virtualworkspace.CompiledVirtualWorkspaceReconciler(vw, rootShard, shard, util.MutateKeys(revisions, "cert-", "-revision")),
 	}, vw.Namespace, r.Client, ownerRefWrapper); err != nil {
 		return conditions, err
 	}

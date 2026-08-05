@@ -257,12 +257,12 @@ func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operator
 
 	// Only publish the render input once every Certificate is ready, so that whoever consumes
 	// it can rely on the Secrets it mounts already existing.
-	_, certsReady := util.CertificateRevisions(certs)
+	revisions, certsReady := util.CertificateRevisions(certs)
 
 	// The workloads themselves are rendered by the CompiledRootShard controller.
 	if vwConfigValid && shardsErr == nil && certsReady {
 		if err := reconciling.ReconcileCompiledRootShards(ctx, []reconciling.NamedCompiledRootShardReconcilerFactory{
-			rootshard.CompiledRootShardReconciler(rootShard, kcpVW, shards),
+			rootshard.CompiledRootShardReconciler(rootShard, kcpVW, shards, util.MutateKeys(revisions, "cert-", "-revision")),
 		}, rootShard.Namespace, r.Client, ownerRefWrapper); err != nil {
 			errs = append(errs, err)
 		}

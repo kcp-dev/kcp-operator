@@ -161,13 +161,13 @@ func (r *FrontProxyReconciler) reconcile(ctx context.Context, frontProxy *operat
 
 	// Only publish the render input once every Certificate is ready, so that whoever consumes
 	// it can rely on the Secrets it mounts already existing.
-	_, certsReady := util.CertificateRevisions(certs)
+	revisions, certsReady := util.CertificateRevisions(certs)
 	if !certsReady {
 		return conditions, kerrors.NewAggregate(errs)
 	}
 
 	if err := reconciling.ReconcileCompiledFrontProxys(ctx, []reconciling.NamedCompiledFrontProxyReconcilerFactory{
-		frontproxy.CompiledFrontProxyReconciler(frontProxy, rootShard, shards),
+		frontproxy.CompiledFrontProxyReconciler(frontProxy, rootShard, shards, util.MutateKeys(revisions, "cert-", "-revision")),
 	}, frontProxy.Namespace, r.Client, ownerRefWrapper); err != nil {
 		errs = append(errs, err)
 	}

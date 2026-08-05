@@ -17,6 +17,9 @@ limitations under the License.
 package cacheserver
 
 import (
+	"maps"
+
+	"github.com/kcp-dev/kcp-operator/internal/controller/util"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
 	deployv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/deploy/v1alpha1"
@@ -25,9 +28,16 @@ import (
 
 // CompiledCacheServerReconciler resolves a CacheServer into the render input the
 // CompiledCacheServer controller consumes.
-func CompiledCacheServerReconciler(server *operatorv1alpha1.CacheServer) reconciling.NamedCompiledCacheServerReconcilerFactory {
+func CompiledCacheServerReconciler(server *operatorv1alpha1.CacheServer, revisions map[string]string) reconciling.NamedCompiledCacheServerReconcilerFactory {
 	return func() (string, reconciling.CompiledCacheServerReconciler) {
 		return server.Name, func(obj *deployv1alpha1.CompiledCacheServer) (*deployv1alpha1.CompiledCacheServer, error) {
+			// Certificate revisions ride along so a renewal changes this object, which is what
+			// tells anything watching it that the Secrets it mounts have moved on.
+			if obj.Annotations == nil {
+				obj.Annotations = make(map[string]string)
+			}
+			maps.Copy(obj.Annotations, util.MutateKeys(revisions, operatorv1alpha1.GroupName+"/", ""))
+
 			// The syncer selects the Secrets a compiled object needs by these labels.
 			if obj.Labels == nil {
 				obj.Labels = make(map[string]string)

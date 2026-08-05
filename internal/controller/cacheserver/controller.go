@@ -108,13 +108,13 @@ func (r *CacheServerReconciler) reconcile(ctx context.Context, server *operatorv
 
 	// Only publish the render input once every Certificate is ready, so that whoever consumes
 	// it can rely on the Secrets it mounts already existing.
-	_, certsReady := util.CertificateRevisions(certs)
+	revisions, certsReady := util.CertificateRevisions(certs)
 	if !certsReady {
 		return nil
 	}
 
 	// The workloads themselves are rendered by the CompiledCacheServer controller.
 	return reconciling.ReconcileCompiledCacheServers(ctx, []reconciling.NamedCompiledCacheServerReconcilerFactory{
-		cacheserver.CompiledCacheServerReconciler(server),
+		cacheserver.CompiledCacheServerReconciler(server, util.MutateKeys(revisions, "cert-", "-revision")),
 	}, server.Namespace, r.Client, ownerRefWrapper)
 }

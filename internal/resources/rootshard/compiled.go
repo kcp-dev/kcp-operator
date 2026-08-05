@@ -17,6 +17,9 @@ limitations under the License.
 package rootshard
 
 import (
+	"maps"
+
+	"github.com/kcp-dev/kcp-operator/internal/controller/util"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
 	"github.com/kcp-dev/kcp-operator/internal/resources/utils"
@@ -26,9 +29,16 @@ import (
 
 // CompiledRootShardReconciler resolves a RootShard and everything it references into the
 // render input the CompiledRootShard controller consumes.
-func CompiledRootShardReconciler(rootShard *operatorv1alpha1.RootShard, kcpVW *operatorv1alpha1.VirtualWorkspace, shards []operatorv1alpha1.Shard) reconciling.NamedCompiledRootShardReconcilerFactory {
+func CompiledRootShardReconciler(rootShard *operatorv1alpha1.RootShard, kcpVW *operatorv1alpha1.VirtualWorkspace, shards []operatorv1alpha1.Shard, revisions map[string]string) reconciling.NamedCompiledRootShardReconcilerFactory {
 	return func() (string, reconciling.CompiledRootShardReconciler) {
 		return rootShard.Name, func(obj *deployv1alpha1.CompiledRootShard) (*deployv1alpha1.CompiledRootShard, error) {
+			// Certificate revisions ride along so a renewal changes this object, which is what
+			// tells anything watching it that the Secrets it mounts have moved on.
+			if obj.Annotations == nil {
+				obj.Annotations = make(map[string]string)
+			}
+			maps.Copy(obj.Annotations, util.MutateKeys(revisions, operatorv1alpha1.GroupName+"/", ""))
+
 			// The syncer selects the Secrets a compiled object needs by these labels.
 			if obj.Labels == nil {
 				obj.Labels = make(map[string]string)

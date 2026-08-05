@@ -17,6 +17,9 @@ limitations under the License.
 package virtualworkspace
 
 import (
+	"maps"
+
+	"github.com/kcp-dev/kcp-operator/internal/controller/util"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
 	deployv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/deploy/v1alpha1"
@@ -25,9 +28,16 @@ import (
 
 // CompiledVirtualWorkspaceReconciler resolves a VirtualWorkspace and its target into the
 // render input the CompiledVirtualWorkspace controller consumes.
-func CompiledVirtualWorkspaceReconciler(vw *operatorv1alpha1.VirtualWorkspace, rootShard *operatorv1alpha1.RootShard, shard *operatorv1alpha1.Shard) reconciling.NamedCompiledVirtualWorkspaceReconcilerFactory {
+func CompiledVirtualWorkspaceReconciler(vw *operatorv1alpha1.VirtualWorkspace, rootShard *operatorv1alpha1.RootShard, shard *operatorv1alpha1.Shard, revisions map[string]string) reconciling.NamedCompiledVirtualWorkspaceReconcilerFactory {
 	return func() (string, reconciling.CompiledVirtualWorkspaceReconciler) {
 		return vw.Name, func(obj *deployv1alpha1.CompiledVirtualWorkspace) (*deployv1alpha1.CompiledVirtualWorkspace, error) {
+			// Certificate revisions ride along so a renewal changes this object, which is what
+			// tells anything watching it that the Secrets it mounts have moved on.
+			if obj.Annotations == nil {
+				obj.Annotations = make(map[string]string)
+			}
+			maps.Copy(obj.Annotations, util.MutateKeys(revisions, operatorv1alpha1.GroupName+"/", ""))
+
 			// The syncer selects the Secrets a compiled object needs by these labels.
 			if obj.Labels == nil {
 				obj.Labels = make(map[string]string)

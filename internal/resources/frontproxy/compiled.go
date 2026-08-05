@@ -17,6 +17,9 @@ limitations under the License.
 package frontproxy
 
 import (
+	"maps"
+
+	"github.com/kcp-dev/kcp-operator/internal/controller/util"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
 	"github.com/kcp-dev/kcp-operator/internal/resources/utils"
@@ -26,9 +29,16 @@ import (
 
 // CompiledFrontProxyReconciler resolves a FrontProxy and everything it references into the
 // render input the CompiledFrontProxy controller consumes.
-func CompiledFrontProxyReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootShard *operatorv1alpha1.RootShard, shards []operatorv1alpha1.Shard) reconciling.NamedCompiledFrontProxyReconcilerFactory {
+func CompiledFrontProxyReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootShard *operatorv1alpha1.RootShard, shards []operatorv1alpha1.Shard, revisions map[string]string) reconciling.NamedCompiledFrontProxyReconcilerFactory {
 	return func() (string, reconciling.CompiledFrontProxyReconciler) {
 		return frontProxy.Name, func(obj *deployv1alpha1.CompiledFrontProxy) (*deployv1alpha1.CompiledFrontProxy, error) {
+			// Certificate revisions ride along so a renewal changes this object, which is what
+			// tells anything watching it that the Secrets it mounts have moved on.
+			if obj.Annotations == nil {
+				obj.Annotations = make(map[string]string)
+			}
+			maps.Copy(obj.Annotations, util.MutateKeys(revisions, operatorv1alpha1.GroupName+"/", ""))
+
 			// The syncer selects the Secrets a compiled object needs by these labels.
 			if obj.Labels == nil {
 				obj.Labels = make(map[string]string)
