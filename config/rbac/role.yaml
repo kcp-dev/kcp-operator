@@ -44,6 +44,39 @@ rules:
   - update
   - watch
 - apiGroups:
+  - deploy.operator.kcp.io
+  resources:
+  - compiledcacheservers
+  - compiledfrontproxies
+  - compiledrootshards
+  - compiledshards
+  - compiledvirtualworkspaces
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - deploy.operator.kcp.io
+  resources:
+  - compiledcacheservers/finalizers
+  - compiledfrontproxies/finalizers
+  - compiledrootshards/finalizers
+  - compiledshards/finalizers
+  - compiledvirtualworkspaces/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - deploy.operator.kcp.io
+  resources:
+  - compiledfrontproxies/status
+  - compiledrootshards/status
+  - compiledshards/status
+  - compiledvirtualworkspaces/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
   - operator.kcp.io
   resources:
   - bundles
