@@ -197,7 +197,7 @@ endif
 
 .PHONY: install
 install: install-kustomize install-kubectl ## Install CRDs into the K8s cluster specified in $KUBECONFIG.
-	$(KUSTOMIZE) build config/crd | $(KUBECTL) apply -f -
+	$(KUSTOMIZE) build config/crd | $(KUBECTL) apply --server-side -f -
 
 .PHONY: uninstall
 uninstall: install-kustomize install-kubectl ## Uninstall CRDs from the K8s cluster specified in $KUBECONFIG. Call with ignore-not-found=true to ignore resource not found errors during deletion.
@@ -206,7 +206,7 @@ uninstall: install-kustomize install-kubectl ## Uninstall CRDs from the K8s clus
 .PHONY: deploy
 deploy: install-kustomize install-kubectl ## Deploy controller to the K8s cluster specified in $KUBECONFIG.
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
-	$(KUSTOMIZE) build config/default | $(KUBECTL) apply -f -
+	$(KUSTOMIZE) build config/default | $(KUBECTL) apply --server-side -f -
 
 .PHONY: undeploy
 undeploy: install-kustomize install-kubectl ## Undeploy controller from the K8s cluster specified in $KUBECONFIG. Call with ignore-not-found=true to ignore resource not found errors during deletion.

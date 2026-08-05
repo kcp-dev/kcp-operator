@@ -127,7 +127,10 @@ echo "Kernel limits job completed."
 
 # deploying operator CRDs
 echo "Deploying operator CRDs..."
-"$KUBECTL" apply --kustomize config/crd
+"$KUBECTL" apply --server-side --kustomize config/crd
+
+echo "Deploying compiled resource CRDs..."
+"$KUBECTL" apply --server-side --kustomize config/crd/deploy
 
 # deploying cert-manager
 echo "Deploying cert-manager..."
@@ -152,7 +155,7 @@ export IMG="ghcr.io/kcp-dev/kcp-operator:local"
 make --no-print-directory docker-build kind-load
 
 echo "Deploying kcp-operator..."
-"$KUSTOMIZE" build hack/ci/testdata | "$KUBECTL" apply --filename -
+"$KUSTOMIZE" build hack/ci/testdata | "$KUBECTL" apply --server-side --filename -
 
 "$PROTOKOL" --namespace 'e2e-*' --namespace kcp-operator-system --output "$DATA_DIR/kind-logs" 2>/dev/null &
 PROTOKOL_PID=$!

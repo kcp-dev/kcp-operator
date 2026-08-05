@@ -120,7 +120,7 @@ kind load image-archive "$archive" --name "$KIND_CLUSTER_NAME"
 
 # deploy the operator
 echo "Deploying operator..."
-"$KUBECTL" kustomize hack/ci/testdata | "$KUBECTL" apply --filename -
+"$KUBECTL" kustomize hack/ci/testdata | "$KUBECTL" apply --server-side --filename -
 "$KUBECTL" --namespace kcp-operator-system wait deployment kcp-operator-controller-manager --for condition=Available
 "$KUBECTL" --namespace kcp-operator-system wait pod --all --for condition=Ready
 
