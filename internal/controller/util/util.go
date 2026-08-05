@@ -20,7 +20,11 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
+
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	certmanagermetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -69,6 +73,40 @@ func EnqueueAllInNamespace(client ctrlruntimeclient.Client, newList func() ctrlr
 
 func deploymentReady(dep appsv1.Deployment) bool {
 	return dep.Status.UpdatedReplicas == dep.Status.ReadyReplicas && dep.Status.ReadyReplicas == ptr.Deref(dep.Spec.Replicas, 0)
+}
+
+// CertificateRevisions returns a map of name to revision for each certificate.
+// It returns false if any Certificate is not ready.
+func CertificateRevisions(certs []*certmanagerv1.Certificate) (map[string]string, bool) {
+	revisions := make(map[string]string, len(certs))
+
+	for _, cert := range certs {
+		if !certificateReady(cert) {
+			return nil, false
+		}
+
+		revisions[cert.Name] = strconv.Itoa(ptr.Deref(cert.Status.Revision, 0))
+	}
+
+	return revisions, true
+}
+
+func certificateReady(cert *certmanagerv1.Certificate) bool {
+	for _, cond := range cert.Status.Conditions {
+		if cond.Type == certmanagerv1.CertificateConditionReady {
+			return cond.Status == certmanagermetav1.ConditionTrue
+		}
+	}
+	return false
+}
+
+// MutateKeys returns a copy of m with each key wrapped by prefix and suffix.
+func MutateKeys(m map[string]string, prefix, suffix string) map[string]string {
+	result := make(map[string]string, len(m))
+	for k, v := range m {
+		result[prefix+k+suffix] = v
+	}
+	return result
 }
 
 // GetCompiledAvailableCondition adopts the Available condition published on a Compiled* object, so the source object still reports on the Deployment it no longer owns.
