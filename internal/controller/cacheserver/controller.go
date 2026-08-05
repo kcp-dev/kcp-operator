@@ -18,12 +18,10 @@ package cacheserver
 
 import (
 	"context"
-	"errors"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	k8creconciling "k8c.io/reconciler/pkg/reconciling"
 
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -31,9 +29,11 @@ import (
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/kcp-dev/kcp-operator/internal/controller/util"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling/modifier"
 	"github.com/kcp-dev/kcp-operator/internal/resources/cacheserver"
+	deployv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/deploy/v1alpha1"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -47,9 +47,8 @@ func (r *CacheServerReconciler) SetupWithManager(mgr ctrlruntime.Manager) error 
 	return ctrlruntime.NewControllerManagedBy(mgr).
 		Named("cache-server").
 		For(&operatorv1alpha1.CacheServer{}).
-		Owns(&appsv1.Deployment{}).
+		Owns(&deployv1alpha1.CompiledCacheServer{}).
 		Owns(&corev1.Secret{}).
-		Owns(&corev1.Service{}).
 		Owns(&certmanagerv1.Certificate{}).
 		Complete(r)
 }
@@ -59,8 +58,8 @@ func (r *CacheServerReconciler) SetupWithManager(mgr ctrlruntime.Manager) error 
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=cacheservers/finalizers,verbs=update
 // +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;watch;create;update;patch
 // +kubebuilder:rbac:groups=cert-manager.io,resources=issuers,verbs=get;list;watch;create;update;patch
-// +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch
-// +kubebuilder:rbac:groups=core,resources=services,verbs=get;list;watch;create;update;patch
+// +kubebuilder:rbac:groups=deploy.operator.kcp.io,resources=compiledcacheservers,verbs=get;list;watch;create;update;patch
+// +kubebuilder:rbac:groups=deploy.operator.kcp.io,resources=compiledcacheservers/finalizers,verbs=update
 // +kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch;create;update;patch
 
 func (r *CacheServerReconciler) Reconcile(ctx context.Context, req ctrlruntime.Request) (ctrlruntime.Result, error) {
@@ -85,13 +84,13 @@ func (r *CacheServerReconciler) Reconcile(ctx context.Context, req ctrlruntime.R
 
 func (r *CacheServerReconciler) reconcile(ctx context.Context, server *operatorv1alpha1.CacheServer) error {
 	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*metav1.NewControllerRef(server, operatorv1alpha1.SchemeGroupVersion.WithKind("CacheServer")))
-	revisionLabels := modifier.RelatedRevisionsLabels(ctx, r.Client)
 
+	var certs []*certmanagerv1.Certificate
 	if err := reconciling.ReconcileCertificates(ctx, []reconciling.NamedCertificateReconcilerFactory{
 		cacheserver.RootCACertificateReconciler(server),
 		cacheserver.ServerCertificateReconciler(server),
 		cacheserver.ClientCertificateReconciler(server),
-	}, server.Namespace, r.Client, ownerRefWrapper); err != nil {
+	}, server.Namespace, r.Client, ownerRefWrapper, modifier.Capture(&certs)); err != nil {
 		return err
 	}
 
@@ -107,24 +106,15 @@ func (r *CacheServerReconciler) reconcile(ctx context.Context, server *operatorv
 		return err
 	}
 
-	// This will fail as long as some of the referenced Secrets/ConfigMaps do not exist yet. We rely on
-	// requeueing to eventually get there in the end. Importantly, reconciling Deployments has to happen
-	// after all Secrets have been reconciled.
-	if err := k8creconciling.ReconcileDeployments(ctx, []k8creconciling.NamedDeploymentReconcilerFactory{
-		cacheserver.DeploymentReconciler(server),
-	}, server.Namespace, r.Client, ownerRefWrapper, revisionLabels); err != nil {
-		// Swallow these errors and instead rely on us watching Secrets and re-reconciling whenever they change.
-		if errors.Is(err, modifier.ErrMountNotFound) {
-			return nil
-		}
-		return err
+	// Only publish the render input once every Certificate is ready, so that whoever consumes
+	// it can rely on the Secrets it mounts already existing.
+	_, certsReady := util.CertificateRevisions(certs)
+	if !certsReady {
+		return nil
 	}
 
-	if err := k8creconciling.ReconcileServices(ctx, []k8creconciling.NamedServiceReconcilerFactory{
-		cacheserver.ServiceReconciler(server),
-	}, server.Namespace, r.Client, ownerRefWrapper); err != nil {
-		return err
-	}
-
-	return nil
+	// The workloads themselves are rendered by the CompiledCacheServer controller.
+	return reconciling.ReconcileCompiledCacheServers(ctx, []reconciling.NamedCompiledCacheServerReconcilerFactory{
+		cacheserver.CompiledCacheServerReconciler(server),
+	}, server.Namespace, r.Client, ownerRefWrapper)
 }

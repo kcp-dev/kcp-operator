@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package frontproxy
+package cacheserver
 
 import (
 	"fmt"
@@ -22,11 +22,10 @@ import (
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
-const (
-	frontProxyBasepath = "/etc/kcp-front-proxy"
-	kcpBasepath        = "/etc/kcp"
-)
-
 func getCAMountPath(caName operatorv1alpha1.CA) string {
-	return fmt.Sprintf("%s/tls/ca/%s", kcpBasepath, caName)
+	return fmt.Sprintf("/etc/cache-server/tls/ca/%s", caName)
+}
+
+func getClientCertificateMountPath() string {
+	return "/etc/cache-server/tls/client-certificate"
 }

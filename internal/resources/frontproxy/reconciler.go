@@ -18,7 +18,6 @@ package frontproxy
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	k8creconciling "k8c.io/reconciler/pkg/reconciling"
@@ -30,7 +29,6 @@ import (
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
-	"github.com/kcp-dev/kcp-operator/internal/reconciling/modifier"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
@@ -62,6 +60,15 @@ func NewRootShardProxy(rootShard *operatorv1alpha1.RootShard) *reconciler {
 	}
 }
 
+// serviceName is the Service the proxy is reached through. The Service itself is rendered
+// from the compiled object; the server certificate needs its name for the SAN list.
+func (r *reconciler) serviceName() string {
+	if r.frontProxy != nil {
+		return resources.GetFrontProxyServiceName(r.frontProxy)
+	}
+	return resources.GetRootShardProxyServiceName(r.rootShard)
+}
+
 // getCABundleSecretRef returns the CABundleSecretRef from either the FrontProxy or RootShard spec.
 func (r *reconciler) getCABundleSecretRef() *corev1.LocalObjectReference {
 	if r.frontProxy != nil {
@@ -83,7 +90,9 @@ func (r *reconciler) getClientCABundleSecretRef() *corev1.LocalObjectReference {
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;update;patch
 // +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;update;patch
 
-func (r *reconciler) Reconcile(ctx context.Context, client ctrlruntimeclient.Client, namespace string) error {
+// Reconcile renders the proxy's PKI. Extra modifiers are applied to the Certificates so the
+// caller can observe them; the workloads are rendered from the compiled object.
+func (r *reconciler) Reconcile(ctx context.Context, client ctrlruntimeclient.Client, namespace string, certModifiers ...k8creconciling.ObjectModifier) error {
 	var errs []error
 
 	var ref *metav1.OwnerReference
@@ -93,7 +102,6 @@ func (r *reconciler) Reconcile(ctx context.Context, client ctrlruntimeclient.Cli
 		ref = metav1.NewControllerRef(r.rootShard, operatorv1alpha1.SchemeGroupVersion.WithKind("RootShard"))
 	}
 	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*ref)
-	revisionLabels := modifier.RelatedRevisionsLabels(ctx, client)
 
 	// Fetch client CA certificates
 	clientCACerts, err := r.fetchClientCACerts(ctx, client)
@@ -101,12 +109,7 @@ func (r *reconciler) Reconcile(ctx context.Context, client ctrlruntimeclient.Cli
 		return err
 	}
 
-	configMapReconcilers := []k8creconciling.NamedConfigMapReconcilerFactory{
-		r.pathMappingConfigMapReconciler(),
-	}
-
 	secretReconcilers := []k8creconciling.NamedSecretReconcilerFactory{
-		r.dynamicKubeconfigSecretReconciler(),
 		r.clientCABundleSecretReconciler(clientCACerts...),
 	}
 
@@ -125,35 +128,11 @@ func (r *reconciler) Reconcile(ctx context.Context, client ctrlruntimeclient.Cli
 		r.requestHeaderCertificateReconciler(),
 	}
 
-	deploymentReconcilers := []k8creconciling.NamedDeploymentReconcilerFactory{
-		r.deploymentReconciler(),
-	}
-
-	serviceReconcilers := []k8creconciling.NamedServiceReconcilerFactory{
-		r.serviceReconciler(),
-	}
-
-	if err := k8creconciling.ReconcileConfigMaps(ctx, configMapReconcilers, namespace, client, ownerRefWrapper); err != nil {
-		errs = append(errs, err)
-	}
-
 	if err := k8creconciling.ReconcileSecrets(ctx, secretReconcilers, namespace, client, ownerRefWrapper); err != nil {
 		errs = append(errs, err)
 	}
 
-	if err := reconciling.ReconcileCertificates(ctx, certReconcilers, namespace, client, ownerRefWrapper); err != nil {
-		errs = append(errs, err)
-	}
-
-	// must happen after the Secrets and Certificates have been reconciled, since it can fail as long as those do not exist
-	if err := k8creconciling.ReconcileDeployments(ctx, deploymentReconcilers, namespace, client, ownerRefWrapper, revisionLabels); err != nil {
-		// swallow errors and rely on the caller watching Secrets and re-reconciling whenever they change
-		if !errors.Is(err, modifier.ErrMountNotFound) {
-			errs = append(errs, err)
-		}
-	}
-
-	if err := k8creconciling.ReconcileServices(ctx, serviceReconcilers, namespace, client, ownerRefWrapper); err != nil {
+	if err := reconciling.ReconcileCertificates(ctx, certReconcilers, namespace, client, append([]k8creconciling.ObjectModifier{ownerRefWrapper}, certModifiers...)...); err != nil {
 		errs = append(errs, err)
 	}
 

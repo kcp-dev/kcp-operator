@@ -18,7 +18,6 @@ package shard
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"slices"
 	"time"
@@ -28,7 +27,6 @@ import (
 	kcpcorev1alpha1 "github.com/kcp-dev/sdk/apis/core/v1alpha1"
 	k8creconciling "k8c.io/reconciler/pkg/reconciling"
 
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -51,8 +49,8 @@ import (
 	"github.com/kcp-dev/kcp-operator/internal/metrics"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling/modifier"
-	"github.com/kcp-dev/kcp-operator/internal/resources"
 	"github.com/kcp-dev/kcp-operator/internal/resources/shard"
+	deployv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/deploy/v1alpha1"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -107,9 +105,8 @@ func (r *ShardReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("shard").
 		For(&operatorv1alpha1.Shard{}).
-		Owns(&appsv1.Deployment{}).
+		Owns(&deployv1alpha1.CompiledShard{}).
 		Owns(&corev1.Secret{}).
-		Owns(&corev1.Service{}).
 		Owns(&certmanagerv1.Certificate{}).
 		Watches(&operatorv1alpha1.RootShard{}, rootShardHandler).
 		Watches(&operatorv1alpha1.VirtualWorkspace{}, vwHandler).
@@ -120,8 +117,9 @@ func (r *ShardReconciler) SetupWithManager(mgr ctrl.Manager) error {
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=shards/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=shards/finalizers,verbs=update
 // +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=core,resources=secrets;services,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=deploy.operator.kcp.io,resources=compiledshards,verbs=get;list;watch;create;update;patch
+// +kubebuilder:rbac:groups=deploy.operator.kcp.io,resources=compiledshards/finalizers,verbs=update
+// +kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch;create;update;patch;delete
 
 func (r *ShardReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, recErr error) {
 	startTime := time.Now()
@@ -182,7 +180,6 @@ func (r *ShardReconciler) reconcile(ctx context.Context, s *operatorv1alpha1.Sha
 	}
 
 	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*metav1.NewControllerRef(s, operatorv1alpha1.SchemeGroupVersion.WithKind("Shard")))
-	revisionLabels := modifier.RelatedRevisionsLabels(ctx, r.Client)
 
 	certReconcilers := []reconciling.NamedCertificateReconcilerFactory{
 		shard.ServerCertificateReconciler(s, rootShard),
@@ -194,7 +191,8 @@ func (r *ShardReconciler) reconcile(ctx context.Context, s *operatorv1alpha1.Sha
 		shard.ExternalLogicalClusterAdminCertificateReconciler(s, rootShard),
 	}
 
-	if err := reconciling.ReconcileCertificates(ctx, certReconcilers, s.Namespace, r.Client, ownerRefWrapper); err != nil {
+	var certs []*certmanagerv1.Certificate
+	if err := reconciling.ReconcileCertificates(ctx, certReconcilers, s.Namespace, r.Client, ownerRefWrapper, modifier.Capture(&certs)); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -242,22 +240,17 @@ func (r *ShardReconciler) reconcile(ctx context.Context, s *operatorv1alpha1.Sha
 		errs = append(errs, fmt.Errorf("failed to list shards: %w", shardsErr))
 	}
 
-	// Deployment will be scaled to 0 if bundle annotation is present
-	if vwConfigValid && shardsErr == nil {
-		if err := k8creconciling.ReconcileDeployments(ctx, []k8creconciling.NamedDeploymentReconcilerFactory{
-			shard.DeploymentReconciler(s, rootShard, kcpVW, shards),
-		}, s.Namespace, r.Client, ownerRefWrapper, revisionLabels); err != nil {
-			// Swallow these errors and instead rely on us watching Secrets and re-reconciling whenever they change.
-			if !errors.Is(err, modifier.ErrMountNotFound) {
-				errs = append(errs, err)
-			}
-		}
-	}
+	// Only publish the render input once every Certificate is ready, so that whoever consumes
+	// it can rely on the Secrets it mounts already existing.
+	_, certsReady := util.CertificateRevisions(certs)
 
-	if err := k8creconciling.ReconcileServices(ctx, []k8creconciling.NamedServiceReconcilerFactory{
-		shard.ServiceReconciler(s),
-	}, s.Namespace, r.Client, ownerRefWrapper); err != nil {
-		errs = append(errs, err)
+	// The workloads themselves are rendered by the CompiledShard controller.
+	if vwConfigValid && shardsErr == nil && certsReady {
+		if err := reconciling.ReconcileCompiledShards(ctx, []reconciling.NamedCompiledShardReconcilerFactory{
+			shard.CompiledShardReconciler(s, rootShard, kcpVW, shards),
+		}, s.Namespace, r.Client, ownerRefWrapper); err != nil {
+			errs = append(errs, err)
+		}
 	}
 
 	return conditions, kerrors.NewAggregate(errs)
@@ -275,14 +268,14 @@ func (r *ShardReconciler) reconcileStatus(ctx context.Context, oldShard *operato
 	// Check if shard is bundled (has bundle annotation with Ready bundle)
 	isBundled := bundleCond.Status == metav1.ConditionTrue && bundleCond.Reason == "BundleReady"
 
-	// Only check deployment status if not bundled
+	// Only check the rendered workloads if not bundled
 	if !isBundled {
-		depKey := types.NamespacedName{Namespace: newShard.Namespace, Name: resources.GetShardDeploymentName(newShard)}
-		cond, err := util.GetDeploymentAvailableCondition(ctx, r.Client, depKey)
-		if err != nil {
+		compiled := &deployv1alpha1.CompiledShard{}
+		key := types.NamespacedName{Namespace: newShard.Namespace, Name: newShard.Name}
+		if err := r.Get(ctx, key, compiled); ctrlruntimeclient.IgnoreNotFound(err) != nil {
 			errs = append(errs, err)
 		} else {
-			conditions = append(conditions, cond)
+			conditions = append(conditions, util.GetCompiledAvailableCondition(compiled.Status.Conditions, "CompiledShard "+newShard.Name))
 		}
 	}
 

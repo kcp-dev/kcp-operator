@@ -33,6 +33,7 @@ import (
 	ctrlruntimefakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	deployv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/deploy/v1alpha1"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -246,6 +247,7 @@ func TestReconciling(t *testing.T) {
 	require.Nil(t, corev1.AddToScheme(scheme))
 	require.Nil(t, appsv1.AddToScheme(scheme))
 	require.Nil(t, operatorv1alpha1.AddToScheme(scheme))
+	require.Nil(t, deployv1alpha1.AddToScheme(scheme))
 	require.Nil(t, certmanagerv1.AddToScheme(scheme))
 
 	for _, testcase := range testcases {
@@ -518,6 +520,7 @@ func TestClientCABundleMerging(t *testing.T) {
 	require.Nil(t, corev1.AddToScheme(scheme))
 	require.Nil(t, appsv1.AddToScheme(scheme))
 	require.Nil(t, operatorv1alpha1.AddToScheme(scheme))
+	require.Nil(t, deployv1alpha1.AddToScheme(scheme))
 	require.Nil(t, certmanagerv1.AddToScheme(scheme))
 
 	for _, tc := range testcases {
