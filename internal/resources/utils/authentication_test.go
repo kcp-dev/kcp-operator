@@ -34,19 +34,15 @@ import (
 func TestApplyServiceAccountAuthentication(t *testing.T) {
 	tests := []struct {
 		name           string
-		rootShard      *operatorv1alpha1.RootShard
-		shards         []operatorv1alpha1.Shard
+		rootShardName  string
+		shardNames     []string
 		initialDeploy  *appsv1.Deployment
 		validateDeploy func(*testing.T, *appsv1.Deployment)
 	}{
 		{
-			name: "root shard only - no additional shards",
-			rootShard: &operatorv1alpha1.RootShard{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-root-shard",
-				},
-			},
-			shards: []operatorv1alpha1.Shard{},
+			name:          "root shard only - no additional shards",
+			rootShardName: "test-root-shard",
+			shardNames:    []string{},
 			initialDeploy: &appsv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-deployment",
@@ -92,16 +88,9 @@ func TestApplyServiceAccountAuthentication(t *testing.T) {
 			},
 		},
 		{
-			name: "root shard with multiple additional shards",
-			rootShard: &operatorv1alpha1.RootShard{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-root-shard",
-				},
-			},
-			shards: []operatorv1alpha1.Shard{
-				{ObjectMeta: metav1.ObjectMeta{Name: "shard-1"}},
-				{ObjectMeta: metav1.ObjectMeta{Name: "shard-2"}},
-			},
+			name:          "root shard with multiple additional shards",
+			rootShardName: "test-root-shard",
+			shardNames:    []string{"shard-1", "shard-2"},
 			initialDeploy: &appsv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-deployment",
@@ -164,15 +153,9 @@ func TestApplyServiceAccountAuthentication(t *testing.T) {
 			},
 		},
 		{
-			name: "preserves existing volumes and volume mounts",
-			rootShard: &operatorv1alpha1.RootShard{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-root-shard",
-				},
-			},
-			shards: []operatorv1alpha1.Shard{
-				{ObjectMeta: metav1.ObjectMeta{Name: "shard-1"}},
-			},
+			name:          "preserves existing volumes and volume mounts",
+			rootShardName: "test-root-shard",
+			shardNames:    []string{"shard-1"},
 			initialDeploy: &appsv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-deployment",
@@ -240,12 +223,8 @@ func TestApplyServiceAccountAuthentication(t *testing.T) {
 			},
 		},
 		{
-			name: "empty shards list",
-			rootShard: &operatorv1alpha1.RootShard{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-root-shard",
-				},
-			},
+			name:          "empty shards list",
+			rootShardName: "test-root-shard",
 			initialDeploy: &appsv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-deployment",
@@ -282,7 +261,7 @@ func TestApplyServiceAccountAuthentication(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := applyServiceAccountAuthentication(tt.initialDeploy, tt.rootShard, tt.shards)
+			result := applyServiceAccountAuthentication(tt.initialDeploy, tt.rootShardName, tt.shardNames)
 
 			require.NotNil(t, result)
 			assert.Equal(t, tt.initialDeploy, result, "Function should return the same deployment instance")
@@ -590,7 +569,7 @@ func TestApplyWebhookAuthentication(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := ApplyAuthConfiguration(tt.initialDeploy, tt.authenticationSpec, nil, nil)
+			result := ApplyAuthConfiguration(tt.initialDeploy, tt.authenticationSpec, "", nil)
 
 			require.NotNil(t, result)
 			assert.Equal(t, tt.initialDeploy, result, "Function should return the same deployment instance")
@@ -604,10 +583,6 @@ func TestApplyWebhookAuthentication(t *testing.T) {
 // authentication options (including token-auth-file) but never applies structured authentication
 // configuration (--authentication-config), which the front-proxy binary does not support.
 func TestApplyFrontProxyAuthConfiguration(t *testing.T) {
-	rootShard := &operatorv1alpha1.RootShard{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-root-shard"},
-	}
-
 	newDeploy := func() *appsv1.Deployment {
 		return &appsv1.Deployment{
 			ObjectMeta: metav1.ObjectMeta{Name: "test-deployment"},
@@ -630,7 +605,7 @@ func TestApplyFrontProxyAuthConfiguration(t *testing.T) {
 	t.Run("token auth file is applied", func(t *testing.T) {
 		dep := ApplyAuthConfiguration(newDeploy(), &operatorv1alpha1.AuthSpec{
 			TokenAuthFile: &operatorv1alpha1.TokenAuthFileSpec{SecretName: "test-token-auth"},
-		}, rootShard, nil)
+		}, "test-root-shard", nil)
 
 		args := dep.Spec.Template.Spec.Containers[0].Args
 		assert.Contains(t, args, "--token-auth-file=/etc/kcp/authentication/token/token.csv")
