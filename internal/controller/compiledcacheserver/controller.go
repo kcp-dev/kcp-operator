@@ -30,6 +30,7 @@ import (
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/kcp-dev/kcp-operator/internal/controller/util"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling/modifier"
 	"github.com/kcp-dev/kcp-operator/internal/resources/compiledcacheserver"
 	deployv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/deploy/v1alpha1"
@@ -42,11 +43,18 @@ type CompiledCacheServerReconciler struct {
 }
 
 func (r *CompiledCacheServerReconciler) SetupWithManager(mgr ctrlruntime.Manager) error {
+	// The rendered Deployment mounts Secrets owned by the source object, not by this one,
+	// so an ownership watch would never retry a Deployment blocked on a missing mount.
+	mountHandler := util.EnqueueAllInNamespace(mgr.GetClient(), func() ctrlruntimeclient.ObjectList {
+		return &deployv1alpha1.CompiledCacheServerList{}
+	})
+
 	return ctrlruntime.NewControllerManagedBy(mgr).
 		Named("compiled-cache-server").
 		For(&deployv1alpha1.CompiledCacheServer{}).
 		Owns(&appsv1.Deployment{}).
 		Owns(&corev1.Service{}).
+		Watches(&corev1.Secret{}, mountHandler).
 		Complete(r)
 }
 

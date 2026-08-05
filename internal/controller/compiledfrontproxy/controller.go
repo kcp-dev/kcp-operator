@@ -49,13 +49,19 @@ type CompiledFrontProxyReconciler struct {
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *CompiledFrontProxyReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	// The rendered Deployment mounts Secrets owned by the source object, not by this one,
+	// so an ownership watch would never retry a Deployment blocked on a missing mount.
+	mountHandler := util.EnqueueAllInNamespace(mgr.GetClient(), func() ctrlruntimeclient.ObjectList {
+		return &deployv1alpha1.CompiledFrontProxyList{}
+	})
+
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("compiled-frontproxy").
 		For(&deployv1alpha1.CompiledFrontProxy{}).
 		Owns(&appsv1.Deployment{}).
 		Owns(&corev1.ConfigMap{}).
-		Owns(&corev1.Secret{}).
 		Owns(&corev1.Service{}).
+		Watches(&corev1.Secret{}, mountHandler).
 		Complete(r)
 }
 

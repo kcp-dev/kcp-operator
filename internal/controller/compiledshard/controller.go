@@ -52,11 +52,18 @@ type CompiledShardReconciler struct {
 }
 
 func (r *CompiledShardReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	// The rendered Deployment mounts Secrets owned by the source object, not by this one,
+	// so an ownership watch would never retry a Deployment blocked on a missing mount.
+	mountHandler := util.EnqueueAllInNamespace(mgr.GetClient(), func() ctrlruntimeclient.ObjectList {
+		return &deployv1alpha1.CompiledShardList{}
+	})
+
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("compiled-shard").
 		For(&deployv1alpha1.CompiledShard{}).
 		Owns(&appsv1.Deployment{}).
 		Owns(&corev1.Service{}).
+		Watches(&corev1.Secret{}, mountHandler).
 		Complete(r)
 }
 
