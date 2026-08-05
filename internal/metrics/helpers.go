@@ -27,6 +27,12 @@ const (
 	CacheServerResourceType      = "cacheserver"
 	KubeconfigResourceType       = "kubeconfig"
 	VirtualWorkspaceResourceType = "virtualworkspace"
+
+	CompiledRootShardResourceType        = "compiledrootshard"
+	CompiledShardResourceType            = "compiledshard"
+	CompiledFrontProxyResourceType       = "compiledfrontproxy"
+	CompiledCacheServerResourceType      = "compiledcacheserver"
+	CompiledVirtualWorkspaceResourceType = "compiledvirtualworkspace"
 )
 
 func statusToMetric(status metav1.ConditionStatus) float64 {
