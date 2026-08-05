@@ -211,7 +211,7 @@ func TestGetExternalPort(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var rec *reconciler
 			if tt.frontProxy != nil {
-				rec = NewFrontProxy(tt.frontProxy, tt.rootShard)
+				rec = NewFrontProxy(tt.frontProxy, tt.rootShard, nil)
 			} else {
 				rec = NewRootShardProxy(tt.rootShard)
 			}

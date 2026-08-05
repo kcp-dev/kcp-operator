@@ -146,7 +146,7 @@ func TestMergedClientCASecretReconciler(t *testing.T) {
 				WithObjects(objects...).
 				Build()
 
-			rec := NewFrontProxy(tt.frontProxy, tt.rootShard)
+			rec := NewFrontProxy(tt.frontProxy, tt.rootShard, nil)
 
 			// Fetch the ClientCA data
 			clientCACert := tt.clientCASecret.Data["tls.crt"]

@@ -39,6 +39,7 @@ func TestDeploymentReconciler(t *testing.T) {
 		name           string
 		frontProxy     *operatorv1alpha1.FrontProxy
 		rootShard      *operatorv1alpha1.RootShard
+		shards         []operatorv1alpha1.Shard
 		expectedName   string
 		validateDeploy func(*testing.T, *appsv1.Deployment)
 	}{
@@ -366,16 +367,10 @@ func TestDeploymentReconciler(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-root-shard",
 				},
-				Status: operatorv1alpha1.RootShardStatus{
-					Shards: []operatorv1alpha1.ShardReference{
-						{
-							Name: "test-root-shard",
-						},
-						{
-							Name: "test-shard-2",
-						},
-					},
-				},
+			},
+			shards: []operatorv1alpha1.Shard{
+				{ObjectMeta: metav1.ObjectMeta{Name: "test-root-shard"}},
+				{ObjectMeta: metav1.ObjectMeta{Name: "test-shard-2"}},
 			},
 			expectedName: resources.GetFrontProxyDeploymentName(&operatorv1alpha1.FrontProxy{
 				ObjectMeta: metav1.ObjectMeta{Name: "test-front-proxy"},
@@ -599,7 +594,7 @@ func TestDeploymentReconciler(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fpReconciler := NewFrontProxy(tt.frontProxy, tt.rootShard)
+			fpReconciler := NewFrontProxy(tt.frontProxy, tt.rootShard, tt.shards)
 			name, reconcilerFunc := fpReconciler.deploymentReconciler()()
 
 			assert.Equal(t, tt.expectedName, name)
@@ -770,6 +765,7 @@ func TestGetArgs(t *testing.T) {
 			rec := NewFrontProxy(
 				&operatorv1alpha1.FrontProxy{Spec: *tt.spec},
 				&operatorv1alpha1.RootShard{},
+				nil,
 			)
 
 			result := rec.getArgs(tt.version)

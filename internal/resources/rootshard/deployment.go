@@ -76,7 +76,7 @@ func getCacheServerClientCertMountPath() string {
 	return "/etc/cache-server/tls/client-certificate"
 }
 
-func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard, kcpVW *operatorv1alpha1.VirtualWorkspace) reconciling.NamedDeploymentReconcilerFactory {
+func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard, kcpVW *operatorv1alpha1.VirtualWorkspace, shards []operatorv1alpha1.Shard) reconciling.NamedDeploymentReconcilerFactory {
 	return func() (string, reconciling.DeploymentReconciler) {
 		return resources.GetRootShardDeploymentName(rootShard), func(dep *appsv1.Deployment) (*appsv1.Deployment, error) {
 			labels := resources.GetRootShardResourceLabels(rootShard)
@@ -204,7 +204,7 @@ func DeploymentReconciler(rootShard *operatorv1alpha1.RootShard, kcpVW *operator
 			dep = utils.ApplyCommonShardDeploymentProperties(dep)
 			dep = utils.ApplyCommonShardConfig(dep, &rootShard.Spec.CommonShardSpec)
 			dep = utils.ApplyDeploymentTemplate(dep, rootShard.Spec.DeploymentTemplate)
-			dep = utils.ApplyAuthConfiguration(dep, rootShard.Spec.Auth, rootShard)
+			dep = utils.ApplyAuthConfiguration(dep, rootShard.Spec.Auth, rootShard, shards)
 
 			// If rootshard has bundle annotation, store desired replicas in annotation then scale deployment to 0 locally
 			if rootShard.Annotations != nil && rootShard.Annotations[resources.BundleAnnotation] != "" {
