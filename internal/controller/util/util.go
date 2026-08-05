@@ -28,11 +28,44 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/utils/ptr"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
+
+// EnqueueAllInNamespace wakes every object the given list type yields in the changed object's namespace.
+// The compiled controllers mount Secrets they do not own, so an ownership-based watch would never fire
+// for them and a Deployment blocked on a missing mount would never be retried.
+func EnqueueAllInNamespace(client ctrlruntimeclient.Client, newList func() ctrlruntimeclient.ObjectList) handler.EventHandler {
+	return handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, obj ctrlruntimeclient.Object) []reconcile.Request {
+		list := newList()
+		if err := client.List(ctx, list, ctrlruntimeclient.InNamespace(obj.GetNamespace())); err != nil {
+			utilruntime.HandleError(err)
+			return nil
+		}
+
+		items, err := apimeta.ExtractList(list)
+		if err != nil {
+			utilruntime.HandleError(err)
+			return nil
+		}
+
+		requests := make([]reconcile.Request, 0, len(items))
+		for _, item := range items {
+			object, ok := item.(ctrlruntimeclient.Object)
+			if !ok {
+				continue
+			}
+			requests = append(requests, reconcile.Request{NamespacedName: ctrlruntimeclient.ObjectKeyFromObject(object)})
+		}
+
+		return requests
+	})
+}
 
 func deploymentReady(dep appsv1.Deployment) bool {
 	return dep.Status.UpdatedReplicas == dep.Status.ReadyReplicas && dep.Status.ReadyReplicas == ptr.Deref(dep.Spec.Replicas, 0)
