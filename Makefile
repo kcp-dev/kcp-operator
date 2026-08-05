@@ -110,11 +110,8 @@ test-e2e: build ## Run e2e tests using existing cluster, bootstrap prerequisites
 
 # Creates a kind cluster and runs the e2e tests in them. The kind cluster is destroyed after the tests.
 # Example: USE_EXISTING_CLUSTER=true NO_TEARDOWN=true make test-e2e WHAT=./test/e2e/shards TEST_ARGS="-timeout 2h -v -run TestShardBundleAnnotation -count=1"
-.PHONY: test-e2e-with-kind  # Run the e2e tests in both topologies against temporary kind clusters.
-test-e2e-with-kind: test-e2e-with-kind-config-workload test-e2e-with-kind-single ## Run e2e tests in temporary kind clusters, both topologies.
-
-.PHONY: test-e2e-with-kind-single
-test-e2e-with-kind-single: ## Run e2e tests in a temporary single-topology kind cluster. Use WHAT= to specify test path.
+.PHONY: test-e2e-with-kind  # Run the e2e tests against a temporary kind cluster.
+test-e2e-with-kind: ## Run e2e tests in a temporary single-topology kind cluster. Use WHAT= to specify test path.
 	@E2E_TOPOLOGY=single WHAT=$(WHAT) hack/run-e2e-tests.sh
 
 .PHONY: test-e2e-with-kind-config-workload

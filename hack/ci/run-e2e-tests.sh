@@ -77,7 +77,7 @@ echo "Building container images..."
 ARCHITECTURES=arm64 DRY_RUN=yes ./hack/ci/build-image.sh
 
 # create the local kind cluster(s)
-export E2E_TOPOLOGY="${E2E_TOPOLOGY:-config-workload}"
+export E2E_TOPOLOGY="${E2E_TOPOLOGY:-single}"
 
 case "$E2E_TOPOLOGY" in
   single)

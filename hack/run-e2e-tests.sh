@@ -20,7 +20,7 @@ cd $(dirname $0)/..
 source hack/lib.sh
 
 export KIND_CLUSTER_NAME="${KIND_CLUSTER_NAME:-e2e}"
-export E2E_TOPOLOGY="${E2E_TOPOLOGY:-config-workload}"
+export E2E_TOPOLOGY="${E2E_TOPOLOGY:-single}"
 
 case "$E2E_TOPOLOGY" in
   single)
