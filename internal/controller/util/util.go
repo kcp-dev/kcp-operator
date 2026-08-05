@@ -71,6 +71,25 @@ func deploymentReady(dep appsv1.Deployment) bool {
 	return dep.Status.UpdatedReplicas == dep.Status.ReadyReplicas && dep.Status.ReadyReplicas == ptr.Deref(dep.Spec.Replicas, 0)
 }
 
+// GetCompiledAvailableCondition adopts the Available condition published on a Compiled* object, so the source object still reports on the Deployment it no longer owns.
+func GetCompiledAvailableCondition(conditions []metav1.Condition, compiledName string) metav1.Condition {
+	if cond := apimeta.FindStatusCondition(conditions, string(operatorv1alpha1.ConditionTypeAvailable)); cond != nil {
+		return metav1.Condition{
+			Type:    cond.Type,
+			Status:  cond.Status,
+			Reason:  cond.Reason,
+			Message: cond.Message,
+		}
+	}
+
+	return metav1.Condition{
+		Type:    string(operatorv1alpha1.ConditionTypeAvailable),
+		Status:  metav1.ConditionFalse,
+		Reason:  string(operatorv1alpha1.ConditionReasonDeploymentUnavailable),
+		Message: fmt.Sprintf("%s has not been rendered yet.", compiledName),
+	}
+}
+
 func GetDeploymentAvailableCondition(ctx context.Context, client ctrlruntimeclient.Client, key types.NamespacedName) (metav1.Condition, error) {
 	var dep appsv1.Deployment
 	if err := client.Get(ctx, key, &dep); ctrlruntimeclient.IgnoreNotFound(err) != nil {
