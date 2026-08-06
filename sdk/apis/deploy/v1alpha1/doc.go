@@ -17,4 +17,7 @@ limitations under the License.
 // +groupName=deploy.operator.kcp.io
 // +versionName=v1alpha1
 // +kubebuilder:object:generate=true
+
+// Package v1alpha1 is an experimental internal package.
+// Its types should not be used directly.
 package v1alpha1

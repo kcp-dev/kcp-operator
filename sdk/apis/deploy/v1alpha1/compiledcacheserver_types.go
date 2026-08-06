@@ -23,6 +23,9 @@ import (
 )
 
 // CompiledCacheServerSpec defines the fully resolved render input for a kcp cache server.
+//
+// EXPERIMENTAL: This type is part of an experimental, internal API that
+// is subject to change at any time.
 type CompiledCacheServerSpec struct {
 	// CacheServer is the resolved spec of the CacheServer this object was compiled from.
 	CacheServer operatorv1alpha1.CacheServerSpec `json:"cacheServer"`
@@ -34,6 +37,9 @@ type CompiledCacheServerSpec struct {
 // +kubebuilder:printcolumn:JSONPath=".metadata.creationTimestamp",name="Age",type="date"
 
 // CompiledCacheServer is the fully resolved render input for a kcp cache server.
+//
+// EXPERIMENTAL: This type is part of an experimental, internal API that
+// is subject to change at any time.
 type CompiledCacheServer struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -45,6 +51,9 @@ type CompiledCacheServer struct {
 // +kubebuilder:object:root=true
 
 // CompiledCacheServerList contains a list of CompiledCacheServer.
+//
+// EXPERIMENTAL: This type is part of an experimental, internal API that
+// is subject to change at any time.
 type CompiledCacheServerList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

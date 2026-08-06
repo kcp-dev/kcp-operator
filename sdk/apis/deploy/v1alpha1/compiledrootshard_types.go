@@ -23,6 +23,9 @@ import (
 )
 
 // CompiledRootShardSpec defines the fully resolved render input for a kcp root shard.
+//
+// EXPERIMENTAL: This type is part of an experimental, internal API that
+// is subject to change at any time.
 type CompiledRootShardSpec struct {
 	// RootShard is the resolved spec of the RootShard this object was compiled from.
 	RootShard operatorv1alpha1.RootShardSpec `json:"rootShard"`
@@ -41,6 +44,9 @@ type CompiledRootShardSpec struct {
 // +kubebuilder:printcolumn:JSONPath=".metadata.creationTimestamp",name="Age",type="date"
 
 // CompiledRootShard is the fully resolved render input for a kcp root shard.
+//
+// EXPERIMENTAL: This type is part of an experimental, internal API that
+// is subject to change at any time.
 type CompiledRootShard struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -52,6 +58,9 @@ type CompiledRootShard struct {
 // +kubebuilder:object:root=true
 
 // CompiledRootShardList contains a list of CompiledRootShard.
+//
+// EXPERIMENTAL: This type is part of an experimental, internal API that
+// is subject to change at any time.
 type CompiledRootShardList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

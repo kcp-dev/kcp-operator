@@ -23,6 +23,9 @@ import (
 )
 
 // CompiledFrontProxySpec defines the fully resolved render input for a kcp front-proxy.
+//
+// EXPERIMENTAL: This type is part of an experimental, internal API that
+// is subject to change at any time.
 type CompiledFrontProxySpec struct {
 	// FrontProxy is the resolved spec of the FrontProxy this object was compiled from.
 	FrontProxy operatorv1alpha1.FrontProxySpec `json:"frontProxy"`
@@ -41,6 +44,9 @@ type CompiledFrontProxySpec struct {
 // +kubebuilder:printcolumn:JSONPath=".metadata.creationTimestamp",name="Age",type="date"
 
 // CompiledFrontProxy is the fully resolved render input for a kcp front-proxy.
+//
+// EXPERIMENTAL: This type is part of an experimental, internal API that
+// is subject to change at any time.
 type CompiledFrontProxy struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -52,6 +58,9 @@ type CompiledFrontProxy struct {
 // +kubebuilder:object:root=true
 
 // CompiledFrontProxyList contains a list of CompiledFrontProxy.
+//
+// EXPERIMENTAL: This type is part of an experimental, internal API that
+// is subject to change at any time.
 type CompiledFrontProxyList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

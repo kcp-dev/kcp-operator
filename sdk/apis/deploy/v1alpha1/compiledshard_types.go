@@ -23,6 +23,9 @@ import (
 )
 
 // CompiledShardSpec defines the fully resolved render input for a kcp shard.
+//
+// EXPERIMENTAL: This type is part of an experimental, internal API that
+// is subject to change at any time.
 type CompiledShardSpec struct {
 	// Shard is the resolved spec of the Shard this object was compiled from.
 	Shard operatorv1alpha1.ShardSpec `json:"shard"`
@@ -44,6 +47,9 @@ type CompiledShardSpec struct {
 // +kubebuilder:printcolumn:JSONPath=".metadata.creationTimestamp",name="Age",type="date"
 
 // CompiledShard is the fully resolved render input for a kcp shard.
+//
+// EXPERIMENTAL: This type is part of an experimental, internal API that
+// is subject to change at any time.
 type CompiledShard struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -55,6 +61,9 @@ type CompiledShard struct {
 // +kubebuilder:object:root=true
 
 // CompiledShardList contains a list of CompiledShard.
+//
+// EXPERIMENTAL: This type is part of an experimental, internal API that
+// is subject to change at any time.
 type CompiledShardList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

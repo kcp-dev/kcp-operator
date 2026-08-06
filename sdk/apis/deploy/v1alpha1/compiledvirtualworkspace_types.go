@@ -23,6 +23,9 @@ import (
 )
 
 // CompiledVirtualWorkspaceSpec defines the fully resolved render input for a kcp virtual workspace.
+//
+// EXPERIMENTAL: This type is part of an experimental, internal API that
+// is subject to change at any time.
 type CompiledVirtualWorkspaceSpec struct {
 	// VirtualWorkspace is the resolved spec of the VirtualWorkspace this object was compiled from.
 	VirtualWorkspace operatorv1alpha1.VirtualWorkspaceSpec `json:"virtualWorkspace"`
@@ -41,6 +44,9 @@ type CompiledVirtualWorkspaceSpec struct {
 // +kubebuilder:printcolumn:JSONPath=".metadata.creationTimestamp",name="Age",type="date"
 
 // CompiledVirtualWorkspace is the fully resolved render input for a kcp virtual workspace.
+//
+// EXPERIMENTAL: This type is part of an experimental, internal API that
+// is subject to change at any time.
 type CompiledVirtualWorkspace struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -52,6 +58,9 @@ type CompiledVirtualWorkspace struct {
 // +kubebuilder:object:root=true
 
 // CompiledVirtualWorkspaceList contains a list of CompiledVirtualWorkspace.
+//
+// EXPERIMENTAL: This type is part of an experimental, internal API that
+// is subject to change at any time.
 type CompiledVirtualWorkspaceList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
