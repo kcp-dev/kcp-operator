@@ -45,7 +45,7 @@ import (
 
 // CompiledVirtualWorkspaceReconciler reconciles a CompiledVirtualWorkspace object
 type CompiledVirtualWorkspaceReconciler struct {
-	ctrlruntimeclient.Client
+	Client ctrlruntimeclient.Client
 	Scheme *runtime.Scheme
 }
 
@@ -86,7 +86,7 @@ func (r *CompiledVirtualWorkspaceReconciler) Reconcile(ctx context.Context, req 
 	logger.V(4).Info("Reconciling")
 
 	vw := &deployv1alpha1.CompiledVirtualWorkspace{}
-	if err := r.Get(ctx, req.NamespacedName, vw); err != nil {
+	if err := r.Client.Get(ctx, req.NamespacedName, vw); err != nil {
 		// object has been deleted.
 		if apierrors.IsNotFound(err) {
 			return ctrl.Result{}, nil
@@ -153,7 +153,7 @@ func (r *CompiledVirtualWorkspaceReconciler) reconcileStatus(ctx context.Context
 	}
 
 	if !equality.Semantic.DeepEqual(oldVW.Status, vw.Status) {
-		if err := r.Status().Patch(ctx, vw, ctrlruntimeclient.MergeFrom(oldVW)); err != nil {
+		if err := r.Client.Status().Patch(ctx, vw, ctrlruntimeclient.MergeFrom(oldVW)); err != nil {
 			return err
 		}
 	}

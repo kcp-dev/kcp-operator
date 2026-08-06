@@ -51,7 +51,7 @@ import (
 
 // RootShardReconciler reconciles a RootShard object
 type RootShardReconciler struct {
-	ctrlruntimeclient.Client
+	Client ctrlruntimeclient.Client
 	Scheme *runtime.Scheme
 }
 
@@ -132,7 +132,7 @@ func (r *RootShardReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	logger.V(4).Info("Reconciling")
 
 	var rootShard operatorv1alpha1.RootShard
-	if err := r.Get(ctx, req.NamespacedName, &rootShard); err != nil {
+	if err := r.Client.Get(ctx, req.NamespacedName, &rootShard); err != nil {
 		if ctrlruntimeclient.IgnoreNotFound(err) != nil {
 			metrics.RecordReconciliationError(metrics.RootShardResourceType, err.Error())
 			return ctrl.Result{}, fmt.Errorf("failed to find %s/%s: %w", req.Namespace, req.Name, err)
@@ -240,7 +240,7 @@ func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operator
 	if rootShard.Spec.KCPVirtualWorkspace != nil {
 		kcpVW = &operatorv1alpha1.VirtualWorkspace{}
 		key := types.NamespacedName{Namespace: rootShard.Namespace, Name: rootShard.Spec.KCPVirtualWorkspace.Name}
-		if err := r.Get(ctx, key, kcpVW); err != nil {
+		if err := r.Client.Get(ctx, key, kcpVW); err != nil {
 			errs = append(errs, fmt.Errorf("failed to find associated VirtualWorkspace %s: %w", key.Name, err))
 			vwConfigValid = false
 		}
@@ -287,7 +287,7 @@ func (r *RootShardReconciler) reconcileStatus(ctx context.Context, oldRootShard 
 	if !isBundled {
 		compiled := &deployv1alpha1.CompiledRootShard{}
 		key := types.NamespacedName{Namespace: rootShard.Namespace, Name: rootShard.Name}
-		if err := r.Get(ctx, key, compiled); ctrlruntimeclient.IgnoreNotFound(err) != nil {
+		if err := r.Client.Get(ctx, key, compiled); ctrlruntimeclient.IgnoreNotFound(err) != nil {
 			errs = append(errs, err)
 		} else {
 			conditions = append(conditions, util.GetCompiledAvailableCondition(compiled.Status.Conditions, "CompiledRootShard "+rootShard.Name))
@@ -333,7 +333,7 @@ func (r *RootShardReconciler) reconcileStatus(ctx context.Context, oldRootShard 
 
 	// No reconciler reads Status.Shards, but this write is what wakes the Shard and FrontProxy controllers through their RootShard watches.
 	if !equality.Semantic.DeepEqual(oldRootShard.Status, rootShard.Status) {
-		if err := r.Status().Patch(ctx, rootShard, ctrlruntimeclient.MergeFrom(oldRootShard)); err != nil {
+		if err := r.Client.Status().Patch(ctx, rootShard, ctrlruntimeclient.MergeFrom(oldRootShard)); err != nil {
 			errs = append(errs, err)
 		}
 	}

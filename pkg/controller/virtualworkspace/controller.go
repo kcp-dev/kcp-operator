@@ -49,7 +49,7 @@ import (
 
 // Reconciler reconciles a VirtualWorkspace object
 type Reconciler struct {
-	ctrlruntimeclient.Client
+	Client ctrlruntimeclient.Client
 	Scheme *runtime.Scheme
 }
 
@@ -90,7 +90,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 	logger.V(4).Info("Reconciling")
 
 	vw := &operatorv1alpha1.VirtualWorkspace{}
-	if err := r.Get(ctx, req.NamespacedName, vw); err != nil {
+	if err := r.Client.Get(ctx, req.NamespacedName, vw); err != nil {
 		// object has been deleted.
 		if apierrors.IsNotFound(err) {
 			return ctrl.Result{}, nil
@@ -126,7 +126,7 @@ func (r *Reconciler) reconcile(ctx context.Context, vw *operatorv1alpha1.Virtual
 	case vw.Spec.Target.RootShardRef != nil:
 		rootShard = &operatorv1alpha1.RootShard{}
 
-		if err := r.Get(ctx, types.NamespacedName{Name: vw.Spec.Target.RootShardRef.Name, Namespace: vw.Namespace}, rootShard); err != nil {
+		if err := r.Client.Get(ctx, types.NamespacedName{Name: vw.Spec.Target.RootShardRef.Name, Namespace: vw.Namespace}, rootShard); err != nil {
 			err = fmt.Errorf("failed to get RootShard: %w", err)
 			conditions = append(conditions, metav1.Condition{
 				Type:    string(operatorv1alpha1.ConditionTypeReferenceValid),
@@ -140,7 +140,7 @@ func (r *Reconciler) reconcile(ctx context.Context, vw *operatorv1alpha1.Virtual
 	case vw.Spec.Target.ShardRef != nil:
 		shard = &operatorv1alpha1.Shard{}
 
-		if err := r.Get(ctx, types.NamespacedName{Name: vw.Spec.Target.ShardRef.Name, Namespace: vw.Namespace}, shard); err != nil {
+		if err := r.Client.Get(ctx, types.NamespacedName{Name: vw.Spec.Target.ShardRef.Name, Namespace: vw.Namespace}, shard); err != nil {
 			err = fmt.Errorf("failed to get Shard: %w", err)
 			conditions = append(conditions, metav1.Condition{
 				Type:    string(operatorv1alpha1.ConditionTypeReferenceValid),
@@ -164,7 +164,7 @@ func (r *Reconciler) reconcile(ctx context.Context, vw *operatorv1alpha1.Virtual
 		}
 
 		rootShard = &operatorv1alpha1.RootShard{}
-		if err := r.Get(ctx, types.NamespacedName{Name: ref.Name, Namespace: vw.Namespace}, rootShard); err != nil {
+		if err := r.Client.Get(ctx, types.NamespacedName{Name: ref.Name, Namespace: vw.Namespace}, rootShard); err != nil {
 			err = fmt.Errorf("failed to get RootShard: %w", err)
 			conditions = append(conditions, metav1.Condition{
 				Type:    string(operatorv1alpha1.ConditionTypeReferenceValid),
@@ -232,7 +232,7 @@ func (r *Reconciler) reconcileStatus(ctx context.Context, oldVW *operatorv1alpha
 	// Check the workloads rendered from the compiled object
 	compiled := &deployv1alpha1.CompiledVirtualWorkspace{}
 	key := types.NamespacedName{Namespace: vw.Namespace, Name: vw.Name}
-	if err := r.Get(ctx, key, compiled); ctrlruntimeclient.IgnoreNotFound(err) != nil {
+	if err := r.Client.Get(ctx, key, compiled); ctrlruntimeclient.IgnoreNotFound(err) != nil {
 		return err
 	}
 	conditions = append(conditions, util.GetCompiledAvailableCondition(compiled.Status.Conditions, "CompiledVirtualWorkspace "+vw.Name))
@@ -243,7 +243,7 @@ func (r *Reconciler) reconcileStatus(ctx context.Context, oldVW *operatorv1alpha
 	}
 
 	if !equality.Semantic.DeepEqual(oldVW.Status, vw.Status) {
-		if err := r.Status().Patch(ctx, vw, ctrlruntimeclient.MergeFrom(oldVW)); err != nil {
+		if err := r.Client.Status().Patch(ctx, vw, ctrlruntimeclient.MergeFrom(oldVW)); err != nil {
 			return err
 		}
 	}
@@ -275,7 +275,7 @@ func (r *Reconciler) mapIssuerToVirtualWorkspaces(ctx context.Context, obj ctrlr
 
 	// Find all VirtualWorkspaces that use this Issuer for their client certificate
 	var virtualWorkspaces operatorv1alpha1.VirtualWorkspaceList
-	if err := r.List(ctx, &virtualWorkspaces, ctrlruntimeclient.InNamespace(obj.GetNamespace())); err != nil {
+	if err := r.Client.List(ctx, &virtualWorkspaces, ctrlruntimeclient.InNamespace(obj.GetNamespace())); err != nil {
 		logger.Error(err, "Failed to list VirtualWorkspaces")
 		return []ctrl.Request{}
 	}
@@ -286,15 +286,15 @@ func (r *Reconciler) mapIssuerToVirtualWorkspaces(ctx context.Context, obj ctrlr
 		switch {
 		case vw.Spec.Target.RootShardRef != nil:
 			rootShard := &operatorv1alpha1.RootShard{}
-			if err := r.Get(ctx, types.NamespacedName{Name: vw.Spec.Target.RootShardRef.Name, Namespace: vw.Namespace}, rootShard); err == nil {
+			if err := r.Client.Get(ctx, types.NamespacedName{Name: vw.Spec.Target.RootShardRef.Name, Namespace: vw.Namespace}, rootShard); err == nil {
 				expectedIssuer = resources.GetRootShardCAName(rootShard, operatorv1alpha1.ClientCA)
 			}
 		case vw.Spec.Target.ShardRef != nil:
 			shard := &operatorv1alpha1.Shard{}
-			if err := r.Get(ctx, types.NamespacedName{Name: vw.Spec.Target.ShardRef.Name, Namespace: vw.Namespace}, shard); err == nil {
+			if err := r.Client.Get(ctx, types.NamespacedName{Name: vw.Spec.Target.ShardRef.Name, Namespace: vw.Namespace}, shard); err == nil {
 				if ref := shard.Spec.RootShard.Reference; ref != nil {
 					rootShard := &operatorv1alpha1.RootShard{}
-					if err := r.Get(ctx, types.NamespacedName{Name: ref.Name, Namespace: vw.Namespace}, rootShard); err == nil {
+					if err := r.Client.Get(ctx, types.NamespacedName{Name: ref.Name, Namespace: vw.Namespace}, rootShard); err == nil {
 						expectedIssuer = resources.GetRootShardCAName(rootShard, operatorv1alpha1.ClientCA)
 					}
 				}
@@ -316,7 +316,7 @@ func (r *Reconciler) mapIssuerToVirtualWorkspaces(ctx context.Context, obj ctrlr
 
 func (r *Reconciler) mapVirtualWorkspaces(ctx context.Context, namespace string, matches func(t operatorv1alpha1.VirtualWorkspaceTarget) bool) []ctrl.Request {
 	var virtualWorkspaces operatorv1alpha1.VirtualWorkspaceList
-	if err := r.List(ctx, &virtualWorkspaces, ctrlruntimeclient.InNamespace(namespace)); err != nil {
+	if err := r.Client.List(ctx, &virtualWorkspaces, ctrlruntimeclient.InNamespace(namespace)); err != nil {
 		log.FromContext(ctx).Error(err, "Failed to list VirtualWorkspaces")
 		return []ctrl.Request{}
 	}

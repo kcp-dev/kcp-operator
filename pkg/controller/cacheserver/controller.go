@@ -39,7 +39,7 @@ import (
 
 // CacheServerReconciler reconciles a CacheServer object
 type CacheServerReconciler struct {
-	ctrlruntimeclient.Client
+	Client ctrlruntimeclient.Client
 	Scheme *runtime.Scheme
 }
 
@@ -67,7 +67,7 @@ func (r *CacheServerReconciler) Reconcile(ctx context.Context, req ctrlruntime.R
 	logger.V(4).Info("Reconciling")
 
 	server := &operatorv1alpha1.CacheServer{}
-	if err := r.Get(ctx, req.NamespacedName, server); err != nil {
+	if err := r.Client.Get(ctx, req.NamespacedName, server); err != nil {
 		return ctrlruntime.Result{}, ctrlruntimeclient.IgnoreNotFound(err)
 	}
 

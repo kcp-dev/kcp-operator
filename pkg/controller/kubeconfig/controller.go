@@ -49,7 +49,7 @@ import (
 
 // KubeconfigReconciler reconciles a Kubeconfig object
 type KubeconfigReconciler struct {
-	ctrlruntimeclient.Client
+	Client ctrlruntimeclient.Client
 	Scheme *runtime.Scheme
 }
 
@@ -86,7 +86,7 @@ func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	logger.V(4).Info("Reconciling")
 
 	var kc operatorv1alpha1.Kubeconfig
-	if err := r.Get(ctx, req.NamespacedName, &kc); err != nil {
+	if err := r.Client.Get(ctx, req.NamespacedName, &kc); err != nil {
 		// object has been deleted.
 		if apierrors.IsNotFound(err) {
 			return ctrl.Result{}, nil
@@ -140,7 +140,7 @@ func (r *KubeconfigReconciler) reconcile(ctx context.Context, kc *operatorv1alph
 
 	switch {
 	case kc.Spec.Target.RootShardRef != nil:
-		if err := r.Get(ctx, types.NamespacedName{Name: kc.Spec.Target.RootShardRef.Name, Namespace: req.Namespace}, rootShard); err != nil {
+		if err := r.Client.Get(ctx, types.NamespacedName{Name: kc.Spec.Target.RootShardRef.Name, Namespace: req.Namespace}, rootShard); err != nil {
 			err = fmt.Errorf("failed to get RootShard: %w", err)
 			conditions = append(conditions, metav1.Condition{
 				Type:    string(operatorv1alpha1.ConditionTypeReferenceValid),
@@ -155,7 +155,7 @@ func (r *KubeconfigReconciler) reconcile(ctx context.Context, kc *operatorv1alph
 		serverCA = resources.GetRootShardCAName(rootShard, operatorv1alpha1.ServerCA)
 
 	case kc.Spec.Target.ShardRef != nil:
-		if err := r.Get(ctx, types.NamespacedName{Name: kc.Spec.Target.ShardRef.Name, Namespace: req.Namespace}, shard); err != nil {
+		if err := r.Client.Get(ctx, types.NamespacedName{Name: kc.Spec.Target.ShardRef.Name, Namespace: req.Namespace}, shard); err != nil {
 			err = fmt.Errorf("failed to get Shard: %w", err)
 			conditions = append(conditions, metav1.Condition{
 				Type:    string(operatorv1alpha1.ConditionTypeReferenceValid),
@@ -177,7 +177,7 @@ func (r *KubeconfigReconciler) reconcile(ctx context.Context, kc *operatorv1alph
 			})
 			return conditions, err
 		}
-		if err := r.Get(ctx, types.NamespacedName{Name: ref.Name, Namespace: req.Namespace}, rootShard); err != nil {
+		if err := r.Client.Get(ctx, types.NamespacedName{Name: ref.Name, Namespace: req.Namespace}, rootShard); err != nil {
 			err = fmt.Errorf("failed to get RootShard: %w", err)
 			conditions = append(conditions, metav1.Condition{
 				Type:    string(operatorv1alpha1.ConditionTypeReferenceValid),
@@ -193,7 +193,7 @@ func (r *KubeconfigReconciler) reconcile(ctx context.Context, kc *operatorv1alph
 		serverCA = resources.GetRootShardCAName(rootShard, operatorv1alpha1.ServerCA)
 
 	case kc.Spec.Target.FrontProxyRef != nil:
-		if err := r.Get(ctx, types.NamespacedName{Name: kc.Spec.Target.FrontProxyRef.Name, Namespace: req.Namespace}, &frontProxy); err != nil {
+		if err := r.Client.Get(ctx, types.NamespacedName{Name: kc.Spec.Target.FrontProxyRef.Name, Namespace: req.Namespace}, &frontProxy); err != nil {
 			err = fmt.Errorf("referenced FrontProxy '%s' does not exist: %v", kc.Spec.Target.FrontProxyRef.Name, err)
 			conditions = append(conditions, metav1.Condition{
 				Type:    string(operatorv1alpha1.ConditionTypeReferenceValid),
@@ -215,7 +215,7 @@ func (r *KubeconfigReconciler) reconcile(ctx context.Context, kc *operatorv1alph
 			})
 			return conditions, err
 		}
-		if err := r.Get(ctx, types.NamespacedName{Name: frontProxy.Spec.RootShard.Reference.Name, Namespace: req.Namespace}, rootShard); err != nil {
+		if err := r.Client.Get(ctx, types.NamespacedName{Name: frontProxy.Spec.RootShard.Reference.Name, Namespace: req.Namespace}, rootShard); err != nil {
 			err = fmt.Errorf("failed to get RootShard: %w", err)
 			conditions = append(conditions, metav1.Condition{
 				Type:    string(operatorv1alpha1.ConditionTypeReferenceValid),
@@ -231,7 +231,7 @@ func (r *KubeconfigReconciler) reconcile(ctx context.Context, kc *operatorv1alph
 
 		if frontProxy.Spec.CABundleSecretRef != nil {
 			caBundle = &corev1.Secret{}
-			if err := r.Get(ctx, types.NamespacedName{Name: frontProxy.Spec.CABundleSecretRef.Name, Namespace: req.Namespace}, caBundle); err != nil {
+			if err := r.Client.Get(ctx, types.NamespacedName{Name: frontProxy.Spec.CABundleSecretRef.Name, Namespace: req.Namespace}, caBundle); err != nil {
 				err = fmt.Errorf("failed to get CA bundle secret %s/%s: %w", req.Namespace, frontProxy.Spec.CABundleSecretRef.Name, err)
 				conditions = append(conditions, metav1.Condition{
 					Type:    string(operatorv1alpha1.ConditionTypeReferenceValid),
@@ -344,7 +344,7 @@ func (r *KubeconfigReconciler) reconcileStatus(ctx context.Context, oldKc *opera
 	}
 
 	if !equality.Semantic.DeepEqual(oldKc.Status, kc.Status) {
-		if err := r.Status().Patch(ctx, kc, ctrlruntimeclient.MergeFrom(oldKc)); err != nil {
+		if err := r.Client.Status().Patch(ctx, kc, ctrlruntimeclient.MergeFrom(oldKc)); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -356,7 +356,7 @@ func (r *KubeconfigReconciler) getCertificateSecret(ctx context.Context, name, n
 	logger := log.FromContext(ctx).WithValues("certificate", name)
 
 	certificate := &certmanagerv1.Certificate{}
-	if err := r.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, certificate); err != nil {
+	if err := r.Client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, certificate); err != nil {
 		// Because of how the reconciling framework works, this should never happen.
 		logger.V(6).Info("Certificate does not exist yet, trying later ...")
 		return nil, nil
@@ -376,7 +376,7 @@ func (r *KubeconfigReconciler) getCertificateSecret(ctx context.Context, name, n
 	}
 
 	secret := &corev1.Secret{}
-	if err := r.Get(ctx, types.NamespacedName{Name: certificate.Spec.SecretName, Namespace: certificate.Namespace}, secret); err != nil {
+	if err := r.Client.Get(ctx, types.NamespacedName{Name: certificate.Spec.SecretName, Namespace: certificate.Namespace}, secret); err != nil {
 		return nil, err
 	}
 
@@ -414,7 +414,7 @@ func (r *KubeconfigReconciler) mapFrontProxyToKubeconfigs(ctx context.Context, o
 
 func (r *KubeconfigReconciler) mapKubeconfigs(ctx context.Context, matches func(kc operatorv1alpha1.KubeconfigTarget) bool) []ctrl.Request {
 	var kubeconfigs operatorv1alpha1.KubeconfigList
-	if err := r.List(ctx, &kubeconfigs); err != nil {
+	if err := r.Client.List(ctx, &kubeconfigs); err != nil {
 		log.FromContext(ctx).Error(err, "Failed to list Kubeconfigs")
 		return []ctrl.Request{}
 	}

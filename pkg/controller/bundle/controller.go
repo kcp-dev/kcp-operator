@@ -47,7 +47,7 @@ import (
 
 // BundleReconciler reconciles a Bundle object
 type BundleReconciler struct {
-	ctrlruntimeclient.Client
+	Client ctrlruntimeclient.Client
 	Scheme *runtime.Scheme
 }
 
@@ -133,7 +133,7 @@ func (r *BundleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res
 	logger.V(4).Info("Reconciling Bundle object")
 
 	var bundle operatorv1alpha1.Bundle
-	if err := r.Get(ctx, req.NamespacedName, &bundle); err != nil {
+	if err := r.Client.Get(ctx, req.NamespacedName, &bundle); err != nil {
 		if ctrlruntimeclient.IgnoreNotFound(err) != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to get bundle: %w", err)
 		}
@@ -172,7 +172,7 @@ func (r *BundleReconciler) reconcile(ctx context.Context, bundle *operatorv1alph
 	case target.RootShardRef != nil:
 		targetName = target.RootShardRef.Name
 		rootShard = &operatorv1alpha1.RootShard{}
-		err := r.Get(ctx, ctrlruntimeclient.ObjectKey{
+		err := r.Client.Get(ctx, ctrlruntimeclient.ObjectKey{
 			Name:      targetName,
 			Namespace: bundle.Namespace,
 		}, rootShard)
@@ -186,7 +186,7 @@ func (r *BundleReconciler) reconcile(ctx context.Context, bundle *operatorv1alph
 	case target.ShardRef != nil:
 		targetName = target.ShardRef.Name
 		shard = &operatorv1alpha1.Shard{}
-		err := r.Get(ctx, ctrlruntimeclient.ObjectKey{
+		err := r.Client.Get(ctx, ctrlruntimeclient.ObjectKey{
 			Name:      targetName,
 			Namespace: bundle.Namespace,
 		}, shard)
@@ -195,7 +195,7 @@ func (r *BundleReconciler) reconcile(ctx context.Context, bundle *operatorv1alph
 			// Need to get RootShard for Shard bundles
 			if shard.Spec.RootShard.Reference != nil {
 				rootShard = &operatorv1alpha1.RootShard{}
-				err := r.Get(ctx, ctrlruntimeclient.ObjectKey{
+				err := r.Client.Get(ctx, ctrlruntimeclient.ObjectKey{
 					Name:      shard.Spec.RootShard.Reference.Name,
 					Namespace: bundle.Namespace,
 				}, rootShard)
@@ -212,7 +212,7 @@ func (r *BundleReconciler) reconcile(ctx context.Context, bundle *operatorv1alph
 	case target.FrontProxyRef != nil:
 		targetName = target.FrontProxyRef.Name
 		frontProxy = &operatorv1alpha1.FrontProxy{}
-		err := r.Get(ctx, ctrlruntimeclient.ObjectKey{
+		err := r.Client.Get(ctx, ctrlruntimeclient.ObjectKey{
 			Name:      targetName,
 			Namespace: bundle.Namespace,
 		}, frontProxy)
@@ -221,7 +221,7 @@ func (r *BundleReconciler) reconcile(ctx context.Context, bundle *operatorv1alph
 			// Need to get RootShard for FrontProxy bundles
 			if frontProxy.Spec.RootShard.Reference != nil {
 				rootShard = &operatorv1alpha1.RootShard{}
-				err := r.Get(ctx, ctrlruntimeclient.ObjectKey{
+				err := r.Client.Get(ctx, ctrlruntimeclient.ObjectKey{
 					Name:      frontProxy.Spec.RootShard.Reference.Name,
 					Namespace: bundle.Namespace,
 				}, rootShard)
@@ -349,7 +349,7 @@ func (r *BundleReconciler) checkObject(ctx context.Context, obj operatorv1alpha1
 		return status
 	}
 
-	err := r.Get(ctx, ctrlruntimeclient.ObjectKey{
+	err := r.Client.Get(ctx, ctrlruntimeclient.ObjectKey{
 		Name:      obj.Name,
 		Namespace: obj.Namespace,
 	}, resource)
@@ -382,7 +382,7 @@ func (r *BundleReconciler) createBundleObjects(ctx context.Context, bundle *oper
 			continue
 		}
 
-		if err := r.Get(ctx, ctrlruntimeclient.ObjectKey{
+		if err := r.Client.Get(ctx, ctrlruntimeclient.ObjectKey{
 			Name:      obj.Name,
 			Namespace: obj.Namespace,
 		}, resource); err != nil {
@@ -471,12 +471,12 @@ func (r *BundleReconciler) generateBundleData(objects []ctrlruntimeclient.Object
 // generateObjectKey generates a Kubernetes API-style path key for an object
 // Format: api_v1_namespaces_<namespace>_<resource>_<name>
 func (r *BundleReconciler) generateObjectKey(obj ctrlruntimeclient.Object) (string, error) {
-	gvk, err := r.GroupVersionKindFor(obj)
+	gvk, err := r.Client.GroupVersionKindFor(obj)
 	if err != nil {
 		return "", err
 	}
 
-	restMapper := r.RESTMapper()
+	restMapper := r.Client.RESTMapper()
 	mapping, err := restMapper.RESTMapping(gvk.GroupKind(), gvk.Version)
 	if err != nil {
 		return "", err

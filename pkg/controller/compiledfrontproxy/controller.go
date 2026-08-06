@@ -43,7 +43,7 @@ import (
 
 // CompiledFrontProxyReconciler reconciles a CompiledFrontProxy object
 type CompiledFrontProxyReconciler struct {
-	ctrlruntimeclient.Client
+	Client ctrlruntimeclient.Client
 	Scheme *runtime.Scheme
 }
 
@@ -82,7 +82,7 @@ func (r *CompiledFrontProxyReconciler) Reconcile(ctx context.Context, req ctrl.R
 	logger.V(4).Info("Reconciling")
 
 	var frontProxy deployv1alpha1.CompiledFrontProxy
-	if err := r.Get(ctx, req.NamespacedName, &frontProxy); err != nil {
+	if err := r.Client.Get(ctx, req.NamespacedName, &frontProxy); err != nil {
 		if ctrlruntimeclient.IgnoreNotFound(err) != nil {
 			metrics.RecordReconciliationError(metrics.CompiledFrontProxyResourceType, err.Error())
 			return ctrl.Result{}, fmt.Errorf("failed to get CompiledFrontProxy object: %w", err)
@@ -150,7 +150,7 @@ func (r *CompiledFrontProxyReconciler) reconcileStatus(ctx context.Context, oldF
 
 	// only patch the status if there are actual changes.
 	if !equality.Semantic.DeepEqual(oldFrontProxy.Status, frontProxy.Status) {
-		if err := r.Status().Patch(ctx, frontProxy, ctrlruntimeclient.MergeFrom(oldFrontProxy)); err != nil {
+		if err := r.Client.Status().Patch(ctx, frontProxy, ctrlruntimeclient.MergeFrom(oldFrontProxy)); err != nil {
 			errs = append(errs, err)
 		}
 	}

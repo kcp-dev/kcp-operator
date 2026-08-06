@@ -50,7 +50,7 @@ import (
 
 // FrontProxyReconciler reconciles a FrontProxy object
 type FrontProxyReconciler struct {
-	ctrlruntimeclient.Client
+	Client ctrlruntimeclient.Client
 	Scheme *runtime.Scheme
 }
 
@@ -104,7 +104,7 @@ func (r *FrontProxyReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	logger.V(4).Info("Reconciling")
 
 	var frontProxy operatorv1alpha1.FrontProxy
-	if err := r.Get(ctx, req.NamespacedName, &frontProxy); err != nil {
+	if err := r.Client.Get(ctx, req.NamespacedName, &frontProxy); err != nil {
 		if ctrlruntimeclient.IgnoreNotFound(err) != nil {
 			metrics.RecordReconciliationError(metrics.FrontProxyResourceType, err.Error())
 			return ctrl.Result{}, fmt.Errorf("failed to get FrontProxy object: %w", err)
@@ -190,7 +190,7 @@ func (r *FrontProxyReconciler) reconcileStatus(ctx context.Context, oldFrontProx
 	if !isBundled {
 		compiled := &deployv1alpha1.CompiledFrontProxy{}
 		key := types.NamespacedName{Namespace: frontProxy.Namespace, Name: frontProxy.Name}
-		if err := r.Get(ctx, key, compiled); ctrlruntimeclient.IgnoreNotFound(err) != nil {
+		if err := r.Client.Get(ctx, key, compiled); ctrlruntimeclient.IgnoreNotFound(err) != nil {
 			errs = append(errs, err)
 		} else {
 			conditions = append(conditions, util.GetCompiledAvailableCondition(compiled.Status.Conditions, "CompiledFrontProxy "+frontProxy.Name))
@@ -226,7 +226,7 @@ func (r *FrontProxyReconciler) reconcileStatus(ctx context.Context, oldFrontProx
 
 	// only patch the status if there are actual changes.
 	if !equality.Semantic.DeepEqual(oldFrontProxy.Status, frontProxy.Status) {
-		if err := r.Status().Patch(ctx, frontProxy, ctrlruntimeclient.MergeFrom(oldFrontProxy)); err != nil {
+		if err := r.Client.Status().Patch(ctx, frontProxy, ctrlruntimeclient.MergeFrom(oldFrontProxy)); err != nil {
 			errs = append(errs, err)
 		}
 	}

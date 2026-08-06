@@ -40,7 +40,7 @@ const cleanupFinalizer = "operator.kcp.io/cleanup-rbac"
 
 // KubeconfigRBACReconciler reconciles a Kubeconfig object
 type KubeconfigRBACReconciler struct {
-	ctrlruntimeclient.Client
+	Client ctrlruntimeclient.Client
 	Scheme *runtime.Scheme
 }
 
@@ -63,7 +63,7 @@ func (r *KubeconfigRBACReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	logger.V(4).Info("Reconciling")
 
 	config := &operatorv1alpha1.Kubeconfig{}
-	if err := r.Get(ctx, req.NamespacedName, config); err != nil {
+	if err := r.Client.Get(ctx, req.NamespacedName, config); err != nil {
 		return ctrl.Result{}, ctrlruntimeclient.IgnoreNotFound(err)
 	}
 
@@ -250,7 +250,7 @@ func (r *KubeconfigRBACReconciler) patchProvisionedCluster(ctx context.Context, 
 	}
 	kc.Status.Authorization.ProvisionedCluster = newValue
 
-	return true, r.Status().Patch(ctx, kc, ctrlruntimeclient.MergeFrom(oldKubeconfig))
+	return true, r.Client.Status().Patch(ctx, kc, ctrlruntimeclient.MergeFrom(oldKubeconfig))
 }
 
 func (r *KubeconfigRBACReconciler) ensureFinalizer(ctx context.Context, config *operatorv1alpha1.Kubeconfig) (updated bool, err error) {
@@ -264,7 +264,7 @@ func (r *KubeconfigRBACReconciler) ensureFinalizer(ctx context.Context, config *
 	finalizers.Insert(cleanupFinalizer)
 	config.SetFinalizers(sets.List(finalizers))
 
-	if err := r.Patch(ctx, config, ctrlruntimeclient.MergeFrom(original)); err != nil {
+	if err := r.Client.Patch(ctx, config, ctrlruntimeclient.MergeFrom(original)); err != nil {
 		return false, err
 	}
 
@@ -282,5 +282,5 @@ func (r *KubeconfigRBACReconciler) removeFinalizer(ctx context.Context, config *
 	finalizers.Delete(cleanupFinalizer)
 	config.SetFinalizers(sets.List(finalizers))
 
-	return r.Patch(ctx, config, ctrlruntimeclient.MergeFrom(original))
+	return r.Client.Patch(ctx, config, ctrlruntimeclient.MergeFrom(original))
 }

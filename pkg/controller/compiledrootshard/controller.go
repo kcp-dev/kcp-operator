@@ -48,7 +48,7 @@ import (
 
 // CompiledRootShardReconciler reconciles a CompiledRootShard object
 type CompiledRootShardReconciler struct {
-	ctrlruntimeclient.Client
+	Client ctrlruntimeclient.Client
 	Scheme *runtime.Scheme
 }
 
@@ -88,7 +88,7 @@ func (r *CompiledRootShardReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	logger.V(4).Info("Reconciling")
 
 	var rootShard deployv1alpha1.CompiledRootShard
-	if err := r.Get(ctx, req.NamespacedName, &rootShard); err != nil {
+	if err := r.Client.Get(ctx, req.NamespacedName, &rootShard); err != nil {
 		if ctrlruntimeclient.IgnoreNotFound(err) != nil {
 			metrics.RecordReconciliationError(metrics.CompiledRootShardResourceType, err.Error())
 			return ctrl.Result{}, fmt.Errorf("failed to find %s/%s: %w", req.Namespace, req.Name, err)
@@ -174,7 +174,7 @@ func (r *CompiledRootShardReconciler) reconcileStatus(ctx context.Context, oldRo
 	}
 
 	if !equality.Semantic.DeepEqual(oldRootShard.Status, rootShard.Status) {
-		if err := r.Status().Patch(ctx, rootShard, ctrlruntimeclient.MergeFrom(oldRootShard)); err != nil {
+		if err := r.Client.Status().Patch(ctx, rootShard, ctrlruntimeclient.MergeFrom(oldRootShard)); err != nil {
 			errs = append(errs, err)
 		}
 	}

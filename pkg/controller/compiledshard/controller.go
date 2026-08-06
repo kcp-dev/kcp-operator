@@ -47,7 +47,7 @@ import (
 
 // CompiledShardReconciler reconciles a CompiledShard object
 type CompiledShardReconciler struct {
-	ctrlruntimeclient.Client
+	Client ctrlruntimeclient.Client
 	Scheme *runtime.Scheme
 }
 
@@ -85,7 +85,7 @@ func (r *CompiledShardReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	logger.V(4).Info("Reconciling CompiledShard object")
 
 	var s deployv1alpha1.CompiledShard
-	if err := r.Get(ctx, req.NamespacedName, &s); err != nil {
+	if err := r.Client.Get(ctx, req.NamespacedName, &s); err != nil {
 		if ctrlruntimeclient.IgnoreNotFound(err) != nil {
 			metrics.RecordReconciliationError(metrics.CompiledShardResourceType, err.Error())
 			return ctrl.Result{}, fmt.Errorf("failed to get shard: %w", err)

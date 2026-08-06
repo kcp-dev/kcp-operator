@@ -38,7 +38,7 @@ import (
 
 // CompiledCacheServerReconciler reconciles a CompiledCacheServer object
 type CompiledCacheServerReconciler struct {
-	ctrlruntimeclient.Client
+	Client ctrlruntimeclient.Client
 	Scheme *runtime.Scheme
 }
 
@@ -69,7 +69,7 @@ func (r *CompiledCacheServerReconciler) Reconcile(ctx context.Context, req ctrlr
 	logger.V(4).Info("Reconciling")
 
 	server := &deployv1alpha1.CompiledCacheServer{}
-	if err := r.Get(ctx, req.NamespacedName, server); err != nil {
+	if err := r.Client.Get(ctx, req.NamespacedName, server); err != nil {
 		return ctrlruntime.Result{}, ctrlruntimeclient.IgnoreNotFound(err)
 	}
 

@@ -58,7 +58,7 @@ const cleanupFinalizer = "operator.kcp.io/cleanup-shard"
 
 // ShardReconciler reconciles a Shard object
 type ShardReconciler struct {
-	ctrlruntimeclient.Client
+	Client ctrlruntimeclient.Client
 	Scheme *runtime.Scheme
 }
 
@@ -132,7 +132,7 @@ func (r *ShardReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res 
 	logger.V(4).Info("Reconciling Shard object")
 
 	var s operatorv1alpha1.Shard
-	if err := r.Get(ctx, req.NamespacedName, &s); err != nil {
+	if err := r.Client.Get(ctx, req.NamespacedName, &s); err != nil {
 		if ctrlruntimeclient.IgnoreNotFound(err) != nil {
 			metrics.RecordReconciliationError(metrics.ShardResourceType, err.Error())
 			return ctrl.Result{}, fmt.Errorf("failed to get shard: %w", err)
@@ -229,7 +229,7 @@ func (r *ShardReconciler) reconcile(ctx context.Context, s *operatorv1alpha1.Sha
 	if s.Spec.KCPVirtualWorkspace != nil {
 		kcpVW = &operatorv1alpha1.VirtualWorkspace{}
 		key := types.NamespacedName{Namespace: s.Namespace, Name: s.Spec.KCPVirtualWorkspace.Name}
-		if err := r.Get(ctx, key, kcpVW); err != nil {
+		if err := r.Client.Get(ctx, key, kcpVW); err != nil {
 			errs = append(errs, fmt.Errorf("failed to find associated VirtualWorkspace %s: %w", key.Name, err))
 			vwConfigValid = false
 		}
@@ -272,7 +272,7 @@ func (r *ShardReconciler) reconcileStatus(ctx context.Context, oldShard *operato
 	if !isBundled {
 		compiled := &deployv1alpha1.CompiledShard{}
 		key := types.NamespacedName{Namespace: newShard.Namespace, Name: newShard.Name}
-		if err := r.Get(ctx, key, compiled); ctrlruntimeclient.IgnoreNotFound(err) != nil {
+		if err := r.Client.Get(ctx, key, compiled); ctrlruntimeclient.IgnoreNotFound(err) != nil {
 			errs = append(errs, err)
 		} else {
 			conditions = append(conditions, util.GetCompiledAvailableCondition(compiled.Status.Conditions, "CompiledShard "+newShard.Name))
@@ -372,7 +372,7 @@ func (r *ShardReconciler) ensureFinalizer(ctx context.Context, s *operatorv1alph
 	finalizers.Insert(cleanupFinalizer)
 	s.SetFinalizers(sets.List(finalizers))
 
-	if err := r.Patch(ctx, s, ctrlruntimeclient.MergeFrom(original)); err != nil {
+	if err := r.Client.Patch(ctx, s, ctrlruntimeclient.MergeFrom(original)); err != nil {
 		return false, err
 	}
 
@@ -389,5 +389,5 @@ func (r *ShardReconciler) removeFinalizer(ctx context.Context, s *operatorv1alph
 	finalizers.Delete(cleanupFinalizer)
 	s.SetFinalizers(sets.List(finalizers))
 
-	return r.Patch(ctx, s, ctrlruntimeclient.MergeFrom(original))
+	return r.Client.Patch(ctx, s, ctrlruntimeclient.MergeFrom(original))
 }
