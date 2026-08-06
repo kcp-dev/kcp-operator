@@ -92,10 +92,19 @@ func ApplyResources(container corev1.Container, resources *corev1.ResourceRequir
 	return container
 }
 
+// ShardNames extracts the names of the given shards.
+func ShardNames(shards []operatorv1alpha1.Shard) []string {
+	names := make([]string, 0, len(shards))
+	for _, shard := range shards {
+		names = append(names, shard.Name)
+	}
+	return names
+}
+
 // ApplyAuthConfiguration applies the auth configuration to a deployment,
 // including ServiceAccount authentication, which loads the service-account
-// public key of the root shard and of every shard in shards.
-func ApplyAuthConfiguration(deployment *appsv1.Deployment, config *operatorv1alpha1.AuthSpec, rootShard *operatorv1alpha1.RootShard, shards []operatorv1alpha1.Shard) *appsv1.Deployment {
+// public key of the root shard and of every shard in shardNames.
+func ApplyAuthConfiguration(deployment *appsv1.Deployment, config *operatorv1alpha1.AuthSpec, rootShardName string, shardNames []string) *appsv1.Deployment {
 	if config == nil {
 		return deployment
 	}
@@ -113,7 +122,7 @@ func ApplyAuthConfiguration(deployment *appsv1.Deployment, config *operatorv1alp
 	}
 
 	if config.ServiceAccount != nil && config.ServiceAccount.Enabled {
-		deployment = applyServiceAccountAuthentication(deployment, rootShard, shards)
+		deployment = applyServiceAccountAuthentication(deployment, rootShardName, shardNames)
 	}
 
 	return deployment
