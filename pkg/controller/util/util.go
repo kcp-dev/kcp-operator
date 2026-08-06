@@ -38,11 +38,40 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	mcbuilder "sigs.k8s.io/multicluster-runtime/pkg/builder"
 	mchandler "sigs.k8s.io/multicluster-runtime/pkg/handler"
 	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
 
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
+
+// EngageFor casts engage options for For.
+// mcbuilder has no controller-wide engage setting, so the same options must be cast per builder method.
+func EngageFor(opts []mcbuilder.EngageOptions) []mcbuilder.ForOption {
+	out := make([]mcbuilder.ForOption, 0, len(opts))
+	for _, opt := range opts {
+		out = append(out, opt)
+	}
+	return out
+}
+
+// EngageOwns casts engage options for Owns.
+func EngageOwns(opts []mcbuilder.EngageOptions) []mcbuilder.OwnsOption {
+	out := make([]mcbuilder.OwnsOption, 0, len(opts))
+	for _, opt := range opts {
+		out = append(out, opt)
+	}
+	return out
+}
+
+// EngageWatches casts engage options for Watches.
+func EngageWatches(opts []mcbuilder.EngageOptions) []mcbuilder.WatchesOption {
+	out := make([]mcbuilder.WatchesOption, 0, len(opts))
+	for _, opt := range opts {
+		out = append(out, opt)
+	}
+	return out
+}
 
 // ClusterMapFunc is a handler.MapFunc that also gets a client, because
 // the reverse lookups these controllers watch on have to run against
