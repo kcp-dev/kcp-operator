@@ -19,16 +19,21 @@ package compiledcacheserver
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	k8creconciling "k8c.io/reconciler/pkg/reconciling"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	ctrlruntime "sigs.k8s.io/controller-runtime"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	mcbuilder "sigs.k8s.io/multicluster-runtime/pkg/builder"
+	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
+	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
+	mcreconcile "sigs.k8s.io/multicluster-runtime/pkg/reconcile"
 
 	"github.com/kcp-dev/kcp-operator/internal/resources/compiledcacheserver"
 	"github.com/kcp-dev/kcp-operator/pkg/controller/util"
@@ -38,18 +43,17 @@ import (
 
 // CompiledCacheServerReconciler reconciles a CompiledCacheServer object
 type CompiledCacheServerReconciler struct {
-	Client ctrlruntimeclient.Client
-	Scheme *runtime.Scheme
+	GetCluster func(ctx context.Context, clusterName multicluster.ClusterName) (cluster.Cluster, error)
 }
 
-func (r *CompiledCacheServerReconciler) SetupWithManager(mgr ctrlruntime.Manager) error {
+func (r *CompiledCacheServerReconciler) SetupWithManager(mgr mcmanager.Manager) error {
 	// The rendered Deployment mounts Secrets owned by the source object, not by this one,
 	// so an ownership watch would never retry a Deployment blocked on a missing mount.
-	mountHandler := util.EnqueueAllInNamespace(mgr.GetClient(), func() ctrlruntimeclient.ObjectList {
+	mountHandler := util.EnqueueAllInNamespace(func() ctrlruntimeclient.ObjectList {
 		return &deployv1alpha1.CompiledCacheServerList{}
 	})
 
-	return ctrlruntime.NewControllerManagedBy(mgr).
+	return mcbuilder.ControllerManagedBy(mgr).
 		Named("compiled-cache-server").
 		For(&deployv1alpha1.CompiledCacheServer{}).
 		Owns(&appsv1.Deployment{}).
@@ -64,12 +68,17 @@ func (r *CompiledCacheServerReconciler) SetupWithManager(mgr ctrlruntime.Manager
 // +kubebuilder:rbac:groups=core,resources=services,verbs=get;list;watch;create;update;patch
 // +kubebuilder:rbac:groups=core,resources=configmaps;secrets,verbs=get;list;watch
 
-func (r *CompiledCacheServerReconciler) Reconcile(ctx context.Context, req ctrlruntime.Request) (ctrlruntime.Result, error) {
-	logger := log.FromContext(ctx)
+func (r *CompiledCacheServerReconciler) Reconcile(ctx context.Context, req mcreconcile.Request) (ctrlruntime.Result, error) {
+	logger := log.FromContext(ctx).WithValues("cluster", req.ClusterName)
 	logger.V(4).Info("Reconciling")
 
+	cl, err := r.GetCluster(ctx, req.ClusterName)
+	if err != nil {
+		return ctrlruntime.Result{}, fmt.Errorf("failed to get cluster %q: %w", req.ClusterName, err)
+	}
+
 	server := &deployv1alpha1.CompiledCacheServer{}
-	if err := r.Client.Get(ctx, req.NamespacedName, server); err != nil {
+	if err := cl.GetClient().Get(ctx, req.NamespacedName, server); err != nil {
 		return ctrlruntime.Result{}, ctrlruntimeclient.IgnoreNotFound(err)
 	}
 
@@ -77,7 +86,7 @@ func (r *CompiledCacheServerReconciler) Reconcile(ctx context.Context, req ctrlr
 		return ctrlruntime.Result{}, nil
 	}
 
-	if err := r.reconcile(ctx, r.Client, server); err != nil {
+	if err := r.reconcile(ctx, cl.GetClient(), server); err != nil {
 		return ctrlruntime.Result{}, err
 	}
 

@@ -18,16 +18,21 @@ package cacheserver
 
 import (
 	"context"
+	"fmt"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	k8creconciling "k8c.io/reconciler/pkg/reconciling"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	ctrlruntime "sigs.k8s.io/controller-runtime"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	mcbuilder "sigs.k8s.io/multicluster-runtime/pkg/builder"
+	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
+	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
+	mcreconcile "sigs.k8s.io/multicluster-runtime/pkg/reconcile"
 
 	"github.com/kcp-dev/kcp-operator/internal/resources/cacheserver"
 	"github.com/kcp-dev/kcp-operator/pkg/controller/util"
@@ -39,12 +44,11 @@ import (
 
 // CacheServerReconciler reconciles a CacheServer object
 type CacheServerReconciler struct {
-	Client ctrlruntimeclient.Client
-	Scheme *runtime.Scheme
+	GetCluster func(ctx context.Context, clusterName multicluster.ClusterName) (cluster.Cluster, error)
 }
 
-func (r *CacheServerReconciler) SetupWithManager(mgr ctrlruntime.Manager) error {
-	return ctrlruntime.NewControllerManagedBy(mgr).
+func (r *CacheServerReconciler) SetupWithManager(mgr mcmanager.Manager) error {
+	return mcbuilder.ControllerManagedBy(mgr).
 		Named("cache-server").
 		For(&operatorv1alpha1.CacheServer{}).
 		Owns(&deployv1alpha1.CompiledCacheServer{}).
@@ -62,12 +66,17 @@ func (r *CacheServerReconciler) SetupWithManager(mgr ctrlruntime.Manager) error 
 // +kubebuilder:rbac:groups=deploy.operator.kcp.io,resources=compiledcacheservers/finalizers,verbs=update
 // +kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch;create;update;patch
 
-func (r *CacheServerReconciler) Reconcile(ctx context.Context, req ctrlruntime.Request) (ctrlruntime.Result, error) {
-	logger := log.FromContext(ctx)
+func (r *CacheServerReconciler) Reconcile(ctx context.Context, req mcreconcile.Request) (ctrlruntime.Result, error) {
+	logger := log.FromContext(ctx).WithValues("cluster", req.ClusterName)
 	logger.V(4).Info("Reconciling")
 
+	cl, err := r.GetCluster(ctx, req.ClusterName)
+	if err != nil {
+		return ctrlruntime.Result{}, fmt.Errorf("failed to get cluster %q: %w", req.ClusterName, err)
+	}
+
 	server := &operatorv1alpha1.CacheServer{}
-	if err := r.Client.Get(ctx, req.NamespacedName, server); err != nil {
+	if err := cl.GetClient().Get(ctx, req.NamespacedName, server); err != nil {
 		return ctrlruntime.Result{}, ctrlruntimeclient.IgnoreNotFound(err)
 	}
 
@@ -75,7 +84,7 @@ func (r *CacheServerReconciler) Reconcile(ctx context.Context, req ctrlruntime.R
 		return ctrlruntime.Result{}, nil
 	}
 
-	if err := r.reconcile(ctx, r.Client, server); err != nil {
+	if err := r.reconcile(ctx, cl.GetClient(), server); err != nil {
 		return ctrlruntime.Result{}, err
 	}
 

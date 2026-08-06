@@ -26,12 +26,16 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	mcbuilder "sigs.k8s.io/multicluster-runtime/pkg/builder"
+	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
+	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
+	mcreconcile "sigs.k8s.io/multicluster-runtime/pkg/reconcile"
 
 	"github.com/kcp-dev/kcp-operator/internal/resources"
 	"github.com/kcp-dev/kcp-operator/internal/resources/compiledfrontproxy"
@@ -43,19 +47,18 @@ import (
 
 // CompiledFrontProxyReconciler reconciles a CompiledFrontProxy object
 type CompiledFrontProxyReconciler struct {
-	Client ctrlruntimeclient.Client
-	Scheme *runtime.Scheme
+	GetCluster func(ctx context.Context, clusterName multicluster.ClusterName) (cluster.Cluster, error)
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *CompiledFrontProxyReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *CompiledFrontProxyReconciler) SetupWithManager(mgr mcmanager.Manager) error {
 	// The rendered Deployment mounts Secrets owned by the source object, not by this one,
 	// so an ownership watch would never retry a Deployment blocked on a missing mount.
-	mountHandler := util.EnqueueAllInNamespace(mgr.GetClient(), func() ctrlruntimeclient.ObjectList {
+	mountHandler := util.EnqueueAllInNamespace(func() ctrlruntimeclient.ObjectList {
 		return &deployv1alpha1.CompiledFrontProxyList{}
 	})
 
-	return ctrl.NewControllerManagedBy(mgr).
+	return mcbuilder.ControllerManagedBy(mgr).
 		Named("compiled-frontproxy").
 		For(&deployv1alpha1.CompiledFrontProxy{}).
 		Owns(&appsv1.Deployment{}).
@@ -71,18 +74,23 @@ func (r *CompiledFrontProxyReconciler) SetupWithManager(mgr ctrl.Manager) error 
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch
 // +kubebuilder:rbac:groups=core,resources=services;configmaps;secrets,verbs=get;list;watch;create;update;patch
 
-func (r *CompiledFrontProxyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, recErr error) {
+func (r *CompiledFrontProxyReconciler) Reconcile(ctx context.Context, req mcreconcile.Request) (res ctrl.Result, recErr error) {
 	startTime := time.Now()
 	defer func() {
 		duration := time.Since(startTime)
 		metrics.RecordReconciliationMetrics(metrics.CompiledFrontProxyResourceType, duration.Seconds(), recErr)
 	}()
 
-	logger := log.FromContext(ctx)
+	logger := log.FromContext(ctx).WithValues("cluster", req.ClusterName)
 	logger.V(4).Info("Reconciling")
 
+	cl, err := r.GetCluster(ctx, req.ClusterName)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to get cluster %q: %w", req.ClusterName, err)
+	}
+
 	var frontProxy deployv1alpha1.CompiledFrontProxy
-	if err := r.Client.Get(ctx, req.NamespacedName, &frontProxy); err != nil {
+	if err := cl.GetClient().Get(ctx, req.NamespacedName, &frontProxy); err != nil {
 		if ctrlruntimeclient.IgnoreNotFound(err) != nil {
 			metrics.RecordReconciliationError(metrics.CompiledFrontProxyResourceType, err.Error())
 			return ctrl.Result{}, fmt.Errorf("failed to get CompiledFrontProxy object: %w", err)
@@ -92,9 +100,9 @@ func (r *CompiledFrontProxyReconciler) Reconcile(ctx context.Context, req ctrl.R
 		return ctrl.Result{}, nil
 	}
 
-	conditions, recErr := r.reconcile(ctx, r.Client, &frontProxy)
+	conditions, recErr := r.reconcile(ctx, cl.GetClient(), &frontProxy)
 
-	if err := r.reconcileStatus(ctx, r.Client, &frontProxy, conditions); err != nil {
+	if err := r.reconcileStatus(ctx, cl.GetClient(), &frontProxy, conditions); err != nil {
 		recErr = kerrors.NewAggregate([]error{recErr, err})
 	}
 

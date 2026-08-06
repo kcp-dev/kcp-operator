@@ -25,11 +25,15 @@ import (
 	"k8c.io/reconciler/pkg/reconciling"
 
 	rbacv1 "k8s.io/api/rbac/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
 	ctrl "sigs.k8s.io/controller-runtime"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	mcbuilder "sigs.k8s.io/multicluster-runtime/pkg/builder"
+	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
+	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
+	mcreconcile "sigs.k8s.io/multicluster-runtime/pkg/reconcile"
 
 	"github.com/kcp-dev/kcp-operator/internal/resources/kubeconfig"
 	operatorclient "github.com/kcp-dev/kcp-operator/pkg/client"
@@ -40,13 +44,12 @@ const cleanupFinalizer = "operator.kcp.io/cleanup-rbac"
 
 // KubeconfigRBACReconciler reconciles a Kubeconfig object
 type KubeconfigRBACReconciler struct {
-	Client ctrlruntimeclient.Client
-	Scheme *runtime.Scheme
+	GetCluster func(ctx context.Context, clusterName multicluster.ClusterName) (cluster.Cluster, error)
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *KubeconfigRBACReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
+func (r *KubeconfigRBACReconciler) SetupWithManager(mgr mcmanager.Manager) error {
+	return mcbuilder.ControllerManagedBy(mgr).
 		For(&operatorv1alpha1.Kubeconfig{}).
 		Named("kubeconfig-rbac").
 		Complete(r)
@@ -58,16 +61,21 @@ func (r *KubeconfigRBACReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-func (r *KubeconfigRBACReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	logger := log.FromContext(ctx)
+func (r *KubeconfigRBACReconciler) Reconcile(ctx context.Context, req mcreconcile.Request) (ctrl.Result, error) {
+	logger := log.FromContext(ctx).WithValues("cluster", req.ClusterName)
 	logger.V(4).Info("Reconciling")
 
+	cl, err := r.GetCluster(ctx, req.ClusterName)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to get cluster %q: %w", req.ClusterName, err)
+	}
+
 	config := &operatorv1alpha1.Kubeconfig{}
-	if err := r.Client.Get(ctx, req.NamespacedName, config); err != nil {
+	if err := cl.GetClient().Get(ctx, req.NamespacedName, config); err != nil {
 		return ctrl.Result{}, ctrlruntimeclient.IgnoreNotFound(err)
 	}
 
-	err := r.reconcile(ctx, r.Client, config)
+	err = r.reconcile(ctx, cl.GetClient(), config)
 
 	return ctrl.Result{}, err
 }

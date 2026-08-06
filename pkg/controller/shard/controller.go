@@ -39,9 +39,13 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	ctrl "sigs.k8s.io/controller-runtime"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	mcbuilder "sigs.k8s.io/multicluster-runtime/pkg/builder"
+	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
+	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
+	mcreconcile "sigs.k8s.io/multicluster-runtime/pkg/reconcile"
 
 	"github.com/kcp-dev/kcp-operator/internal/resources/shard"
 	operatorclient "github.com/kcp-dev/kcp-operator/pkg/client"
@@ -58,17 +62,16 @@ const cleanupFinalizer = "operator.kcp.io/cleanup-shard"
 
 // ShardReconciler reconciles a Shard object
 type ShardReconciler struct {
-	Client ctrlruntimeclient.Client
-	Scheme *runtime.Scheme
+	GetCluster func(ctx context.Context, clusterName multicluster.ClusterName) (cluster.Cluster, error)
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *ShardReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	rootShardHandler := handler.TypedEnqueueRequestsFromMapFunc(func(ctx context.Context, obj ctrlruntimeclient.Object) []reconcile.Request {
+func (r *ShardReconciler) SetupWithManager(mgr mcmanager.Manager) error {
+	rootShardHandler := util.EnqueueMapped(func(ctx context.Context, client ctrlruntimeclient.Client, obj ctrlruntimeclient.Object) []reconcile.Request {
 		rootShard := obj.(*operatorv1alpha1.RootShard)
 
 		var shards operatorv1alpha1.ShardList
-		if err := mgr.GetClient().List(ctx, &shards, ctrlruntimeclient.InNamespace(rootShard.Namespace)); err != nil {
+		if err := client.List(ctx, &shards, ctrlruntimeclient.InNamespace(rootShard.Namespace)); err != nil {
 			utilruntime.HandleError(err)
 			return nil
 		}
@@ -83,11 +86,11 @@ func (r *ShardReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return requests
 	})
 
-	vwHandler := handler.TypedEnqueueRequestsFromMapFunc(func(ctx context.Context, obj ctrlruntimeclient.Object) []reconcile.Request {
+	vwHandler := util.EnqueueMapped(func(ctx context.Context, client ctrlruntimeclient.Client, obj ctrlruntimeclient.Object) []reconcile.Request {
 		vw := obj.(*operatorv1alpha1.VirtualWorkspace)
 
 		var shards operatorv1alpha1.ShardList
-		if err := mgr.GetClient().List(ctx, &shards, ctrlruntimeclient.InNamespace(vw.Namespace)); err != nil {
+		if err := client.List(ctx, &shards, ctrlruntimeclient.InNamespace(vw.Namespace)); err != nil {
 			utilruntime.HandleError(err)
 			return nil
 		}
@@ -102,7 +105,7 @@ func (r *ShardReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return requests
 	})
 
-	return ctrl.NewControllerManagedBy(mgr).
+	return mcbuilder.ControllerManagedBy(mgr).
 		Named("shard").
 		For(&operatorv1alpha1.Shard{}).
 		Owns(&deployv1alpha1.CompiledShard{}).
@@ -121,18 +124,23 @@ func (r *ShardReconciler) SetupWithManager(mgr ctrl.Manager) error {
 // +kubebuilder:rbac:groups=deploy.operator.kcp.io,resources=compiledshards/finalizers,verbs=update
 // +kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch;create;update;patch;delete
 
-func (r *ShardReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, recErr error) {
+func (r *ShardReconciler) Reconcile(ctx context.Context, req mcreconcile.Request) (res ctrl.Result, recErr error) {
 	startTime := time.Now()
 	defer func() {
 		duration := time.Since(startTime)
 		metrics.RecordReconciliationMetrics(metrics.ShardResourceType, duration.Seconds(), recErr)
 	}()
 
-	logger := log.FromContext(ctx)
+	logger := log.FromContext(ctx).WithValues("cluster", req.ClusterName)
 	logger.V(4).Info("Reconciling Shard object")
 
+	cl, err := r.GetCluster(ctx, req.ClusterName)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to get cluster %q: %w", req.ClusterName, err)
+	}
+
 	var s operatorv1alpha1.Shard
-	if err := r.Client.Get(ctx, req.NamespacedName, &s); err != nil {
+	if err := cl.GetClient().Get(ctx, req.NamespacedName, &s); err != nil {
 		if ctrlruntimeclient.IgnoreNotFound(err) != nil {
 			metrics.RecordReconciliationError(metrics.ShardResourceType, err.Error())
 			return ctrl.Result{}, fmt.Errorf("failed to get shard: %w", err)
@@ -141,9 +149,9 @@ func (r *ShardReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res 
 		return ctrl.Result{}, nil
 	}
 
-	conditions, recErr := r.reconcile(ctx, r.Client, r.Scheme, &s)
+	conditions, recErr := r.reconcile(ctx, cl.GetClient(), cl.GetScheme(), &s)
 
-	if err := r.reconcileStatus(ctx, r.Client, &s, conditions); err != nil {
+	if err := r.reconcileStatus(ctx, cl.GetClient(), &s, conditions); err != nil {
 		recErr = kerrors.NewAggregate([]error{recErr, err})
 	}
 

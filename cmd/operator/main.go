@@ -40,6 +40,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
 
 	"github.com/kcp-dev/kcp-operator/pkg/config"
 	"github.com/kcp-dev/kcp-operator/pkg/controller"
@@ -171,7 +172,7 @@ func run(ctx context.Context) error {
 		metricsServerOptions.FilterProvider = filters.WithAuthenticationAndAuthorization
 	}
 
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+	mgr, err := mcmanager.New(ctrl.GetConfigOrDie(), nil, ctrl.Options{
 		Scheme:                 scheme,
 		Metrics:                metricsServerOptions,
 		WebhookServer:          webhookServer,
@@ -208,7 +209,7 @@ func run(ctx context.Context) error {
 
 	metrics.RegisterMetrics()
 
-	metricsCollector := metrics.NewMetricsCollector(mgr.GetClient())
+	metricsCollector := metrics.NewMetricsCollector(mgr.GetLocalManager().GetClient())
 	go metricsCollector.Start(ctx)
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {

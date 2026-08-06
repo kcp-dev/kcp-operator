@@ -31,13 +31,16 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	mcbuilder "sigs.k8s.io/multicluster-runtime/pkg/builder"
+	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
+	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
+	mcreconcile "sigs.k8s.io/multicluster-runtime/pkg/reconcile"
 
 	"github.com/kcp-dev/kcp-operator/internal/resources"
 	"github.com/kcp-dev/kcp-operator/internal/resources/kubeconfig"
@@ -49,18 +52,17 @@ import (
 
 // KubeconfigReconciler reconciles a Kubeconfig object
 type KubeconfigReconciler struct {
-	Client ctrlruntimeclient.Client
-	Scheme *runtime.Scheme
+	GetCluster func(ctx context.Context, clusterName multicluster.ClusterName) (cluster.Cluster, error)
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *KubeconfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
+func (r *KubeconfigReconciler) SetupWithManager(mgr mcmanager.Manager) error {
+	return mcbuilder.ControllerManagedBy(mgr).
 		Named("kubeconfig").
 		For(&operatorv1alpha1.Kubeconfig{}).
-		Watches(&operatorv1alpha1.RootShard{}, handler.EnqueueRequestsFromMapFunc(r.mapRootShardToKubeconfigs)).
-		Watches(&operatorv1alpha1.Shard{}, handler.EnqueueRequestsFromMapFunc(r.mapShardToKubeconfigs)).
-		Watches(&operatorv1alpha1.FrontProxy{}, handler.EnqueueRequestsFromMapFunc(r.mapFrontProxyToKubeconfigs)).
+		Watches(&operatorv1alpha1.RootShard{}, util.EnqueueMapped(r.mapRootShardToKubeconfigs)).
+		Watches(&operatorv1alpha1.Shard{}, util.EnqueueMapped(r.mapShardToKubeconfigs)).
+		Watches(&operatorv1alpha1.FrontProxy{}, util.EnqueueMapped(r.mapFrontProxyToKubeconfigs)).
 		Owns(&corev1.Secret{}).
 		Owns(&certmanagerv1.Certificate{}).
 		Complete(r)
@@ -75,18 +77,23 @@ func (r *KubeconfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req mcreconcile.Request) (ctrl.Result, error) {
 	startTime := time.Now()
 	defer func() {
 		duration := time.Since(startTime)
 		metrics.RecordReconciliationMetrics(metrics.KubeconfigResourceType, duration.Seconds(), nil)
 	}()
 
-	logger := log.FromContext(ctx)
+	logger := log.FromContext(ctx).WithValues("cluster", req.ClusterName)
 	logger.V(4).Info("Reconciling")
 
+	cl, err := r.GetCluster(ctx, req.ClusterName)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to get cluster %q: %w", req.ClusterName, err)
+	}
+
 	var kc operatorv1alpha1.Kubeconfig
-	if err := r.Client.Get(ctx, req.NamespacedName, &kc); err != nil {
+	if err := cl.GetClient().Get(ctx, req.NamespacedName, &kc); err != nil {
 		// object has been deleted.
 		if apierrors.IsNotFound(err) {
 			return ctrl.Result{}, nil
@@ -102,7 +109,7 @@ func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	kcCopy := kc.DeepCopy()
 	kcCopy.Status.TargetName = r.getTargetName(&kc)
 
-	conditions, recErr := r.reconcile(ctx, r.Client, kcCopy, req.NamespacedName)
+	conditions, recErr := r.reconcile(ctx, cl.GetClient(), kcCopy, req.NamespacedName)
 	if recErr == nil && len(conditions) > 0 {
 		for _, cond := range conditions {
 			if cond.Reason == "ClientCertificateSecretNotReady" ||
@@ -111,14 +118,14 @@ func (r *KubeconfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 					"kubeconfig", req.NamespacedName,
 					"message", cond.Message)
 
-				_ = r.reconcileStatus(ctx, r.Client, &kc, kcCopy, conditions)
+				_ = r.reconcileStatus(ctx, cl.GetClient(), &kc, kcCopy, conditions)
 
 				return ctrl.Result{RequeueAfter: time.Second * 5}, nil
 			}
 		}
 	}
 
-	if err := r.reconcileStatus(ctx, r.Client, &kc, kcCopy, conditions); err != nil {
+	if err := r.reconcileStatus(ctx, cl.GetClient(), &kc, kcCopy, conditions); err != nil {
 		recErr = kerrors.NewAggregate([]error{recErr, err})
 	}
 
@@ -383,38 +390,38 @@ func (r *KubeconfigReconciler) getCertificateSecret(ctx context.Context, client 
 	return secret, nil
 }
 
-func (r *KubeconfigReconciler) mapRootShardToKubeconfigs(ctx context.Context, obj ctrlruntimeclient.Object) []ctrl.Request {
+func (r *KubeconfigReconciler) mapRootShardToKubeconfigs(ctx context.Context, client ctrlruntimeclient.Client, obj ctrlruntimeclient.Object) []ctrl.Request {
 	logger := log.FromContext(ctx).WithValues("rootShard", obj.GetName())
 
 	logger.V(4).Info("Mapping RootShard to Kubeconfigs")
 
-	return r.mapKubeconfigs(ctx, func(t operatorv1alpha1.KubeconfigTarget) bool {
+	return r.mapKubeconfigs(ctx, client, func(t operatorv1alpha1.KubeconfigTarget) bool {
 		return t.RootShardRef != nil && t.RootShardRef.Name == obj.GetName()
 	})
 }
 
-func (r *KubeconfigReconciler) mapShardToKubeconfigs(ctx context.Context, obj ctrlruntimeclient.Object) []ctrl.Request {
+func (r *KubeconfigReconciler) mapShardToKubeconfigs(ctx context.Context, client ctrlruntimeclient.Client, obj ctrlruntimeclient.Object) []ctrl.Request {
 	logger := log.FromContext(ctx).WithValues("shard", obj.GetName())
 
 	logger.V(4).Info("Mapping Shard to Kubeconfigs")
 
-	return r.mapKubeconfigs(ctx, func(t operatorv1alpha1.KubeconfigTarget) bool {
+	return r.mapKubeconfigs(ctx, client, func(t operatorv1alpha1.KubeconfigTarget) bool {
 		return t.ShardRef != nil && t.ShardRef.Name == obj.GetName()
 	})
 }
 
-func (r *KubeconfigReconciler) mapFrontProxyToKubeconfigs(ctx context.Context, obj ctrlruntimeclient.Object) []ctrl.Request {
+func (r *KubeconfigReconciler) mapFrontProxyToKubeconfigs(ctx context.Context, client ctrlruntimeclient.Client, obj ctrlruntimeclient.Object) []ctrl.Request {
 	logger := log.FromContext(ctx).WithValues("frontProxy", obj.GetName())
 	logger.V(4).Info("Mapping FrontProxy to Kubeconfigs")
 
-	return r.mapKubeconfigs(ctx, func(t operatorv1alpha1.KubeconfigTarget) bool {
+	return r.mapKubeconfigs(ctx, client, func(t operatorv1alpha1.KubeconfigTarget) bool {
 		return t.FrontProxyRef != nil && t.FrontProxyRef.Name == obj.GetName()
 	})
 }
 
-func (r *KubeconfigReconciler) mapKubeconfigs(ctx context.Context, matches func(kc operatorv1alpha1.KubeconfigTarget) bool) []ctrl.Request {
+func (r *KubeconfigReconciler) mapKubeconfigs(ctx context.Context, client ctrlruntimeclient.Client, matches func(kc operatorv1alpha1.KubeconfigTarget) bool) []ctrl.Request {
 	var kubeconfigs operatorv1alpha1.KubeconfigList
-	if err := r.Client.List(ctx, &kubeconfigs); err != nil {
+	if err := client.List(ctx, &kubeconfigs); err != nil {
 		log.FromContext(ctx).Error(err, "Failed to list Kubeconfigs")
 		return []ctrl.Request{}
 	}

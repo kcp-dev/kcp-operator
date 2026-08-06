@@ -29,13 +29,16 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	mcbuilder "sigs.k8s.io/multicluster-runtime/pkg/builder"
+	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
+	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
+	mcreconcile "sigs.k8s.io/multicluster-runtime/pkg/reconcile"
 
 	"github.com/kcp-dev/kcp-operator/internal/resources"
 	"github.com/kcp-dev/kcp-operator/internal/resources/virtualworkspace"
@@ -49,18 +52,17 @@ import (
 
 // Reconciler reconciles a VirtualWorkspace object
 type Reconciler struct {
-	Client ctrlruntimeclient.Client
-	Scheme *runtime.Scheme
+	GetCluster func(ctx context.Context, clusterName multicluster.ClusterName) (cluster.Cluster, error)
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
+func (r *Reconciler) SetupWithManager(mgr mcmanager.Manager) error {
+	return mcbuilder.ControllerManagedBy(mgr).
 		Named("virtualworkspace").
 		For(&operatorv1alpha1.VirtualWorkspace{}).
-		Watches(&operatorv1alpha1.RootShard{}, handler.EnqueueRequestsFromMapFunc(r.mapRootShardToVirtualWorkspaces)).
-		Watches(&operatorv1alpha1.Shard{}, handler.EnqueueRequestsFromMapFunc(r.mapShardToVirtualWorkspaces)).
-		Watches(&certmanagerv1.Issuer{}, handler.EnqueueRequestsFromMapFunc(r.mapIssuerToVirtualWorkspaces)).
+		Watches(&operatorv1alpha1.RootShard{}, util.EnqueueMapped(r.mapRootShardToVirtualWorkspaces)).
+		Watches(&operatorv1alpha1.Shard{}, util.EnqueueMapped(r.mapShardToVirtualWorkspaces)).
+		Watches(&certmanagerv1.Issuer{}, util.EnqueueMapped(r.mapIssuerToVirtualWorkspaces)).
 		Owns(&corev1.Secret{}).
 		Owns(&certmanagerv1.Certificate{}).
 		Owns(&deployv1alpha1.CompiledVirtualWorkspace{}).
@@ -79,18 +81,23 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, recErr error) {
+func (r *Reconciler) Reconcile(ctx context.Context, req mcreconcile.Request) (res ctrl.Result, recErr error) {
 	startTime := time.Now()
 	defer func() {
 		duration := time.Since(startTime)
 		metrics.RecordReconciliationMetrics(metrics.VirtualWorkspaceResourceType, duration.Seconds(), recErr)
 	}()
 
-	logger := log.FromContext(ctx)
+	logger := log.FromContext(ctx).WithValues("cluster", req.ClusterName)
 	logger.V(4).Info("Reconciling")
 
+	cl, err := r.GetCluster(ctx, req.ClusterName)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to get cluster %q: %w", req.ClusterName, err)
+	}
+
 	vw := &operatorv1alpha1.VirtualWorkspace{}
-	if err := r.Client.Get(ctx, req.NamespacedName, vw); err != nil {
+	if err := cl.GetClient().Get(ctx, req.NamespacedName, vw); err != nil {
 		// object has been deleted.
 		if apierrors.IsNotFound(err) {
 			return ctrl.Result{}, nil
@@ -105,9 +112,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 
 	vwCopy := vw.DeepCopy()
 
-	conditions, recErr := r.reconcile(ctx, r.Client, vwCopy)
+	conditions, recErr := r.reconcile(ctx, cl.GetClient(), vwCopy)
 
-	if err := r.reconcileStatus(ctx, r.Client, vw, vwCopy, conditions); err != nil {
+	if err := r.reconcileStatus(ctx, cl.GetClient(), vw, vwCopy, conditions); err != nil {
 		recErr = kerrors.NewAggregate([]error{recErr, err})
 	}
 
@@ -251,31 +258,31 @@ func (r *Reconciler) reconcileStatus(ctx context.Context, client ctrlruntimeclie
 	return nil
 }
 
-func (r *Reconciler) mapRootShardToVirtualWorkspaces(ctx context.Context, obj ctrlruntimeclient.Object) []ctrl.Request {
+func (r *Reconciler) mapRootShardToVirtualWorkspaces(ctx context.Context, client ctrlruntimeclient.Client, obj ctrlruntimeclient.Object) []ctrl.Request {
 	logger := log.FromContext(ctx).WithValues("rootShard", obj.GetName())
 	logger.V(4).Info("Mapping RootShard to VirtualWorkspaces")
 
-	return r.mapVirtualWorkspaces(ctx, obj.GetNamespace(), func(target operatorv1alpha1.VirtualWorkspaceTarget) bool {
+	return r.mapVirtualWorkspaces(ctx, client, obj.GetNamespace(), func(target operatorv1alpha1.VirtualWorkspaceTarget) bool {
 		return target.RootShardRef != nil && target.RootShardRef.Name == obj.GetName()
 	})
 }
 
-func (r *Reconciler) mapShardToVirtualWorkspaces(ctx context.Context, obj ctrlruntimeclient.Object) []ctrl.Request {
+func (r *Reconciler) mapShardToVirtualWorkspaces(ctx context.Context, client ctrlruntimeclient.Client, obj ctrlruntimeclient.Object) []ctrl.Request {
 	logger := log.FromContext(ctx).WithValues("shard", obj.GetName())
 	logger.V(4).Info("Mapping Shard to VirtualWorkspaces")
 
-	return r.mapVirtualWorkspaces(ctx, obj.GetNamespace(), func(target operatorv1alpha1.VirtualWorkspaceTarget) bool {
+	return r.mapVirtualWorkspaces(ctx, client, obj.GetNamespace(), func(target operatorv1alpha1.VirtualWorkspaceTarget) bool {
 		return target.ShardRef != nil && target.ShardRef.Name == obj.GetName()
 	})
 }
 
-func (r *Reconciler) mapIssuerToVirtualWorkspaces(ctx context.Context, obj ctrlruntimeclient.Object) []ctrl.Request {
+func (r *Reconciler) mapIssuerToVirtualWorkspaces(ctx context.Context, client ctrlruntimeclient.Client, obj ctrlruntimeclient.Object) []ctrl.Request {
 	logger := log.FromContext(ctx).WithValues("issuer", obj.GetName())
 	logger.V(4).Info("Mapping Issuer to VirtualWorkspaces")
 
 	// Find all VirtualWorkspaces that use this Issuer for their client certificate
 	var virtualWorkspaces operatorv1alpha1.VirtualWorkspaceList
-	if err := r.Client.List(ctx, &virtualWorkspaces, ctrlruntimeclient.InNamespace(obj.GetNamespace())); err != nil {
+	if err := client.List(ctx, &virtualWorkspaces, ctrlruntimeclient.InNamespace(obj.GetNamespace())); err != nil {
 		logger.Error(err, "Failed to list VirtualWorkspaces")
 		return []ctrl.Request{}
 	}
@@ -286,15 +293,15 @@ func (r *Reconciler) mapIssuerToVirtualWorkspaces(ctx context.Context, obj ctrlr
 		switch {
 		case vw.Spec.Target.RootShardRef != nil:
 			rootShard := &operatorv1alpha1.RootShard{}
-			if err := r.Client.Get(ctx, types.NamespacedName{Name: vw.Spec.Target.RootShardRef.Name, Namespace: vw.Namespace}, rootShard); err == nil {
+			if err := client.Get(ctx, types.NamespacedName{Name: vw.Spec.Target.RootShardRef.Name, Namespace: vw.Namespace}, rootShard); err == nil {
 				expectedIssuer = resources.GetRootShardCAName(rootShard, operatorv1alpha1.ClientCA)
 			}
 		case vw.Spec.Target.ShardRef != nil:
 			shard := &operatorv1alpha1.Shard{}
-			if err := r.Client.Get(ctx, types.NamespacedName{Name: vw.Spec.Target.ShardRef.Name, Namespace: vw.Namespace}, shard); err == nil {
+			if err := client.Get(ctx, types.NamespacedName{Name: vw.Spec.Target.ShardRef.Name, Namespace: vw.Namespace}, shard); err == nil {
 				if ref := shard.Spec.RootShard.Reference; ref != nil {
 					rootShard := &operatorv1alpha1.RootShard{}
-					if err := r.Client.Get(ctx, types.NamespacedName{Name: ref.Name, Namespace: vw.Namespace}, rootShard); err == nil {
+					if err := client.Get(ctx, types.NamespacedName{Name: ref.Name, Namespace: vw.Namespace}, rootShard); err == nil {
 						expectedIssuer = resources.GetRootShardCAName(rootShard, operatorv1alpha1.ClientCA)
 					}
 				}
@@ -314,9 +321,9 @@ func (r *Reconciler) mapIssuerToVirtualWorkspaces(ctx context.Context, obj ctrlr
 	return requests
 }
 
-func (r *Reconciler) mapVirtualWorkspaces(ctx context.Context, namespace string, matches func(t operatorv1alpha1.VirtualWorkspaceTarget) bool) []ctrl.Request {
+func (r *Reconciler) mapVirtualWorkspaces(ctx context.Context, client ctrlruntimeclient.Client, namespace string, matches func(t operatorv1alpha1.VirtualWorkspaceTarget) bool) []ctrl.Request {
 	var virtualWorkspaces operatorv1alpha1.VirtualWorkspaceList
-	if err := r.Client.List(ctx, &virtualWorkspaces, ctrlruntimeclient.InNamespace(namespace)); err != nil {
+	if err := client.List(ctx, &virtualWorkspaces, ctrlruntimeclient.InNamespace(namespace)); err != nil {
 		log.FromContext(ctx).Error(err, "Failed to list VirtualWorkspaces")
 		return []ctrl.Request{}
 	}

@@ -27,6 +27,7 @@ import (
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 	ctrlruntimefakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	mcreconcile "sigs.k8s.io/multicluster-runtime/pkg/reconcile"
 
 	"github.com/kcp-dev/kcp-operator/pkg/controller/util"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
@@ -94,12 +95,13 @@ func TestReconciling(t *testing.T) {
 			ctx := context.Background()
 
 			controllerReconciler := &Reconciler{
-				Client: client,
-				Scheme: client.Scheme(),
+				GetCluster: util.SingleCluster(client),
 			}
 
-			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
-				NamespacedName: ctrlruntimeclient.ObjectKeyFromObject(testcase.virtualWorkspace),
+			_, err := controllerReconciler.Reconcile(ctx, mcreconcile.Request{
+				Request: reconcile.Request{
+					NamespacedName: ctrlruntimeclient.ObjectKeyFromObject(testcase.virtualWorkspace),
+				},
 			})
 			require.NoError(t, err)
 		})
@@ -357,12 +359,13 @@ func TestClientCABundleMerging(t *testing.T) {
 			ctx := context.Background()
 
 			controllerReconciler := &Reconciler{
-				Client: client,
-				Scheme: client.Scheme(),
+				GetCluster: util.SingleCluster(client),
 			}
 
-			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
-				NamespacedName: ctrlruntimeclient.ObjectKeyFromObject(tc.virtualWorkspace),
+			_, err := controllerReconciler.Reconcile(ctx, mcreconcile.Request{
+				Request: reconcile.Request{
+					NamespacedName: ctrlruntimeclient.ObjectKeyFromObject(tc.virtualWorkspace),
+				},
 			})
 			require.NoError(t, err)
 

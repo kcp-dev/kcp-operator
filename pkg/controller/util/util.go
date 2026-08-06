@@ -35,17 +35,45 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/utils/ptr"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	mchandler "sigs.k8s.io/multicluster-runtime/pkg/handler"
+	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
 
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
+// ClusterMapFunc is a handler.MapFunc that also gets a client, because
+// the reverse lookups these controllers watch on have to run against
+// the cluster the event came from.
+type ClusterMapFunc func(ctx context.Context, client ctrlruntimeclient.Client, obj ctrlruntimeclient.Object) []reconcile.Request
+
+func (m ClusterMapFunc) bind(client ctrlruntimeclient.Client) handler.MapFunc {
+	return func(ctx context.Context, obj ctrlruntimeclient.Object) []reconcile.Request {
+		return m(ctx, client, obj)
+	}
+}
+
+// EnqueueMapped adapts a ClusterMapFunc to Watches, which takes a factory rather than a handler because the cluster is only known once it is engaged.
+func EnqueueMapped(mapFunc ClusterMapFunc) mchandler.EventHandlerFunc {
+	return func(clusterName multicluster.ClusterName, cl cluster.Cluster) mchandler.EventHandler {
+		return mchandler.ForCluster(
+			handler.EnqueueRequestsFromMapFunc(
+				mapFunc.bind(
+					cl.GetClient(),
+				),
+			),
+			clusterName,
+		)
+	}
+}
+
 // EnqueueAllInNamespace wakes every object the given list type yields in the changed object's namespace.
 // The compiled controllers mount Secrets they do not own, so an ownership-based watch would never fire
 // for them and a Deployment blocked on a missing mount would never be retried.
-func EnqueueAllInNamespace(client ctrlruntimeclient.Client, newList func() ctrlruntimeclient.ObjectList) handler.EventHandler {
-	return handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, obj ctrlruntimeclient.Object) []reconcile.Request {
+func EnqueueAllInNamespace(newList func() ctrlruntimeclient.ObjectList) mchandler.EventHandlerFunc {
+	return EnqueueMapped(func(ctx context.Context, client ctrlruntimeclient.Client, obj ctrlruntimeclient.Object) []reconcile.Request {
 		list := newList()
 		if err := client.List(ctx, list, ctrlruntimeclient.InNamespace(obj.GetNamespace())); err != nil {
 			utilruntime.HandleError(err)

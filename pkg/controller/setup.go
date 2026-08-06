@@ -19,7 +19,7 @@ package controller
 import (
 	"fmt"
 
-	ctrl "sigs.k8s.io/controller-runtime"
+	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
 
 	"github.com/kcp-dev/kcp-operator/pkg/config"
 	"github.com/kcp-dev/kcp-operator/pkg/controller/bundle"
@@ -39,56 +39,46 @@ import (
 
 // AddConfigControllers registers the controllers that configure a kcp instance: they own the
 // cert-manager resources and compile the deploy.operator.kcp.io render inputs.
-func AddConfigControllers(mgr ctrl.Manager) error {
-	client := mgr.GetClient()
-
+func AddConfigControllers(mgr mcmanager.Manager) error {
 	if err := (&rootshard.RootShardReconciler{
-		Client: client,
-		Scheme: mgr.GetScheme(),
+		GetCluster: mgr.GetCluster,
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("unable to create controller %s: %w", "RootShard", err)
 	}
 	if err := (&frontproxy.FrontProxyReconciler{
-		Client: client,
-		Scheme: mgr.GetScheme(),
+		GetCluster: mgr.GetCluster,
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("unable to create controller %s: %w", "FrontProxy", err)
 	}
 	if err := (&shard.ShardReconciler{
-		Client: client,
-		Scheme: mgr.GetScheme(),
+		GetCluster: mgr.GetCluster,
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("unable to create controller %s: %w", "Shard", err)
 	}
 	if err := (&cacheserver.CacheServerReconciler{
-		Client: client,
-		Scheme: mgr.GetScheme(),
+		GetCluster: mgr.GetCluster,
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("unable to create controller %s: %w", "CacheServer", err)
 	}
 	if err := (&kubeconfig.KubeconfigReconciler{
-		Client: client,
-		Scheme: mgr.GetScheme(),
+		GetCluster: mgr.GetCluster,
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("unable to create controller %s: %w", "Kubeconfig", err)
 	}
 	if err := (&virtualworkspace.Reconciler{
-		Client: client,
-		Scheme: mgr.GetScheme(),
+		GetCluster: mgr.GetCluster,
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("unable to create controller %s: %w", "VirtualWorkspace", err)
 	}
 	if config.Enabled(config.ConfigurationBundle) {
 		if err := (&bundle.BundleReconciler{
-			Client: client,
-			Scheme: mgr.GetScheme(),
+			GetCluster: mgr.GetCluster,
 		}).SetupWithManager(mgr); err != nil {
 			return fmt.Errorf("unable to create controller %s: %w", "Bundle", err)
 		}
 	}
 	if err := (&kubeconfigrbac.KubeconfigRBACReconciler{
-		Client: client,
-		Scheme: mgr.GetScheme(),
+		GetCluster: mgr.GetCluster,
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("unable to create controller %s: %w", "KubeconfigRBAC", err)
 	}
@@ -97,36 +87,29 @@ func AddConfigControllers(mgr ctrl.Manager) error {
 
 // AddWorkloadControllers registers the controllers that turn compiled render inputs into
 // workloads such as Deployments and Services.
-func AddWorkloadControllers(mgr ctrl.Manager) error {
-	client := mgr.GetClient()
-
+func AddWorkloadControllers(mgr mcmanager.Manager) error {
 	if err := (&compiledrootshard.CompiledRootShardReconciler{
-		Client: client,
-		Scheme: mgr.GetScheme(),
+		GetCluster: mgr.GetCluster,
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("unable to create controller %s: %w", "CompiledRootShard", err)
 	}
 	if err := (&compiledfrontproxy.CompiledFrontProxyReconciler{
-		Client: client,
-		Scheme: mgr.GetScheme(),
+		GetCluster: mgr.GetCluster,
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("unable to create controller %s: %w", "CompiledFrontProxy", err)
 	}
 	if err := (&compiledshard.CompiledShardReconciler{
-		Client: client,
-		Scheme: mgr.GetScheme(),
+		GetCluster: mgr.GetCluster,
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("unable to create controller %s: %w", "CompiledShard", err)
 	}
 	if err := (&compiledcacheserver.CompiledCacheServerReconciler{
-		Client: client,
-		Scheme: mgr.GetScheme(),
+		GetCluster: mgr.GetCluster,
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("unable to create controller %s: %w", "CompiledCacheServer", err)
 	}
 	if err := (&compiledvirtualworkspace.CompiledVirtualWorkspaceReconciler{
-		Client: client,
-		Scheme: mgr.GetScheme(),
+		GetCluster: mgr.GetCluster,
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("unable to create controller %s: %w", "CompiledVirtualWorkspace", err)
 	}

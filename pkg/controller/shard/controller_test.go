@@ -32,7 +32,9 @@ import (
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 	ctrlruntimefakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	mcreconcile "sigs.k8s.io/multicluster-runtime/pkg/reconcile"
 
+	"github.com/kcp-dev/kcp-operator/pkg/controller/util"
 	deployv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/deploy/v1alpha1"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
@@ -267,19 +269,22 @@ func TestReconciling(t *testing.T) {
 			ctx := context.Background()
 
 			controllerReconciler := &ShardReconciler{
-				Client: client,
-				Scheme: client.Scheme(),
+				GetCluster: util.SingleCluster(client),
 			}
 
 			// First reconcile adds finalizer and returns early
-			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
-				NamespacedName: ctrlruntimeclient.ObjectKeyFromObject(testcase.shard),
+			_, err := controllerReconciler.Reconcile(ctx, mcreconcile.Request{
+				Request: reconcile.Request{
+					NamespacedName: ctrlruntimeclient.ObjectKeyFromObject(testcase.shard),
+				},
 			})
 			require.NoError(t, err)
 
 			// Second reconcile performs actual reconciliation
-			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{
-				NamespacedName: ctrlruntimeclient.ObjectKeyFromObject(testcase.shard),
+			_, err = controllerReconciler.Reconcile(ctx, mcreconcile.Request{
+				Request: reconcile.Request{
+					NamespacedName: ctrlruntimeclient.ObjectKeyFromObject(testcase.shard),
+				},
 			})
 			require.NoError(t, err)
 
@@ -550,19 +555,22 @@ func TestClientCABundleMerging(t *testing.T) {
 			ctx := context.Background()
 
 			controllerReconciler := &ShardReconciler{
-				Client: client,
-				Scheme: client.Scheme(),
+				GetCluster: util.SingleCluster(client),
 			}
 
 			// First reconcile adds finalizer
-			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
-				NamespacedName: ctrlruntimeclient.ObjectKeyFromObject(tc.shard),
+			_, err := controllerReconciler.Reconcile(ctx, mcreconcile.Request{
+				Request: reconcile.Request{
+					NamespacedName: ctrlruntimeclient.ObjectKeyFromObject(tc.shard),
+				},
 			})
 			require.NoError(t, err)
 
 			// Second reconcile performs actual reconciliation
-			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{
-				NamespacedName: ctrlruntimeclient.ObjectKeyFromObject(tc.shard),
+			_, err = controllerReconciler.Reconcile(ctx, mcreconcile.Request{
+				Request: reconcile.Request{
+					NamespacedName: ctrlruntimeclient.ObjectKeyFromObject(tc.shard),
+				},
 			})
 			require.NoError(t, err)
 

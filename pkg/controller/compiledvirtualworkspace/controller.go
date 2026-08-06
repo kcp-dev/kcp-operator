@@ -19,6 +19,7 @@ package compiledvirtualworkspace
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	k8creconciling "k8c.io/reconciler/pkg/reconciling"
@@ -28,12 +29,16 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	mcbuilder "sigs.k8s.io/multicluster-runtime/pkg/builder"
+	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
+	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
+	mcreconcile "sigs.k8s.io/multicluster-runtime/pkg/reconcile"
 
 	"github.com/kcp-dev/kcp-operator/internal/resources"
 	"github.com/kcp-dev/kcp-operator/internal/resources/compiledvirtualworkspace"
@@ -45,19 +50,18 @@ import (
 
 // CompiledVirtualWorkspaceReconciler reconciles a CompiledVirtualWorkspace object
 type CompiledVirtualWorkspaceReconciler struct {
-	Client ctrlruntimeclient.Client
-	Scheme *runtime.Scheme
+	GetCluster func(ctx context.Context, clusterName multicluster.ClusterName) (cluster.Cluster, error)
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *CompiledVirtualWorkspaceReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *CompiledVirtualWorkspaceReconciler) SetupWithManager(mgr mcmanager.Manager) error {
 	// The rendered Deployment mounts Secrets owned by the source object, not by this one,
 	// so an ownership watch would never retry a Deployment blocked on a missing mount.
-	mountHandler := util.EnqueueAllInNamespace(mgr.GetClient(), func() ctrlruntimeclient.ObjectList {
+	mountHandler := util.EnqueueAllInNamespace(func() ctrlruntimeclient.ObjectList {
 		return &deployv1alpha1.CompiledVirtualWorkspaceList{}
 	})
 
-	return ctrl.NewControllerManagedBy(mgr).
+	return mcbuilder.ControllerManagedBy(mgr).
 		Named("compiled-virtualworkspace").
 		For(&deployv1alpha1.CompiledVirtualWorkspace{}).
 		Owns(&corev1.Service{}).
@@ -75,18 +79,23 @@ func (r *CompiledVirtualWorkspaceReconciler) SetupWithManager(mgr ctrl.Manager) 
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-func (r *CompiledVirtualWorkspaceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, recErr error) {
+func (r *CompiledVirtualWorkspaceReconciler) Reconcile(ctx context.Context, req mcreconcile.Request) (res ctrl.Result, recErr error) {
 	startTime := time.Now()
 	defer func() {
 		duration := time.Since(startTime)
 		metrics.RecordReconciliationMetrics(metrics.CompiledVirtualWorkspaceResourceType, duration.Seconds(), recErr)
 	}()
 
-	logger := log.FromContext(ctx)
+	logger := log.FromContext(ctx).WithValues("cluster", req.ClusterName)
 	logger.V(4).Info("Reconciling")
 
+	cl, err := r.GetCluster(ctx, req.ClusterName)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to get cluster %q: %w", req.ClusterName, err)
+	}
+
 	vw := &deployv1alpha1.CompiledVirtualWorkspace{}
-	if err := r.Client.Get(ctx, req.NamespacedName, vw); err != nil {
+	if err := cl.GetClient().Get(ctx, req.NamespacedName, vw); err != nil {
 		// object has been deleted.
 		if apierrors.IsNotFound(err) {
 			return ctrl.Result{}, nil
@@ -101,9 +110,9 @@ func (r *CompiledVirtualWorkspaceReconciler) Reconcile(ctx context.Context, req 
 
 	vwCopy := vw.DeepCopy()
 
-	conditions, recErr := r.reconcile(ctx, r.Client, vwCopy)
+	conditions, recErr := r.reconcile(ctx, cl.GetClient(), vwCopy)
 
-	if err := r.reconcileStatus(ctx, r.Client, vw, vwCopy, conditions); err != nil {
+	if err := r.reconcileStatus(ctx, cl.GetClient(), vw, vwCopy, conditions); err != nil {
 		recErr = kerrors.NewAggregate([]error{recErr, err})
 	}
 

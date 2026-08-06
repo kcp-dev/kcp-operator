@@ -34,9 +34,13 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	mcbuilder "sigs.k8s.io/multicluster-runtime/pkg/builder"
+	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
+	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
+	mcreconcile "sigs.k8s.io/multicluster-runtime/pkg/reconcile"
 
 	"github.com/kcp-dev/kcp-operator/internal/resources/frontproxy"
 	bundlehelper "github.com/kcp-dev/kcp-operator/pkg/controller/bundle"
@@ -50,17 +54,16 @@ import (
 
 // FrontProxyReconciler reconciles a FrontProxy object
 type FrontProxyReconciler struct {
-	Client ctrlruntimeclient.Client
-	Scheme *runtime.Scheme
+	GetCluster func(ctx context.Context, clusterName multicluster.ClusterName) (cluster.Cluster, error)
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *FrontProxyReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	rootShardHandler := handler.TypedEnqueueRequestsFromMapFunc(func(ctx context.Context, obj ctrlruntimeclient.Object) []reconcile.Request {
+func (r *FrontProxyReconciler) SetupWithManager(mgr mcmanager.Manager) error {
+	rootShardHandler := util.EnqueueMapped(func(ctx context.Context, client ctrlruntimeclient.Client, obj ctrlruntimeclient.Object) []reconcile.Request {
 		rootShard := obj.(*operatorv1alpha1.RootShard)
 
 		var fpList operatorv1alpha1.FrontProxyList
-		if err := mgr.GetClient().List(ctx, &fpList, &ctrlruntimeclient.ListOptions{Namespace: rootShard.Namespace}); err != nil {
+		if err := client.List(ctx, &fpList, &ctrlruntimeclient.ListOptions{Namespace: rootShard.Namespace}); err != nil {
 			utilruntime.HandleError(err)
 			return nil
 		}
@@ -75,7 +78,7 @@ func (r *FrontProxyReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return requests
 	})
 
-	return ctrl.NewControllerManagedBy(mgr).
+	return mcbuilder.ControllerManagedBy(mgr).
 		Named("frontproxy").
 		For(&operatorv1alpha1.FrontProxy{}).
 		Owns(&deployv1alpha1.CompiledFrontProxy{}).
@@ -93,18 +96,23 @@ func (r *FrontProxyReconciler) SetupWithManager(mgr ctrl.Manager) error {
 // +kubebuilder:rbac:groups=deploy.operator.kcp.io,resources=compiledfrontproxies/finalizers,verbs=update
 // +kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch;create;update;patch;delete
 
-func (r *FrontProxyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, recErr error) {
+func (r *FrontProxyReconciler) Reconcile(ctx context.Context, req mcreconcile.Request) (res ctrl.Result, recErr error) {
 	startTime := time.Now()
 	defer func() {
 		duration := time.Since(startTime)
 		metrics.RecordReconciliationMetrics(metrics.FrontProxyResourceType, duration.Seconds(), recErr)
 	}()
 
-	logger := log.FromContext(ctx)
+	logger := log.FromContext(ctx).WithValues("cluster", req.ClusterName)
 	logger.V(4).Info("Reconciling")
 
+	cl, err := r.GetCluster(ctx, req.ClusterName)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to get cluster %q: %w", req.ClusterName, err)
+	}
+
 	var frontProxy operatorv1alpha1.FrontProxy
-	if err := r.Client.Get(ctx, req.NamespacedName, &frontProxy); err != nil {
+	if err := cl.GetClient().Get(ctx, req.NamespacedName, &frontProxy); err != nil {
 		if ctrlruntimeclient.IgnoreNotFound(err) != nil {
 			metrics.RecordReconciliationError(metrics.FrontProxyResourceType, err.Error())
 			return ctrl.Result{}, fmt.Errorf("failed to get FrontProxy object: %w", err)
@@ -114,9 +122,9 @@ func (r *FrontProxyReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, nil
 	}
 
-	conditions, recErr := r.reconcile(ctx, r.Client, r.Scheme, &frontProxy)
+	conditions, recErr := r.reconcile(ctx, cl.GetClient(), cl.GetScheme(), &frontProxy)
 
-	if err := r.reconcileStatus(ctx, r.Client, &frontProxy, conditions); err != nil {
+	if err := r.reconcileStatus(ctx, cl.GetClient(), &frontProxy, conditions); err != nil {
 		recErr = kerrors.NewAggregate([]error{recErr, err})
 	}
 

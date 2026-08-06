@@ -17,6 +17,8 @@ limitations under the License.
 package util
 
 import (
+	"context"
+
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -24,6 +26,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/cluster"
+	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
 
 	deployv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/deploy/v1alpha1"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
@@ -39,4 +44,27 @@ func GetTestScheme() *runtime.Scheme {
 	utilruntime.Must(appsv1.AddToScheme(scheme))
 
 	return scheme
+}
+
+// SingleCluster serves the given client for every cluster name, so a reconciler can be tested
+// without a manager or a provider.
+func SingleCluster(c ctrlruntimeclient.Client) func(context.Context, multicluster.ClusterName) (cluster.Cluster, error) {
+	return func(context.Context, multicluster.ClusterName) (cluster.Cluster, error) {
+		return &testCluster{client: c}, nil
+	}
+}
+
+// testCluster implements only the methods the reconcilers use; the rest panic if ever called.
+type testCluster struct {
+	cluster.Cluster
+
+	client ctrlruntimeclient.Client
+}
+
+func (c *testCluster) GetClient() ctrlruntimeclient.Client {
+	return c.client
+}
+
+func (c *testCluster) GetScheme() *runtime.Scheme {
+	return c.client.Scheme()
 }

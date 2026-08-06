@@ -29,12 +29,16 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	mcbuilder "sigs.k8s.io/multicluster-runtime/pkg/builder"
+	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
+	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
+	mcreconcile "sigs.k8s.io/multicluster-runtime/pkg/reconcile"
 
 	"github.com/kcp-dev/kcp-operator/internal/resources"
 	"github.com/kcp-dev/kcp-operator/internal/resources/compiledshard"
@@ -47,18 +51,17 @@ import (
 
 // CompiledShardReconciler reconciles a CompiledShard object
 type CompiledShardReconciler struct {
-	Client ctrlruntimeclient.Client
-	Scheme *runtime.Scheme
+	GetCluster func(ctx context.Context, clusterName multicluster.ClusterName) (cluster.Cluster, error)
 }
 
-func (r *CompiledShardReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *CompiledShardReconciler) SetupWithManager(mgr mcmanager.Manager) error {
 	// The rendered Deployment mounts Secrets owned by the source object, not by this one,
 	// so an ownership watch would never retry a Deployment blocked on a missing mount.
-	mountHandler := util.EnqueueAllInNamespace(mgr.GetClient(), func() ctrlruntimeclient.ObjectList {
+	mountHandler := util.EnqueueAllInNamespace(func() ctrlruntimeclient.ObjectList {
 		return &deployv1alpha1.CompiledShardList{}
 	})
 
-	return ctrl.NewControllerManagedBy(mgr).
+	return mcbuilder.ControllerManagedBy(mgr).
 		Named("compiled-shard").
 		For(&deployv1alpha1.CompiledShard{}).
 		Owns(&appsv1.Deployment{}).
@@ -74,18 +77,23 @@ func (r *CompiledShardReconciler) SetupWithManager(mgr ctrl.Manager) error {
 // +kubebuilder:rbac:groups=core,resources=services,verbs=get;list;watch;create;update;patch
 // +kubebuilder:rbac:groups=core,resources=configmaps;secrets,verbs=get;list;watch
 
-func (r *CompiledShardReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, recErr error) {
+func (r *CompiledShardReconciler) Reconcile(ctx context.Context, req mcreconcile.Request) (res ctrl.Result, recErr error) {
 	startTime := time.Now()
 	defer func() {
 		duration := time.Since(startTime)
 		metrics.RecordReconciliationMetrics(metrics.CompiledShardResourceType, duration.Seconds(), recErr)
 	}()
 
-	logger := log.FromContext(ctx)
+	logger := log.FromContext(ctx).WithValues("cluster", req.ClusterName)
 	logger.V(4).Info("Reconciling CompiledShard object")
 
+	cl, err := r.GetCluster(ctx, req.ClusterName)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to get cluster %q: %w", req.ClusterName, err)
+	}
+
 	var s deployv1alpha1.CompiledShard
-	if err := r.Client.Get(ctx, req.NamespacedName, &s); err != nil {
+	if err := cl.GetClient().Get(ctx, req.NamespacedName, &s); err != nil {
 		if ctrlruntimeclient.IgnoreNotFound(err) != nil {
 			metrics.RecordReconciliationError(metrics.CompiledShardResourceType, err.Error())
 			return ctrl.Result{}, fmt.Errorf("failed to get shard: %w", err)
@@ -94,9 +102,9 @@ func (r *CompiledShardReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, nil
 	}
 
-	conditions, recErr := r.reconcile(ctx, r.Client, &s)
+	conditions, recErr := r.reconcile(ctx, cl.GetClient(), &s)
 
-	if err := r.reconcileStatus(ctx, r.Client, &s, conditions); err != nil {
+	if err := r.reconcileStatus(ctx, cl.GetClient(), &s, conditions); err != nil {
 		recErr = kerrors.NewAggregate([]error{recErr, err})
 	}
 

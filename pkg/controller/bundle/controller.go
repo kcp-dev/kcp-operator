@@ -31,34 +31,37 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	mcbuilder "sigs.k8s.io/multicluster-runtime/pkg/builder"
+	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
+	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
+	mcreconcile "sigs.k8s.io/multicluster-runtime/pkg/reconcile"
 
 	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/pkg/controller/util"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
 // BundleReconciler reconciles a Bundle object
 type BundleReconciler struct {
-	Client ctrlruntimeclient.Client
-	Scheme *runtime.Scheme
+	GetCluster func(ctx context.Context, clusterName multicluster.ClusterName) (cluster.Cluster, error)
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *BundleReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *BundleReconciler) SetupWithManager(mgr mcmanager.Manager) error {
 	// Handler for RootShard changes - enqueue all Bundles targeting this RootShard
-	rootShardHandler := handler.TypedEnqueueRequestsFromMapFunc(func(ctx context.Context, obj ctrlruntimeclient.Object) []reconcile.Request {
+	rootShardHandler := util.EnqueueMapped(func(ctx context.Context, client ctrlruntimeclient.Client, obj ctrlruntimeclient.Object) []reconcile.Request {
 		rootShard := obj.(*operatorv1alpha1.RootShard)
 
 		var bundles operatorv1alpha1.BundleList
-		if err := mgr.GetClient().List(ctx, &bundles, &ctrlruntimeclient.ListOptions{Namespace: rootShard.Namespace}); err != nil {
+		if err := client.List(ctx, &bundles, &ctrlruntimeclient.ListOptions{Namespace: rootShard.Namespace}); err != nil {
 			utilruntime.HandleError(err)
 			return nil
 		}
@@ -73,11 +76,11 @@ func (r *BundleReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	})
 
 	// Handler for Shard changes - enqueue all Bundles targeting this Shard
-	shardHandler := handler.TypedEnqueueRequestsFromMapFunc(func(ctx context.Context, obj ctrlruntimeclient.Object) []reconcile.Request {
+	shardHandler := util.EnqueueMapped(func(ctx context.Context, client ctrlruntimeclient.Client, obj ctrlruntimeclient.Object) []reconcile.Request {
 		shard := obj.(*operatorv1alpha1.Shard)
 
 		var bundles operatorv1alpha1.BundleList
-		if err := mgr.GetClient().List(ctx, &bundles, &ctrlruntimeclient.ListOptions{Namespace: shard.Namespace}); err != nil {
+		if err := client.List(ctx, &bundles, &ctrlruntimeclient.ListOptions{Namespace: shard.Namespace}); err != nil {
 			utilruntime.HandleError(err)
 			return nil
 		}
@@ -92,11 +95,11 @@ func (r *BundleReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	})
 
 	// Handler for FrontProxy changes - enqueue all Bundles targeting this FrontProxy
-	frontProxyHandler := handler.TypedEnqueueRequestsFromMapFunc(func(ctx context.Context, obj ctrlruntimeclient.Object) []reconcile.Request {
+	frontProxyHandler := util.EnqueueMapped(func(ctx context.Context, client ctrlruntimeclient.Client, obj ctrlruntimeclient.Object) []reconcile.Request {
 		frontProxy := obj.(*operatorv1alpha1.FrontProxy)
 
 		var bundles operatorv1alpha1.BundleList
-		if err := mgr.GetClient().List(ctx, &bundles, &ctrlruntimeclient.ListOptions{Namespace: frontProxy.Namespace}); err != nil {
+		if err := client.List(ctx, &bundles, &ctrlruntimeclient.ListOptions{Namespace: frontProxy.Namespace}); err != nil {
 			utilruntime.HandleError(err)
 			return nil
 		}
@@ -110,7 +113,7 @@ func (r *BundleReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return requests
 	})
 
-	return ctrl.NewControllerManagedBy(mgr).
+	return mcbuilder.ControllerManagedBy(mgr).
 		For(&operatorv1alpha1.Bundle{}).
 		Owns(&corev1.ConfigMap{}).
 		Owns(&corev1.Secret{}).
@@ -128,12 +131,17 @@ func (r *BundleReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-func (r *BundleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, recErr error) {
-	logger := log.FromContext(ctx)
+func (r *BundleReconciler) Reconcile(ctx context.Context, req mcreconcile.Request) (res ctrl.Result, recErr error) {
+	logger := log.FromContext(ctx).WithValues("cluster", req.ClusterName)
 	logger.V(4).Info("Reconciling Bundle object")
 
+	cl, err := r.GetCluster(ctx, req.ClusterName)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to get cluster %q: %w", req.ClusterName, err)
+	}
+
 	var bundle operatorv1alpha1.Bundle
-	if err := r.Client.Get(ctx, req.NamespacedName, &bundle); err != nil {
+	if err := cl.GetClient().Get(ctx, req.NamespacedName, &bundle); err != nil {
 		if ctrlruntimeclient.IgnoreNotFound(err) != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to get bundle: %w", err)
 		}
@@ -141,7 +149,7 @@ func (r *BundleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res
 		return ctrl.Result{}, nil
 	}
 
-	recErr = r.reconcile(ctx, r.Client, &bundle)
+	recErr = r.reconcile(ctx, cl.GetClient(), &bundle)
 
 	return ctrl.Result{}, recErr
 }
