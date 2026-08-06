@@ -10,7 +10,6 @@ rules:
   - deployments
   verbs:
   - create
-  - delete
   - get
   - list
   - patch
@@ -34,10 +33,20 @@ rules:
   resources:
   - configmaps
   - secrets
-  - services
   verbs:
   - create
   - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - services
+  verbs:
+  - create
   - get
   - list
   - patch
@@ -52,8 +61,11 @@ rules:
   - compiledshards
   - compiledvirtualworkspaces
   verbs:
+  - create
   - get
   - list
+  - patch
+  - update
   - watch
 - apiGroups:
   - deploy.operator.kcp.io

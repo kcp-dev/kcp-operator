@@ -22,8 +22,8 @@ import (
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	k8creconciling "k8c.io/reconciler/pkg/reconciling"
 
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apimeta "k8s.io/apimachinery/pkg/api/meta"
@@ -41,8 +41,10 @@ import (
 	bundlehelper "github.com/kcp-dev/kcp-operator/internal/controller/bundle"
 	"github.com/kcp-dev/kcp-operator/internal/controller/util"
 	"github.com/kcp-dev/kcp-operator/internal/metrics"
-	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/reconciling"
+	"github.com/kcp-dev/kcp-operator/internal/reconciling/modifier"
 	"github.com/kcp-dev/kcp-operator/internal/resources/frontproxy"
+	deployv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/deploy/v1alpha1"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -76,10 +78,8 @@ func (r *FrontProxyReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("frontproxy").
 		For(&operatorv1alpha1.FrontProxy{}).
-		Owns(&appsv1.Deployment{}).
-		Owns(&corev1.ConfigMap{}).
+		Owns(&deployv1alpha1.CompiledFrontProxy{}).
 		Owns(&corev1.Secret{}).
-		Owns(&corev1.Service{}).
 		Owns(&certmanagerv1.Certificate{}).
 		Watches(&operatorv1alpha1.RootShard{}, rootShardHandler).
 		Complete(r)
@@ -89,8 +89,9 @@ func (r *FrontProxyReconciler) SetupWithManager(mgr ctrl.Manager) error {
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=frontproxies/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=operator.kcp.io,resources=frontproxies/finalizers,verbs=update
 // +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=core,resources=services;configmaps;secrets,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=deploy.operator.kcp.io,resources=compiledfrontproxies,verbs=get;list;watch;create;update;patch
+// +kubebuilder:rbac:groups=deploy.operator.kcp.io,resources=compiledfrontproxies/finalizers,verbs=update
+// +kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch;create;update;patch;delete
 
 func (r *FrontProxyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, recErr error) {
 	startTime := time.Now()
@@ -149,11 +150,26 @@ func (r *FrontProxyReconciler) reconcile(ctx context.Context, frontProxy *operat
 		return conditions, fmt.Errorf("failed to list shards: %w", err)
 	}
 
-	fpReconciler := frontproxy.NewFrontProxy(frontProxy, rootShard, shards)
-
-	// Deployment will be scaled to 0 if bundle annotation is present
-	if err := fpReconciler.Reconcile(ctx, r.Client, frontProxy.Namespace); err != nil {
+	// Certificates and CA bundles stay here; the workloads are rendered by the
+	// CompiledFrontProxy controller.
+	var certs []*certmanagerv1.Certificate
+	if err := frontproxy.NewFrontProxy(frontProxy, rootShard, shards).Reconcile(ctx, r.Client, frontProxy.Namespace, modifier.Capture(&certs)); err != nil {
 		errs = append(errs, fmt.Errorf("failed to reconcile: %w", err))
+	}
+
+	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*metav1.NewControllerRef(frontProxy, operatorv1alpha1.SchemeGroupVersion.WithKind("FrontProxy")))
+
+	// Only publish the render input once every Certificate is ready, so that whoever consumes
+	// it can rely on the Secrets it mounts already existing.
+	revisions, certsReady := util.CertificateRevisions(certs)
+	if !certsReady {
+		return conditions, kerrors.NewAggregate(errs)
+	}
+
+	if err := reconciling.ReconcileCompiledFrontProxys(ctx, []reconciling.NamedCompiledFrontProxyReconcilerFactory{
+		frontproxy.CompiledFrontProxyReconciler(frontProxy, rootShard, shards, util.MutateKeys(revisions, "cert-", "-revision")),
+	}, frontProxy.Namespace, r.Client, ownerRefWrapper); err != nil {
+		errs = append(errs, err)
 	}
 
 	return conditions, kerrors.NewAggregate(errs)
@@ -170,14 +186,14 @@ func (r *FrontProxyReconciler) reconcileStatus(ctx context.Context, oldFrontProx
 	// Check if frontproxy is bundled (has bundle annotation with Ready bundle)
 	isBundled := bundleCond.Status == metav1.ConditionTrue && bundleCond.Reason == "BundleReady"
 
-	// Only check deployment status if not bundled
+	// Only check the rendered workloads if not bundled
 	if !isBundled {
-		depKey := types.NamespacedName{Namespace: frontProxy.Namespace, Name: resources.GetFrontProxyDeploymentName(frontProxy)}
-		cond, err := util.GetDeploymentAvailableCondition(ctx, r.Client, depKey)
-		if err != nil {
+		compiled := &deployv1alpha1.CompiledFrontProxy{}
+		key := types.NamespacedName{Namespace: frontProxy.Namespace, Name: frontProxy.Name}
+		if err := r.Get(ctx, key, compiled); ctrlruntimeclient.IgnoreNotFound(err) != nil {
 			errs = append(errs, err)
 		} else {
-			conditions = append(conditions, cond)
+			conditions = append(conditions, util.GetCompiledAvailableCondition(compiled.Status.Conditions, "CompiledFrontProxy "+frontProxy.Name))
 		}
 	}
 

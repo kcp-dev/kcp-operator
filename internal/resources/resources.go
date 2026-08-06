@@ -22,6 +22,7 @@ import (
 	"github.com/Masterminds/semver/v3"
 
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	deployv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/deploy/v1alpha1"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
@@ -617,6 +618,25 @@ func GetCompiledShardKubeconfigSecret(shard *deployv1alpha1.CompiledShard, cert 
 
 func GetNamedShardKubeconfigSecret(shard deployv1alpha1.NamedShardSpec, cert operatorv1alpha1.Certificate) string {
 	return fmt.Sprintf("%s-%s-kubeconfig", shard.Name, cert)
+}
+
+// CopyBundleAnnotation mirrors the bundle annotation onto a compiled object, because the
+// Deployment renderers key their scale-to-zero off it.
+func CopyBundleAnnotation(from, to metav1.Object) {
+	annotations := to.GetAnnotations()
+
+	value := from.GetAnnotations()[BundleAnnotation]
+	if value == "" {
+		delete(annotations, BundleAnnotation)
+		to.SetAnnotations(annotations)
+		return
+	}
+
+	if annotations == nil {
+		annotations = map[string]string{}
+	}
+	annotations[BundleAnnotation] = value
+	to.SetAnnotations(annotations)
 }
 
 func GetBundleName(ownerName string) string {
