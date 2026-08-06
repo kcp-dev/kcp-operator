@@ -23,14 +23,14 @@ import (
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
-func GetFrontProxyExternalPort(fp *operatorv1alpha1.FrontProxy, r *operatorv1alpha1.RootShard) int {
+func GetFrontProxyExternalPort(fp operatorv1alpha1.FrontProxySpec, rootShard operatorv1alpha1.RootShardSpec) int {
 	// easy, the user explicitly configured an external port on the FrontProxy itself
-	if port := fp.Spec.External.Port; port > 0 {
+	if port := fp.External.Port; port > 0 {
 		return int(port)
 	}
 
 	// fallback to deprecated ExternalHostname
-	if extName := fp.Spec.ExternalHostname; extName != "" { //nolint:staticcheck
+	if extName := fp.ExternalHostname; extName != "" { //nolint:staticcheck
 		_, port, err := net.SplitHostPort(extName)
 		if err == nil {
 			parsed, err := strconv.Atoi(port)
@@ -44,10 +44,8 @@ func GetFrontProxyExternalPort(fp *operatorv1alpha1.FrontProxy, r *operatorv1alp
 	}
 
 	// if nothing valid is configured on the FrontProxy, check the RootShard
-	if r != nil {
-		if port := r.Spec.External.Port; port > 0 {
-			return int(port)
-		}
+	if port := rootShard.External.Port; port > 0 {
+		return int(port)
 	}
 
 	// last resort, fallback to the default kcp port
