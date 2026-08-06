@@ -66,7 +66,7 @@ type ShardReconciler struct {
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *ShardReconciler) SetupWithManager(mgr mcmanager.Manager) error {
+func (r *ShardReconciler) SetupWithManager(mgr mcmanager.Manager, opts ...mcbuilder.EngageOptions) error {
 	rootShardHandler := util.EnqueueMapped(func(ctx context.Context, client ctrlruntimeclient.Client, obj ctrlruntimeclient.Object) []reconcile.Request {
 		rootShard := obj.(*operatorv1alpha1.RootShard)
 
@@ -107,12 +107,12 @@ func (r *ShardReconciler) SetupWithManager(mgr mcmanager.Manager) error {
 
 	return mcbuilder.ControllerManagedBy(mgr).
 		Named("shard").
-		For(&operatorv1alpha1.Shard{}).
-		Owns(&deployv1alpha1.CompiledShard{}).
-		Owns(&corev1.Secret{}).
-		Owns(&certmanagerv1.Certificate{}).
-		Watches(&operatorv1alpha1.RootShard{}, rootShardHandler).
-		Watches(&operatorv1alpha1.VirtualWorkspace{}, vwHandler).
+		For(&operatorv1alpha1.Shard{}, util.EngageFor(opts)...).
+		Owns(&deployv1alpha1.CompiledShard{}, util.EngageOwns(opts)...).
+		Owns(&corev1.Secret{}, util.EngageOwns(opts)...).
+		Owns(&certmanagerv1.Certificate{}, util.EngageOwns(opts)...).
+		Watches(&operatorv1alpha1.RootShard{}, rootShardHandler, util.EngageWatches(opts)...).
+		Watches(&operatorv1alpha1.VirtualWorkspace{}, vwHandler, util.EngageWatches(opts)...).
 		Complete(r)
 }
 

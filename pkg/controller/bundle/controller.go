@@ -55,7 +55,7 @@ type BundleReconciler struct {
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *BundleReconciler) SetupWithManager(mgr mcmanager.Manager) error {
+func (r *BundleReconciler) SetupWithManager(mgr mcmanager.Manager, opts ...mcbuilder.EngageOptions) error {
 	// Handler for RootShard changes - enqueue all Bundles targeting this RootShard
 	rootShardHandler := util.EnqueueMapped(func(ctx context.Context, client ctrlruntimeclient.Client, obj ctrlruntimeclient.Object) []reconcile.Request {
 		rootShard := obj.(*operatorv1alpha1.RootShard)
@@ -114,12 +114,12 @@ func (r *BundleReconciler) SetupWithManager(mgr mcmanager.Manager) error {
 	})
 
 	return mcbuilder.ControllerManagedBy(mgr).
-		For(&operatorv1alpha1.Bundle{}).
-		Owns(&corev1.ConfigMap{}).
-		Owns(&corev1.Secret{}).
-		Watches(&operatorv1alpha1.RootShard{}, rootShardHandler).
-		Watches(&operatorv1alpha1.Shard{}, shardHandler).
-		Watches(&operatorv1alpha1.FrontProxy{}, frontProxyHandler).
+		For(&operatorv1alpha1.Bundle{}, util.EngageFor(opts)...).
+		Owns(&corev1.ConfigMap{}, util.EngageOwns(opts)...).
+		Owns(&corev1.Secret{}, util.EngageOwns(opts)...).
+		Watches(&operatorv1alpha1.RootShard{}, rootShardHandler, util.EngageWatches(opts)...).
+		Watches(&operatorv1alpha1.Shard{}, shardHandler, util.EngageWatches(opts)...).
+		Watches(&operatorv1alpha1.FrontProxy{}, frontProxyHandler, util.EngageWatches(opts)...).
 		Complete(r)
 }
 

@@ -47,13 +47,13 @@ type CacheServerReconciler struct {
 	GetCluster func(ctx context.Context, clusterName multicluster.ClusterName) (cluster.Cluster, error)
 }
 
-func (r *CacheServerReconciler) SetupWithManager(mgr mcmanager.Manager) error {
+func (r *CacheServerReconciler) SetupWithManager(mgr mcmanager.Manager, opts ...mcbuilder.EngageOptions) error {
 	return mcbuilder.ControllerManagedBy(mgr).
 		Named("cache-server").
-		For(&operatorv1alpha1.CacheServer{}).
-		Owns(&deployv1alpha1.CompiledCacheServer{}).
-		Owns(&corev1.Secret{}).
-		Owns(&certmanagerv1.Certificate{}).
+		For(&operatorv1alpha1.CacheServer{}, util.EngageFor(opts)...).
+		Owns(&deployv1alpha1.CompiledCacheServer{}, util.EngageOwns(opts)...).
+		Owns(&corev1.Secret{}, util.EngageOwns(opts)...).
+		Owns(&certmanagerv1.Certificate{}, util.EngageOwns(opts)...).
 		Complete(r)
 }
 

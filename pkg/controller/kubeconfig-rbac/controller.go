@@ -37,6 +37,7 @@ import (
 
 	"github.com/kcp-dev/kcp-operator/internal/resources/kubeconfig"
 	operatorclient "github.com/kcp-dev/kcp-operator/pkg/client"
+	"github.com/kcp-dev/kcp-operator/pkg/controller/util"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -48,9 +49,9 @@ type KubeconfigRBACReconciler struct {
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *KubeconfigRBACReconciler) SetupWithManager(mgr mcmanager.Manager) error {
+func (r *KubeconfigRBACReconciler) SetupWithManager(mgr mcmanager.Manager, opts ...mcbuilder.EngageOptions) error {
 	return mcbuilder.ControllerManagedBy(mgr).
-		For(&operatorv1alpha1.Kubeconfig{}).
+		For(&operatorv1alpha1.Kubeconfig{}, util.EngageFor(opts)...).
 		Named("kubeconfig-rbac").
 		Complete(r)
 }

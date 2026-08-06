@@ -58,7 +58,7 @@ type FrontProxyReconciler struct {
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *FrontProxyReconciler) SetupWithManager(mgr mcmanager.Manager) error {
+func (r *FrontProxyReconciler) SetupWithManager(mgr mcmanager.Manager, opts ...mcbuilder.EngageOptions) error {
 	rootShardHandler := util.EnqueueMapped(func(ctx context.Context, client ctrlruntimeclient.Client, obj ctrlruntimeclient.Object) []reconcile.Request {
 		rootShard := obj.(*operatorv1alpha1.RootShard)
 
@@ -80,11 +80,11 @@ func (r *FrontProxyReconciler) SetupWithManager(mgr mcmanager.Manager) error {
 
 	return mcbuilder.ControllerManagedBy(mgr).
 		Named("frontproxy").
-		For(&operatorv1alpha1.FrontProxy{}).
-		Owns(&deployv1alpha1.CompiledFrontProxy{}).
-		Owns(&corev1.Secret{}).
-		Owns(&certmanagerv1.Certificate{}).
-		Watches(&operatorv1alpha1.RootShard{}, rootShardHandler).
+		For(&operatorv1alpha1.FrontProxy{}, util.EngageFor(opts)...).
+		Owns(&deployv1alpha1.CompiledFrontProxy{}, util.EngageOwns(opts)...).
+		Owns(&corev1.Secret{}, util.EngageOwns(opts)...).
+		Owns(&certmanagerv1.Certificate{}, util.EngageOwns(opts)...).
+		Watches(&operatorv1alpha1.RootShard{}, rootShardHandler, util.EngageWatches(opts)...).
 		Complete(r)
 }
 

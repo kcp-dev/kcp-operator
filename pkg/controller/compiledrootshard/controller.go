@@ -56,7 +56,7 @@ type CompiledRootShardReconciler struct {
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *CompiledRootShardReconciler) SetupWithManager(mgr mcmanager.Manager) error {
+func (r *CompiledRootShardReconciler) SetupWithManager(mgr mcmanager.Manager, opts ...mcbuilder.EngageOptions) error {
 	// The rendered Deployment mounts Secrets owned by the source object, not by this one,
 	// so an ownership watch would never retry a Deployment blocked on a missing mount.
 	mountHandler := util.EnqueueAllInNamespace(func() ctrlruntimeclient.ObjectList {
@@ -65,11 +65,11 @@ func (r *CompiledRootShardReconciler) SetupWithManager(mgr mcmanager.Manager) er
 
 	return mcbuilder.ControllerManagedBy(mgr).
 		Named("compiled-rootshard").
-		For(&deployv1alpha1.CompiledRootShard{}).
-		Owns(&appsv1.Deployment{}).
-		Owns(&corev1.ConfigMap{}).
-		Owns(&corev1.Service{}).
-		Watches(&corev1.Secret{}, mountHandler).
+		For(&deployv1alpha1.CompiledRootShard{}, util.EngageFor(opts)...).
+		Owns(&appsv1.Deployment{}, util.EngageOwns(opts)...).
+		Owns(&corev1.ConfigMap{}, util.EngageOwns(opts)...).
+		Owns(&corev1.Service{}, util.EngageOwns(opts)...).
+		Watches(&corev1.Secret{}, mountHandler, util.EngageWatches(opts)...).
 		Complete(r)
 }
 

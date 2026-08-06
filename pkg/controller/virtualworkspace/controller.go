@@ -56,16 +56,16 @@ type Reconciler struct {
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *Reconciler) SetupWithManager(mgr mcmanager.Manager) error {
+func (r *Reconciler) SetupWithManager(mgr mcmanager.Manager, opts ...mcbuilder.EngageOptions) error {
 	return mcbuilder.ControllerManagedBy(mgr).
 		Named("virtualworkspace").
-		For(&operatorv1alpha1.VirtualWorkspace{}).
-		Watches(&operatorv1alpha1.RootShard{}, util.EnqueueMapped(r.mapRootShardToVirtualWorkspaces)).
-		Watches(&operatorv1alpha1.Shard{}, util.EnqueueMapped(r.mapShardToVirtualWorkspaces)).
-		Watches(&certmanagerv1.Issuer{}, util.EnqueueMapped(r.mapIssuerToVirtualWorkspaces)).
-		Owns(&corev1.Secret{}).
-		Owns(&certmanagerv1.Certificate{}).
-		Owns(&deployv1alpha1.CompiledVirtualWorkspace{}).
+		For(&operatorv1alpha1.VirtualWorkspace{}, util.EngageFor(opts)...).
+		Watches(&operatorv1alpha1.RootShard{}, util.EnqueueMapped(r.mapRootShardToVirtualWorkspaces), util.EngageWatches(opts)...).
+		Watches(&operatorv1alpha1.Shard{}, util.EnqueueMapped(r.mapShardToVirtualWorkspaces), util.EngageWatches(opts)...).
+		Watches(&certmanagerv1.Issuer{}, util.EnqueueMapped(r.mapIssuerToVirtualWorkspaces), util.EngageWatches(opts)...).
+		Owns(&corev1.Secret{}, util.EngageOwns(opts)...).
+		Owns(&certmanagerv1.Certificate{}, util.EngageOwns(opts)...).
+		Owns(&deployv1alpha1.CompiledVirtualWorkspace{}, util.EngageOwns(opts)...).
 		Complete(r)
 }
 

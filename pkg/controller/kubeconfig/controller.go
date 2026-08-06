@@ -56,15 +56,15 @@ type KubeconfigReconciler struct {
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *KubeconfigReconciler) SetupWithManager(mgr mcmanager.Manager) error {
+func (r *KubeconfigReconciler) SetupWithManager(mgr mcmanager.Manager, opts ...mcbuilder.EngageOptions) error {
 	return mcbuilder.ControllerManagedBy(mgr).
 		Named("kubeconfig").
-		For(&operatorv1alpha1.Kubeconfig{}).
-		Watches(&operatorv1alpha1.RootShard{}, util.EnqueueMapped(r.mapRootShardToKubeconfigs)).
-		Watches(&operatorv1alpha1.Shard{}, util.EnqueueMapped(r.mapShardToKubeconfigs)).
-		Watches(&operatorv1alpha1.FrontProxy{}, util.EnqueueMapped(r.mapFrontProxyToKubeconfigs)).
-		Owns(&corev1.Secret{}).
-		Owns(&certmanagerv1.Certificate{}).
+		For(&operatorv1alpha1.Kubeconfig{}, util.EngageFor(opts)...).
+		Watches(&operatorv1alpha1.RootShard{}, util.EnqueueMapped(r.mapRootShardToKubeconfigs), util.EngageWatches(opts)...).
+		Watches(&operatorv1alpha1.Shard{}, util.EnqueueMapped(r.mapShardToKubeconfigs), util.EngageWatches(opts)...).
+		Watches(&operatorv1alpha1.FrontProxy{}, util.EnqueueMapped(r.mapFrontProxyToKubeconfigs), util.EngageWatches(opts)...).
+		Owns(&corev1.Secret{}, util.EngageOwns(opts)...).
+		Owns(&certmanagerv1.Certificate{}, util.EngageOwns(opts)...).
 		Complete(r)
 }
 

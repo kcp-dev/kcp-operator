@@ -54,7 +54,7 @@ type CompiledVirtualWorkspaceReconciler struct {
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *CompiledVirtualWorkspaceReconciler) SetupWithManager(mgr mcmanager.Manager) error {
+func (r *CompiledVirtualWorkspaceReconciler) SetupWithManager(mgr mcmanager.Manager, opts ...mcbuilder.EngageOptions) error {
 	// The rendered Deployment mounts Secrets owned by the source object, not by this one,
 	// so an ownership watch would never retry a Deployment blocked on a missing mount.
 	mountHandler := util.EnqueueAllInNamespace(func() ctrlruntimeclient.ObjectList {
@@ -63,10 +63,10 @@ func (r *CompiledVirtualWorkspaceReconciler) SetupWithManager(mgr mcmanager.Mana
 
 	return mcbuilder.ControllerManagedBy(mgr).
 		Named("compiled-virtualworkspace").
-		For(&deployv1alpha1.CompiledVirtualWorkspace{}).
-		Owns(&corev1.Service{}).
-		Owns(&appsv1.Deployment{}).
-		Watches(&corev1.Secret{}, mountHandler).
+		For(&deployv1alpha1.CompiledVirtualWorkspace{}, util.EngageFor(opts)...).
+		Owns(&corev1.Service{}, util.EngageOwns(opts)...).
+		Owns(&appsv1.Deployment{}, util.EngageOwns(opts)...).
+		Watches(&corev1.Secret{}, mountHandler, util.EngageWatches(opts)...).
 		Complete(r)
 }
 
