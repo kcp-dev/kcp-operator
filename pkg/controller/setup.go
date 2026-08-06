@@ -1,0 +1,135 @@
+/*
+Copyright 2025 The kcp Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package controller
+
+import (
+	"fmt"
+
+	ctrl "sigs.k8s.io/controller-runtime"
+
+	"github.com/kcp-dev/kcp-operator/pkg/config"
+	"github.com/kcp-dev/kcp-operator/pkg/controller/bundle"
+	"github.com/kcp-dev/kcp-operator/pkg/controller/cacheserver"
+	"github.com/kcp-dev/kcp-operator/pkg/controller/compiledcacheserver"
+	"github.com/kcp-dev/kcp-operator/pkg/controller/compiledfrontproxy"
+	"github.com/kcp-dev/kcp-operator/pkg/controller/compiledrootshard"
+	"github.com/kcp-dev/kcp-operator/pkg/controller/compiledshard"
+	"github.com/kcp-dev/kcp-operator/pkg/controller/compiledvirtualworkspace"
+	"github.com/kcp-dev/kcp-operator/pkg/controller/frontproxy"
+	"github.com/kcp-dev/kcp-operator/pkg/controller/kubeconfig"
+	kubeconfigrbac "github.com/kcp-dev/kcp-operator/pkg/controller/kubeconfig-rbac"
+	"github.com/kcp-dev/kcp-operator/pkg/controller/rootshard"
+	"github.com/kcp-dev/kcp-operator/pkg/controller/shard"
+	"github.com/kcp-dev/kcp-operator/pkg/controller/virtualworkspace"
+)
+
+// AddConfigControllers registers the controllers that configure a kcp instance: they own the
+// cert-manager resources and compile the deploy.operator.kcp.io render inputs.
+func AddConfigControllers(mgr ctrl.Manager) error {
+	client := mgr.GetClient()
+
+	if err := (&rootshard.RootShardReconciler{
+		Client: client,
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("unable to create controller %s: %w", "RootShard", err)
+	}
+	if err := (&frontproxy.FrontProxyReconciler{
+		Client: client,
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("unable to create controller %s: %w", "FrontProxy", err)
+	}
+	if err := (&shard.ShardReconciler{
+		Client: client,
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("unable to create controller %s: %w", "Shard", err)
+	}
+	if err := (&cacheserver.CacheServerReconciler{
+		Client: client,
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("unable to create controller %s: %w", "CacheServer", err)
+	}
+	if err := (&kubeconfig.KubeconfigReconciler{
+		Client: client,
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("unable to create controller %s: %w", "Kubeconfig", err)
+	}
+	if err := (&virtualworkspace.Reconciler{
+		Client: client,
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("unable to create controller %s: %w", "VirtualWorkspace", err)
+	}
+	if config.Enabled(config.ConfigurationBundle) {
+		if err := (&bundle.BundleReconciler{
+			Client: client,
+			Scheme: mgr.GetScheme(),
+		}).SetupWithManager(mgr); err != nil {
+			return fmt.Errorf("unable to create controller %s: %w", "Bundle", err)
+		}
+	}
+	if err := (&kubeconfigrbac.KubeconfigRBACReconciler{
+		Client: client,
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("unable to create controller %s: %w", "KubeconfigRBAC", err)
+	}
+	return nil
+}
+
+// AddWorkloadControllers registers the controllers that turn compiled render inputs into
+// workloads such as Deployments and Services.
+func AddWorkloadControllers(mgr ctrl.Manager) error {
+	client := mgr.GetClient()
+
+	if err := (&compiledrootshard.CompiledRootShardReconciler{
+		Client: client,
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("unable to create controller %s: %w", "CompiledRootShard", err)
+	}
+	if err := (&compiledfrontproxy.CompiledFrontProxyReconciler{
+		Client: client,
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("unable to create controller %s: %w", "CompiledFrontProxy", err)
+	}
+	if err := (&compiledshard.CompiledShardReconciler{
+		Client: client,
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("unable to create controller %s: %w", "CompiledShard", err)
+	}
+	if err := (&compiledcacheserver.CompiledCacheServerReconciler{
+		Client: client,
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("unable to create controller %s: %w", "CompiledCacheServer", err)
+	}
+	if err := (&compiledvirtualworkspace.CompiledVirtualWorkspaceReconciler{
+		Client: client,
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("unable to create controller %s: %w", "CompiledVirtualWorkspace", err)
+	}
+	// +kubebuilder:scaffold:builder
+	return nil
+}
