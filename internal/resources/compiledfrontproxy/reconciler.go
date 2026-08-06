@@ -28,8 +28,8 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kcp-dev/kcp-operator/internal/reconciling/modifier"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/pkg/reconciling/modifier"
 	deployv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/deploy/v1alpha1"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )

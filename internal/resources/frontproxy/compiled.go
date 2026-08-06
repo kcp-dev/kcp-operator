@@ -19,10 +19,10 @@ package frontproxy
 import (
 	"maps"
 
-	"github.com/kcp-dev/kcp-operator/internal/controller/util"
-	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
 	"github.com/kcp-dev/kcp-operator/internal/resources/utils"
+	"github.com/kcp-dev/kcp-operator/pkg/controller/util"
+	"github.com/kcp-dev/kcp-operator/pkg/reconciling"
 	deployv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/deploy/v1alpha1"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
