@@ -21,8 +21,11 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: CompiledCacheServer is the fully resolved render input for a
-          kcp cache server.
+        description: |-
+          CompiledCacheServer is the fully resolved render input for a kcp cache server.
+
+          EXPERIMENTAL: This type is part of an experimental, internal API that
+          is subject to change at any time.
         properties:
           apiVersion:
             description: |-
@@ -42,8 +45,11 @@ spec:
           metadata:
             type: object
           spec:
-            description: CompiledCacheServerSpec defines the fully resolved render
-              input for a kcp cache server.
+            description: |-
+              CompiledCacheServerSpec defines the fully resolved render input for a kcp cache server.
+
+              EXPERIMENTAL: This type is part of an experimental, internal API that
+              is subject to change at any time.
             properties:
               cacheServer:
                 description: CacheServer is the resolved spec of the CacheServer this

@@ -24,8 +24,11 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: CompiledFrontProxy is the fully resolved render input for a kcp
-          front-proxy.
+        description: |-
+          CompiledFrontProxy is the fully resolved render input for a kcp front-proxy.
+
+          EXPERIMENTAL: This type is part of an experimental, internal API that
+          is subject to change at any time.
         properties:
           apiVersion:
             description: |-
@@ -45,8 +48,11 @@ spec:
           metadata:
             type: object
           spec:
-            description: CompiledFrontProxySpec defines the fully resolved render
-              input for a kcp front-proxy.
+            description: |-
+              CompiledFrontProxySpec defines the fully resolved render input for a kcp front-proxy.
+
+              EXPERIMENTAL: This type is part of an experimental, internal API that
+              is subject to change at any time.
             properties:
               frontProxy:
                 description: FrontProxy is the resolved spec of the FrontProxy this

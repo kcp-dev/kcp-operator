@@ -24,8 +24,11 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: CompiledVirtualWorkspace is the fully resolved render input for
-          a kcp virtual workspace.
+        description: |-
+          CompiledVirtualWorkspace is the fully resolved render input for a kcp virtual workspace.
+
+          EXPERIMENTAL: This type is part of an experimental, internal API that
+          is subject to change at any time.
         properties:
           apiVersion:
             description: |-
@@ -45,8 +48,11 @@ spec:
           metadata:
             type: object
           spec:
-            description: CompiledVirtualWorkspaceSpec defines the fully resolved render
-              input for a kcp virtual workspace.
+            description: |-
+              CompiledVirtualWorkspaceSpec defines the fully resolved render input for a kcp virtual workspace.
+
+              EXPERIMENTAL: This type is part of an experimental, internal API that
+              is subject to change at any time.
             properties:
               rootShard:
                 description: RootShard is the resolved spec of the RootShard the virtual
