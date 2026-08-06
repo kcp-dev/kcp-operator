@@ -94,9 +94,9 @@ func (r *CompiledShardReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, nil
 	}
 
-	conditions, recErr := r.reconcile(ctx, &s)
+	conditions, recErr := r.reconcile(ctx, r.Client, &s)
 
-	if err := r.reconcileStatus(ctx, &s, conditions); err != nil {
+	if err := r.reconcileStatus(ctx, r.Client, &s, conditions); err != nil {
 		recErr = kerrors.NewAggregate([]error{recErr, err})
 	}
 
@@ -104,7 +104,7 @@ func (r *CompiledShardReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 }
 
 //nolint:unparam // Keep the controller working the same as all the others, even though currently it does always return nil conditions.
-func (r *CompiledShardReconciler) reconcile(ctx context.Context, s *deployv1alpha1.CompiledShard) ([]metav1.Condition, error) {
+func (r *CompiledShardReconciler) reconcile(ctx context.Context, client ctrlruntimeclient.Client, s *deployv1alpha1.CompiledShard) ([]metav1.Condition, error) {
 	var (
 		errs       []error
 		conditions []metav1.Condition
@@ -115,11 +115,11 @@ func (r *CompiledShardReconciler) reconcile(ctx context.Context, s *deployv1alph
 	}
 
 	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*metav1.NewControllerRef(s, deployv1alpha1.SchemeGroupVersion.WithKind("CompiledShard")))
-	revisionLabels := modifier.RelatedRevisionsLabels(ctx, r.Client)
+	revisionLabels := modifier.RelatedRevisionsLabels(ctx, client)
 
 	if err := k8creconciling.ReconcileDeployments(ctx, []k8creconciling.NamedDeploymentReconcilerFactory{
 		compiledshard.DeploymentReconciler(s),
-	}, s.Namespace, r.Client, ownerRefWrapper, revisionLabels); err != nil {
+	}, s.Namespace, client, ownerRefWrapper, revisionLabels); err != nil {
 		// Swallow these errors and instead rely on us watching Secrets and re-reconciling whenever they change.
 		if !errors.Is(err, modifier.ErrMountNotFound) {
 			errs = append(errs, err)
@@ -128,19 +128,19 @@ func (r *CompiledShardReconciler) reconcile(ctx context.Context, s *deployv1alph
 
 	if err := k8creconciling.ReconcileServices(ctx, []k8creconciling.NamedServiceReconcilerFactory{
 		compiledshard.ServiceReconciler(s),
-	}, s.Namespace, r.Client, ownerRefWrapper); err != nil {
+	}, s.Namespace, client, ownerRefWrapper); err != nil {
 		errs = append(errs, err)
 	}
 
 	return conditions, kerrors.NewAggregate(errs)
 }
 
-func (r *CompiledShardReconciler) reconcileStatus(ctx context.Context, oldShard *deployv1alpha1.CompiledShard, conditions []metav1.Condition) error {
+func (r *CompiledShardReconciler) reconcileStatus(ctx context.Context, client ctrlruntimeclient.Client, oldShard *deployv1alpha1.CompiledShard, conditions []metav1.Condition) error {
 	newShard := oldShard.DeepCopy()
 	var errs []error
 
 	depKey := types.NamespacedName{Namespace: newShard.Namespace, Name: resources.GetCompiledShardDeploymentName(newShard)}
-	cond, err := util.GetDeploymentAvailableCondition(ctx, r.Client, depKey)
+	cond, err := util.GetDeploymentAvailableCondition(ctx, client, depKey)
 	if err != nil {
 		errs = append(errs, err)
 	} else {
@@ -167,7 +167,7 @@ func (r *CompiledShardReconciler) reconcileStatus(ctx context.Context, oldShard 
 
 	// only patch the status if there are actual changes.
 	if !equality.Semantic.DeepEqual(oldShard.Status, newShard.Status) {
-		if err := r.Client.Status().Patch(ctx, newShard, ctrlruntimeclient.MergeFrom(oldShard)); err != nil {
+		if err := client.Status().Patch(ctx, newShard, ctrlruntimeclient.MergeFrom(oldShard)); err != nil {
 			errs = append(errs, err)
 		}
 	}

@@ -114,16 +114,16 @@ func (r *FrontProxyReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, nil
 	}
 
-	conditions, recErr := r.reconcile(ctx, &frontProxy)
+	conditions, recErr := r.reconcile(ctx, r.Client, r.Scheme, &frontProxy)
 
-	if err := r.reconcileStatus(ctx, &frontProxy, conditions); err != nil {
+	if err := r.reconcileStatus(ctx, r.Client, &frontProxy, conditions); err != nil {
 		recErr = kerrors.NewAggregate([]error{recErr, err})
 	}
 
 	return ctrl.Result{}, recErr
 }
 
-func (r *FrontProxyReconciler) reconcile(ctx context.Context, frontProxy *operatorv1alpha1.FrontProxy) ([]metav1.Condition, error) {
+func (r *FrontProxyReconciler) reconcile(ctx context.Context, client ctrlruntimeclient.Client, scheme *runtime.Scheme, frontProxy *operatorv1alpha1.FrontProxy) ([]metav1.Condition, error) {
 	var (
 		conditions []metav1.Condition
 		errs       []error
@@ -134,18 +134,18 @@ func (r *FrontProxyReconciler) reconcile(ctx context.Context, frontProxy *operat
 	}
 
 	// Ensure Bundle object exists if annotation is present
-	if _, err := bundlehelper.EnsureBundleForOwner(ctx, r.Client, r.Scheme, frontProxy); err != nil {
+	if _, err := bundlehelper.EnsureBundleForOwner(ctx, client, scheme, frontProxy); err != nil {
 		errs = append(errs, fmt.Errorf("failed to ensure bundle: %w", err))
 	}
 
-	cond, rootShard := util.FetchRootShard(ctx, r.Client, frontProxy.Namespace, frontProxy.Spec.RootShard.Reference)
+	cond, rootShard := util.FetchRootShard(ctx, client, frontProxy.Namespace, frontProxy.Spec.RootShard.Reference)
 	conditions = append(conditions, cond)
 
 	if rootShard == nil {
 		return conditions, nil
 	}
 
-	shards, err := util.GetRootShardChildren(ctx, r.Client, rootShard)
+	shards, err := util.GetRootShardChildren(ctx, client, rootShard)
 	if err != nil {
 		return conditions, fmt.Errorf("failed to list shards: %w", err)
 	}
@@ -153,7 +153,7 @@ func (r *FrontProxyReconciler) reconcile(ctx context.Context, frontProxy *operat
 	// Certificates and CA bundles stay here; the workloads are rendered by the
 	// CompiledFrontProxy controller.
 	var certs []*certmanagerv1.Certificate
-	if err := frontproxy.NewFrontProxy(frontProxy, rootShard, shards).Reconcile(ctx, r.Client, frontProxy.Namespace, modifier.Capture(&certs)); err != nil {
+	if err := frontproxy.NewFrontProxy(frontProxy, rootShard, shards).Reconcile(ctx, client, frontProxy.Namespace, modifier.Capture(&certs)); err != nil {
 		errs = append(errs, fmt.Errorf("failed to reconcile: %w", err))
 	}
 
@@ -168,19 +168,19 @@ func (r *FrontProxyReconciler) reconcile(ctx context.Context, frontProxy *operat
 
 	if err := reconciling.ReconcileCompiledFrontProxys(ctx, []reconciling.NamedCompiledFrontProxyReconcilerFactory{
 		frontproxy.CompiledFrontProxyReconciler(frontProxy, rootShard, shards, util.MutateKeys(revisions, "cert-", "-revision")),
-	}, frontProxy.Namespace, r.Client, ownerRefWrapper); err != nil {
+	}, frontProxy.Namespace, client, ownerRefWrapper); err != nil {
 		errs = append(errs, err)
 	}
 
 	return conditions, kerrors.NewAggregate(errs)
 }
 
-func (r *FrontProxyReconciler) reconcileStatus(ctx context.Context, oldFrontProxy *operatorv1alpha1.FrontProxy, conditions []metav1.Condition) error {
+func (r *FrontProxyReconciler) reconcileStatus(ctx context.Context, client ctrlruntimeclient.Client, oldFrontProxy *operatorv1alpha1.FrontProxy, conditions []metav1.Condition) error {
 	frontProxy := oldFrontProxy.DeepCopy()
 	var errs []error
 
 	// Add Bundle condition
-	bundleCond := bundlehelper.GetBundleReadyCondition(ctx, r.Client, frontProxy, frontProxy.Generation)
+	bundleCond := bundlehelper.GetBundleReadyCondition(ctx, client, frontProxy, frontProxy.Generation)
 	conditions = append(conditions, bundleCond)
 
 	// Check if frontproxy is bundled (has bundle annotation with Ready bundle)
@@ -190,7 +190,7 @@ func (r *FrontProxyReconciler) reconcileStatus(ctx context.Context, oldFrontProx
 	if !isBundled {
 		compiled := &deployv1alpha1.CompiledFrontProxy{}
 		key := types.NamespacedName{Namespace: frontProxy.Namespace, Name: frontProxy.Name}
-		if err := r.Client.Get(ctx, key, compiled); ctrlruntimeclient.IgnoreNotFound(err) != nil {
+		if err := client.Get(ctx, key, compiled); ctrlruntimeclient.IgnoreNotFound(err) != nil {
 			errs = append(errs, err)
 		} else {
 			conditions = append(conditions, util.GetCompiledAvailableCondition(compiled.Status.Conditions, "CompiledFrontProxy "+frontProxy.Name))
@@ -226,7 +226,7 @@ func (r *FrontProxyReconciler) reconcileStatus(ctx context.Context, oldFrontProx
 
 	// only patch the status if there are actual changes.
 	if !equality.Semantic.DeepEqual(oldFrontProxy.Status, frontProxy.Status) {
-		if err := r.Client.Status().Patch(ctx, frontProxy, ctrlruntimeclient.MergeFrom(oldFrontProxy)); err != nil {
+		if err := client.Status().Patch(ctx, frontProxy, ctrlruntimeclient.MergeFrom(oldFrontProxy)); err != nil {
 			errs = append(errs, err)
 		}
 	}

@@ -141,12 +141,12 @@ func (r *BundleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res
 		return ctrl.Result{}, nil
 	}
 
-	recErr = r.reconcile(ctx, &bundle)
+	recErr = r.reconcile(ctx, r.Client, &bundle)
 
 	return ctrl.Result{}, recErr
 }
 
-func (r *BundleReconciler) reconcile(ctx context.Context, bundle *operatorv1alpha1.Bundle) error {
+func (r *BundleReconciler) reconcile(ctx context.Context, client ctrlruntimeclient.Client, bundle *operatorv1alpha1.Bundle) error {
 	oldStatus := bundle.Status.DeepCopy()
 	var (
 		errs       []error
@@ -154,7 +154,7 @@ func (r *BundleReconciler) reconcile(ctx context.Context, bundle *operatorv1alph
 	)
 
 	if bundle.DeletionTimestamp != nil {
-		return r.updateStatus(ctx, bundle, oldStatus, conditions, errs)
+		return r.updateStatus(ctx, client, bundle, oldStatus, conditions, errs)
 	}
 
 	// Determine which target the bundle is for and get the list of required objects
@@ -172,7 +172,7 @@ func (r *BundleReconciler) reconcile(ctx context.Context, bundle *operatorv1alph
 	case target.RootShardRef != nil:
 		targetName = target.RootShardRef.Name
 		rootShard = &operatorv1alpha1.RootShard{}
-		err := r.Client.Get(ctx, ctrlruntimeclient.ObjectKey{
+		err := client.Get(ctx, ctrlruntimeclient.ObjectKey{
 			Name:      targetName,
 			Namespace: bundle.Namespace,
 		}, rootShard)
@@ -186,7 +186,7 @@ func (r *BundleReconciler) reconcile(ctx context.Context, bundle *operatorv1alph
 	case target.ShardRef != nil:
 		targetName = target.ShardRef.Name
 		shard = &operatorv1alpha1.Shard{}
-		err := r.Client.Get(ctx, ctrlruntimeclient.ObjectKey{
+		err := client.Get(ctx, ctrlruntimeclient.ObjectKey{
 			Name:      targetName,
 			Namespace: bundle.Namespace,
 		}, shard)
@@ -195,7 +195,7 @@ func (r *BundleReconciler) reconcile(ctx context.Context, bundle *operatorv1alph
 			// Need to get RootShard for Shard bundles
 			if shard.Spec.RootShard.Reference != nil {
 				rootShard = &operatorv1alpha1.RootShard{}
-				err := r.Client.Get(ctx, ctrlruntimeclient.ObjectKey{
+				err := client.Get(ctx, ctrlruntimeclient.ObjectKey{
 					Name:      shard.Spec.RootShard.Reference.Name,
 					Namespace: bundle.Namespace,
 				}, rootShard)
@@ -212,7 +212,7 @@ func (r *BundleReconciler) reconcile(ctx context.Context, bundle *operatorv1alph
 	case target.FrontProxyRef != nil:
 		targetName = target.FrontProxyRef.Name
 		frontProxy = &operatorv1alpha1.FrontProxy{}
-		err := r.Client.Get(ctx, ctrlruntimeclient.ObjectKey{
+		err := client.Get(ctx, ctrlruntimeclient.ObjectKey{
 			Name:      targetName,
 			Namespace: bundle.Namespace,
 		}, frontProxy)
@@ -221,7 +221,7 @@ func (r *BundleReconciler) reconcile(ctx context.Context, bundle *operatorv1alph
 			// Need to get RootShard for FrontProxy bundles
 			if frontProxy.Spec.RootShard.Reference != nil {
 				rootShard = &operatorv1alpha1.RootShard{}
-				err := r.Client.Get(ctx, ctrlruntimeclient.ObjectKey{
+				err := client.Get(ctx, ctrlruntimeclient.ObjectKey{
 					Name:      frontProxy.Spec.RootShard.Reference.Name,
 					Namespace: bundle.Namespace,
 				}, rootShard)
@@ -246,11 +246,11 @@ func (r *BundleReconciler) reconcile(ctx context.Context, bundle *operatorv1alph
 			Reason:  "TargetNotFound",
 			Message: fmt.Sprintf("Target object %s not found", targetName),
 		})
-		return r.updateStatus(ctx, bundle, oldStatus, conditions, errs)
+		return r.updateStatus(ctx, client, bundle, oldStatus, conditions, errs)
 	}
 
 	// Check the status of all required objects
-	objectStatuses, allReady := r.checkBundleObjects(ctx, requiredObjects)
+	objectStatuses, allReady := r.checkBundleObjects(ctx, client, requiredObjects)
 
 	// Update the bundle status with object statuses
 	bundle.Status.Objects = objectStatuses
@@ -264,7 +264,7 @@ func (r *BundleReconciler) reconcile(ctx context.Context, bundle *operatorv1alph
 		})
 
 		// Create bundle objects (ConfigMap/Secret) once all required objects are ready
-		if err := r.createBundleObjects(ctx, bundle, requiredObjects); err != nil {
+		if err := r.createBundleObjects(ctx, client, bundle, requiredObjects); err != nil {
 			errs = append(errs, fmt.Errorf("failed to create bundle objects: %w", err))
 			conditions = append(conditions, metav1.Condition{
 				Type:    string(operatorv1alpha1.ConditionTypeObjectsCreated),
@@ -301,16 +301,16 @@ func (r *BundleReconciler) reconcile(ctx context.Context, bundle *operatorv1alph
 		})
 	}
 
-	return r.updateStatus(ctx, bundle, oldStatus, conditions, errs)
+	return r.updateStatus(ctx, client, bundle, oldStatus, conditions, errs)
 }
 
 // checkBundleObjects checks the status of all required objects and returns their statuses
-func (r *BundleReconciler) checkBundleObjects(ctx context.Context, requiredObjects []operatorv1alpha1.BundleObject) ([]operatorv1alpha1.BundleObjectStatus, bool) {
+func (r *BundleReconciler) checkBundleObjects(ctx context.Context, client ctrlruntimeclient.Client, requiredObjects []operatorv1alpha1.BundleObject) ([]operatorv1alpha1.BundleObjectStatus, bool) {
 	objectStatuses := make([]operatorv1alpha1.BundleObjectStatus, 0, len(requiredObjects))
 	allReady := true
 
 	for _, obj := range requiredObjects {
-		status := r.checkObject(ctx, obj)
+		status := r.checkObject(ctx, client, obj)
 		objectStatuses = append(objectStatuses, status)
 		if status.State != operatorv1alpha1.BundleObjectStateReady {
 			allReady = false
@@ -337,7 +337,7 @@ func newResourceForGVR(gvrResource string) ctrlruntimeclient.Object {
 }
 
 // checkObject checks if a specific object exists and is ready
-func (r *BundleReconciler) checkObject(ctx context.Context, obj operatorv1alpha1.BundleObject) operatorv1alpha1.BundleObjectStatus {
+func (r *BundleReconciler) checkObject(ctx context.Context, client ctrlruntimeclient.Client, obj operatorv1alpha1.BundleObject) operatorv1alpha1.BundleObjectStatus {
 	status := operatorv1alpha1.BundleObjectStatus{
 		Object: obj.String(),
 	}
@@ -349,7 +349,7 @@ func (r *BundleReconciler) checkObject(ctx context.Context, obj operatorv1alpha1
 		return status
 	}
 
-	err := r.Client.Get(ctx, ctrlruntimeclient.ObjectKey{
+	err := client.Get(ctx, ctrlruntimeclient.ObjectKey{
 		Name:      obj.Name,
 		Namespace: obj.Namespace,
 	}, resource)
@@ -373,7 +373,7 @@ func (r *BundleReconciler) checkObject(ctx context.Context, obj operatorv1alpha1
 }
 
 // createBundleObjects creates a Secret objects containing the bundle data
-func (r *BundleReconciler) createBundleObjects(ctx context.Context, bundle *operatorv1alpha1.Bundle, requiredObjects []operatorv1alpha1.BundleObject) error {
+func (r *BundleReconciler) createBundleObjects(ctx context.Context, client ctrlruntimeclient.Client, bundle *operatorv1alpha1.Bundle, requiredObjects []operatorv1alpha1.BundleObject) error {
 	// Collect all required objects
 	objects := make([]ctrlruntimeclient.Object, 0, len(requiredObjects))
 	for _, obj := range requiredObjects {
@@ -382,7 +382,7 @@ func (r *BundleReconciler) createBundleObjects(ctx context.Context, bundle *oper
 			continue
 		}
 
-		if err := r.Client.Get(ctx, ctrlruntimeclient.ObjectKey{
+		if err := client.Get(ctx, ctrlruntimeclient.ObjectKey{
 			Name:      obj.Name,
 			Namespace: obj.Namespace,
 		}, resource); err != nil {
@@ -411,7 +411,7 @@ func (r *BundleReconciler) createBundleObjects(ctx context.Context, bundle *oper
 	}
 
 	// Generate bundle data similar to the old client implementation
-	bundleData, err := r.generateBundleData(objects)
+	bundleData, err := r.generateBundleData(client, objects)
 	if err != nil {
 		return fmt.Errorf("failed to generate bundle data: %w", err)
 	}
@@ -423,7 +423,7 @@ func (r *BundleReconciler) createBundleObjects(ctx context.Context, bundle *oper
 		bundleSecretReconciler(bundle.Name, bundleData),
 	}
 
-	return k8creconciling.ReconcileSecrets(ctx, secretReconcilers, bundle.Namespace, r.Client, ownerRefWrapper)
+	return k8creconciling.ReconcileSecrets(ctx, secretReconcilers, bundle.Namespace, client, ownerRefWrapper)
 }
 
 // bundleSecretReconciler returns a reconciler for the bundle Secret
@@ -437,11 +437,11 @@ func bundleSecretReconciler(name string, data map[string][]byte) k8creconciling.
 }
 
 // generateBundleData converts objects to bundle data format
-func (r *BundleReconciler) generateBundleData(objects []ctrlruntimeclient.Object) (map[string][]byte, error) {
+func (r *BundleReconciler) generateBundleData(client ctrlruntimeclient.Client, objects []ctrlruntimeclient.Object) (map[string][]byte, error) {
 	data := make(map[string][]byte)
 
 	for _, obj := range objects {
-		key, err := r.generateObjectKey(obj)
+		key, err := r.generateObjectKey(client, obj)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate key for object %s/%s: %w", obj.GetNamespace(), obj.GetName(), err)
 		}
@@ -470,13 +470,13 @@ func (r *BundleReconciler) generateBundleData(objects []ctrlruntimeclient.Object
 
 // generateObjectKey generates a Kubernetes API-style path key for an object
 // Format: api_v1_namespaces_<namespace>_<resource>_<name>
-func (r *BundleReconciler) generateObjectKey(obj ctrlruntimeclient.Object) (string, error) {
-	gvk, err := r.Client.GroupVersionKindFor(obj)
+func (r *BundleReconciler) generateObjectKey(client ctrlruntimeclient.Client, obj ctrlruntimeclient.Object) (string, error) {
+	gvk, err := client.GroupVersionKindFor(obj)
 	if err != nil {
 		return "", err
 	}
 
-	restMapper := r.Client.RESTMapper()
+	restMapper := client.RESTMapper()
 	mapping, err := restMapper.RESTMapping(gvk.GroupKind(), gvk.Version)
 	if err != nil {
 		return "", err
@@ -521,7 +521,7 @@ func (r *BundleReconciler) generateObjectKey(obj ctrlruntimeclient.Object) (stri
 }
 
 // updateStatus sets both phase and conditions on the reconciled Bundle object.
-func (r *BundleReconciler) updateStatus(ctx context.Context, bundle *operatorv1alpha1.Bundle, oldStatus *operatorv1alpha1.BundleStatus, conditions []metav1.Condition, errs []error) error {
+func (r *BundleReconciler) updateStatus(ctx context.Context, client ctrlruntimeclient.Client, bundle *operatorv1alpha1.Bundle, oldStatus *operatorv1alpha1.BundleStatus, conditions []metav1.Condition, errs []error) error {
 	for _, condition := range conditions {
 		condition.ObservedGeneration = bundle.Generation
 		bundle.Status.Conditions = updateCondition(bundle.Status.Conditions, condition)
@@ -544,7 +544,7 @@ func (r *BundleReconciler) updateStatus(ctx context.Context, bundle *operatorv1a
 
 	// only patch the status if there are actual changes.
 	if !equality.Semantic.DeepEqual(oldStatus, &bundle.Status) {
-		if err := r.Client.Status().Update(ctx, bundle); err != nil {
+		if err := client.Status().Update(ctx, bundle); err != nil {
 			errs = append(errs, err)
 		}
 	}

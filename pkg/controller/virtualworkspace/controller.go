@@ -105,16 +105,16 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 
 	vwCopy := vw.DeepCopy()
 
-	conditions, recErr := r.reconcile(ctx, vwCopy)
+	conditions, recErr := r.reconcile(ctx, r.Client, vwCopy)
 
-	if err := r.reconcileStatus(ctx, vw, vwCopy, conditions); err != nil {
+	if err := r.reconcileStatus(ctx, r.Client, vw, vwCopy, conditions); err != nil {
 		recErr = kerrors.NewAggregate([]error{recErr, err})
 	}
 
 	return ctrl.Result{}, recErr
 }
 
-func (r *Reconciler) reconcile(ctx context.Context, vw *operatorv1alpha1.VirtualWorkspace) ([]metav1.Condition, error) {
+func (r *Reconciler) reconcile(ctx context.Context, client ctrlruntimeclient.Client, vw *operatorv1alpha1.VirtualWorkspace) ([]metav1.Condition, error) {
 	var conditions []metav1.Condition
 
 	var (
@@ -126,7 +126,7 @@ func (r *Reconciler) reconcile(ctx context.Context, vw *operatorv1alpha1.Virtual
 	case vw.Spec.Target.RootShardRef != nil:
 		rootShard = &operatorv1alpha1.RootShard{}
 
-		if err := r.Client.Get(ctx, types.NamespacedName{Name: vw.Spec.Target.RootShardRef.Name, Namespace: vw.Namespace}, rootShard); err != nil {
+		if err := client.Get(ctx, types.NamespacedName{Name: vw.Spec.Target.RootShardRef.Name, Namespace: vw.Namespace}, rootShard); err != nil {
 			err = fmt.Errorf("failed to get RootShard: %w", err)
 			conditions = append(conditions, metav1.Condition{
 				Type:    string(operatorv1alpha1.ConditionTypeReferenceValid),
@@ -140,7 +140,7 @@ func (r *Reconciler) reconcile(ctx context.Context, vw *operatorv1alpha1.Virtual
 	case vw.Spec.Target.ShardRef != nil:
 		shard = &operatorv1alpha1.Shard{}
 
-		if err := r.Client.Get(ctx, types.NamespacedName{Name: vw.Spec.Target.ShardRef.Name, Namespace: vw.Namespace}, shard); err != nil {
+		if err := client.Get(ctx, types.NamespacedName{Name: vw.Spec.Target.ShardRef.Name, Namespace: vw.Namespace}, shard); err != nil {
 			err = fmt.Errorf("failed to get Shard: %w", err)
 			conditions = append(conditions, metav1.Condition{
 				Type:    string(operatorv1alpha1.ConditionTypeReferenceValid),
@@ -164,7 +164,7 @@ func (r *Reconciler) reconcile(ctx context.Context, vw *operatorv1alpha1.Virtual
 		}
 
 		rootShard = &operatorv1alpha1.RootShard{}
-		if err := r.Client.Get(ctx, types.NamespacedName{Name: ref.Name, Namespace: vw.Namespace}, rootShard); err != nil {
+		if err := client.Get(ctx, types.NamespacedName{Name: ref.Name, Namespace: vw.Namespace}, rootShard); err != nil {
 			err = fmt.Errorf("failed to get RootShard: %w", err)
 			conditions = append(conditions, metav1.Condition{
 				Type:    string(operatorv1alpha1.ConditionTypeReferenceValid),
@@ -199,14 +199,14 @@ func (r *Reconciler) reconcile(ctx context.Context, vw *operatorv1alpha1.Virtual
 	if err := reconciling.ReconcileCertificates(ctx, []reconciling.NamedCertificateReconcilerFactory{
 		virtualworkspace.ClientCertificateReconciler(vw, rootShard),
 		virtualworkspace.ServerCertificateReconciler(vw, rootShard),
-	}, vw.Namespace, r.Client, ownerRefWrapper, modifier.Capture(&certs)); err != nil {
+	}, vw.Namespace, client, ownerRefWrapper, modifier.Capture(&certs)); err != nil {
 		return conditions, err
 	}
 
 	if rootShard.Spec.ClientCABundleRef != nil || vw.Spec.ClientCABundleRef != nil {
 		if err := k8creconciling.ReconcileSecrets(ctx, []k8creconciling.NamedSecretReconcilerFactory{
-			virtualworkspace.MergedClientCABundleSecretReconciler(ctx, vw, rootShard, r.Client),
-		}, vw.Namespace, r.Client, ownerRefWrapper); err != nil {
+			virtualworkspace.MergedClientCABundleSecretReconciler(ctx, vw, rootShard, client),
+		}, vw.Namespace, client, ownerRefWrapper); err != nil {
 			return conditions, err
 		}
 	}
@@ -221,18 +221,18 @@ func (r *Reconciler) reconcile(ctx context.Context, vw *operatorv1alpha1.Virtual
 	// The workloads themselves are rendered by the CompiledVirtualWorkspace controller.
 	if err := reconciling.ReconcileCompiledVirtualWorkspaces(ctx, []reconciling.NamedCompiledVirtualWorkspaceReconcilerFactory{
 		virtualworkspace.CompiledVirtualWorkspaceReconciler(vw, rootShard, shard, util.MutateKeys(revisions, "cert-", "-revision")),
-	}, vw.Namespace, r.Client, ownerRefWrapper); err != nil {
+	}, vw.Namespace, client, ownerRefWrapper); err != nil {
 		return conditions, err
 	}
 
 	return conditions, nil
 }
 
-func (r *Reconciler) reconcileStatus(ctx context.Context, oldVW *operatorv1alpha1.VirtualWorkspace, vw *operatorv1alpha1.VirtualWorkspace, conditions []metav1.Condition) error {
+func (r *Reconciler) reconcileStatus(ctx context.Context, client ctrlruntimeclient.Client, oldVW *operatorv1alpha1.VirtualWorkspace, vw *operatorv1alpha1.VirtualWorkspace, conditions []metav1.Condition) error {
 	// Check the workloads rendered from the compiled object
 	compiled := &deployv1alpha1.CompiledVirtualWorkspace{}
 	key := types.NamespacedName{Namespace: vw.Namespace, Name: vw.Name}
-	if err := r.Client.Get(ctx, key, compiled); ctrlruntimeclient.IgnoreNotFound(err) != nil {
+	if err := client.Get(ctx, key, compiled); ctrlruntimeclient.IgnoreNotFound(err) != nil {
 		return err
 	}
 	conditions = append(conditions, util.GetCompiledAvailableCondition(compiled.Status.Conditions, "CompiledVirtualWorkspace "+vw.Name))
@@ -243,7 +243,7 @@ func (r *Reconciler) reconcileStatus(ctx context.Context, oldVW *operatorv1alpha
 	}
 
 	if !equality.Semantic.DeepEqual(oldVW.Status, vw.Status) {
-		if err := r.Client.Status().Patch(ctx, vw, ctrlruntimeclient.MergeFrom(oldVW)); err != nil {
+		if err := client.Status().Patch(ctx, vw, ctrlruntimeclient.MergeFrom(oldVW)); err != nil {
 			return err
 		}
 	}

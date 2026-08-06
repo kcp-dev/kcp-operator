@@ -142,9 +142,9 @@ func (r *RootShardReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, nil
 	}
 
-	conditions, recErr := r.reconcile(ctx, &rootShard)
+	conditions, recErr := r.reconcile(ctx, r.Client, r.Scheme, &rootShard)
 
-	if err := r.reconcileStatus(ctx, &rootShard, conditions); err != nil {
+	if err := r.reconcileStatus(ctx, r.Client, &rootShard, conditions); err != nil {
 		recErr = kerrors.NewAggregate([]error{recErr, err})
 	}
 
@@ -152,7 +152,7 @@ func (r *RootShardReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 }
 
 //nolint:unparam // Keep the controller working the same as all the others, even though currently it does always return nil conditions.
-func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operatorv1alpha1.RootShard) ([]metav1.Condition, error) {
+func (r *RootShardReconciler) reconcile(ctx context.Context, client ctrlruntimeclient.Client, scheme *runtime.Scheme, rootShard *operatorv1alpha1.RootShard) ([]metav1.Condition, error) {
 	var (
 		errs       []error
 		conditions []metav1.Condition
@@ -163,7 +163,7 @@ func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operator
 	}
 
 	// Ensure Bundle object exists if annotation is present
-	if _, err := bundlehelper.EnsureBundleForOwner(ctx, r.Client, r.Scheme, rootShard); err != nil {
+	if _, err := bundlehelper.EnsureBundleForOwner(ctx, client, scheme, rootShard); err != nil {
 		errs = append(errs, fmt.Errorf("failed to ensure bundle: %w", err))
 	}
 
@@ -200,26 +200,26 @@ func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operator
 	}
 
 	var certs []*certmanagerv1.Certificate
-	if err := reconciling.ReconcileCertificates(ctx, certReconcilers, rootShard.Namespace, r.Client, ownerRefWrapper, modifier.Capture(&certs)); err != nil {
+	if err := reconciling.ReconcileCertificates(ctx, certReconcilers, rootShard.Namespace, client, ownerRefWrapper, modifier.Capture(&certs)); err != nil {
 		errs = append(errs, err)
 	}
 
-	if err := reconciling.ReconcileIssuers(ctx, issuerReconcilers, rootShard.Namespace, r.Client, ownerRefWrapper); err != nil {
+	if err := reconciling.ReconcileIssuers(ctx, issuerReconcilers, rootShard.Namespace, client, ownerRefWrapper); err != nil {
 		errs = append(errs, err)
 	}
 
 	if rootShard.Spec.CABundleSecretRef != nil {
 		if err := k8creconciling.ReconcileSecrets(ctx, []k8creconciling.NamedSecretReconcilerFactory{
-			rootshard.MergedCABundleSecretReconciler(ctx, rootShard, r.Client),
-		}, rootShard.Namespace, r.Client, ownerRefWrapper); err != nil {
+			rootshard.MergedCABundleSecretReconciler(ctx, rootShard, client),
+		}, rootShard.Namespace, client, ownerRefWrapper); err != nil {
 			errs = append(errs, err)
 		}
 	}
 
 	if rootShard.Spec.ClientCABundleRef != nil {
 		if err := k8creconciling.ReconcileSecrets(ctx, []k8creconciling.NamedSecretReconcilerFactory{
-			rootshard.MergedClientCABundleSecretReconciler(ctx, rootShard, r.Client),
-		}, rootShard.Namespace, r.Client, ownerRefWrapper); err != nil {
+			rootshard.MergedClientCABundleSecretReconciler(ctx, rootShard, client),
+		}, rootShard.Namespace, client, ownerRefWrapper); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -227,7 +227,7 @@ func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operator
 	if err := k8creconciling.ReconcileSecrets(ctx, []k8creconciling.NamedSecretReconcilerFactory{
 		rootshard.LogicalClusterAdminKubeconfigReconciler(rootShard),
 		rootshard.ExternalLogicalClusterAdminKubeconfigReconciler(rootShard),
-	}, rootShard.Namespace, r.Client, ownerRefWrapper); err != nil {
+	}, rootShard.Namespace, client, ownerRefWrapper); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -240,18 +240,18 @@ func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operator
 	if rootShard.Spec.KCPVirtualWorkspace != nil {
 		kcpVW = &operatorv1alpha1.VirtualWorkspace{}
 		key := types.NamespacedName{Namespace: rootShard.Namespace, Name: rootShard.Spec.KCPVirtualWorkspace.Name}
-		if err := r.Client.Get(ctx, key, kcpVW); err != nil {
+		if err := client.Get(ctx, key, kcpVW); err != nil {
 			errs = append(errs, fmt.Errorf("failed to find associated VirtualWorkspace %s: %w", key.Name, err))
 			vwConfigValid = false
 		}
 	}
 
-	shards, shardsErr := util.GetRootShardChildren(ctx, r.Client, rootShard)
+	shards, shardsErr := util.GetRootShardChildren(ctx, client, rootShard)
 	if shardsErr != nil {
 		errs = append(errs, fmt.Errorf("failed to list shards: %w", shardsErr))
 	}
 
-	if err := frontproxy.NewRootShardProxy(rootShard).Reconcile(ctx, r.Client, rootShard.Namespace, modifier.Capture(&certs)); err != nil {
+	if err := frontproxy.NewRootShardProxy(rootShard).Reconcile(ctx, client, rootShard.Namespace, modifier.Capture(&certs)); err != nil {
 		errs = append(errs, fmt.Errorf("failed to reconcile proxy: %w", err))
 	}
 
@@ -263,7 +263,7 @@ func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operator
 	if vwConfigValid && shardsErr == nil && certsReady {
 		if err := reconciling.ReconcileCompiledRootShards(ctx, []reconciling.NamedCompiledRootShardReconcilerFactory{
 			rootshard.CompiledRootShardReconciler(rootShard, kcpVW, shards, util.MutateKeys(revisions, "cert-", "-revision")),
-		}, rootShard.Namespace, r.Client, ownerRefWrapper); err != nil {
+		}, rootShard.Namespace, client, ownerRefWrapper); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -272,12 +272,12 @@ func (r *RootShardReconciler) reconcile(ctx context.Context, rootShard *operator
 }
 
 // reconcileStatus sets both phase and conditions on the reconciled RootShard object.
-func (r *RootShardReconciler) reconcileStatus(ctx context.Context, oldRootShard *operatorv1alpha1.RootShard, conditions []metav1.Condition) error {
+func (r *RootShardReconciler) reconcileStatus(ctx context.Context, client ctrlruntimeclient.Client, oldRootShard *operatorv1alpha1.RootShard, conditions []metav1.Condition) error {
 	rootShard := oldRootShard.DeepCopy()
 	var errs []error
 
 	// Add Bundle condition
-	bundleCond := bundlehelper.GetBundleReadyCondition(ctx, r.Client, rootShard, rootShard.Generation)
+	bundleCond := bundlehelper.GetBundleReadyCondition(ctx, client, rootShard, rootShard.Generation)
 	conditions = append(conditions, bundleCond)
 
 	// Check if rootshard is bundled (has bundle annotation with Ready bundle)
@@ -287,7 +287,7 @@ func (r *RootShardReconciler) reconcileStatus(ctx context.Context, oldRootShard 
 	if !isBundled {
 		compiled := &deployv1alpha1.CompiledRootShard{}
 		key := types.NamespacedName{Namespace: rootShard.Namespace, Name: rootShard.Name}
-		if err := r.Client.Get(ctx, key, compiled); ctrlruntimeclient.IgnoreNotFound(err) != nil {
+		if err := client.Get(ctx, key, compiled); ctrlruntimeclient.IgnoreNotFound(err) != nil {
 			errs = append(errs, err)
 		} else {
 			conditions = append(conditions, util.GetCompiledAvailableCondition(compiled.Status.Conditions, "CompiledRootShard "+rootShard.Name))
@@ -321,7 +321,7 @@ func (r *RootShardReconciler) reconcileStatus(ctx context.Context, oldRootShard 
 		}
 	}
 
-	shards, err := util.GetRootShardChildren(ctx, r.Client, rootShard)
+	shards, err := util.GetRootShardChildren(ctx, client, rootShard)
 	if err != nil {
 		errs = append(errs, err)
 	} else {
@@ -333,7 +333,7 @@ func (r *RootShardReconciler) reconcileStatus(ctx context.Context, oldRootShard 
 
 	// No reconciler reads Status.Shards, but this write is what wakes the Shard and FrontProxy controllers through their RootShard watches.
 	if !equality.Semantic.DeepEqual(oldRootShard.Status, rootShard.Status) {
-		if err := r.Client.Status().Patch(ctx, rootShard, ctrlruntimeclient.MergeFrom(oldRootShard)); err != nil {
+		if err := client.Status().Patch(ctx, rootShard, ctrlruntimeclient.MergeFrom(oldRootShard)); err != nil {
 			errs = append(errs, err)
 		}
 	}

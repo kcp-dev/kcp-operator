@@ -101,9 +101,9 @@ func (r *CompiledVirtualWorkspaceReconciler) Reconcile(ctx context.Context, req 
 
 	vwCopy := vw.DeepCopy()
 
-	conditions, recErr := r.reconcile(ctx, vwCopy)
+	conditions, recErr := r.reconcile(ctx, r.Client, vwCopy)
 
-	if err := r.reconcileStatus(ctx, vw, vwCopy, conditions); err != nil {
+	if err := r.reconcileStatus(ctx, r.Client, vw, vwCopy, conditions); err != nil {
 		recErr = kerrors.NewAggregate([]error{recErr, err})
 	}
 
@@ -111,18 +111,18 @@ func (r *CompiledVirtualWorkspaceReconciler) Reconcile(ctx context.Context, req 
 }
 
 //nolint:unparam // Keep the controller working the same as all the others, even though currently it does always return nil conditions.
-func (r *CompiledVirtualWorkspaceReconciler) reconcile(ctx context.Context, vw *deployv1alpha1.CompiledVirtualWorkspace) ([]metav1.Condition, error) {
+func (r *CompiledVirtualWorkspaceReconciler) reconcile(ctx context.Context, client ctrlruntimeclient.Client, vw *deployv1alpha1.CompiledVirtualWorkspace) ([]metav1.Condition, error) {
 	var (
 		conditions []metav1.Condition
 		errs       []error
 	)
 
 	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*metav1.NewControllerRef(vw, deployv1alpha1.SchemeGroupVersion.WithKind("CompiledVirtualWorkspace")))
-	revisionLabels := modifier.RelatedRevisionsLabels(ctx, r.Client)
+	revisionLabels := modifier.RelatedRevisionsLabels(ctx, client)
 
 	if err := k8creconciling.ReconcileDeployments(ctx, []k8creconciling.NamedDeploymentReconcilerFactory{
 		compiledvirtualworkspace.DeploymentReconciler(vw),
-	}, vw.Namespace, r.Client, ownerRefWrapper, revisionLabels); err != nil {
+	}, vw.Namespace, client, ownerRefWrapper, revisionLabels); err != nil {
 		// Swallow these errors and instead rely on us watching Secrets and re-reconciling whenever they change.
 		if !errors.Is(err, modifier.ErrMountNotFound) {
 			errs = append(errs, err)
@@ -131,17 +131,17 @@ func (r *CompiledVirtualWorkspaceReconciler) reconcile(ctx context.Context, vw *
 
 	if err := k8creconciling.ReconcileServices(ctx, []k8creconciling.NamedServiceReconcilerFactory{
 		compiledvirtualworkspace.ServiceReconciler(vw),
-	}, vw.Namespace, r.Client, ownerRefWrapper); err != nil {
+	}, vw.Namespace, client, ownerRefWrapper); err != nil {
 		errs = append(errs, err)
 	}
 
 	return conditions, kerrors.NewAggregate(errs)
 }
 
-func (r *CompiledVirtualWorkspaceReconciler) reconcileStatus(ctx context.Context, oldVW *deployv1alpha1.CompiledVirtualWorkspace, vw *deployv1alpha1.CompiledVirtualWorkspace, conditions []metav1.Condition) error {
+func (r *CompiledVirtualWorkspaceReconciler) reconcileStatus(ctx context.Context, client ctrlruntimeclient.Client, oldVW *deployv1alpha1.CompiledVirtualWorkspace, vw *deployv1alpha1.CompiledVirtualWorkspace, conditions []metav1.Condition) error {
 	// Check deployment status
 	depKey := types.NamespacedName{Namespace: vw.Namespace, Name: resources.GetCompiledVirtualWorkspaceDeploymentName(vw)}
-	cond, err := util.GetDeploymentAvailableCondition(ctx, r.Client, depKey)
+	cond, err := util.GetDeploymentAvailableCondition(ctx, client, depKey)
 	if err != nil {
 		return err
 	}
@@ -153,7 +153,7 @@ func (r *CompiledVirtualWorkspaceReconciler) reconcileStatus(ctx context.Context
 	}
 
 	if !equality.Semantic.DeepEqual(oldVW.Status, vw.Status) {
-		if err := r.Client.Status().Patch(ctx, vw, ctrlruntimeclient.MergeFrom(oldVW)); err != nil {
+		if err := client.Status().Patch(ctx, vw, ctrlruntimeclient.MergeFrom(oldVW)); err != nil {
 			return err
 		}
 	}

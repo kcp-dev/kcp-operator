@@ -75,14 +75,14 @@ func (r *CacheServerReconciler) Reconcile(ctx context.Context, req ctrlruntime.R
 		return ctrlruntime.Result{}, nil
 	}
 
-	if err := r.reconcile(ctx, server); err != nil {
+	if err := r.reconcile(ctx, r.Client, server); err != nil {
 		return ctrlruntime.Result{}, err
 	}
 
 	return ctrlruntime.Result{}, nil
 }
 
-func (r *CacheServerReconciler) reconcile(ctx context.Context, server *operatorv1alpha1.CacheServer) error {
+func (r *CacheServerReconciler) reconcile(ctx context.Context, client ctrlruntimeclient.Client, server *operatorv1alpha1.CacheServer) error {
 	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*metav1.NewControllerRef(server, operatorv1alpha1.SchemeGroupVersion.WithKind("CacheServer")))
 
 	var certs []*certmanagerv1.Certificate
@@ -90,19 +90,19 @@ func (r *CacheServerReconciler) reconcile(ctx context.Context, server *operatorv
 		cacheserver.RootCACertificateReconciler(server),
 		cacheserver.ServerCertificateReconciler(server),
 		cacheserver.ClientCertificateReconciler(server),
-	}, server.Namespace, r.Client, ownerRefWrapper, modifier.Capture(&certs)); err != nil {
+	}, server.Namespace, client, ownerRefWrapper, modifier.Capture(&certs)); err != nil {
 		return err
 	}
 
 	if err := reconciling.ReconcileIssuers(ctx, []reconciling.NamedIssuerReconcilerFactory{
 		cacheserver.RootCAIssuerReconciler(server),
-	}, server.Namespace, r.Client, ownerRefWrapper); err != nil {
+	}, server.Namespace, client, ownerRefWrapper); err != nil {
 		return err
 	}
 
 	if err := k8creconciling.ReconcileSecrets(ctx, []k8creconciling.NamedSecretReconcilerFactory{
 		cacheserver.KubeconfigReconciler(server),
-	}, server.Namespace, r.Client, ownerRefWrapper); err != nil {
+	}, server.Namespace, client, ownerRefWrapper); err != nil {
 		return err
 	}
 
@@ -116,5 +116,5 @@ func (r *CacheServerReconciler) reconcile(ctx context.Context, server *operatorv
 	// The workloads themselves are rendered by the CompiledCacheServer controller.
 	return reconciling.ReconcileCompiledCacheServers(ctx, []reconciling.NamedCompiledCacheServerReconcilerFactory{
 		cacheserver.CompiledCacheServerReconciler(server, util.MutateKeys(revisions, "cert-", "-revision")),
-	}, server.Namespace, r.Client, ownerRefWrapper)
+	}, server.Namespace, client, ownerRefWrapper)
 }

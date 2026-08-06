@@ -92,9 +92,9 @@ func (r *CompiledFrontProxyReconciler) Reconcile(ctx context.Context, req ctrl.R
 		return ctrl.Result{}, nil
 	}
 
-	conditions, recErr := r.reconcile(ctx, &frontProxy)
+	conditions, recErr := r.reconcile(ctx, r.Client, &frontProxy)
 
-	if err := r.reconcileStatus(ctx, &frontProxy, conditions); err != nil {
+	if err := r.reconcileStatus(ctx, r.Client, &frontProxy, conditions); err != nil {
 		recErr = kerrors.NewAggregate([]error{recErr, err})
 	}
 
@@ -102,7 +102,7 @@ func (r *CompiledFrontProxyReconciler) Reconcile(ctx context.Context, req ctrl.R
 }
 
 //nolint:unparam // Keep the controller working the same as all the others, even though currently it does always return nil conditions.
-func (r *CompiledFrontProxyReconciler) reconcile(ctx context.Context, frontProxy *deployv1alpha1.CompiledFrontProxy) ([]metav1.Condition, error) {
+func (r *CompiledFrontProxyReconciler) reconcile(ctx context.Context, client ctrlruntimeclient.Client, frontProxy *deployv1alpha1.CompiledFrontProxy) ([]metav1.Condition, error) {
 	var (
 		conditions []metav1.Condition
 		errs       []error
@@ -112,19 +112,19 @@ func (r *CompiledFrontProxyReconciler) reconcile(ctx context.Context, frontProxy
 		return conditions, nil
 	}
 
-	if err := compiledfrontproxy.NewFrontProxy(frontProxy).Reconcile(ctx, r.Client, frontProxy.Namespace); err != nil {
+	if err := compiledfrontproxy.NewFrontProxy(frontProxy).Reconcile(ctx, client, frontProxy.Namespace); err != nil {
 		errs = append(errs, fmt.Errorf("failed to reconcile: %w", err))
 	}
 
 	return conditions, kerrors.NewAggregate(errs)
 }
 
-func (r *CompiledFrontProxyReconciler) reconcileStatus(ctx context.Context, oldFrontProxy *deployv1alpha1.CompiledFrontProxy, conditions []metav1.Condition) error {
+func (r *CompiledFrontProxyReconciler) reconcileStatus(ctx context.Context, client ctrlruntimeclient.Client, oldFrontProxy *deployv1alpha1.CompiledFrontProxy, conditions []metav1.Condition) error {
 	frontProxy := oldFrontProxy.DeepCopy()
 	var errs []error
 
 	depKey := types.NamespacedName{Namespace: frontProxy.Namespace, Name: resources.GetCompiledFrontProxyDeploymentName(frontProxy)}
-	cond, err := util.GetDeploymentAvailableCondition(ctx, r.Client, depKey)
+	cond, err := util.GetDeploymentAvailableCondition(ctx, client, depKey)
 	if err != nil {
 		errs = append(errs, err)
 	} else {
@@ -150,7 +150,7 @@ func (r *CompiledFrontProxyReconciler) reconcileStatus(ctx context.Context, oldF
 
 	// only patch the status if there are actual changes.
 	if !equality.Semantic.DeepEqual(oldFrontProxy.Status, frontProxy.Status) {
-		if err := r.Client.Status().Patch(ctx, frontProxy, ctrlruntimeclient.MergeFrom(oldFrontProxy)); err != nil {
+		if err := client.Status().Patch(ctx, frontProxy, ctrlruntimeclient.MergeFrom(oldFrontProxy)); err != nil {
 			errs = append(errs, err)
 		}
 	}

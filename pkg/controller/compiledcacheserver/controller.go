@@ -77,23 +77,23 @@ func (r *CompiledCacheServerReconciler) Reconcile(ctx context.Context, req ctrlr
 		return ctrlruntime.Result{}, nil
 	}
 
-	if err := r.reconcile(ctx, server); err != nil {
+	if err := r.reconcile(ctx, r.Client, server); err != nil {
 		return ctrlruntime.Result{}, err
 	}
 
 	return ctrlruntime.Result{}, nil
 }
 
-func (r *CompiledCacheServerReconciler) reconcile(ctx context.Context, server *deployv1alpha1.CompiledCacheServer) error {
+func (r *CompiledCacheServerReconciler) reconcile(ctx context.Context, client ctrlruntimeclient.Client, server *deployv1alpha1.CompiledCacheServer) error {
 	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*metav1.NewControllerRef(server, deployv1alpha1.SchemeGroupVersion.WithKind("CompiledCacheServer")))
-	revisionLabels := modifier.RelatedRevisionsLabels(ctx, r.Client)
+	revisionLabels := modifier.RelatedRevisionsLabels(ctx, client)
 
 	// This will fail as long as some of the referenced Secrets/ConfigMaps do not exist yet. We rely on
 	// requeueing to eventually get there in the end. Importantly, reconciling Deployments has to happen
 	// after all Secrets have been reconciled.
 	if err := k8creconciling.ReconcileDeployments(ctx, []k8creconciling.NamedDeploymentReconcilerFactory{
 		compiledcacheserver.DeploymentReconciler(server),
-	}, server.Namespace, r.Client, ownerRefWrapper, revisionLabels); err != nil {
+	}, server.Namespace, client, ownerRefWrapper, revisionLabels); err != nil {
 		// Swallow these errors and instead rely on us watching Secrets and re-reconciling whenever they change.
 		if errors.Is(err, modifier.ErrMountNotFound) {
 			return nil
@@ -103,7 +103,7 @@ func (r *CompiledCacheServerReconciler) reconcile(ctx context.Context, server *d
 
 	if err := k8creconciling.ReconcileServices(ctx, []k8creconciling.NamedServiceReconcilerFactory{
 		compiledcacheserver.ServiceReconciler(server),
-	}, server.Namespace, r.Client, ownerRefWrapper); err != nil {
+	}, server.Namespace, client, ownerRefWrapper); err != nil {
 		return err
 	}
 

@@ -98,9 +98,9 @@ func (r *CompiledRootShardReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, nil
 	}
 
-	conditions, recErr := r.reconcile(ctx, &rootShard)
+	conditions, recErr := r.reconcile(ctx, r.Client, &rootShard)
 
-	if err := r.reconcileStatus(ctx, &rootShard, conditions); err != nil {
+	if err := r.reconcileStatus(ctx, r.Client, &rootShard, conditions); err != nil {
 		recErr = kerrors.NewAggregate([]error{recErr, err})
 	}
 
@@ -108,7 +108,7 @@ func (r *CompiledRootShardReconciler) Reconcile(ctx context.Context, req ctrl.Re
 }
 
 //nolint:unparam // Keep the controller working the same as all the others, even though currently it does always return nil conditions.
-func (r *CompiledRootShardReconciler) reconcile(ctx context.Context, rootShard *deployv1alpha1.CompiledRootShard) ([]metav1.Condition, error) {
+func (r *CompiledRootShardReconciler) reconcile(ctx context.Context, client ctrlruntimeclient.Client, rootShard *deployv1alpha1.CompiledRootShard) ([]metav1.Condition, error) {
 	var (
 		errs       []error
 		conditions []metav1.Condition
@@ -119,11 +119,11 @@ func (r *CompiledRootShardReconciler) reconcile(ctx context.Context, rootShard *
 	}
 
 	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*metav1.NewControllerRef(rootShard, deployv1alpha1.SchemeGroupVersion.WithKind("CompiledRootShard")))
-	revisionLabels := modifier.RelatedRevisionsLabels(ctx, r.Client)
+	revisionLabels := modifier.RelatedRevisionsLabels(ctx, client)
 
 	if err := k8creconciling.ReconcileDeployments(ctx, []k8creconciling.NamedDeploymentReconcilerFactory{
 		compiledrootshard.DeploymentReconciler(rootShard),
-	}, rootShard.Namespace, r.Client, ownerRefWrapper, revisionLabels); err != nil {
+	}, rootShard.Namespace, client, ownerRefWrapper, revisionLabels); err != nil {
 		// Swallow these errors and instead rely on us watching Secrets and re-reconciling whenever they change.
 		if !errors.Is(err, modifier.ErrMountNotFound) {
 			errs = append(errs, err)
@@ -132,11 +132,11 @@ func (r *CompiledRootShardReconciler) reconcile(ctx context.Context, rootShard *
 
 	if err := k8creconciling.ReconcileServices(ctx, []k8creconciling.NamedServiceReconcilerFactory{
 		compiledrootshard.ServiceReconciler(rootShard),
-	}, rootShard.Namespace, r.Client, ownerRefWrapper); err != nil {
+	}, rootShard.Namespace, client, ownerRefWrapper); err != nil {
 		errs = append(errs, err)
 	}
 
-	if err := compiledfrontproxy.NewRootShardProxy(rootShard).Reconcile(ctx, r.Client, rootShard.Namespace); err != nil {
+	if err := compiledfrontproxy.NewRootShardProxy(rootShard).Reconcile(ctx, client, rootShard.Namespace); err != nil {
 		errs = append(errs, fmt.Errorf("failed to reconcile proxy: %w", err))
 	}
 
@@ -144,12 +144,12 @@ func (r *CompiledRootShardReconciler) reconcile(ctx context.Context, rootShard *
 }
 
 // reconcileStatus sets both phase and conditions on the reconciled CompiledRootShard object.
-func (r *CompiledRootShardReconciler) reconcileStatus(ctx context.Context, oldRootShard *deployv1alpha1.CompiledRootShard, conditions []metav1.Condition) error {
+func (r *CompiledRootShardReconciler) reconcileStatus(ctx context.Context, client ctrlruntimeclient.Client, oldRootShard *deployv1alpha1.CompiledRootShard, conditions []metav1.Condition) error {
 	rootShard := oldRootShard.DeepCopy()
 	var errs []error
 
 	depKey := types.NamespacedName{Namespace: rootShard.Namespace, Name: resources.GetCompiledRootShardDeploymentName(rootShard)}
-	cond, err := util.GetDeploymentAvailableCondition(ctx, r.Client, depKey)
+	cond, err := util.GetDeploymentAvailableCondition(ctx, client, depKey)
 	if err != nil {
 		errs = append(errs, err)
 	} else {
@@ -174,7 +174,7 @@ func (r *CompiledRootShardReconciler) reconcileStatus(ctx context.Context, oldRo
 	}
 
 	if !equality.Semantic.DeepEqual(oldRootShard.Status, rootShard.Status) {
-		if err := r.Client.Status().Patch(ctx, rootShard, ctrlruntimeclient.MergeFrom(oldRootShard)); err != nil {
+		if err := client.Status().Patch(ctx, rootShard, ctrlruntimeclient.MergeFrom(oldRootShard)); err != nil {
 			errs = append(errs, err)
 		}
 	}
