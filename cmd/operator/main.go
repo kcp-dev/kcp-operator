@@ -43,6 +43,11 @@ import (
 	"github.com/kcp-dev/kcp-operator/internal/config"
 	"github.com/kcp-dev/kcp-operator/internal/controller/bundle"
 	"github.com/kcp-dev/kcp-operator/internal/controller/cacheserver"
+	"github.com/kcp-dev/kcp-operator/internal/controller/compiledcacheserver"
+	"github.com/kcp-dev/kcp-operator/internal/controller/compiledfrontproxy"
+	"github.com/kcp-dev/kcp-operator/internal/controller/compiledrootshard"
+	"github.com/kcp-dev/kcp-operator/internal/controller/compiledshard"
+	"github.com/kcp-dev/kcp-operator/internal/controller/compiledvirtualworkspace"
 	"github.com/kcp-dev/kcp-operator/internal/controller/frontproxy"
 	"github.com/kcp-dev/kcp-operator/internal/controller/kubeconfig"
 	kubeconfigrbac "github.com/kcp-dev/kcp-operator/internal/controller/kubeconfig-rbac"
@@ -51,6 +56,7 @@ import (
 	"github.com/kcp-dev/kcp-operator/internal/controller/virtualworkspace"
 	"github.com/kcp-dev/kcp-operator/internal/metrics"
 	"github.com/kcp-dev/kcp-operator/internal/reconciling"
+	deployv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/deploy/v1alpha1"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -63,6 +69,7 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	utilruntime.Must(operatorv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(deployv1alpha1.AddToScheme(scheme))
 	utilruntime.Must(certmanagerv1.AddToScheme(scheme))
 	utilruntime.Must(kcpcorev1alpha1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
@@ -225,6 +232,36 @@ func run(ctx context.Context) error {
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("unable to create controller %s: %w", "VirtualWorkspace", err)
+	}
+	if err = (&compiledrootshard.CompiledRootShardReconciler{
+		Client: client,
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("unable to create controller %s: %w", "CompiledRootShard", err)
+	}
+	if err = (&compiledfrontproxy.CompiledFrontProxyReconciler{
+		Client: client,
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("unable to create controller %s: %w", "CompiledFrontProxy", err)
+	}
+	if err = (&compiledshard.CompiledShardReconciler{
+		Client: client,
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("unable to create controller %s: %w", "CompiledShard", err)
+	}
+	if err = (&compiledcacheserver.CompiledCacheServerReconciler{
+		Client: client,
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("unable to create controller %s: %w", "CompiledCacheServer", err)
+	}
+	if err = (&compiledvirtualworkspace.CompiledVirtualWorkspaceReconciler{
+		Client: client,
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("unable to create controller %s: %w", "CompiledVirtualWorkspace", err)
 	}
 	if config.Enabled(config.ConfigurationBundle) {
 		if err = (&bundle.BundleReconciler{

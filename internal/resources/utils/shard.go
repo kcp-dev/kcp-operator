@@ -26,6 +26,7 @@ import (
 	"k8s.io/utils/ptr"
 
 	"github.com/kcp-dev/kcp-operator/internal/resources"
+	deployv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/deploy/v1alpha1"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -37,7 +38,15 @@ func GetShardBatteries(shard *operatorv1alpha1.Shard) []string {
 	return getCommonShardBatteries()
 }
 
+func GetCompiledShardBatteries(shard *deployv1alpha1.CompiledShard) []string {
+	return getCommonShardBatteries()
+}
+
 func GetRootShardBatteries(rootShard *operatorv1alpha1.RootShard) []string {
+	return getCommonShardBatteries()
+}
+
+func GetCompiledRootShardBatteries(rootShard *deployv1alpha1.CompiledRootShard) []string {
 	return getCommonShardBatteries()
 }
 
