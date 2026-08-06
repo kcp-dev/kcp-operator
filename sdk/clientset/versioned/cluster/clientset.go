@@ -33,12 +33,14 @@ import (
 	"k8s.io/client-go/util/flowcontrol"
 
 	client "github.com/kcp-dev/kcp-operator/sdk/clientset/versioned"
+	deployv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/clientset/versioned/cluster/typed/deploy/v1alpha1"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/clientset/versioned/cluster/typed/operator/v1alpha1"
 )
 
 type ClusterInterface interface {
 	Cluster(logicalcluster.Path) client.Interface
 	Discovery() discovery.DiscoveryInterface
+	DeployV1alpha1() deployv1alpha1.DeployV1alpha1ClusterInterface
 	OperatorV1alpha1() operatorv1alpha1.OperatorV1alpha1ClusterInterface
 }
 
@@ -46,6 +48,7 @@ type ClusterInterface interface {
 type ClusterClientset struct {
 	*discovery.DiscoveryClient
 	clientCache      kcpclient.Cache[*client.Clientset]
+	deployV1alpha1   *deployv1alpha1.DeployV1alpha1ClusterClient
 	operatorV1alpha1 *operatorv1alpha1.OperatorV1alpha1ClusterClient
 }
 
@@ -55,6 +58,11 @@ func (c *ClusterClientset) Discovery() discovery.DiscoveryInterface {
 		return nil
 	}
 	return c.DiscoveryClient
+}
+
+// DeployV1alpha1 retrieves the DeployV1alpha1ClusterClient.
+func (c *ClusterClientset) DeployV1alpha1() deployv1alpha1.DeployV1alpha1ClusterInterface {
+	return c.deployV1alpha1
 }
 
 // OperatorV1alpha1 retrieves the OperatorV1alpha1ClusterClient.
@@ -114,6 +122,10 @@ func NewForConfigAndClient(c *rest.Config, httpClient *http.Client) (*ClusterCli
 	var cs ClusterClientset
 	cs.clientCache = cache
 	var err error
+	cs.deployV1alpha1, err = deployv1alpha1.NewForConfigAndClient(&configShallowCopy, httpClient)
+	if err != nil {
+		return nil, err
+	}
 	cs.operatorV1alpha1, err = operatorv1alpha1.NewForConfigAndClient(&configShallowCopy, httpClient)
 	if err != nil {
 		return nil, err

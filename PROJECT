@@ -48,4 +48,49 @@ resources:
   kind: Kubeconfig
   path: github.com/kcp-dev/kcp-operator/api/v1alpha1
   version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: operator.kcp.io
+  group: deploy
+  kind: CompiledRootShard
+  path: github.com/kcp-dev/kcp-operator/sdk/apis/deploy/v1alpha1
+  version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: operator.kcp.io
+  group: deploy
+  kind: CompiledShard
+  path: github.com/kcp-dev/kcp-operator/sdk/apis/deploy/v1alpha1
+  version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: operator.kcp.io
+  group: deploy
+  kind: CompiledFrontProxy
+  path: github.com/kcp-dev/kcp-operator/sdk/apis/deploy/v1alpha1
+  version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: operator.kcp.io
+  group: deploy
+  kind: CompiledCacheServer
+  path: github.com/kcp-dev/kcp-operator/sdk/apis/deploy/v1alpha1
+  version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: operator.kcp.io
+  group: deploy
+  kind: CompiledVirtualWorkspace
+  path: github.com/kcp-dev/kcp-operator/sdk/apis/deploy/v1alpha1
+  version: v1alpha1
 version: "3"

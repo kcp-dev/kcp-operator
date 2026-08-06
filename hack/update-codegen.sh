@@ -38,11 +38,21 @@ set -x
 # generate reconciling helpers
 "$RECONCILER_GEN" --config hack/reconciling.yaml > internal/reconciling/zz_generated_reconcile.go
 
+# generate RBAC, webhooks and deepcopy funcs
+"$CONTROLLER_GEN" \
+  rbac:roleName=manager-role webhook object \
+  paths="./..."
+
 # generate CRDs
 "$CONTROLLER_GEN" \
-  rbac:roleName=manager-role crd webhook object \
-  paths="./..." \
+  crd \
+  paths="./sdk/apis/operator/..." \
   output:crd:artifacts:config=config/crd/bases
+
+"$CONTROLLER_GEN" \
+  crd \
+  paths="./sdk/apis/deploy/..." \
+  output:crd:artifacts:config=config/crd/deploy/bases
 
 # generate SDK
 rm -rf -- $SDK_DIR/{applyconfiguration,clientset,informers,listers}
@@ -51,11 +61,13 @@ rm -rf -- $SDK_DIR/{applyconfiguration,clientset,informers,listers}
   --go-header-file "$BOILERPLATE_HEADER" \
   --output-dir $SDK_DIR/applyconfiguration \
   --output-pkg $SDK_PKG/applyconfiguration \
-  $APIS_PKG/operator/v1alpha1
+  $APIS_PKG/operator/v1alpha1 \
+  $APIS_PKG/deploy/v1alpha1
 
 "$CLIENT_GEN" \
   --input-base "" \
   --input $APIS_PKG/operator/v1alpha1 \
+  --input $APIS_PKG/deploy/v1alpha1 \
   --clientset-name versioned \
   --go-header-file "$BOILERPLATE_HEADER" \
   --output-dir $SDK_DIR/clientset \

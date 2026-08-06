@@ -1,0 +1,7 @@
+resources:
+- bases/deploy.operator.kcp.io_compiledrootshards.yaml
+- bases/deploy.operator.kcp.io_compiledshards.yaml
+- bases/deploy.operator.kcp.io_compiledfrontproxies.yaml
+- bases/deploy.operator.kcp.io_compiledcacheservers.yaml
+- bases/deploy.operator.kcp.io_compiledvirtualworkspaces.yaml
+# +kubebuilder:scaffold:crdkustomizeresource

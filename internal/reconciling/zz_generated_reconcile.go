@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
+	deployv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/deploy/v1alpha1"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -208,6 +209,191 @@ func ReconcileKubeconfigs(ctx context.Context, namedFactories []NamedKubeconfigR
 
 		if err := reconciling.EnsureNamedObject(ctx, types.NamespacedName{Namespace: namespace, Name: name}, reconcileObject, client, &operatorv1alpha1.Kubeconfig{}, false); err != nil {
 			return fmt.Errorf("failed to ensure Kubeconfig %s/%s: %w", namespace, name, err)
+		}
+	}
+
+	return nil
+}
+
+// CompiledRootShardReconciler defines an interface to create/update CompiledRootShards.
+type CompiledRootShardReconciler = func(existing *deployv1alpha1.CompiledRootShard) (*deployv1alpha1.CompiledRootShard, error)
+
+// NamedCompiledRootShardReconcilerFactory returns the name of the resource and the corresponding Reconciler function.
+type NamedCompiledRootShardReconcilerFactory = func() (name string, reconciler CompiledRootShardReconciler)
+
+// CompiledRootShardObjectWrapper adds a wrapper so the CompiledRootShardReconciler matches ObjectReconciler.
+// This is needed as Go does not support function interface matching.
+func CompiledRootShardObjectWrapper(reconciler CompiledRootShardReconciler) reconciling.ObjectReconciler {
+	return func(existing ctrlruntimeclient.Object) (ctrlruntimeclient.Object, error) {
+		if existing != nil {
+			return reconciler(existing.(*deployv1alpha1.CompiledRootShard))
+		}
+		return reconciler(&deployv1alpha1.CompiledRootShard{})
+	}
+}
+
+// ReconcileCompiledRootShards will create and update the CompiledRootShards coming from the passed CompiledRootShardReconciler slice.
+func ReconcileCompiledRootShards(ctx context.Context, namedFactories []NamedCompiledRootShardReconcilerFactory, namespace string, client ctrlruntimeclient.Client, objectModifiers ...reconciling.ObjectModifier) error {
+	for _, factory := range namedFactories {
+		name, reconciler := factory()
+		reconcileObject := CompiledRootShardObjectWrapper(reconciler)
+		reconcileObject = reconciling.CreateWithNamespace(reconcileObject, namespace)
+		reconcileObject = reconciling.CreateWithName(reconcileObject, name)
+
+		for _, objectModifier := range objectModifiers {
+			reconcileObject = objectModifier(reconcileObject)
+		}
+
+		if err := reconciling.EnsureNamedObject(ctx, types.NamespacedName{Namespace: namespace, Name: name}, reconcileObject, client, &deployv1alpha1.CompiledRootShard{}, false); err != nil {
+			return fmt.Errorf("failed to ensure CompiledRootShard %s/%s: %w", namespace, name, err)
+		}
+	}
+
+	return nil
+}
+
+// CompiledShardReconciler defines an interface to create/update CompiledShards.
+type CompiledShardReconciler = func(existing *deployv1alpha1.CompiledShard) (*deployv1alpha1.CompiledShard, error)
+
+// NamedCompiledShardReconcilerFactory returns the name of the resource and the corresponding Reconciler function.
+type NamedCompiledShardReconcilerFactory = func() (name string, reconciler CompiledShardReconciler)
+
+// CompiledShardObjectWrapper adds a wrapper so the CompiledShardReconciler matches ObjectReconciler.
+// This is needed as Go does not support function interface matching.
+func CompiledShardObjectWrapper(reconciler CompiledShardReconciler) reconciling.ObjectReconciler {
+	return func(existing ctrlruntimeclient.Object) (ctrlruntimeclient.Object, error) {
+		if existing != nil {
+			return reconciler(existing.(*deployv1alpha1.CompiledShard))
+		}
+		return reconciler(&deployv1alpha1.CompiledShard{})
+	}
+}
+
+// ReconcileCompiledShards will create and update the CompiledShards coming from the passed CompiledShardReconciler slice.
+func ReconcileCompiledShards(ctx context.Context, namedFactories []NamedCompiledShardReconcilerFactory, namespace string, client ctrlruntimeclient.Client, objectModifiers ...reconciling.ObjectModifier) error {
+	for _, factory := range namedFactories {
+		name, reconciler := factory()
+		reconcileObject := CompiledShardObjectWrapper(reconciler)
+		reconcileObject = reconciling.CreateWithNamespace(reconcileObject, namespace)
+		reconcileObject = reconciling.CreateWithName(reconcileObject, name)
+
+		for _, objectModifier := range objectModifiers {
+			reconcileObject = objectModifier(reconcileObject)
+		}
+
+		if err := reconciling.EnsureNamedObject(ctx, types.NamespacedName{Namespace: namespace, Name: name}, reconcileObject, client, &deployv1alpha1.CompiledShard{}, false); err != nil {
+			return fmt.Errorf("failed to ensure CompiledShard %s/%s: %w", namespace, name, err)
+		}
+	}
+
+	return nil
+}
+
+// CompiledCacheServerReconciler defines an interface to create/update CompiledCacheServers.
+type CompiledCacheServerReconciler = func(existing *deployv1alpha1.CompiledCacheServer) (*deployv1alpha1.CompiledCacheServer, error)
+
+// NamedCompiledCacheServerReconcilerFactory returns the name of the resource and the corresponding Reconciler function.
+type NamedCompiledCacheServerReconcilerFactory = func() (name string, reconciler CompiledCacheServerReconciler)
+
+// CompiledCacheServerObjectWrapper adds a wrapper so the CompiledCacheServerReconciler matches ObjectReconciler.
+// This is needed as Go does not support function interface matching.
+func CompiledCacheServerObjectWrapper(reconciler CompiledCacheServerReconciler) reconciling.ObjectReconciler {
+	return func(existing ctrlruntimeclient.Object) (ctrlruntimeclient.Object, error) {
+		if existing != nil {
+			return reconciler(existing.(*deployv1alpha1.CompiledCacheServer))
+		}
+		return reconciler(&deployv1alpha1.CompiledCacheServer{})
+	}
+}
+
+// ReconcileCompiledCacheServers will create and update the CompiledCacheServers coming from the passed CompiledCacheServerReconciler slice.
+func ReconcileCompiledCacheServers(ctx context.Context, namedFactories []NamedCompiledCacheServerReconcilerFactory, namespace string, client ctrlruntimeclient.Client, objectModifiers ...reconciling.ObjectModifier) error {
+	for _, factory := range namedFactories {
+		name, reconciler := factory()
+		reconcileObject := CompiledCacheServerObjectWrapper(reconciler)
+		reconcileObject = reconciling.CreateWithNamespace(reconcileObject, namespace)
+		reconcileObject = reconciling.CreateWithName(reconcileObject, name)
+
+		for _, objectModifier := range objectModifiers {
+			reconcileObject = objectModifier(reconcileObject)
+		}
+
+		if err := reconciling.EnsureNamedObject(ctx, types.NamespacedName{Namespace: namespace, Name: name}, reconcileObject, client, &deployv1alpha1.CompiledCacheServer{}, false); err != nil {
+			return fmt.Errorf("failed to ensure CompiledCacheServer %s/%s: %w", namespace, name, err)
+		}
+	}
+
+	return nil
+}
+
+// CompiledFrontProxyReconciler defines an interface to create/update CompiledFrontProxys.
+type CompiledFrontProxyReconciler = func(existing *deployv1alpha1.CompiledFrontProxy) (*deployv1alpha1.CompiledFrontProxy, error)
+
+// NamedCompiledFrontProxyReconcilerFactory returns the name of the resource and the corresponding Reconciler function.
+type NamedCompiledFrontProxyReconcilerFactory = func() (name string, reconciler CompiledFrontProxyReconciler)
+
+// CompiledFrontProxyObjectWrapper adds a wrapper so the CompiledFrontProxyReconciler matches ObjectReconciler.
+// This is needed as Go does not support function interface matching.
+func CompiledFrontProxyObjectWrapper(reconciler CompiledFrontProxyReconciler) reconciling.ObjectReconciler {
+	return func(existing ctrlruntimeclient.Object) (ctrlruntimeclient.Object, error) {
+		if existing != nil {
+			return reconciler(existing.(*deployv1alpha1.CompiledFrontProxy))
+		}
+		return reconciler(&deployv1alpha1.CompiledFrontProxy{})
+	}
+}
+
+// ReconcileCompiledFrontProxys will create and update the CompiledFrontProxys coming from the passed CompiledFrontProxyReconciler slice.
+func ReconcileCompiledFrontProxys(ctx context.Context, namedFactories []NamedCompiledFrontProxyReconcilerFactory, namespace string, client ctrlruntimeclient.Client, objectModifiers ...reconciling.ObjectModifier) error {
+	for _, factory := range namedFactories {
+		name, reconciler := factory()
+		reconcileObject := CompiledFrontProxyObjectWrapper(reconciler)
+		reconcileObject = reconciling.CreateWithNamespace(reconcileObject, namespace)
+		reconcileObject = reconciling.CreateWithName(reconcileObject, name)
+
+		for _, objectModifier := range objectModifiers {
+			reconcileObject = objectModifier(reconcileObject)
+		}
+
+		if err := reconciling.EnsureNamedObject(ctx, types.NamespacedName{Namespace: namespace, Name: name}, reconcileObject, client, &deployv1alpha1.CompiledFrontProxy{}, false); err != nil {
+			return fmt.Errorf("failed to ensure CompiledFrontProxy %s/%s: %w", namespace, name, err)
+		}
+	}
+
+	return nil
+}
+
+// CompiledVirtualWorkspaceReconciler defines an interface to create/update CompiledVirtualWorkspaces.
+type CompiledVirtualWorkspaceReconciler = func(existing *deployv1alpha1.CompiledVirtualWorkspace) (*deployv1alpha1.CompiledVirtualWorkspace, error)
+
+// NamedCompiledVirtualWorkspaceReconcilerFactory returns the name of the resource and the corresponding Reconciler function.
+type NamedCompiledVirtualWorkspaceReconcilerFactory = func() (name string, reconciler CompiledVirtualWorkspaceReconciler)
+
+// CompiledVirtualWorkspaceObjectWrapper adds a wrapper so the CompiledVirtualWorkspaceReconciler matches ObjectReconciler.
+// This is needed as Go does not support function interface matching.
+func CompiledVirtualWorkspaceObjectWrapper(reconciler CompiledVirtualWorkspaceReconciler) reconciling.ObjectReconciler {
+	return func(existing ctrlruntimeclient.Object) (ctrlruntimeclient.Object, error) {
+		if existing != nil {
+			return reconciler(existing.(*deployv1alpha1.CompiledVirtualWorkspace))
+		}
+		return reconciler(&deployv1alpha1.CompiledVirtualWorkspace{})
+	}
+}
+
+// ReconcileCompiledVirtualWorkspaces will create and update the CompiledVirtualWorkspaces coming from the passed CompiledVirtualWorkspaceReconciler slice.
+func ReconcileCompiledVirtualWorkspaces(ctx context.Context, namedFactories []NamedCompiledVirtualWorkspaceReconcilerFactory, namespace string, client ctrlruntimeclient.Client, objectModifiers ...reconciling.ObjectModifier) error {
+	for _, factory := range namedFactories {
+		name, reconciler := factory()
+		reconcileObject := CompiledVirtualWorkspaceObjectWrapper(reconciler)
+		reconcileObject = reconciling.CreateWithNamespace(reconcileObject, namespace)
+		reconcileObject = reconciling.CreateWithName(reconcileObject, name)
+
+		for _, objectModifier := range objectModifiers {
+			reconcileObject = objectModifier(reconcileObject)
+		}
+
+		if err := reconciling.EnsureNamedObject(ctx, types.NamespacedName{Namespace: namespace, Name: name}, reconcileObject, client, &deployv1alpha1.CompiledVirtualWorkspace{}, false); err != nil {
+			return fmt.Errorf("failed to ensure CompiledVirtualWorkspace %s/%s: %w", namespace, name, err)
 		}
 	}
 

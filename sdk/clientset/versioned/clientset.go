@@ -26,18 +26,26 @@ import (
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
 
+	deployv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/clientset/versioned/typed/deploy/v1alpha1"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/clientset/versioned/typed/operator/v1alpha1"
 )
 
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
+	DeployV1alpha1() deployv1alpha1.DeployV1alpha1Interface
 	OperatorV1alpha1() operatorv1alpha1.OperatorV1alpha1Interface
 }
 
 // Clientset contains the clients for groups.
 type Clientset struct {
 	*discovery.DiscoveryClient
+	deployV1alpha1   *deployv1alpha1.DeployV1alpha1Client
 	operatorV1alpha1 *operatorv1alpha1.OperatorV1alpha1Client
+}
+
+// DeployV1alpha1 retrieves the DeployV1alpha1Client
+func (c *Clientset) DeployV1alpha1() deployv1alpha1.DeployV1alpha1Interface {
+	return c.deployV1alpha1
 }
 
 // OperatorV1alpha1 retrieves the OperatorV1alpha1Client
@@ -89,6 +97,10 @@ func NewForConfigAndClient(c *rest.Config, httpClient *http.Client) (*Clientset,
 
 	var cs Clientset
 	var err error
+	cs.deployV1alpha1, err = deployv1alpha1.NewForConfigAndClient(&configShallowCopy, httpClient)
+	if err != nil {
+		return nil, err
+	}
 	cs.operatorV1alpha1, err = operatorv1alpha1.NewForConfigAndClient(&configShallowCopy, httpClient)
 	if err != nil {
 		return nil, err
@@ -114,6 +126,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 // New creates a new Clientset for the given RESTClient.
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
+	cs.deployV1alpha1 = deployv1alpha1.New(c)
 	cs.operatorV1alpha1 = operatorv1alpha1.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)

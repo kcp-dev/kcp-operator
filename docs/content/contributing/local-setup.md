@@ -79,7 +79,8 @@ make deploy
 Alternatively, apply the CRDs to the cluster:
 
 ```sh
-kubectl apply -k ./config/crd/
+kubectl apply --server-side -k ./config/crd/
+kubectl apply --server-side -k ./config/crd/deploy/
 ```
 
 Then start the operator via `go run`:
