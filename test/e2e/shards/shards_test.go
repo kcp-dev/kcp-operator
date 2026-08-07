@@ -39,20 +39,27 @@ import (
 )
 
 func TestCreateShard(t *testing.T) {
+	// TODO: Same limitation as TestProvisionFrontProxyRBAC. Deleting the Shard runs a
+	// finalizer that deregisters it through the kcp API, which the config controllers
+	// reach at <svc>.<ns>.svc.cluster.local - unresolvable from the config cluster once
+	// kcp runs on the workload one.
+	utils.SkipUnlessTopology(t, utils.TopologySingle)
+
 	ctrlruntime.SetLogger(logr.Discard())
 
-	client := utils.GetKubeClient(t)
+	configClient := utils.GetConfigKubeClient(t)
+	workloadClient := utils.GetWorkloadKubeClient(t)
 	ctx := context.Background()
 
 	// create namespace
-	namespace := utils.CreateSelfDestructingNamespace(t, ctx, client, "create-shard")
+	namespace := utils.CreateSelfDestructingNamespace(t, ctx, configClient, "create-shard")
 
 	// deploy a root shard incl. etcd
-	rootShard := utils.DeployRootShard(ctx, t, client, namespace.Name, "")
+	rootShard := utils.DeployRootShard(ctx, t, configClient, workloadClient, namespace.Name, "")
 
 	// deploy a 2nd shard incl. etcd
 	shardName := "aadvark"
-	utils.DeployShard(ctx, t, client, namespace.Name, shardName, rootShard.Name)
+	utils.DeployShard(ctx, t, configClient, workloadClient, namespace.Name, shardName, rootShard.Name)
 
 	// create a kubeconfig to access the root shard
 	configSecretName := fmt.Sprintf("%s-shard-kubeconfig", rootShard.Name)
@@ -76,13 +83,13 @@ func TestCreateShard(t *testing.T) {
 	}
 
 	t.Log("Creating kubeconfig for RootShard...")
-	if err := client.Create(ctx, &rsConfig); err != nil {
+	if err := configClient.Create(ctx, &rsConfig); err != nil {
 		t.Fatal(err)
 	}
-	utils.WaitForObject(t, ctx, client, &corev1.Secret{}, types.NamespacedName{Namespace: rsConfig.Namespace, Name: rsConfig.Spec.SecretRef.Name})
+	utils.WaitForObject(t, ctx, configClient, &corev1.Secret{}, types.NamespacedName{Namespace: rsConfig.Namespace, Name: rsConfig.Spec.SecretRef.Name})
 
 	t.Log("Connecting to RootShard...")
-	rootShardClient := utils.ConnectWithKubeconfig(t, ctx, client, namespace.Name, rsConfig.Name, logicalcluster.None)
+	rootShardClient := utils.ConnectWithKubeconfig(t, ctx, configClient, namespace.Name, rsConfig.Name, logicalcluster.None)
 
 	// wait until the 2nd shard has registered itself successfully at the root shard
 	shardKey := types.NamespacedName{Name: shardName}
@@ -111,13 +118,13 @@ func TestCreateShard(t *testing.T) {
 	}
 
 	t.Log("Creating kubeconfig for Shard...")
-	if err := client.Create(ctx, &shardConfig); err != nil {
+	if err := configClient.Create(ctx, &shardConfig); err != nil {
 		t.Fatal(err)
 	}
-	utils.WaitForObject(t, ctx, client, &corev1.Secret{}, types.NamespacedName{Namespace: shardConfig.Namespace, Name: shardConfig.Spec.SecretRef.Name})
+	utils.WaitForObject(t, ctx, configClient, &corev1.Secret{}, types.NamespacedName{Namespace: shardConfig.Namespace, Name: shardConfig.Spec.SecretRef.Name})
 
 	t.Log("Connecting to Shard...")
-	kcpClient := utils.ConnectWithKubeconfig(t, ctx, client, namespace.Name, shardConfig.Name, logicalcluster.None)
+	kcpClient := utils.ConnectWithKubeconfig(t, ctx, configClient, namespace.Name, shardConfig.Name, logicalcluster.None)
 
 	// proof of life: list something every logicalcluster in kcp has
 	t.Log("Should be able to list Secrets.")
@@ -129,11 +136,11 @@ func TestCreateShard(t *testing.T) {
 	// Test cleanup: delete the operator's Shard CR and verify the kcp Shard object is cleaned up
 	t.Log("Deleting operator Shard CR...")
 	shard := &operatorv1alpha1.Shard{}
-	if err := client.Get(ctx, types.NamespacedName{Namespace: namespace.Name, Name: shardName}, shard); err != nil {
+	if err := configClient.Get(ctx, types.NamespacedName{Namespace: namespace.Name, Name: shardName}, shard); err != nil {
 		t.Fatalf("Failed to get Shard: %v", err)
 	}
 	t.Logf("Shard finalizers before delete: %v", shard.Finalizers)
-	if err := client.Delete(ctx, shard); err != nil {
+	if err := configClient.Delete(ctx, shard); err != nil {
 		t.Fatalf("Failed to delete Shard: %v", err)
 	}
 
@@ -145,26 +152,30 @@ func TestCreateShard(t *testing.T) {
 }
 
 func TestShardBundleAnnotation(t *testing.T) {
+	// Bundling is only allowed if the config and workload controllers run on the same cluster.
+	utils.SkipUnlessTopology(t, utils.TopologySingle)
+
 	ctrlruntime.SetLogger(logr.Discard())
 
-	client := utils.GetKubeClient(t)
+	configClient := utils.GetConfigKubeClient(t)
+	workloadClient := utils.GetWorkloadKubeClient(t)
 	ctx := context.Background()
 
 	// create namespace
-	namespace := utils.CreateSelfDestructingNamespace(t, ctx, client, "shard-bundle-annotation")
+	namespace := utils.CreateSelfDestructingNamespace(t, ctx, configClient, "shard-bundle-annotation")
 
 	// deploy a root shard incl. etcd
-	rootShard := utils.DeployRootShard(ctx, t, client, namespace.Name, "")
+	rootShard := utils.DeployRootShard(ctx, t, configClient, workloadClient, namespace.Name, "")
 
 	// deploy a shard without bundle annotation first
 	shardName := "annotated-shard"
 	t.Log("Deploying Shard without bundle annotation...")
-	shard := utils.DeployShard(ctx, t, client, namespace.Name, shardName, rootShard.Name)
+	shard := utils.DeployShard(ctx, t, configClient, workloadClient, namespace.Name, shardName, rootShard.Name)
 
 	// verify no bundle exists yet
 	bundleName := fmt.Sprintf("%s-bundle", shard.Name)
 	bundle := &operatorv1alpha1.Bundle{}
-	err := client.Get(ctx, types.NamespacedName{
+	err := configClient.Get(ctx, types.NamespacedName{
 		Namespace: namespace.Name,
 		Name:      bundleName,
 	}, bundle)
@@ -174,7 +185,7 @@ func TestShardBundleAnnotation(t *testing.T) {
 
 	// add bundle annotation to the shard
 	t.Log("Adding bundle annotation to Shard...")
-	if err := client.Get(ctx, types.NamespacedName{
+	if err := configClient.Get(ctx, types.NamespacedName{
 		Namespace: namespace.Name,
 		Name:      shard.Name,
 	}, &shard); err != nil {
@@ -186,19 +197,19 @@ func TestShardBundleAnnotation(t *testing.T) {
 	}
 	shard.Annotations[resources.BundleAnnotation] = "true"
 
-	if err := client.Update(ctx, &shard); err != nil {
+	if err := configClient.Update(ctx, &shard); err != nil {
 		t.Fatalf("Failed to update shard with bundle annotation: %v", err)
 	}
 
 	// wait for bundle to be created
 	t.Log("Waiting for Bundle to be created...")
-	utils.WaitForObject(t, ctx, client, bundle, types.NamespacedName{
+	utils.WaitForObject(t, ctx, configClient, bundle, types.NamespacedName{
 		Namespace: namespace.Name,
 		Name:      bundleName,
 	})
 
 	// verify bundle was created
-	if err := client.Get(ctx, types.NamespacedName{
+	if err := configClient.Get(ctx, types.NamespacedName{
 		Namespace: namespace.Name,
 		Name:      bundleName,
 	}, bundle); err != nil {
@@ -224,7 +235,7 @@ func TestShardBundleAnnotation(t *testing.T) {
 			t.Fatalf("Timeout waiting for bundle to become Ready. Current state: %s, objects: %d/%d, conditions: %+v",
 				bundle.Status.State, len(bundle.Status.Objects), expectedObjects, bundle.Status.Conditions)
 		case <-ticker.C:
-			if err := client.Get(ctx, types.NamespacedName{
+			if err := configClient.Get(ctx, types.NamespacedName{
 				Namespace: namespace.Name,
 				Name:      bundleName,
 			}, bundle); err != nil {

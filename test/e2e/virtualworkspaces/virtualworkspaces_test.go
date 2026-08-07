@@ -61,14 +61,15 @@ func TestExternalVirtualWorkspace(t *testing.T) {
 
 	ctrlruntime.SetLogger(logr.Discard())
 
-	client := utils.GetKubeClient(t)
+	configClient := utils.GetConfigKubeClient(t)
+	workloadClient := utils.GetWorkloadKubeClient(t)
 	ctx := context.Background()
 
-	namespace := utils.CreateSelfDestructingNamespace(t, ctx, client, "external-vw")
+	namespace := utils.CreateSelfDestructingNamespace(t, ctx, configClient, "external-vw")
 
 	// Deploy the standalone, external kcp virtual-workspace (do not wait for readiness since both
 	// the root shard and the VW will need to have a little dance before both are ready).
-	vw := utils.DeployVirtualWorkspace(ctx, t, client, namespace.Name, "kcp-vw", false, func(vw *operatorv1alpha1.VirtualWorkspace) {
+	vw := utils.DeployVirtualWorkspace(ctx, t, configClient, workloadClient, namespace.Name, "kcp-vw", false, func(vw *operatorv1alpha1.VirtualWorkspace) {
 		vw.Spec.Target.RootShardRef = &corev1.LocalObjectReference{
 			Name: "r00t", // Must match the rootshard name
 		}
@@ -79,7 +80,7 @@ func TestExternalVirtualWorkspace(t *testing.T) {
 	externalHostname := fmt.Sprintf("front-proxy-front-proxy.%s.svc.cluster.local", namespace.Name)
 
 	// Deploy a root shard that uses the external VW (in-process VW is disabled).
-	rootShard := utils.DeployRootShard(ctx, t, client, namespace.Name, externalHostname, func(rs *operatorv1alpha1.RootShard) {
+	rootShard := utils.DeployRootShard(ctx, t, configClient, workloadClient, namespace.Name, externalHostname, func(rs *operatorv1alpha1.RootShard) {
 		// Point the root shard to use our external VW instead of the in-process one.
 		rs.Spec.KCPVirtualWorkspace = &corev1.LocalObjectReference{
 			Name: vw.Name,
@@ -91,7 +92,7 @@ func TestExternalVirtualWorkspace(t *testing.T) {
 	})
 
 	// deploy front-proxy
-	utils.DeployFrontProxy(ctx, t, client, namespace.Name, rootShard.Name, externalHostname, func(fp *operatorv1alpha1.FrontProxy) {
+	utils.DeployFrontProxy(ctx, t, configClient, workloadClient, namespace.Name, rootShard.Name, externalHostname, func(fp *operatorv1alpha1.FrontProxy) {
 		fp.Spec.Resources = lowResourceRequirements()
 	})
 
@@ -104,7 +105,7 @@ func TestExternalVirtualWorkspace(t *testing.T) {
 			"app.kubernetes.io/instance":  vw.Name,
 		},
 	}
-	utils.WaitForPods(t, ctx, client, vwPodOpts...)
+	utils.WaitForPods(t, ctx, workloadClient, vwPodOpts...)
 
 	// Create a kubeconfig to access the root shard.
 	configSecretName := "kubeconfig"
@@ -129,13 +130,13 @@ func TestExternalVirtualWorkspace(t *testing.T) {
 	}
 
 	t.Log("Creating kubeconfig for RootShard...")
-	if err := client.Create(ctx, &rsConfig); err != nil {
+	if err := configClient.Create(ctx, &rsConfig); err != nil {
 		t.Fatal(err)
 	}
-	utils.WaitForObject(t, ctx, client, &corev1.Secret{}, types.NamespacedName{Namespace: rsConfig.Namespace, Name: rsConfig.Spec.SecretRef.Name})
+	utils.WaitForObject(t, ctx, configClient, &corev1.Secret{}, types.NamespacedName{Namespace: rsConfig.Namespace, Name: rsConfig.Spec.SecretRef.Name})
 
 	t.Log("Connecting to RootShard...")
-	rootShardClient := utils.ConnectWithKubeconfig(t, ctx, client, namespace.Name, rsConfig.Name, logicalcluster.None)
+	rootShardClient := utils.ConnectWithKubeconfig(t, ctx, configClient, namespace.Name, rsConfig.Name, logicalcluster.None)
 
 	// Proof of life: list something every logicalcluster in kcp has.
 	t.Log("Should be able to list Secrets in root workspace.")
@@ -182,7 +183,7 @@ func TestExternalVirtualWorkspace(t *testing.T) {
 
 	// Get the base kubeconfig secret
 	configSecret := &corev1.Secret{}
-	if err := client.Get(ctx, types.NamespacedName{Namespace: namespace.Name, Name: configSecretName}, configSecret); err != nil {
+	if err := configClient.Get(ctx, types.NamespacedName{Namespace: namespace.Name, Name: configSecretName}, configSecret); err != nil {
 		t.Fatalf("Failed to get kubeconfig secret: %v", err)
 	}
 
@@ -249,16 +250,17 @@ func TestMultipleShardsWithExternalVirtualWorkspacesAndExtCache(t *testing.T) {
 
 	ctrlruntime.SetLogger(logr.Discard())
 
-	client := utils.GetKubeClient(t)
+	configClient := utils.GetConfigKubeClient(t)
+	workloadClient := utils.GetWorkloadKubeClient(t)
 	ctx := context.Background()
 
-	namespace := utils.CreateSelfDestructingNamespace(t, ctx, client, "multi-shard-extcache-vw")
+	namespace := utils.CreateSelfDestructingNamespace(t, ctx, configClient, "multi-shard-extcache-vw")
 
 	// deploy the cache server
-	cacheServer := utils.DeployCacheServer(ctx, t, client, namespace.Name)
+	cacheServer := utils.DeployCacheServer(ctx, t, configClient, workloadClient, namespace.Name)
 
 	// Deploy external VirtualWorkspace for root shard
-	rootVW := utils.DeployVirtualWorkspace(ctx, t, client, namespace.Name, "root-vw", false, func(vw *operatorv1alpha1.VirtualWorkspace) {
+	rootVW := utils.DeployVirtualWorkspace(ctx, t, configClient, workloadClient, namespace.Name, "root-vw", false, func(vw *operatorv1alpha1.VirtualWorkspace) {
 		vw.Spec.Target.RootShardRef = &corev1.LocalObjectReference{
 			Name: "r00t",
 		}
@@ -269,7 +271,7 @@ func TestMultipleShardsWithExternalVirtualWorkspacesAndExtCache(t *testing.T) {
 	externalHostname := fmt.Sprintf("front-proxy-front-proxy.%s.svc.cluster.local", namespace.Name)
 
 	// Deploy root shard with external VW
-	rootShard := utils.DeployRootShard(ctx, t, client, namespace.Name, externalHostname, func(rs *operatorv1alpha1.RootShard) {
+	rootShard := utils.DeployRootShard(ctx, t, configClient, workloadClient, namespace.Name, externalHostname, func(rs *operatorv1alpha1.RootShard) {
 		rs.Spec.KCPVirtualWorkspace = &corev1.LocalObjectReference{
 			Name: rootVW.Name,
 		}
@@ -283,7 +285,7 @@ func TestMultipleShardsWithExternalVirtualWorkspacesAndExtCache(t *testing.T) {
 	})
 
 	// Deploy external VirtualWorkspace for regular shard1
-	shard1VW := utils.DeployVirtualWorkspace(ctx, t, client, namespace.Name, "shard1-vw", false, func(vw *operatorv1alpha1.VirtualWorkspace) {
+	shard1VW := utils.DeployVirtualWorkspace(ctx, t, configClient, workloadClient, namespace.Name, "shard1-vw", false, func(vw *operatorv1alpha1.VirtualWorkspace) {
 		vw.Spec.Target.ShardRef = &corev1.LocalObjectReference{
 			Name: "shard1",
 		}
@@ -291,7 +293,7 @@ func TestMultipleShardsWithExternalVirtualWorkspacesAndExtCache(t *testing.T) {
 	})
 
 	// Deploy regular shard1 with external VW
-	utils.DeployShard(ctx, t, client, namespace.Name, "shard1", rootShard.Name, func(s *operatorv1alpha1.Shard) {
+	utils.DeployShard(ctx, t, configClient, workloadClient, namespace.Name, "shard1", rootShard.Name, func(s *operatorv1alpha1.Shard) {
 		s.Spec.KCPVirtualWorkspace = &corev1.LocalObjectReference{
 			Name: shard1VW.Name,
 		}
@@ -299,24 +301,24 @@ func TestMultipleShardsWithExternalVirtualWorkspacesAndExtCache(t *testing.T) {
 	})
 
 	// Deploy another regular shard with internal VW
-	utils.DeployShard(ctx, t, client, namespace.Name, "shard2", rootShard.Name, func(s *operatorv1alpha1.Shard) {
+	utils.DeployShard(ctx, t, configClient, workloadClient, namespace.Name, "shard2", rootShard.Name, func(s *operatorv1alpha1.Shard) {
 		s.Spec.Resources = lowResourceRequirements()
 	})
 
 	// Deploy front-proxy
-	frontProxy := utils.DeployFrontProxy(ctx, t, client, namespace.Name, rootShard.Name, externalHostname, func(fp *operatorv1alpha1.FrontProxy) {
+	frontProxy := utils.DeployFrontProxy(ctx, t, configClient, workloadClient, namespace.Name, rootShard.Name, externalHostname, func(fp *operatorv1alpha1.FrontProxy) {
 		fp.Spec.Resources = lowResourceRequirements()
 	})
 
 	// Wait for both VirtualWorkspace pods to be ready
 	t.Log("Waiting for root VirtualWorkspace pods to be ready...")
-	waitForVirtualWorkspacePods(t, ctx, client, rootVW.Namespace, rootVW.Name)
+	waitForVirtualWorkspacePods(t, ctx, workloadClient, rootVW.Namespace, rootVW.Name)
 
 	t.Log("Waiting for shard VirtualWorkspace pods to be ready...")
-	waitForVirtualWorkspacePods(t, ctx, client, shard1VW.Namespace, shard1VW.Name)
+	waitForVirtualWorkspacePods(t, ctx, workloadClient, shard1VW.Namespace, shard1VW.Name)
 
 	// verify the setup
-	test := conformance.NewWorkspaceSchedulingTest(frontProxy.Name, client, namespace.Name)
+	test := conformance.NewWorkspaceSchedulingTest(frontProxy.Name, configClient, namespace.Name)
 
 	t.Log("Verifying workspace scheduling capabilities...")
 	if err := test.Run(t, ctx, logicalcluster.NewPath("root")); err != nil {
@@ -327,7 +329,7 @@ func TestMultipleShardsWithExternalVirtualWorkspacesAndExtCache(t *testing.T) {
 }
 
 // waitForVirtualWorkspacePods waits for VirtualWorkspace pods to become ready.
-func waitForVirtualWorkspacePods(t *testing.T, ctx context.Context, client ctrlruntimeclient.Client, namespace, name string) {
+func waitForVirtualWorkspacePods(t *testing.T, ctx context.Context, workloadClient ctrlruntimeclient.Client, namespace, name string) {
 	t.Helper()
 
 	opts := []ctrlruntimeclient.ListOption{
@@ -337,7 +339,7 @@ func waitForVirtualWorkspacePods(t *testing.T, ctx context.Context, client ctrlr
 			"app.kubernetes.io/instance":  name,
 		},
 	}
-	utils.WaitForPods(t, ctx, client, opts...)
+	utils.WaitForPods(t, ctx, workloadClient, opts...)
 }
 
 // lowResourceRequirements returns minimal resource requirements for testing.

@@ -40,22 +40,28 @@ import (
 )
 
 func TestProvisionFrontProxyRBAC(t *testing.T) {
+	// TODO(ntnn): This needs some re-engineering. The RBAC controller
+	// uses the internal root proxy, but it isn't available in the
+	// config/workload topology.
+	utils.SkipUnlessTopology(t, utils.TopologySingle)
+
 	ctrlruntime.SetLogger(logr.Discard())
 
-	client := utils.GetKubeClient(t)
+	configClient := utils.GetConfigKubeClient(t)
+	workloadClient := utils.GetWorkloadKubeClient(t)
 	ctx := context.Background()
 
 	rootCluster := logicalcluster.NewPath("root")
-	namespace := utils.CreateSelfDestructingNamespace(t, ctx, client, "provision-frontproxy-rbac")
+	namespace := utils.CreateSelfDestructingNamespace(t, ctx, configClient, "provision-frontproxy-rbac")
 
 	// externalHostname must match whatever DeployFrontProxy chooses as the name for the FrontProxy
 	externalHostname := fmt.Sprintf("front-proxy-front-proxy.%s.svc.cluster.local", namespace.Name)
 
 	// deploy rootshard
-	rootShard := utils.DeployRootShard(ctx, t, client, namespace.Name, externalHostname)
+	rootShard := utils.DeployRootShard(ctx, t, configClient, workloadClient, namespace.Name, externalHostname)
 
 	// deploy front-proxy
-	frontProxy := utils.DeployFrontProxy(ctx, t, client, namespace.Name, rootShard.Name, externalHostname)
+	frontProxy := utils.DeployFrontProxy(ctx, t, configClient, workloadClient, namespace.Name, rootShard.Name, externalHostname)
 
 	// create a dummy workspace where we later want to provision RBAC in
 	t.Log("Creating dummy workspace…")
@@ -71,14 +77,14 @@ func TestProvisionFrontProxyRBAC(t *testing.T) {
 	}
 
 	dummyCluster := rootCluster.Join(workspace.Name)
-	proxyClient := utils.ConnectWithRootShardProxy(t, ctx, client, &rootShard, rootCluster)
+	proxyClient := utils.ConnectWithRootShardProxy(t, ctx, configClient, &rootShard, rootCluster)
 	if err := proxyClient.Create(ctx, workspace); err != nil {
 		t.Fatalf("Failed to create workspace: %v", err)
 	}
 
 	// wait for workspace to be ready
 	t.Log("Waiting for workspace to be ready…")
-	dummyClient := utils.ConnectWithRootShardProxy(t, ctx, client, &rootShard, dummyCluster)
+	dummyClient := utils.ConnectWithRootShardProxy(t, ctx, configClient, &rootShard, dummyCluster)
 
 	err := wait.PollUntilContextTimeout(ctx, 500*time.Millisecond, 30*time.Second, false, func(ctx context.Context) (done bool, err error) {
 		return dummyClient.List(ctx, &corev1.SecretList{}) == nil, nil
@@ -145,13 +151,13 @@ func TestProvisionFrontProxyRBAC(t *testing.T) {
 			}
 
 			t.Log("Creating kubeconfig with no permissions attached…")
-			if err := client.Create(ctx, &fpConfig); err != nil {
+			if err := configClient.Create(ctx, &fpConfig); err != nil {
 				t.Fatal(err)
 			}
-			utils.WaitForObject(t, ctx, client, &corev1.Secret{}, types.NamespacedName{Namespace: fpConfig.Namespace, Name: fpConfig.Spec.SecretRef.Name})
+			utils.WaitForObject(t, ctx, configClient, &corev1.Secret{}, types.NamespacedName{Namespace: fpConfig.Namespace, Name: fpConfig.Spec.SecretRef.Name})
 
 			t.Log("Connecting to FrontProxy…")
-			kcpClient := utils.ConnectWithKubeconfig(t, ctx, client, namespace.Name, fpConfig.Name, dummyCluster)
+			kcpClient := utils.ConnectWithKubeconfig(t, ctx, configClient, namespace.Name, fpConfig.Name, dummyCluster)
 
 			// This should not work yet.
 			t.Logf("Should not be able to list Secrets in %v.", dummyCluster)
@@ -160,14 +166,14 @@ func TestProvisionFrontProxyRBAC(t *testing.T) {
 			}
 
 			// Now we extend the Kubeconfig with additional permissions.
-			if err := client.Get(ctx, ctrlruntimeclient.ObjectKeyFromObject(&fpConfig), &fpConfig); err != nil {
+			if err := configClient.Get(ctx, ctrlruntimeclient.ObjectKeyFromObject(&fpConfig), &fpConfig); err != nil {
 				t.Fatal(err)
 			}
 
 			tc.applyRBAC(&fpConfig)
 
 			t.Log("Updating kubeconfig with permissions attached…")
-			if err := client.Update(ctx, &fpConfig); err != nil {
+			if err := configClient.Update(ctx, &fpConfig); err != nil {
 				t.Fatal(err)
 			}
 
@@ -181,13 +187,13 @@ func TestProvisionFrontProxyRBAC(t *testing.T) {
 
 			// And now we remove the permissions again.
 			t.Log("Updating kubeconfig to remove the attached permissions…")
-			if err := client.Get(ctx, ctrlruntimeclient.ObjectKeyFromObject(&fpConfig), &fpConfig); err != nil {
+			if err := configClient.Get(ctx, ctrlruntimeclient.ObjectKeyFromObject(&fpConfig), &fpConfig); err != nil {
 				t.Fatal(err)
 			}
 
 			tc.removeRBAC(&fpConfig)
 
-			if err := client.Update(ctx, &fpConfig); err != nil {
+			if err := configClient.Update(ctx, &fpConfig); err != nil {
 				t.Fatal(err)
 			}
 

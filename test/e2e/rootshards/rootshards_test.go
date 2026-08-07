@@ -38,11 +38,12 @@ import (
 func TestCreateRootShard(t *testing.T) {
 	ctrlruntime.SetLogger(logr.Discard())
 
-	client := utils.GetKubeClient(t)
+	configClient := utils.GetConfigKubeClient(t)
+	workloadClient := utils.GetWorkloadKubeClient(t)
 	ctx := context.Background()
 
-	namespace := utils.CreateSelfDestructingNamespace(t, ctx, client, "create-rootshard")
-	rootShard := utils.DeployRootShard(ctx, t, client, namespace.Name, "")
+	namespace := utils.CreateSelfDestructingNamespace(t, ctx, configClient, "create-rootshard")
+	rootShard := utils.DeployRootShard(ctx, t, configClient, workloadClient, namespace.Name, "")
 
 	configSecretName := "kubeconfig"
 
@@ -65,13 +66,13 @@ func TestCreateRootShard(t *testing.T) {
 	}
 
 	t.Log("Creating kubeconfig for RootShard...")
-	if err := client.Create(ctx, &rsConfig); err != nil {
+	if err := configClient.Create(ctx, &rsConfig); err != nil {
 		t.Fatal(err)
 	}
-	utils.WaitForObject(t, ctx, client, &corev1.Secret{}, types.NamespacedName{Namespace: rsConfig.Namespace, Name: rsConfig.Spec.SecretRef.Name})
+	utils.WaitForObject(t, ctx, configClient, &corev1.Secret{}, types.NamespacedName{Namespace: rsConfig.Namespace, Name: rsConfig.Spec.SecretRef.Name})
 
 	t.Log("Connecting to RootShard...")
-	kcpClient := utils.ConnectWithKubeconfig(t, ctx, client, namespace.Name, rsConfig.Name, logicalcluster.None)
+	kcpClient := utils.ConnectWithKubeconfig(t, ctx, configClient, namespace.Name, rsConfig.Name, logicalcluster.None)
 
 	// proof of life: list something every logicalcluster in kcp has
 	t.Log("Should be able to list Secrets.")
