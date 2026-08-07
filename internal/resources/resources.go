@@ -264,6 +264,15 @@ func GetRootShardBaseHost(r *operatorv1alpha1.RootShard) string {
 	return fmt.Sprintf("%s-kcp.%s.svc.%s", r.Name, r.Namespace, clusterDomain)
 }
 
+func GetRootShardProxyBaseHost(r *operatorv1alpha1.RootShard) string {
+	clusterDomain := r.Spec.ClusterDomain
+	if clusterDomain == "" {
+		clusterDomain = defaultClusterDomain
+	}
+
+	return fmt.Sprintf("%s-proxy.%s.svc.%s", r.Name, r.Namespace, clusterDomain)
+}
+
 func GetCompiledRootShardBaseHost(r *deployv1alpha1.CompiledRootShard) string {
 	clusterDomain := r.Spec.RootShard.ClusterDomain
 	if clusterDomain == "" {
@@ -287,6 +296,10 @@ func GetRootShardBaseURL(r *operatorv1alpha1.RootShard) string {
 		return r.Spec.ShardBaseURL
 	}
 	return fmt.Sprintf("https://%s:6443", GetRootShardBaseHost(r))
+}
+
+func GetRootShardProxyBaseURL(r *operatorv1alpha1.RootShard) string {
+	return fmt.Sprintf("https://%s:6443", GetRootShardProxyBaseHost(r))
 }
 
 func GetCompiledRootShardBaseURL(r *deployv1alpha1.CompiledRootShard) string {
