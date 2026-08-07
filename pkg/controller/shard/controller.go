@@ -63,6 +63,7 @@ const cleanupFinalizer = "operator.kcp.io/cleanup-shard"
 // ShardReconciler reconciles a Shard object
 type ShardReconciler struct {
 	GetCluster func(ctx context.Context, clusterName multicluster.ClusterName) (cluster.Cluster, error)
+	Address    operatorclient.Addresser
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -345,7 +346,7 @@ func (r *ShardReconciler) handleDeletion(ctx context.Context, client ctrlruntime
 	}
 
 	// Create client to root shard
-	kcpClient, err := operatorclient.NewRootShardClient(ctx, client, rootShard, logicalcluster.NewPath("root"), scheme)
+	kcpClient, err := operatorclient.NewRootShardClient(ctx, client, r.Address, rootShard, logicalcluster.NewPath("root"), scheme)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create root shard client: %w", err)
 	}

@@ -37,7 +37,7 @@ import (
 // type of shard, the client will also directly connect to that shard, but for Kubeconfigs using
 // a FrontProxy, the client will instead use the operator-internal front-proxy (which specifically
 // does not drop groups/permissions).
-func NewInternalKubeconfigClient(ctx context.Context, c ctrlruntimeclient.Client, kubeconfig *operatorv1alpha1.Kubeconfig, cluster logicalcluster.Path, scheme *runtime.Scheme) (ctrlruntimeclient.Client, error) {
+func NewInternalKubeconfigClient(ctx context.Context, c ctrlruntimeclient.Client, addr Addresser, kubeconfig *operatorv1alpha1.Kubeconfig, cluster logicalcluster.Path, scheme *runtime.Scheme) (ctrlruntimeclient.Client, error) {
 	target := kubeconfig.Spec.Target
 
 	switch {
@@ -47,7 +47,7 @@ func NewInternalKubeconfigClient(ctx context.Context, c ctrlruntimeclient.Client
 			return nil, fmt.Errorf("failed to get RootShard: %w", err)
 		}
 
-		return NewRootShardClient(ctx, c, rootShard, cluster, scheme)
+		return NewRootShardClient(ctx, c, addr, rootShard, cluster, scheme)
 
 	case target.ShardRef != nil:
 		shard := &operatorv1alpha1.Shard{}
@@ -55,7 +55,7 @@ func NewInternalKubeconfigClient(ctx context.Context, c ctrlruntimeclient.Client
 			return nil, fmt.Errorf("failed to get Shard: %w", err)
 		}
 
-		return NewShardClient(ctx, c, shard, cluster, scheme)
+		return NewShardClient(ctx, c, addr, shard, cluster, scheme)
 
 	case target.FrontProxyRef != nil:
 		frontProxy := &operatorv1alpha1.FrontProxy{}
@@ -68,7 +68,7 @@ func NewInternalKubeconfigClient(ctx context.Context, c ctrlruntimeclient.Client
 			return nil, fmt.Errorf("failed to get RootShard: %w", err)
 		}
 
-		return NewRootShardProxyClient(ctx, c, rootShard, cluster, scheme)
+		return NewRootShardProxyClient(ctx, c, addr, rootShard, cluster, scheme)
 
 	default:
 		return nil, errors.New("no valid target configured in Kubeconfig: neither rootShard, shard nor frontProxy ref set")

@@ -22,6 +22,7 @@ import (
 	mcbuilder "sigs.k8s.io/multicluster-runtime/pkg/builder"
 	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
 
+	operatorclient "github.com/kcp-dev/kcp-operator/pkg/client"
 	"github.com/kcp-dev/kcp-operator/pkg/config"
 	"github.com/kcp-dev/kcp-operator/pkg/controller/bundle"
 	"github.com/kcp-dev/kcp-operator/pkg/controller/cacheserver"
@@ -42,13 +43,16 @@ import (
 type Options struct {
 	// Engage are multicluster options that are passed to each
 	// SetupWithManager and applied for For, Owns and Watches.
-	Engage []mcbuilder.EngageOptions
+	Engage  []mcbuilder.EngageOptions
+	Address operatorclient.Addresser
 }
 
 // AddConfigControllers registers the controllers that configure a kcp instance: they own the
 // cert-manager resources and compile the deploy.operator.kcp.io render inputs.
-// The engage options are passed through to the .SetupWithManager of each controller.
 func AddConfigControllers(mgr mcmanager.Manager, options Options) error {
+	if options.Address == nil {
+		return fmt.Errorf("Options.Address is required")
+	}
 	if err := (&rootshard.RootShardReconciler{
 		GetCluster: mgr.GetCluster,
 	}).SetupWithManager(mgr, options.Engage...); err != nil {
@@ -61,12 +65,8 @@ func AddConfigControllers(mgr mcmanager.Manager, options Options) error {
 	}
 	if err := (&shard.ShardReconciler{
 		GetCluster: mgr.GetCluster,
-<<<<<<< HEAD
-	}).SetupWithManager(mgr, opts.Engage...); err != nil {
-=======
 		Address:    options.Address,
 	}).SetupWithManager(mgr, options.Engage...); err != nil {
->>>>>>> 3cf3237 (fixup! Add pkg/controller.Options)
 		return fmt.Errorf("unable to create controller %s: %w", "Shard", err)
 	}
 	if err := (&cacheserver.CacheServerReconciler{
@@ -93,6 +93,7 @@ func AddConfigControllers(mgr mcmanager.Manager, options Options) error {
 	}
 	if err := (&kubeconfigrbac.KubeconfigRBACReconciler{
 		GetCluster: mgr.GetCluster,
+		Address:    options.Address,
 	}).SetupWithManager(mgr, options.Engage...); err != nil {
 		return fmt.Errorf("unable to create controller %s: %w", "KubeconfigRBAC", err)
 	}
@@ -101,7 +102,6 @@ func AddConfigControllers(mgr mcmanager.Manager, options Options) error {
 
 // AddWorkloadControllers registers the controllers that turn compiled render inputs into
 // workloads such as Deployments and Services.
-// The engage options select which clusters and providers every controller watches.
 func AddWorkloadControllers(mgr mcmanager.Manager, options Options) error {
 	if err := (&compiledrootshard.CompiledRootShardReconciler{
 		GetCluster: mgr.GetCluster,
