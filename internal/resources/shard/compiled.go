@@ -32,6 +32,8 @@ import (
 func CompiledShardReconciler(shard *operatorv1alpha1.Shard, rootShard *operatorv1alpha1.RootShard, kcpVW *operatorv1alpha1.VirtualWorkspace, shards []operatorv1alpha1.Shard, revisions map[string]string) reconciling.NamedCompiledShardReconcilerFactory {
 	return func() (string, reconciling.CompiledShardReconciler) {
 		return shard.Name, func(obj *deployv1alpha1.CompiledShard) (*deployv1alpha1.CompiledShard, error) {
+			obj.Labels = maps.Clone(shard.Labels)
+			obj.Annotations = maps.Clone(shard.Annotations)
 			// Certificate revisions ride along so a renewal changes this object, which is what
 			// tells anything watching it that the Secrets it mounts have moved on.
 			if obj.Annotations == nil {
