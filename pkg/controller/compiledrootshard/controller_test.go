@@ -105,7 +105,7 @@ func TestReconciling(t *testing.T) {
 			ctx := context.Background()
 
 			controllerReconciler := &CompiledRootShardReconciler{
-				GetCluster: util.SingleCluster(client),
+				GetCluster: util.FakeSingleCluster(client),
 			}
 
 			_, err := controllerReconciler.Reconcile(ctx, mcreconcile.Request{

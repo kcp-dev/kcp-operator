@@ -269,7 +269,7 @@ func TestReconciling(t *testing.T) {
 			ctx := context.Background()
 
 			controllerReconciler := &ShardReconciler{
-				GetCluster: util.SingleCluster(client),
+				GetCluster: util.FakeSingleCluster(client),
 			}
 
 			// First reconcile adds finalizer and returns early
@@ -555,7 +555,7 @@ func TestClientCABundleMerging(t *testing.T) {
 			ctx := context.Background()
 
 			controllerReconciler := &ShardReconciler{
-				GetCluster: util.SingleCluster(client),
+				GetCluster: util.FakeSingleCluster(client),
 			}
 
 			// First reconcile adds finalizer

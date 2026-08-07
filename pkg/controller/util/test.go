@@ -46,9 +46,9 @@ func GetTestScheme() *runtime.Scheme {
 	return scheme
 }
 
-// SingleCluster serves the given client for every cluster name, so a reconciler can be tested
+// FakeSingleCluster serves the given client for every cluster name, so a reconciler can be tested
 // without a manager or a provider.
-func SingleCluster(c ctrlruntimeclient.Client) func(context.Context, multicluster.ClusterName) (cluster.Cluster, error) {
+func FakeSingleCluster(c ctrlruntimeclient.Client) func(context.Context, multicluster.ClusterName) (cluster.Cluster, error) {
 	return func(context.Context, multicluster.ClusterName) (cluster.Cluster, error) {
 		return &testCluster{client: c}, nil
 	}

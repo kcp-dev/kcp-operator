@@ -112,7 +112,7 @@ func TestReconciling(t *testing.T) {
 			ctx := context.Background()
 
 			controllerReconciler := &RootShardReconciler{
-				GetCluster: util.SingleCluster(client),
+				GetCluster: util.FakeSingleCluster(client),
 			}
 
 			_, err := controllerReconciler.Reconcile(ctx, mcreconcile.Request{
@@ -223,7 +223,7 @@ func TestClientCABundleMerging(t *testing.T) {
 			ctx := context.Background()
 
 			controllerReconciler := &RootShardReconciler{
-				GetCluster: util.SingleCluster(client),
+				GetCluster: util.FakeSingleCluster(client),
 			}
 
 			_, err := controllerReconciler.Reconcile(ctx, mcreconcile.Request{
