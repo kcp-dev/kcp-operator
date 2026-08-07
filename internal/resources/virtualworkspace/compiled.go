@@ -31,6 +31,8 @@ import (
 func CompiledVirtualWorkspaceReconciler(vw *operatorv1alpha1.VirtualWorkspace, rootShard *operatorv1alpha1.RootShard, shard *operatorv1alpha1.Shard, revisions map[string]string) reconciling.NamedCompiledVirtualWorkspaceReconcilerFactory {
 	return func() (string, reconciling.CompiledVirtualWorkspaceReconciler) {
 		return vw.Name, func(obj *deployv1alpha1.CompiledVirtualWorkspace) (*deployv1alpha1.CompiledVirtualWorkspace, error) {
+			obj.Labels = maps.Clone(vw.Labels)
+			obj.Annotations = maps.Clone(vw.Annotations)
 			// Certificate revisions ride along so a renewal changes this object, which is what
 			// tells anything watching it that the Secrets it mounts have moved on.
 			if obj.Annotations == nil {
