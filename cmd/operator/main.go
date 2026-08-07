@@ -42,6 +42,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
 
+	operatorclient "github.com/kcp-dev/kcp-operator/pkg/client"
 	"github.com/kcp-dev/kcp-operator/pkg/config"
 	"github.com/kcp-dev/kcp-operator/pkg/controller"
 	"github.com/kcp-dev/kcp-operator/pkg/metrics"
@@ -196,12 +197,17 @@ func run(ctx context.Context) error {
 	}
 
 	if controllerGroups.Has(config.ControllerGroupConfig) {
-		if err := controller.AddConfigControllers(mgr); err != nil {
+		if err := controller.AddConfigControllers(
+			mgr,
+			controller.Options{
+				Address: operatorclient.InCluster{},
+			},
+		); err != nil {
 			return err
 		}
 	}
 	if controllerGroups.Has(config.ControllerGroupWorkload) {
-		if err := controller.AddWorkloadControllers(mgr); err != nil {
+		if err := controller.AddWorkloadControllers(mgr, controller.Options{}); err != nil {
 			return err
 		}
 	}

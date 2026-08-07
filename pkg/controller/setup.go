@@ -38,50 +38,62 @@ import (
 	"github.com/kcp-dev/kcp-operator/pkg/controller/virtualworkspace"
 )
 
+// Options configures a controller group.
+type Options struct {
+	// Engage are multicluster options that are passed to each
+	// SetupWithManager and applied for For, Owns and Watches.
+	Engage []mcbuilder.EngageOptions
+}
+
 // AddConfigControllers registers the controllers that configure a kcp instance: they own the
 // cert-manager resources and compile the deploy.operator.kcp.io render inputs.
 // The engage options are passed through to the .SetupWithManager of each controller.
-func AddConfigControllers(mgr mcmanager.Manager, opts ...mcbuilder.EngageOptions) error {
+func AddConfigControllers(mgr mcmanager.Manager, options Options) error {
 	if err := (&rootshard.RootShardReconciler{
 		GetCluster: mgr.GetCluster,
-	}).SetupWithManager(mgr, opts...); err != nil {
+	}).SetupWithManager(mgr, options.Engage...); err != nil {
 		return fmt.Errorf("unable to create controller %s: %w", "RootShard", err)
 	}
 	if err := (&frontproxy.FrontProxyReconciler{
 		GetCluster: mgr.GetCluster,
-	}).SetupWithManager(mgr, opts...); err != nil {
+	}).SetupWithManager(mgr, options.Engage...); err != nil {
 		return fmt.Errorf("unable to create controller %s: %w", "FrontProxy", err)
 	}
 	if err := (&shard.ShardReconciler{
 		GetCluster: mgr.GetCluster,
-	}).SetupWithManager(mgr, opts...); err != nil {
+<<<<<<< HEAD
+	}).SetupWithManager(mgr, opts.Engage...); err != nil {
+=======
+		Address:    options.Address,
+	}).SetupWithManager(mgr, options.Engage...); err != nil {
+>>>>>>> 3cf3237 (fixup! Add pkg/controller.Options)
 		return fmt.Errorf("unable to create controller %s: %w", "Shard", err)
 	}
 	if err := (&cacheserver.CacheServerReconciler{
 		GetCluster: mgr.GetCluster,
-	}).SetupWithManager(mgr, opts...); err != nil {
+	}).SetupWithManager(mgr, options.Engage...); err != nil {
 		return fmt.Errorf("unable to create controller %s: %w", "CacheServer", err)
 	}
 	if err := (&kubeconfig.KubeconfigReconciler{
 		GetCluster: mgr.GetCluster,
-	}).SetupWithManager(mgr, opts...); err != nil {
+	}).SetupWithManager(mgr, options.Engage...); err != nil {
 		return fmt.Errorf("unable to create controller %s: %w", "Kubeconfig", err)
 	}
 	if err := (&virtualworkspace.Reconciler{
 		GetCluster: mgr.GetCluster,
-	}).SetupWithManager(mgr, opts...); err != nil {
+	}).SetupWithManager(mgr, options.Engage...); err != nil {
 		return fmt.Errorf("unable to create controller %s: %w", "VirtualWorkspace", err)
 	}
 	if config.Enabled(config.ConfigurationBundle) {
 		if err := (&bundle.BundleReconciler{
 			GetCluster: mgr.GetCluster,
-		}).SetupWithManager(mgr, opts...); err != nil {
+		}).SetupWithManager(mgr, options.Engage...); err != nil {
 			return fmt.Errorf("unable to create controller %s: %w", "Bundle", err)
 		}
 	}
 	if err := (&kubeconfigrbac.KubeconfigRBACReconciler{
 		GetCluster: mgr.GetCluster,
-	}).SetupWithManager(mgr, opts...); err != nil {
+	}).SetupWithManager(mgr, options.Engage...); err != nil {
 		return fmt.Errorf("unable to create controller %s: %w", "KubeconfigRBAC", err)
 	}
 	return nil
@@ -90,30 +102,30 @@ func AddConfigControllers(mgr mcmanager.Manager, opts ...mcbuilder.EngageOptions
 // AddWorkloadControllers registers the controllers that turn compiled render inputs into
 // workloads such as Deployments and Services.
 // The engage options select which clusters and providers every controller watches.
-func AddWorkloadControllers(mgr mcmanager.Manager, opts ...mcbuilder.EngageOptions) error {
+func AddWorkloadControllers(mgr mcmanager.Manager, options Options) error {
 	if err := (&compiledrootshard.CompiledRootShardReconciler{
 		GetCluster: mgr.GetCluster,
-	}).SetupWithManager(mgr, opts...); err != nil {
+	}).SetupWithManager(mgr, options.Engage...); err != nil {
 		return fmt.Errorf("unable to create controller %s: %w", "CompiledRootShard", err)
 	}
 	if err := (&compiledfrontproxy.CompiledFrontProxyReconciler{
 		GetCluster: mgr.GetCluster,
-	}).SetupWithManager(mgr, opts...); err != nil {
+	}).SetupWithManager(mgr, options.Engage...); err != nil {
 		return fmt.Errorf("unable to create controller %s: %w", "CompiledFrontProxy", err)
 	}
 	if err := (&compiledshard.CompiledShardReconciler{
 		GetCluster: mgr.GetCluster,
-	}).SetupWithManager(mgr, opts...); err != nil {
+	}).SetupWithManager(mgr, options.Engage...); err != nil {
 		return fmt.Errorf("unable to create controller %s: %w", "CompiledShard", err)
 	}
 	if err := (&compiledcacheserver.CompiledCacheServerReconciler{
 		GetCluster: mgr.GetCluster,
-	}).SetupWithManager(mgr, opts...); err != nil {
+	}).SetupWithManager(mgr, options.Engage...); err != nil {
 		return fmt.Errorf("unable to create controller %s: %w", "CompiledCacheServer", err)
 	}
 	if err := (&compiledvirtualworkspace.CompiledVirtualWorkspaceReconciler{
 		GetCluster: mgr.GetCluster,
-	}).SetupWithManager(mgr, opts...); err != nil {
+	}).SetupWithManager(mgr, options.Engage...); err != nil {
 		return fmt.Errorf("unable to create controller %s: %w", "CompiledVirtualWorkspace", err)
 	}
 	// +kubebuilder:scaffold:builder
