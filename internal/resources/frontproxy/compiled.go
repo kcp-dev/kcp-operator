@@ -19,10 +19,10 @@ package frontproxy
 import (
 	"maps"
 
-	"github.com/kcp-dev/kcp-operator/internal/controller/util"
-	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
 	"github.com/kcp-dev/kcp-operator/internal/resources/utils"
+	"github.com/kcp-dev/kcp-operator/pkg/controller/util"
+	"github.com/kcp-dev/kcp-operator/pkg/reconciling"
 	deployv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/deploy/v1alpha1"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
@@ -32,6 +32,8 @@ import (
 func CompiledFrontProxyReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootShard *operatorv1alpha1.RootShard, shards []operatorv1alpha1.Shard, revisions map[string]string) reconciling.NamedCompiledFrontProxyReconcilerFactory {
 	return func() (string, reconciling.CompiledFrontProxyReconciler) {
 		return frontProxy.Name, func(obj *deployv1alpha1.CompiledFrontProxy) (*deployv1alpha1.CompiledFrontProxy, error) {
+			obj.Labels = maps.Clone(frontProxy.Labels)
+			obj.Annotations = maps.Clone(frontProxy.Annotations)
 			// Certificate revisions ride along so a renewal changes this object, which is what
 			// tells anything watching it that the Secrets it mounts have moved on.
 			if obj.Annotations == nil {

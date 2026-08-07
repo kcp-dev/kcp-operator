@@ -1,0 +1,344 @@
+/*
+Copyright 2026 The KCP Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package virtualworkspace
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"time"
+
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"k8c.io/reconciler/pkg/equality"
+	k8creconciling "k8c.io/reconciler/pkg/reconciling"
+
+	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	kerrors "k8s.io/apimachinery/pkg/util/errors"
+	ctrl "sigs.k8s.io/controller-runtime"
+	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/cluster"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+	mcbuilder "sigs.k8s.io/multicluster-runtime/pkg/builder"
+	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
+	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
+	mcreconcile "sigs.k8s.io/multicluster-runtime/pkg/reconcile"
+
+	"github.com/kcp-dev/kcp-operator/internal/resources"
+	"github.com/kcp-dev/kcp-operator/internal/resources/virtualworkspace"
+	"github.com/kcp-dev/kcp-operator/pkg/controller/util"
+	"github.com/kcp-dev/kcp-operator/pkg/metrics"
+	"github.com/kcp-dev/kcp-operator/pkg/reconciling"
+	"github.com/kcp-dev/kcp-operator/pkg/reconciling/modifier"
+	deployv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/deploy/v1alpha1"
+	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
+)
+
+// Reconciler reconciles a VirtualWorkspace object
+type Reconciler struct {
+	GetCluster func(ctx context.Context, clusterName multicluster.ClusterName) (cluster.Cluster, error)
+}
+
+// SetupWithManager sets up the controller with the Manager.
+func (r *Reconciler) SetupWithManager(mgr mcmanager.Manager, opts ...mcbuilder.EngageOptions) error {
+	return mcbuilder.ControllerManagedBy(mgr).
+		Named("virtualworkspace").
+		For(&operatorv1alpha1.VirtualWorkspace{}, util.EngageFor(opts)...).
+		Watches(&operatorv1alpha1.RootShard{}, util.EnqueueMapped(r.mapRootShardToVirtualWorkspaces), util.EngageWatches(opts)...).
+		Watches(&operatorv1alpha1.Shard{}, util.EnqueueMapped(r.mapShardToVirtualWorkspaces), util.EngageWatches(opts)...).
+		Watches(&certmanagerv1.Issuer{}, util.EnqueueMapped(r.mapIssuerToVirtualWorkspaces), util.EngageWatches(opts)...).
+		Owns(&corev1.Secret{}, util.EngageOwns(opts)...).
+		Owns(&certmanagerv1.Certificate{}, util.EngageOwns(opts)...).
+		Owns(&deployv1alpha1.CompiledVirtualWorkspace{}, util.EngageOwns(opts)...).
+		Complete(r)
+}
+
+// +kubebuilder:rbac:groups=operator.kcp.io,resources=virtualworkspaces,verbs=get;list;watch;update;patch
+// +kubebuilder:rbac:groups=operator.kcp.io,resources=virtualworkspaces/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=operator.kcp.io,resources=shards,verbs=get;list;watch
+// +kubebuilder:rbac:groups=operator.kcp.io,resources=rootshards,verbs=get;list;watch
+// +kubebuilder:rbac:groups=deploy.operator.kcp.io,resources=compiledvirtualworkspaces,verbs=get;list;watch;create;update;patch
+// +kubebuilder:rbac:groups=deploy.operator.kcp.io,resources=compiledvirtualworkspaces/finalizers,verbs=update
+// +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=cert-manager.io,resources=issuers,verbs=get;list;watch
+// +kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch;create;update;patch;delete
+
+// Reconcile is part of the main kubernetes reconciliation loop which aims to
+// move the current state of the cluster closer to the desired state.
+func (r *Reconciler) Reconcile(ctx context.Context, req mcreconcile.Request) (res ctrl.Result, recErr error) {
+	startTime := time.Now()
+	defer func() {
+		duration := time.Since(startTime)
+		metrics.RecordReconciliationMetrics(metrics.VirtualWorkspaceResourceType, duration.Seconds(), recErr)
+	}()
+
+	logger := log.FromContext(ctx).WithValues("cluster", req.ClusterName)
+	logger.V(4).Info("Reconciling")
+
+	cl, err := r.GetCluster(ctx, req.ClusterName)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to get cluster %q: %w", req.ClusterName, err)
+	}
+
+	vw := &operatorv1alpha1.VirtualWorkspace{}
+	if err := cl.GetClient().Get(ctx, req.NamespacedName, vw); err != nil {
+		// object has been deleted.
+		if apierrors.IsNotFound(err) {
+			return ctrl.Result{}, nil
+		}
+		metrics.RecordReconciliationError(metrics.VirtualWorkspaceResourceType, err.Error())
+		return ctrl.Result{}, err
+	}
+
+	if vw.DeletionTimestamp != nil {
+		return ctrl.Result{}, nil
+	}
+
+	vwCopy := vw.DeepCopy()
+
+	conditions, recErr := r.reconcile(ctx, cl.GetClient(), vwCopy)
+
+	if err := r.reconcileStatus(ctx, cl.GetClient(), vw, vwCopy, conditions); err != nil {
+		recErr = kerrors.NewAggregate([]error{recErr, err})
+	}
+
+	return ctrl.Result{}, recErr
+}
+
+func (r *Reconciler) reconcile(ctx context.Context, client ctrlruntimeclient.Client, vw *operatorv1alpha1.VirtualWorkspace) ([]metav1.Condition, error) {
+	var conditions []metav1.Condition
+
+	var (
+		rootShard *operatorv1alpha1.RootShard
+		shard     *operatorv1alpha1.Shard
+	)
+
+	switch {
+	case vw.Spec.Target.RootShardRef != nil:
+		rootShard = &operatorv1alpha1.RootShard{}
+
+		if err := client.Get(ctx, types.NamespacedName{Name: vw.Spec.Target.RootShardRef.Name, Namespace: vw.Namespace}, rootShard); err != nil {
+			err = fmt.Errorf("failed to get RootShard: %w", err)
+			conditions = append(conditions, metav1.Condition{
+				Type:    string(operatorv1alpha1.ConditionTypeReferenceValid),
+				Status:  metav1.ConditionFalse,
+				Reason:  string(operatorv1alpha1.ConditionReasonReferenceNotFound),
+				Message: err.Error(),
+			})
+			return conditions, err
+		}
+
+	case vw.Spec.Target.ShardRef != nil:
+		shard = &operatorv1alpha1.Shard{}
+
+		if err := client.Get(ctx, types.NamespacedName{Name: vw.Spec.Target.ShardRef.Name, Namespace: vw.Namespace}, shard); err != nil {
+			err = fmt.Errorf("failed to get Shard: %w", err)
+			conditions = append(conditions, metav1.Condition{
+				Type:    string(operatorv1alpha1.ConditionTypeReferenceValid),
+				Status:  metav1.ConditionFalse,
+				Reason:  string(operatorv1alpha1.ConditionReasonReferenceNotFound),
+				Message: err.Error(),
+			})
+			return conditions, err
+		}
+
+		ref := shard.Spec.RootShard.Reference
+		if ref == nil || ref.Name == "" {
+			err := errors.New("the Shard does not reference a (valid) RootShard")
+			conditions = append(conditions, metav1.Condition{
+				Type:    string(operatorv1alpha1.ConditionTypeReferenceValid),
+				Status:  metav1.ConditionFalse,
+				Reason:  string(operatorv1alpha1.ConditionReasonReferenceNotFound),
+				Message: err.Error(),
+			})
+			return conditions, err
+		}
+
+		rootShard = &operatorv1alpha1.RootShard{}
+		if err := client.Get(ctx, types.NamespacedName{Name: ref.Name, Namespace: vw.Namespace}, rootShard); err != nil {
+			err = fmt.Errorf("failed to get RootShard: %w", err)
+			conditions = append(conditions, metav1.Condition{
+				Type:    string(operatorv1alpha1.ConditionTypeReferenceValid),
+				Status:  metav1.ConditionFalse,
+				Reason:  string(operatorv1alpha1.ConditionReasonReferenceNotFound),
+				Message: err.Error(),
+			})
+			return conditions, err
+		}
+
+	default:
+		err := errors.New("no valid target for VirtualWorkspace found")
+		conditions = append(conditions, metav1.Condition{
+			Type:    string(operatorv1alpha1.ConditionTypeReferenceValid),
+			Status:  metav1.ConditionFalse,
+			Reason:  string(operatorv1alpha1.ConditionReasonReferenceNotFound),
+			Message: err.Error(),
+		})
+		return conditions, err
+	}
+
+	conditions = append(conditions, metav1.Condition{
+		Type:    string(operatorv1alpha1.ConditionTypeReferenceValid),
+		Status:  metav1.ConditionTrue,
+		Reason:  string(operatorv1alpha1.ConditionReasonReferenceValid),
+		Message: "Target reference is valid",
+	})
+
+	ownerRefWrapper := k8creconciling.OwnerRefWrapper(*metav1.NewControllerRef(vw, operatorv1alpha1.SchemeGroupVersion.WithKind("VirtualWorkspace")))
+
+	var certs []*certmanagerv1.Certificate
+	if err := reconciling.ReconcileCertificates(ctx, []reconciling.NamedCertificateReconcilerFactory{
+		virtualworkspace.ClientCertificateReconciler(vw, rootShard),
+		virtualworkspace.ServerCertificateReconciler(vw, rootShard),
+	}, vw.Namespace, client, ownerRefWrapper, modifier.Capture(&certs)); err != nil {
+		return conditions, err
+	}
+
+	if rootShard.Spec.ClientCABundleRef != nil || vw.Spec.ClientCABundleRef != nil {
+		if err := k8creconciling.ReconcileSecrets(ctx, []k8creconciling.NamedSecretReconcilerFactory{
+			virtualworkspace.MergedClientCABundleSecretReconciler(ctx, vw, rootShard, client),
+		}, vw.Namespace, client, ownerRefWrapper); err != nil {
+			return conditions, err
+		}
+	}
+
+	// Only publish the render input once every Certificate is ready, so that whoever consumes
+	// it can rely on the Secrets it mounts already existing.
+	revisions, certsReady := util.CertificateRevisions(certs)
+	if !certsReady {
+		return conditions, nil
+	}
+
+	// The workloads themselves are rendered by the CompiledVirtualWorkspace controller.
+	if err := reconciling.ReconcileCompiledVirtualWorkspaces(ctx, []reconciling.NamedCompiledVirtualWorkspaceReconcilerFactory{
+		virtualworkspace.CompiledVirtualWorkspaceReconciler(vw, rootShard, shard, util.MutateKeys(revisions, "cert-", "-revision")),
+	}, vw.Namespace, client, ownerRefWrapper); err != nil {
+		return conditions, err
+	}
+
+	return conditions, nil
+}
+
+func (r *Reconciler) reconcileStatus(ctx context.Context, client ctrlruntimeclient.Client, oldVW *operatorv1alpha1.VirtualWorkspace, vw *operatorv1alpha1.VirtualWorkspace, conditions []metav1.Condition) error {
+	// Check the workloads rendered from the compiled object
+	compiled := &deployv1alpha1.CompiledVirtualWorkspace{}
+	key := types.NamespacedName{Namespace: vw.Namespace, Name: vw.Name}
+	if err := client.Get(ctx, key, compiled); ctrlruntimeclient.IgnoreNotFound(err) != nil {
+		return err
+	}
+	conditions = append(conditions, util.GetCompiledAvailableCondition(compiled.Status.Conditions, "CompiledVirtualWorkspace "+vw.Name))
+
+	for _, condition := range conditions {
+		condition.ObservedGeneration = vw.Generation
+		vw.Status.Conditions = util.UpdateCondition(vw.Status.Conditions, condition)
+	}
+
+	if !equality.Semantic.DeepEqual(oldVW.Status, vw.Status) {
+		if err := client.Status().Patch(ctx, vw, ctrlruntimeclient.MergeFrom(oldVW)); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (r *Reconciler) mapRootShardToVirtualWorkspaces(ctx context.Context, client ctrlruntimeclient.Client, obj ctrlruntimeclient.Object) []ctrl.Request {
+	logger := log.FromContext(ctx).WithValues("rootShard", obj.GetName())
+	logger.V(4).Info("Mapping RootShard to VirtualWorkspaces")
+
+	return r.mapVirtualWorkspaces(ctx, client, obj.GetNamespace(), func(target operatorv1alpha1.VirtualWorkspaceTarget) bool {
+		return target.RootShardRef != nil && target.RootShardRef.Name == obj.GetName()
+	})
+}
+
+func (r *Reconciler) mapShardToVirtualWorkspaces(ctx context.Context, client ctrlruntimeclient.Client, obj ctrlruntimeclient.Object) []ctrl.Request {
+	logger := log.FromContext(ctx).WithValues("shard", obj.GetName())
+	logger.V(4).Info("Mapping Shard to VirtualWorkspaces")
+
+	return r.mapVirtualWorkspaces(ctx, client, obj.GetNamespace(), func(target operatorv1alpha1.VirtualWorkspaceTarget) bool {
+		return target.ShardRef != nil && target.ShardRef.Name == obj.GetName()
+	})
+}
+
+func (r *Reconciler) mapIssuerToVirtualWorkspaces(ctx context.Context, client ctrlruntimeclient.Client, obj ctrlruntimeclient.Object) []ctrl.Request {
+	logger := log.FromContext(ctx).WithValues("issuer", obj.GetName())
+	logger.V(4).Info("Mapping Issuer to VirtualWorkspaces")
+
+	// Find all VirtualWorkspaces that use this Issuer for their client certificate
+	var virtualWorkspaces operatorv1alpha1.VirtualWorkspaceList
+	if err := client.List(ctx, &virtualWorkspaces, ctrlruntimeclient.InNamespace(obj.GetNamespace())); err != nil {
+		logger.Error(err, "Failed to list VirtualWorkspaces")
+		return []ctrl.Request{}
+	}
+
+	var requests []ctrl.Request
+	for _, vw := range virtualWorkspaces.Items {
+		var expectedIssuer string
+		switch {
+		case vw.Spec.Target.RootShardRef != nil:
+			rootShard := &operatorv1alpha1.RootShard{}
+			if err := client.Get(ctx, types.NamespacedName{Name: vw.Spec.Target.RootShardRef.Name, Namespace: vw.Namespace}, rootShard); err == nil {
+				expectedIssuer = resources.GetRootShardCAName(rootShard, operatorv1alpha1.ClientCA)
+			}
+		case vw.Spec.Target.ShardRef != nil:
+			shard := &operatorv1alpha1.Shard{}
+			if err := client.Get(ctx, types.NamespacedName{Name: vw.Spec.Target.ShardRef.Name, Namespace: vw.Namespace}, shard); err == nil {
+				if ref := shard.Spec.RootShard.Reference; ref != nil {
+					rootShard := &operatorv1alpha1.RootShard{}
+					if err := client.Get(ctx, types.NamespacedName{Name: ref.Name, Namespace: vw.Namespace}, rootShard); err == nil {
+						expectedIssuer = resources.GetRootShardCAName(rootShard, operatorv1alpha1.ClientCA)
+					}
+				}
+			}
+		}
+
+		if expectedIssuer == obj.GetName() {
+			requests = append(requests, ctrl.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      vw.Name,
+					Namespace: vw.Namespace,
+				},
+			})
+		}
+	}
+
+	return requests
+}
+
+func (r *Reconciler) mapVirtualWorkspaces(ctx context.Context, client ctrlruntimeclient.Client, namespace string, matches func(t operatorv1alpha1.VirtualWorkspaceTarget) bool) []ctrl.Request {
+	var virtualWorkspaces operatorv1alpha1.VirtualWorkspaceList
+	if err := client.List(ctx, &virtualWorkspaces, ctrlruntimeclient.InNamespace(namespace)); err != nil {
+		log.FromContext(ctx).Error(err, "Failed to list VirtualWorkspaces")
+		return []ctrl.Request{}
+	}
+
+	var requests []ctrl.Request
+	for _, vw := range virtualWorkspaces.Items {
+		if matches(vw.Spec.Target) {
+			requests = append(requests, ctrl.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      vw.Name,
+					Namespace: vw.Namespace,
+				},
+			})
+		}
+	}
+
+	return requests
+}

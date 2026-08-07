@@ -19,10 +19,10 @@ package rootshard
 import (
 	"maps"
 
-	"github.com/kcp-dev/kcp-operator/internal/controller/util"
-	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
 	"github.com/kcp-dev/kcp-operator/internal/resources/utils"
+	"github.com/kcp-dev/kcp-operator/pkg/controller/util"
+	"github.com/kcp-dev/kcp-operator/pkg/reconciling"
 	deployv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/deploy/v1alpha1"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
@@ -32,6 +32,8 @@ import (
 func CompiledRootShardReconciler(rootShard *operatorv1alpha1.RootShard, kcpVW *operatorv1alpha1.VirtualWorkspace, shards []operatorv1alpha1.Shard, revisions map[string]string) reconciling.NamedCompiledRootShardReconcilerFactory {
 	return func() (string, reconciling.CompiledRootShardReconciler) {
 		return rootShard.Name, func(obj *deployv1alpha1.CompiledRootShard) (*deployv1alpha1.CompiledRootShard, error) {
+			obj.Labels = maps.Clone(rootShard.Labels)
+			obj.Annotations = maps.Clone(rootShard.Annotations)
 			// Certificate revisions ride along so a renewal changes this object, which is what
 			// tells anything watching it that the Secrets it mounts have moved on.
 			if obj.Annotations == nil {

@@ -36,7 +36,7 @@ RECONCILER_GEN="$(UGET_PRINT_PATH=relative make --no-print-directory install-rec
 set -x
 
 # generate reconciling helpers
-"$RECONCILER_GEN" --config hack/reconciling.yaml > internal/reconciling/zz_generated_reconcile.go
+"$RECONCILER_GEN" --config hack/reconciling.yaml > pkg/reconciling/zz_generated_reconcile.go
 
 # generate RBAC, webhooks and deepcopy funcs
 "$CONTROLLER_GEN" \
