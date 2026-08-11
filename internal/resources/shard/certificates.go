@@ -24,9 +24,9 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	"github.com/kcp-dev/kcp-operator/internal/reconciling"
 	"github.com/kcp-dev/kcp-operator/internal/resources"
 	"github.com/kcp-dev/kcp-operator/internal/resources/utils"
+	"github.com/kcp-dev/kcp-operator/pkg/reconciling"
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
