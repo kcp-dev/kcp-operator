@@ -755,6 +755,20 @@ func (in *CommonShardSpec) DeepCopyInto(out *CommonShardSpec) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
+	if in.ExtraVolumes != nil {
+		in, out := &in.ExtraVolumes, &out.ExtraVolumes
+		*out = make([]v1.Volume, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
+	if in.ExtraVolumeMounts != nil {
+		in, out := &in.ExtraVolumeMounts, &out.ExtraVolumeMounts
+		*out = make([]v1.VolumeMount, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
 	if in.Logging != nil {
 		in, out := &in.Logging, &out.Logging
 		*out = new(LoggingSpec)

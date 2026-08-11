@@ -168,6 +168,26 @@ func (b *ShardSpecApplyConfiguration) WithExtraArgs(values ...string) *ShardSpec
 	return b
 }
 
+// WithExtraVolumes adds the given value to the ExtraVolumes field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the ExtraVolumes field.
+func (b *ShardSpecApplyConfiguration) WithExtraVolumes(values ...v1.Volume) *ShardSpecApplyConfiguration {
+	for i := range values {
+		b.CommonShardSpecApplyConfiguration.ExtraVolumes = append(b.CommonShardSpecApplyConfiguration.ExtraVolumes, values[i])
+	}
+	return b
+}
+
+// WithExtraVolumeMounts adds the given value to the ExtraVolumeMounts field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the ExtraVolumeMounts field.
+func (b *ShardSpecApplyConfiguration) WithExtraVolumeMounts(values ...v1.VolumeMount) *ShardSpecApplyConfiguration {
+	for i := range values {
+		b.CommonShardSpecApplyConfiguration.ExtraVolumeMounts = append(b.CommonShardSpecApplyConfiguration.ExtraVolumeMounts, values[i])
+	}
+	return b
+}
+
 // WithLogging sets the Logging field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Logging field is set to the value of the last call.

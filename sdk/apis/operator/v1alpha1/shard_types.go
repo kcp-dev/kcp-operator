@@ -104,6 +104,25 @@ type CommonShardSpec struct {
 	// Optional: ExtraArgs defines additional command line arguments to pass to the shard container.
 	ExtraArgs []string `json:"extraArgs,omitempty"`
 
+	// Optional: ExtraVolumes defines additional volumes that should be added to the shard Pod.
+	// This is useful for mounting additional data, e.g. an EncryptionConfiguration file used
+	// together with the `--encryption-provider-config` flag (see ExtraArgs) to enable
+	// encryption of secrets at rest.
+	//
+	// +optional
+	// +listType=map
+	// +listMapKey=name
+	ExtraVolumes []corev1.Volume `json:"extraVolumes,omitempty"`
+
+	// Optional: ExtraVolumeMounts defines additional volume mounts that should be added to the
+	// shard container. Each entry's `name` must match the `name` of a volume defined in
+	// ExtraVolumes (or one of the volumes the operator manages).
+	//
+	// +optional
+	// +listType=map
+	// +listMapKey=name
+	ExtraVolumeMounts []corev1.VolumeMount `json:"extraVolumeMounts,omitempty"`
+
 	// Optional: Logging configures the logging settings for the shard.
 	Logging *LoggingSpec `json:"logging,omitempty"`
 }
