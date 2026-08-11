@@ -38,6 +38,8 @@ type VirtualWorkspaceSpecApplyConfiguration struct {
 	CABundleSecretRef    *v1.LocalObjectReference                  `json:"caBundleSecretRef,omitempty"`
 	ClientCABundleRef    *v1.LocalObjectReference                  `json:"clientCABundleRef,omitempty"`
 	ExtraArgs            []string                                  `json:"extraArgs,omitempty"`
+	ExtraVolumes         []v1.Volume                               `json:"extraVolumes,omitempty"`
+	ExtraVolumeMounts    []v1.VolumeMount                          `json:"extraVolumeMounts,omitempty"`
 	Logging              *LoggingSpecApplyConfiguration            `json:"logging,omitempty"`
 	ClusterDomain        *string                                   `json:"clusterDomain,omitempty"`
 }
@@ -134,6 +136,26 @@ func (b *VirtualWorkspaceSpecApplyConfiguration) WithClientCABundleRef(value v1.
 func (b *VirtualWorkspaceSpecApplyConfiguration) WithExtraArgs(values ...string) *VirtualWorkspaceSpecApplyConfiguration {
 	for i := range values {
 		b.ExtraArgs = append(b.ExtraArgs, values[i])
+	}
+	return b
+}
+
+// WithExtraVolumes adds the given value to the ExtraVolumes field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the ExtraVolumes field.
+func (b *VirtualWorkspaceSpecApplyConfiguration) WithExtraVolumes(values ...v1.Volume) *VirtualWorkspaceSpecApplyConfiguration {
+	for i := range values {
+		b.ExtraVolumes = append(b.ExtraVolumes, values[i])
+	}
+	return b
+}
+
+// WithExtraVolumeMounts adds the given value to the ExtraVolumeMounts field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the ExtraVolumeMounts field.
+func (b *VirtualWorkspaceSpecApplyConfiguration) WithExtraVolumeMounts(values ...v1.VolumeMount) *VirtualWorkspaceSpecApplyConfiguration {
+	for i := range values {
+		b.ExtraVolumeMounts = append(b.ExtraVolumeMounts, values[i])
 	}
 	return b
 }

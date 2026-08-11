@@ -89,6 +89,22 @@ type VirtualWorkspaceSpec struct {
 	// Optional: ExtraArgs defines additional command line arguments to pass to the server container.
 	ExtraArgs []string `json:"extraArgs,omitempty"`
 
+	// Optional: ExtraVolumes defines additional volumes that should be added to the virtual workspace Pod.
+	//
+	// +optional
+	// +listType=map
+	// +listMapKey=name
+	ExtraVolumes []corev1.Volume `json:"extraVolumes,omitempty"`
+
+	// Optional: ExtraVolumeMounts defines additional volume mounts that should be added to the
+	// virtual workspace container. Each entry's `name` must match the `name` of a volume defined in
+	// ExtraVolumes (or one of the volumes the operator manages).
+	//
+	// +optional
+	// +listType=map
+	// +listMapKey=name
+	ExtraVolumeMounts []corev1.VolumeMount `json:"extraVolumeMounts,omitempty"`
+
 	// Optional: Logging configures the logging settings for the server.
 	Logging *LoggingSpec `json:"logging,omitempty"`
 
