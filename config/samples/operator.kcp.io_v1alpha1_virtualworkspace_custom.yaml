@@ -1,0 +1,184 @@
+# Deploying a custom (non-kcp) virtual workspace server, using the access virtual workspace
+# (https://github.com/kcp-dev/contrib-access-virtual-workspace) as the example.
+#
+# The operator mounts the same PKI it gives kcp's own virtual-workspace server: the serving
+# certificate and the client and requestheader CAs. Because spec.command is set, it leaves out the
+# flags only kcp's own server understands, so the custom server does not die on an unknown flag.
+#
+# The two containers run as different identities, both minted by the Kubeconfig objects below and
+# both reaching kcp through the front-proxy: the init container bootstraps as kcp-admin, the server
+# runs as an unprivileged identity scoped to the workspace holding the APIExport.
+apiVersion: operator.kcp.io/v1alpha1
+kind: VirtualWorkspace
+metadata:
+  labels:
+    app.kubernetes.io/name: kcp-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: access
+spec:
+  # A singleton virtual workspace: one deployment serving all shards, connected to the root shard
+  # so it can watch Shard objects.
+  target:
+    rootShardRef:
+      name: shard-sample
+
+  # Where clients reach this virtual workspace. For a server routed through the front-proxy (see
+  # the FrontProxy patch below) this is the front-proxy's own hostname and port.
+  external:
+    hostname: example.operator.kcp.io
+    port: 6443
+
+  image:
+    repository: ghcr.io/kcp-dev/contrib-access-virtual-workspace
+    tag: latest
+
+  # The image's entrypoint. Setting this marks the server as a custom one, which also drops
+  # `--shard-external-url` and `--cache-kubeconfig` from the generated arguments.
+  command:
+    - /access-vw
+
+  # The graph is held in memory and rebuilt from watches, so a single replica avoids each replica
+  # answering from its own copy.
+  replicas: 1
+
+  # The kubeconfig the server authenticates with, minted by the Kubeconfig object below.
+  kubeconfigSecretRef:
+    name: access-vw-server-kubeconfig
+
+  # Creates root:access:controllers and installs the APIResourceSchema, APIExport, bind RBAC,
+  # APIExportEndpointSlice and the access-vw-controller ClusterRole there before the server starts.
+  # It shares the server's image, and runs as kcp-admin against the front-proxy: it walks the
+  # workspace tree from root down, which only resolves through the front-proxy, and creating
+  # workspaces is not something the server's own scoped identity may do.
+  initContainers:
+    - name: init
+      kubeconfigSecretRef:
+        name: access-vw-bootstrap-kubeconfig
+      command:
+        - /access-vw-init
+      args:
+        - --kubeconfig=/etc/kcp/init-kubeconfig/kubeconfig
+        - --workspace-prefix=root:access
+        - --controllers-workspace=controllers
+
+  extraArgs:
+    # The APIExportEndpointSlice the init container created, under the APIExport's own name.
+    # Setting it puts the RBAC provider in multi-shard mode.
+    - --apiexport-endpointslice=access.contrib.kcp.io
+    # Prefix used to build the per-cluster endpoints returned in SCAR responses; this is the
+    # front-proxy URL clients use, not an in-cluster address.
+    - --endpoint-base=https://example.operator.kcp.io:6443/clusters/
+    # Note there is no --workspace-path here: the minted kubeconfig already points at
+    # root:access:controllers, and retargeting it again would append a second /clusters/ segment.
+    # It would be needed if the server used the operator's admin kubeconfig, which targets root.
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 512Mi
+
+  deploymentTemplate:
+    spec:
+      template:
+        spec:
+          hostAliases:
+            # Both kubeconfigs below address the front-proxy by its external hostname, so it has to
+            # resolve from inside this pod. Same override as in the RootShard sample, pointing at
+            # the front-proxy Service's hard-coded cluster IP.
+            - ip: "10.96.100.100"
+              hostnames:
+                - "example.operator.kcp.io"
+
+---
+# The identity the init container bootstraps with: the regular kcp administrator. kcp's bootstrap
+# policy binds system:kcp:admin to the cluster-admin ClusterRole.
+#
+# The front-proxy is the target rather than the root shard because bootstrapping walks the workspace
+# tree (root -> access -> controllers). A shard only serves the logical clusters it hosts, so path
+# resolution across shards is something only the front-proxy does.
+apiVersion: operator.kcp.io/v1alpha1
+kind: Kubeconfig
+metadata:
+  labels:
+    app.kubernetes.io/name: kcp-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: access-vw-bootstrap
+spec:
+  target:
+    frontProxyRef:
+      name: frontproxy-sample
+  username: kcp-admin
+  groups:
+    - system:kcp:admin
+  validity: 8766h
+  secretRef:
+    name: access-vw-bootstrap-kubeconfig
+
+---
+# The identity the server runs as. Scoped to the workspace hosting the APIExport and bound to the
+# access-vw-controller ClusterRole the init container installs there, which grants get/list/watch on
+# apiexports, apiexportendpointslices and RBAC objects plus access to apiexports/content — and
+# nothing else. In particular it can neither create workspaces nor write RBAC.
+#
+# One caveat about that role. kcp gates every request on `verb=access` for the non-resource URL "/"
+# in the workspace, before any RBAC on the resource is consulted, and exempts only ServiceAccounts
+# declared inside that workspace. access-vw-controller was written for such a ServiceAccount, so it
+# carries no access rule — bound to the certificate identity below it would grant nothing at all.
+# Either add this rule to that ClusterRole, or bind a second one carrying it:
+#
+#   rules:
+#     - verbs: ["access"]
+#       nonResourceURLs: ["/"]
+#
+# The generated kubeconfig is self-contained (client certificate, key and CA are embedded) and its
+# current context already points at spec.targetWorkspace.
+apiVersion: operator.kcp.io/v1alpha1
+kind: Kubeconfig
+metadata:
+  labels:
+    app.kubernetes.io/name: kcp-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: access-vw-server
+spec:
+  target:
+    frontProxyRef:
+      name: frontproxy-sample
+  targetWorkspace: root:access:controllers
+  # No groups at all: this identity holds only what the ClusterRole below grants.
+  username: access-vw
+  validity: 8760h
+  secretRef:
+    name: access-vw-server-kubeconfig
+  authorization:
+    clusterRoleBindings:
+      clusterRoles:
+        - access-vw-controller
+
+---
+# The front-proxy has to route the virtual workspace's path prefix to its Service. Merge this into
+# the FrontProxy object (see operator.kcp.io_v1alpha1_frontproxy.yaml); it is shown as a separate
+# object here only to keep the sample self-contained.
+#
+# The default mappings already send /services/ to the root shard, but the front-proxy picks the
+# longest matching prefix, so the more specific /services/access wins regardless of ordering.
+#
+# The backend is the Service the operator creates for the VirtualWorkspace, which is named
+# `<name>-virtual-workspace`, listens on 6443 and lives in the VirtualWorkspace's namespace —
+# adjust the namespace below to wherever you applied these samples. Its serving certificate chains
+# up to the root CA the front-proxy already mounts, so no extra CA is needed.
+apiVersion: operator.kcp.io/v1alpha1
+kind: FrontProxy
+metadata:
+  name: frontproxy-sample
+spec:
+  rootShard:
+    ref:
+      name: shard-sample
+  additionalPathMappings:
+    - path: /services/access
+      backend: https://access-virtual-workspace.default.svc.cluster.local:6443
+      backend_server_ca: /etc/kcp-front-proxy/tls/ca/tls.crt
+      proxy_client_cert: /etc/kcp-front-proxy/requestheader-client/tls.crt
+      proxy_client_key: /etc/kcp-front-proxy/requestheader-client/tls.key

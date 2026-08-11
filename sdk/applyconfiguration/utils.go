@@ -193,6 +193,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &applyconfigurationoperatorv1alpha1.TokenAuthFileSpecApplyConfiguration{}
 	case operatorv1alpha1.SchemeGroupVersion.WithKind("VirtualWorkspace"):
 		return &applyconfigurationoperatorv1alpha1.VirtualWorkspaceApplyConfiguration{}
+	case operatorv1alpha1.SchemeGroupVersion.WithKind("VirtualWorkspaceInitContainer"):
+		return &applyconfigurationoperatorv1alpha1.VirtualWorkspaceInitContainerApplyConfiguration{}
 	case operatorv1alpha1.SchemeGroupVersion.WithKind("VirtualWorkspaceSpec"):
 		return &applyconfigurationoperatorv1alpha1.VirtualWorkspaceSpecApplyConfiguration{}
 	case operatorv1alpha1.SchemeGroupVersion.WithKind("VirtualWorkspaceStatus"):

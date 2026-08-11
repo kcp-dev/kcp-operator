@@ -217,6 +217,18 @@ if [[ -n "$WORKLOAD_CLUSTER_NAME" ]]; then
   KIND_CLUSTER_NAME="$WORKLOAD_CLUSTER_NAME" make --no-print-directory kind-load
 fi
 
+# The mock virtual workspace stands in for a server that is not kcp's own, so the e2e tests can
+# cover VirtualWorkspace.spec.command, init containers and per-container kubeconfigs. It runs as a
+# workload, so it is only needed where the kcp pods run.
+echo "Building and loading the mock virtual workspace..."
+export MOCK_VW_IMG="ghcr.io/kcp-dev/mock-virtualworkspace:local"
+docker build --file hack/ci/testdata/mock-vw/Dockerfile --tag "$MOCK_VW_IMG" .
+if [[ -n "$WORKLOAD_CLUSTER_NAME" ]]; then
+  retry_linear 1 5 kind load docker-image "$MOCK_VW_IMG" --name "$WORKLOAD_CLUSTER_NAME"
+else
+  retry_linear 1 5 kind load docker-image "$MOCK_VW_IMG" --name "$CONFIG_CLUSTER_NAME"
+fi
+
 if [[ "$E2E_TOPOLOGY" == config-workload ]]; then
   echo "Deploying config kcp-operator..."
   "$KUSTOMIZE" build hack/ci/testdata/config | "$KUBECTL" apply --server-side --filename -

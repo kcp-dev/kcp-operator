@@ -7894,6 +7894,22 @@ spec:
                         description: ClusterDomain is the DNS domain for services
                           in the cluster. Defaults to "cluster.local" if not set.
                         type: string
+                      command:
+                        description: |-
+                          Optional: Command overrides the entrypoint of the server container. Set this when the
+                          image is not kcp's own virtual-workspace server, whose binary lives at
+                          `/virtual-workspaces`.
+
+                          Setting this also changes which command line arguments the operator generates: only the
+                          arguments any aggregated apiserver understands are passed (TLS serving certificate,
+                          client and requestheader CA configuration, bind address and port, and `--kubeconfig`).
+                          The arguments only kcp's own server accepts (`--shard-external-url` and
+                          `--cache-kubeconfig`) are omitted, as is the cache server's kubeconfig mount, because a
+                          custom server would reject the unknown flags and refuse to start. Use ExtraArgs for
+                          whatever else the custom server needs.
+                        items:
+                          type: string
+                        type: array
                       deploymentTemplate:
                         description: 'Optional: DeploymentTemplate configures the
                           Kubernetes Deployment created for this server.'
@@ -11154,6 +11170,190 @@ spec:
                               the operator supports.
                             type: string
                         type: object
+                      initContainers:
+                        description: |-
+                          Optional: InitContainers are run in order before the server container starts. They are
+                          meant for the bootstrapping a custom virtual workspace has to perform against kcp before
+                          it can serve, like creating its own workspace and installing its APIExport.
+
+                          Each init container inherits the server container's volume mounts, so it can reach the
+                          same certificates without having to know the operator's mount paths.
+                        items:
+                          description: |-
+                            VirtualWorkspaceInitContainer describes a container that runs to completion before the virtual
+                            workspace server container is started.
+                          properties:
+                            args:
+                              description: 'Optional: Args are the command line arguments
+                                passed to the init container.'
+                              items:
+                                type: string
+                              type: array
+                            command:
+                              description: 'Optional: Command overrides the entrypoint
+                                of the init container image.'
+                              items:
+                                type: string
+                              type: array
+                            image:
+                              description: |-
+                                Optional: Image overwrites the container image used for this init container. If not
+                                specified, the same image as the server container is used, which is the common case for
+                                servers that ship their bootstrapping binary alongside the server binary.
+                              properties:
+                                imagePullSecrets:
+                                  description: 'Optional: ImagePullSecrets is a list
+                                    of secret references that should be used as image
+                                    pull secrets (e.g. when a private registry is
+                                    used).'
+                                  items:
+                                    description: |-
+                                      LocalObjectReference contains enough information to let you locate the
+                                      referenced object inside the same namespace.
+                                    properties:
+                                      name:
+                                        default: ""
+                                        description: |-
+                                          Name of the referent.
+                                          This field is effectively required, but due to backwards compatibility is
+                                          allowed to be empty. Instances of this type with an empty value here are
+                                          almost certainly wrong.
+                                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                        type: string
+                                    type: object
+                                    x-kubernetes-map-type: atomic
+                                  type: array
+                                repository:
+                                  description: Repository is the container image repository
+                                    to use for kcp containers. Defaults to `ghcr.io/kcp-dev/kcp`.
+                                  type: string
+                                tag:
+                                  description: Tag is the container image tag to use
+                                    for kcp containers. Defaults to the latest kcp
+                                    release that the operator supports.
+                                  type: string
+                              type: object
+                            kubeconfigSecretRef:
+                              description: |-
+                                KubeconfigSecretRef references a v1.Secret containing a `kubeconfig` key, mounted into this
+                                init container at `/etc/kcp/init-kubeconfig/kubeconfig`.
+
+                                Bootstrapping usually has to work across the workspace tree, which only resolves through
+                                the front-proxy, and needs administrative rights the server itself should not hold. Both
+                                are covered by pointing this at a Kubeconfig object that targets a FrontProxy with the
+                                `kcp-admin` username in the `system:kcp:admin` group.
+                              properties:
+                                name:
+                                  default: ""
+                                  description: |-
+                                    Name of the referent.
+                                    This field is effectively required, but due to backwards compatibility is
+                                    allowed to be empty. Instances of this type with an empty value here are
+                                    almost certainly wrong.
+                                    More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                  type: string
+                              type: object
+                              x-kubernetes-map-type: atomic
+                            name:
+                              description: Name of the init container. Must be unique
+                                within the VirtualWorkspace.
+                              minLength: 1
+                              type: string
+                            resources:
+                              description: |-
+                                Optional: Resources overrides the resource requests and limits, which default to the same
+                                values the server container uses.
+                              properties:
+                                claims:
+                                  description: |-
+                                    Claims lists the names of resources, defined in spec.resourceClaims,
+                                    that are used by this container.
+
+                                    This is an alpha field and requires enabling the
+                                    DynamicResourceAllocation feature gate.
+
+                                    This field is immutable. It can only be set for containers.
+                                  items:
+                                    description: ResourceClaim references one entry
+                                      in PodSpec.ResourceClaims.
+                                    properties:
+                                      name:
+                                        description: |-
+                                          Name must match the name of one entry in pod.spec.resourceClaims of
+                                          the Pod where this field is used. It makes that resource available
+                                          inside a container.
+                                        type: string
+                                      request:
+                                        description: |-
+                                          Request is the name chosen for a request in the referenced claim.
+                                          If empty, everything from the claim is made available, otherwise
+                                          only the result of this request.
+                                        type: string
+                                    required:
+                                    - name
+                                    type: object
+                                  type: array
+                                  x-kubernetes-list-map-keys:
+                                  - name
+                                  x-kubernetes-list-type: map
+                                limits:
+                                  additionalProperties:
+                                    anyOf:
+                                    - type: integer
+                                    - type: string
+                                    pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                    x-kubernetes-int-or-string: true
+                                  description: |-
+                                    Limits describes the maximum amount of compute resources allowed.
+                                    More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+                                  type: object
+                                requests:
+                                  additionalProperties:
+                                    anyOf:
+                                    - type: integer
+                                    - type: string
+                                    pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                    x-kubernetes-int-or-string: true
+                                  description: |-
+                                    Requests describes the minimum amount of compute resources required.
+                                    If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+                                    otherwise to an implementation-defined value. Requests cannot exceed Limits.
+                                    More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+                                  type: object
+                              type: object
+                          required:
+                          - name
+                          type: object
+                        type: array
+                        x-kubernetes-list-map-keys:
+                        - name
+                        x-kubernetes-list-type: map
+                      kubeconfigSecretRef:
+                        description: |-
+                          KubeconfigSecretRef references a v1.Secret containing a `kubeconfig` key that the server
+                          container uses to connect to kcp, mounted at `/etc/kcp/server-kubeconfig/kubeconfig`. When
+                          set, the server's `--kubeconfig` points at it instead of the target's logical-cluster-admin
+                          kubeconfig, which is what lets a server run with an identity other than the broadly
+                          privileged one the operator provisions by default.
+
+                          Init containers are unaffected and select their own credentials, see the init container's
+                          own KubeconfigSecretRef.
+
+                          The Secret is usually produced by a Kubeconfig object, whose kubeconfig is self-contained
+                          (the client certificate, key and CA are embedded) and already scoped to
+                          spec.targetWorkspace.
+                        properties:
+                          name:
+                            default: ""
+                            description: |-
+                              Name of the referent.
+                              This field is effectively required, but due to backwards compatibility is
+                              allowed to be empty. Instances of this type with an empty value here are
+                              almost certainly wrong.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                            type: string
+                        type: object
+                        x-kubernetes-map-type: atomic
                       logging:
                         description: 'Optional: Logging configures the logging settings
                           for the server.'

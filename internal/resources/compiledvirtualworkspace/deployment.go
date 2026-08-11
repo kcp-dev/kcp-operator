@@ -18,6 +18,7 @@ package compiledvirtualworkspace
 
 import (
 	"fmt"
+	"slices"
 
 	"k8c.io/reconciler/pkg/reconciling"
 
@@ -35,6 +36,10 @@ import (
 
 const (
 	ServerContainerName = "kcp"
+
+	// DefaultServerCommand is the entrypoint of kcp's own virtual-workspace server image. Images
+	// shipping a different binary have to set spec.command.
+	DefaultServerCommand = "/virtual-workspaces"
 )
 
 var (
@@ -66,6 +71,19 @@ func getCacheServerKubeconfigMountPath() string {
 	return "/etc/cache-server/kubeconfig"
 }
 
+// getServerKubeconfigMountPath is where a user-provided kubeconfig for the server container is
+// mounted. It is deliberately not the logical-cluster-admin path, so both kubeconfigs can be
+// present in the pod at once and each container picks the one it needs.
+func getServerKubeconfigMountPath() string {
+	return "/etc/kcp/server-kubeconfig"
+}
+
+// getInitKubeconfigMountPath is where an init container's own kubeconfig is mounted. Volume mounts
+// are per-container, so every init container sees its own kubeconfig at the same path.
+func getInitKubeconfigMountPath() string {
+	return "/etc/kcp/init-kubeconfig"
+}
+
 // getCacheServerCAMountPath has to match the code in the cacheserver package.
 func getCacheServerCAMountPath(caName operatorv1alpha1.CA) string {
 	return fmt.Sprintf("/etc/cache-server/tls/ca/%s", caName)
@@ -76,10 +94,21 @@ func getCacheServerClientCertMountPath() string {
 	return "/etc/cache-server/tls/client-certificate"
 }
 
+// isCustomServer reports whether this virtual workspace runs a server other than kcp's own, which
+// is the case exactly when the user had to override the image's entrypoint. Custom servers only get
+// the arguments and mounts that are not specific to kcp's own implementation.
+func isCustomServer(vw *deployv1alpha1.CompiledVirtualWorkspace) bool {
+	return len(vw.Spec.VirtualWorkspace.Command) > 0
+}
+
 // getEffectiveCacheRef returns the cache server reference to use for this virtual workspace.
 // It inherits from the target (shard or rootShard). If the target is a shard with no cache config,
-// the rootShard's cache config is used.
+// the rootShard's cache config is used. Custom servers do not talk to the cache server, so they
+// never get a reference.
 func getEffectiveCacheRef(vw *deployv1alpha1.CompiledVirtualWorkspace) string {
+	if isCustomServer(vw) {
+		return ""
+	}
 	if shard := vw.Spec.Shard; shard != nil && shard.Spec.Cache != nil && shard.Spec.Cache.Reference != nil {
 		return shard.Spec.Cache.Reference.Name
 	}
@@ -151,18 +180,22 @@ func DeploymentReconciler(vw *deployv1alpha1.CompiledVirtualWorkspace) reconcili
 			// We use our own, custom client certificate to access our target (shard or root shard),
 			// but mount it to the location expected by the logical-cluster-admin kubeconfig, which we
 			// re-use (it's own by the shard/root shard) as a handy kubeconfig with the correct URL.
-
-			secretMounts = append(secretMounts, utils.SecretMount{
-				VolumeName: fmt.Sprintf("%s-kubeconfig", operatorv1alpha1.LogicalClusterAdminCertificate),
-				SecretName: kubeconfigSecret(vw, operatorv1alpha1.LogicalClusterAdminCertificate),
-				MountPath:  getKubeconfigMountPath(operatorv1alpha1.LogicalClusterAdminCertificate),
-			})
-
-			secretMounts = append(secretMounts, utils.SecretMount{
-				VolumeName: fmt.Sprintf("%s-cert", operatorv1alpha1.ClientCertificate),
-				SecretName: resources.GetCompiledVirtualWorkspaceCertificateName(vw, operatorv1alpha1.ClientCertificate),
-				MountPath:  getCertificateMountPath(operatorv1alpha1.LogicalClusterAdminCertificate),
-			})
+			//
+			// This pair is the privileged fallback credential, so it is kept out of any container
+			// that brought its own kubeconfig: leaving an admin key in a container that was
+			// deliberately given a narrower identity would defeat the point.
+			adminMounts := []utils.SecretMount{
+				{
+					VolumeName: fmt.Sprintf("%s-kubeconfig", operatorv1alpha1.LogicalClusterAdminCertificate),
+					SecretName: kubeconfigSecret(vw, operatorv1alpha1.LogicalClusterAdminCertificate),
+					MountPath:  getKubeconfigMountPath(operatorv1alpha1.LogicalClusterAdminCertificate),
+				},
+				{
+					VolumeName: fmt.Sprintf("%s-cert", operatorv1alpha1.ClientCertificate),
+					SecretName: resources.GetCompiledVirtualWorkspaceCertificateName(vw, operatorv1alpha1.ClientCertificate),
+					MountPath:  getCertificateMountPath(operatorv1alpha1.LogicalClusterAdminCertificate),
+				},
+			}
 
 			// If a cache server is configured (shard-specific or inherited from rootShard), mount its kubeconfig and the
 			// certificates referenced in it.
@@ -186,30 +219,71 @@ func DeploymentReconciler(vw *deployv1alpha1.CompiledVirtualWorkspace) reconcili
 				)
 			}
 
-			volumes := vw.Spec.VirtualWorkspace.ExtraVolumes
-			volumeMounts := vw.Spec.VirtualWorkspace.ExtraVolumeMounts
+			// Volumes exist for every mount, whether or not a given container uses it. Only the
+			// per-container mount lists differ. User-supplied extras are shared by all containers;
+			// both slices are cloned because containerMounts appends to them per container.
+			volumes := slices.Clone(vw.Spec.VirtualWorkspace.ExtraVolumes)
+			sharedMounts := slices.Clone(vw.Spec.VirtualWorkspace.ExtraVolumeMounts)
 
 			for _, sm := range secretMounts {
 				v, vm := sm.Build()
 				volumes = append(volumes, v)
-				volumeMounts = append(volumeMounts, vm)
+				sharedMounts = append(sharedMounts, vm)
+			}
+
+			adminVolumeMounts := []corev1.VolumeMount{}
+			for _, sm := range adminMounts {
+				v, vm := sm.Build()
+				volumes = append(volumes, v)
+				adminVolumeMounts = append(adminVolumeMounts, vm)
+			}
+
+			// containerMounts assembles the mounts for one container: everything shared, plus
+			// either its own kubeconfig or, when it has none, the logical-cluster-admin fallback.
+			containerMounts := func(ref *corev1.LocalObjectReference, volumeName, mountPath string) []corev1.VolumeMount {
+				mounts := slices.Clone(sharedMounts)
+				if ref == nil {
+					return append(mounts, adminVolumeMounts...)
+				}
+
+				volume, mount := utils.SecretMount{
+					VolumeName: volumeName,
+					SecretName: ref.Name,
+					MountPath:  mountPath,
+				}.Build()
+
+				volumes = append(volumes, volume)
+
+				return append(mounts, mount)
 			}
 
 			image, imagePullSecrets, _ := resources.GetImageSettings(vw.Spec.VirtualWorkspace.Image)
 
+			command := []string{DefaultServerCommand}
+			if isCustomServer(vw) {
+				command = vw.Spec.VirtualWorkspace.Command
+			}
+
 			container := corev1.Container{
-				Name:         ServerContainerName,
-				Image:        image,
-				Command:      []string{"/virtual-workspaces"},
-				Args:         args,
-				VolumeMounts: volumeMounts,
-				Resources:    defaultResourceRequirements,
+				Name:    ServerContainerName,
+				Image:   image,
+				Command: command,
+				Args:    args,
+				VolumeMounts: containerMounts(
+					vw.Spec.VirtualWorkspace.KubeconfigSecretRef,
+					"server-kubeconfig",
+					getServerKubeconfigMountPath(),
+				),
+				Resources: defaultResourceRequirements,
 			}
 			container = utils.ApplyResources(container, vw.Spec.VirtualWorkspace.Resources)
 
+			initContainers, initPullSecrets := getInitContainers(vw, image, containerMounts)
+
 			dep.Spec.Template.Spec.Containers = []corev1.Container{container}
+			dep.Spec.Template.Spec.InitContainers = initContainers
 			dep.Spec.Template.Spec.Volumes = volumes
-			dep.Spec.Template.Spec.ImagePullSecrets = imagePullSecrets
+			dep.Spec.Template.Spec.ImagePullSecrets = append(imagePullSecrets, initPullSecrets...)
 
 			if vw.Spec.VirtualWorkspace.Replicas != nil {
 				dep.Spec.Replicas = vw.Spec.VirtualWorkspace.Replicas
@@ -242,6 +316,62 @@ func DeploymentReconciler(vw *deployv1alpha1.CompiledVirtualWorkspace) reconcili
 	}
 }
 
+// getInitContainers builds the init containers for a virtual workspace. They inherit the shared
+// volume mounts, so bootstrapping binaries reach the same certificates without the user having to
+// know the operator's mount paths, and each is given its own kubeconfig at a fixed path -- volume
+// mounts are per-container, so one path serves them all. Image pull secrets referenced by init
+// containers that bring their own image are returned to be added to the pod.
+func getInitContainers(
+	vw *deployv1alpha1.CompiledVirtualWorkspace,
+	serverImage string,
+	containerMounts func(ref *corev1.LocalObjectReference, volumeName, mountPath string) []corev1.VolumeMount,
+) ([]corev1.Container, []corev1.LocalObjectReference) {
+	specs := vw.Spec.VirtualWorkspace.InitContainers
+	if len(specs) == 0 {
+		return nil, nil
+	}
+
+	containers := make([]corev1.Container, 0, len(specs))
+	var pullSecrets []corev1.LocalObjectReference
+
+	for _, spec := range specs {
+		image := serverImage
+		if spec.Image != nil {
+			var secrets []corev1.LocalObjectReference
+			image, secrets, _ = resources.GetImageSettings(spec.Image)
+			pullSecrets = append(pullSecrets, secrets...)
+		}
+
+		container := corev1.Container{
+			Name:    spec.Name,
+			Image:   image,
+			Command: spec.Command,
+			Args:    spec.Args,
+			VolumeMounts: containerMounts(
+				spec.KubeconfigSecretRef,
+				fmt.Sprintf("init-%s-kubeconfig", spec.Name),
+				getInitKubeconfigMountPath(),
+			),
+			Resources: defaultResourceRequirements,
+		}
+
+		containers = append(containers, utils.ApplyResources(container, spec.Resources))
+	}
+
+	return containers, pullSecrets
+}
+
+// serverKubeconfigMountPath returns the directory holding the kubeconfig the server container
+// authenticates with: the user-provided one if there is any, otherwise the logical-cluster-admin
+// kubeconfig borrowed from the target.
+func serverKubeconfigMountPath(vw *deployv1alpha1.CompiledVirtualWorkspace) string {
+	if vw.Spec.VirtualWorkspace.KubeconfigSecretRef != nil {
+		return getServerKubeconfigMountPath()
+	}
+
+	return getKubeconfigMountPath(operatorv1alpha1.LogicalClusterAdminCertificate)
+}
+
 func getArgs(vw *deployv1alpha1.CompiledVirtualWorkspace) []string {
 	// Configure the cache kubeconfig to point either to an explicitly configured cache (maybe on the
 	// shard, maybe on the root shard), or the root shard itself (in case no external cache is configured).
@@ -268,17 +398,21 @@ func getArgs(vw *deployv1alpha1.CompiledVirtualWorkspace) []string {
 		"--requestheader-extra-headers-prefix=X-Remote-Extra-",
 
 		// kubeconfig to connect to this VW's target
-		fmt.Sprintf("--kubeconfig=%s/kubeconfig", getKubeconfigMountPath(operatorv1alpha1.LogicalClusterAdminCertificate)),
+		fmt.Sprintf("--kubeconfig=%s/kubeconfig", serverKubeconfigMountPath(vw)),
+	}
 
+	// The remaining flags only exist on kcp's own virtual-workspace server; a custom server would
+	// reject them and refuse to start. Those servers configure themselves via ExtraArgs.
+	if !isCustomServer(vw) {
 		// This flag was deprecated in #3849 (kcp 0.31+), but was required in all earlier versions.
 		// Since it was never actually used by kcp, the easiest way to handle this is to just provide
 		// a dummy URL for now until the kcp-operator stops supporting older kcp versions.
-		"--shard-external-url=https://127.0.0.1:6443",
-	}
+		args = append(args, "--shard-external-url=https://127.0.0.1:6443")
 
-	// If a cache server is configured, add the --cache-kubeconfig flag
-	if cacheKubeconfigMount != "" {
-		args = append(args, fmt.Sprintf("--cache-kubeconfig=%s/kubeconfig", cacheKubeconfigMount))
+		// If a cache server is configured, add the --cache-kubeconfig flag
+		if cacheKubeconfigMount != "" {
+			args = append(args, fmt.Sprintf("--cache-kubeconfig=%s/kubeconfig", cacheKubeconfigMount))
+		}
 	}
 
 	args = append(args, utils.GetLoggingArgs(vw.Spec.VirtualWorkspace.Logging)...)
