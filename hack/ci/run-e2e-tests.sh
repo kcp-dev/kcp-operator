@@ -154,6 +154,27 @@ if [[ -n "$WORKLOAD_CLUSTER_NAME" ]]; then
   kind load image-archive "$archive" --name "$WORKLOAD_CLUSTER_NAME"
 fi
 
+# The mock virtual workspace stands in for a server that is not kcp's own, so the e2e tests can
+# cover VirtualWorkspace.spec.command, init containers and per-container kubeconfigs. It is built
+# here rather than in hack/ci/build-image.sh so that it never enters the release pipeline, and it is
+# single-architecture because it only ever runs on the local kind node.
+export MOCK_VW_IMG="ghcr.io/kcp-dev/mock-virtualworkspace:$IMAGE_TAG"
+mockArchive=mock-virtualworkspace.tar
+
+echo "Building mock virtual workspace image $MOCK_VW_IMG..."
+buildah build-using-dockerfile \
+  --file hack/ci/testdata/mock-vw/Dockerfile \
+  --tag "$MOCK_VW_IMG" \
+  --format=docker \
+  .
+
+echo "Loading mock virtual workspace image into kind..."
+buildah push "$MOCK_VW_IMG" "oci-archive:$mockArchive:$MOCK_VW_IMG"
+kind load image-archive "$mockArchive" --name "$CONFIG_CLUSTER_NAME"
+if [[ -n "$WORKLOAD_CLUSTER_NAME" ]]; then
+  kind load image-archive "$mockArchive" --name "$WORKLOAD_CLUSTER_NAME"
+fi
+
 if [[ "$E2E_TOPOLOGY" == config-workload ]]; then
   # deploy the config cluster operator
   echo "Deploying config operator..."

@@ -1,11 +1,13 @@
 # Builds the mock virtual workspace server used by the e2e tests to stand in for a virtual
 # workspace that is not kcp's own. See test/mock-virtualworkspace for what it does.
 #
+# Deliberately single-architecture and free of BuildKit-only features, because it is built both
+# with `docker build` locally and with `buildah build-using-dockerfile` in CI, and only ever has to
+# run on the local kind node.
+#
 # Build context is the repository root:
 #   docker build --file hack/ci/testdata/mock-vw/Dockerfile .
-FROM --platform=${BUILDPLATFORM} docker.io/golang:1.26.4 AS builder
-ARG TARGETOS
-ARG TARGETARCH
+FROM docker.io/golang:1.26.4 AS builder
 
 WORKDIR /workspace
 COPY go.mod go.mod
@@ -18,8 +20,7 @@ COPY sdk/ sdk/
 COPY internal/ internal/
 COPY test/ test/
 
-RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} \
-    go build -a -o mock-virtualworkspace ./test/mock-virtualworkspace/
+RUN CGO_ENABLED=0 GOOS=linux go build -o mock-virtualworkspace ./test/mock-virtualworkspace/
 
 FROM gcr.io/distroless/static:nonroot
 LABEL org.opencontainers.image.source=https://github.com/kcp-dev/kcp-operator

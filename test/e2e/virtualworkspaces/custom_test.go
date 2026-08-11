@@ -185,7 +185,7 @@ func TestCustomVirtualWorkspace(t *testing.T) {
 	// The pod only becomes ready once the init container exited 0, which means bootstrapping
 	// succeeded with the credentials it was given, and once the server survived flag parsing.
 	t.Log("Waiting for the mock virtual workspace to become ready...")
-	waitForVirtualWorkspacePods(t, ctx, workloadClient, vw.Namespace, vw.Name)
+	waitForMockPod(t, ctx, workloadClient, vw.Namespace, vw.Name)
 
 	assertDeploymentShape(t, ctx, workloadClient, &vw)
 
@@ -222,6 +222,76 @@ func TestCustomVirtualWorkspace(t *testing.T) {
 	}
 
 	t.Log("Custom virtual workspace served with a scoped identity, bootstrapped by an admin init container.")
+}
+
+// waitForMockPod waits for the virtual workspace pod to become ready, reporting what each
+// container was actually doing if it does not.
+//
+// The shared helper only says that the wait timed out, which for this test is the least useful
+// thing to know: the pod not starting is exactly how a missing mock image, a rejected command line
+// argument or a failed bootstrap all present themselves, and they are told apart by the container
+// states.
+func waitForMockPod(t *testing.T, ctx context.Context, workloadClient ctrlruntimeclient.Client, namespace, name string) {
+	t.Helper()
+
+	listOpts := []ctrlruntimeclient.ListOption{
+		ctrlruntimeclient.InNamespace(namespace),
+		ctrlruntimeclient.MatchingLabels{
+			"app.kubernetes.io/component": "virtual-workspace",
+			"app.kubernetes.io/instance":  name,
+		},
+	}
+
+	var pods corev1.PodList
+
+	err := wait.PollUntilContextTimeout(ctx, time.Second, 5*time.Minute, false, func(ctx context.Context) (bool, error) {
+		pods = corev1.PodList{}
+		if err := workloadClient.List(ctx, &pods, listOpts...); err != nil {
+			return false, err
+		}
+
+		if len(pods.Items) == 0 {
+			return false, nil
+		}
+
+		for _, pod := range pods.Items {
+			ready := false
+			for _, cond := range pod.Status.Conditions {
+				if cond.Type == corev1.PodReady {
+					ready = cond.Status == corev1.ConditionTrue
+				}
+			}
+			if !ready {
+				return false, nil
+			}
+		}
+
+		return true, nil
+	})
+	if err == nil {
+		t.Log("Pods are ready.")
+
+		return
+	}
+
+	for _, pod := range pods.Items {
+		t.Logf("Pod %s is %s.", pod.Name, pod.Status.Phase)
+
+		statuses := append(append([]corev1.ContainerStatus{}, pod.Status.InitContainerStatuses...), pod.Status.ContainerStatuses...)
+		for _, status := range statuses {
+			switch {
+			case status.State.Waiting != nil:
+				t.Logf("  %s: waiting (%s) %s", status.Name, status.State.Waiting.Reason, status.State.Waiting.Message)
+			case status.State.Terminated != nil:
+				t.Logf("  %s: terminated with exit code %d (%s) %s",
+					status.Name, status.State.Terminated.ExitCode, status.State.Terminated.Reason, status.State.Terminated.Message)
+			case status.State.Running != nil:
+				t.Logf("  %s: running, ready=%t", status.Name, status.Ready)
+			}
+		}
+	}
+
+	t.Fatalf("The mock virtual workspace never became ready: %v", err)
 }
 
 // assertDeploymentShape checks the parts of the rendered Deployment that the mock cannot observe
