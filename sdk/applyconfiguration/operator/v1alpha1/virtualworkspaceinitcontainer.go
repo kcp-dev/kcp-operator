@@ -31,6 +31,8 @@ type VirtualWorkspaceInitContainerApplyConfiguration struct {
 	Args                []string                     `json:"args,omitempty"`
 	KubeconfigSecretRef *v1.LocalObjectReference     `json:"kubeconfigSecretRef,omitempty"`
 	Resources           *v1.ResourceRequirements     `json:"resources,omitempty"`
+	Volumes             []v1.Volume                  `json:"volumes,omitempty"`
+	VolumeMounts        []v1.VolumeMount             `json:"volumeMounts,omitempty"`
 }
 
 // VirtualWorkspaceInitContainerApplyConfiguration constructs a declarative configuration of the VirtualWorkspaceInitContainer type for use with
@@ -88,5 +90,25 @@ func (b *VirtualWorkspaceInitContainerApplyConfiguration) WithKubeconfigSecretRe
 // If called multiple times, the Resources field is set to the value of the last call.
 func (b *VirtualWorkspaceInitContainerApplyConfiguration) WithResources(value v1.ResourceRequirements) *VirtualWorkspaceInitContainerApplyConfiguration {
 	b.Resources = &value
+	return b
+}
+
+// WithVolumes adds the given value to the Volumes field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the Volumes field.
+func (b *VirtualWorkspaceInitContainerApplyConfiguration) WithVolumes(values ...v1.Volume) *VirtualWorkspaceInitContainerApplyConfiguration {
+	for i := range values {
+		b.Volumes = append(b.Volumes, values[i])
+	}
+	return b
+}
+
+// WithVolumeMounts adds the given value to the VolumeMounts field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the VolumeMounts field.
+func (b *VirtualWorkspaceInitContainerApplyConfiguration) WithVolumeMounts(values ...v1.VolumeMount) *VirtualWorkspaceInitContainerApplyConfiguration {
+	for i := range values {
+		b.VolumeMounts = append(b.VolumeMounts, values[i])
+	}
 	return b
 }

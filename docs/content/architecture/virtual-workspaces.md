@@ -47,8 +47,8 @@ serving certificate, the client and requestheader CA configuration, the bind add
 Many of these servers also have to bootstrap themselves in kcp before they can serve, typically by
 creating a workspace and installing an `APIExport` in it. `spec.initContainers` runs that first.
 Init containers default to the server's own image, which is the common case for servers shipping
-their bootstrapping binary alongside the server, and they inherit the server container's volume
-mounts so they can reach the same certificates without knowing where the operator mounted them.
+their bootstrapping binary alongside the server, and they inherit the certificates and CAs the
+operator manages so they can reach them without knowing where the operator mounted them.
 Bootstrapping usually needs different credentials than serving, though — see
 [Choosing the credentials](#choosing-the-credentials).
 
@@ -192,6 +192,52 @@ not retarget it again; with the access virtual workspace that means dropping `--
 which would otherwise append a second `/clusters/` segment. A front-proxy-targeted kubeconfig also
 addresses the front-proxy by its **external** hostname, which therefore has to resolve from inside
 the pod — add a `hostAliases` entry via `spec.deploymentTemplate` where it does not.
+
+## Extra volumes
+
+The `VirtualWorkspace` adds to what the operator already mounts, so its fields are called
+`extraVolumes` and `extraVolumeMounts`. An init container is written as a container in its own
+right — `image`, `command`, `args`, `resources` — so there the fields are plainly `volumes` and
+`volumeMounts`.
+
+Volumes are pod-scoped wherever they are declared, so any container can mount any of them; mounts
+are not, and they are deliberately never shared. The server container gets
+`spec.extraVolumeMounts`, an init container gets its own `volumeMounts`, and neither sees the
+other's. Only the certificates and kubeconfigs the operator manages are mounted everywhere.
+
+That split is what makes a handoff possible — the init container writes somewhere the server later
+reads, without the server holding a mount it has no business having:
+
+```yaml
+spec:
+  # ...
+
+  extraVolumes:                 # declared once, mounted by both
+    - name: bootstrap-state
+      emptyDir: {}
+
+  extraVolumeMounts:            # the server reads it
+    - name: bootstrap-state
+      mountPath: /var/lib/bootstrap
+      readOnly: true
+
+  initContainers:
+    - name: init
+      volumes:                  # only this container needs a cache
+        - name: build-cache
+          emptyDir: {}
+      volumeMounts:
+        - name: bootstrap-state # the init container writes it
+          mountPath: /var/lib/bootstrap
+        - name: build-cache
+          mountPath: /cache
+```
+
+Where a volume is declared makes no difference to the Pod, only to where it reads best: put it on
+the `VirtualWorkspace` when more than one container mounts it, and on the init container when only
+that container does. A name declared in several places is emitted once — the first declaration
+wins, in the order `VirtualWorkspace`, then init containers — since a Pod listing the same volume
+name twice is rejected.
 
 ## Routing traffic
 

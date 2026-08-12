@@ -140,8 +140,9 @@ type VirtualWorkspaceSpec struct {
 	ExtraVolumes []corev1.Volume `json:"extraVolumes,omitempty"`
 
 	// Optional: ExtraVolumeMounts defines additional volume mounts that should be added to the
-	// virtual workspace container. Each entry's `name` must match the `name` of a volume defined in
-	// ExtraVolumes (or one of the volumes the operator manages).
+	// virtual workspace server container. Each entry's `name` must match the `name` of a volume
+	// defined in ExtraVolumes (or one of the volumes the operator manages). Init containers do not
+	// inherit these; they carry their own VolumeMounts.
 	//
 	// +optional
 	// +listType=map
@@ -190,6 +191,27 @@ type VirtualWorkspaceInitContainer struct {
 	// Optional: Resources overrides the resource requests and limits, which default to the same
 	// values the server container uses.
 	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
+
+	// Optional: Volumes are added to the virtual workspace Pod for this init container's benefit.
+	// Volumes are pod-scoped, so declaring one here makes it mountable by every container, but it
+	// is only mounted into this init container. If the same volume name is declared more than once
+	// across the VirtualWorkspace and its init containers, the first declaration wins.
+	//
+	// +optional
+	// +listType=map
+	// +listMapKey=name
+	Volumes []corev1.Volume `json:"volumes,omitempty"`
+
+	// Optional: VolumeMounts are mounted into this init container alone; they are not applied to
+	// the server container or to any other init container. Each mount must reference a volume
+	// defined in this init container's Volumes, in the VirtualWorkspace's ExtraVolumes, or one of
+	// the volumes the operator manages. The certificates and kubeconfigs the operator mounts into
+	// every container are added on top of these.
+	//
+	// +optional
+	// +listType=map
+	// +listMapKey=name
+	VolumeMounts []corev1.VolumeMount `json:"volumeMounts,omitempty"`
 }
 
 // VirtualWorkspaceTarget configures which shard or root shard a virtual workspace is connected to.

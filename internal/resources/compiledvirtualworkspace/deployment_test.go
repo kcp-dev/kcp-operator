@@ -67,6 +67,24 @@ func mountPaths(container corev1.Container) []string {
 	return paths
 }
 
+func mountNames(container corev1.Container) []string {
+	names := make([]string, 0, len(container.VolumeMounts))
+	for _, mount := range container.VolumeMounts {
+		names = append(names, mount.Name)
+	}
+
+	return names
+}
+
+func volumeNames(dep *appsv1.Deployment) []string {
+	names := make([]string, 0, len(dep.Spec.Template.Spec.Volumes))
+	for _, volume := range dep.Spec.Template.Spec.Volumes {
+		names = append(names, volume.Name)
+	}
+
+	return names
+}
+
 func secretNames(dep *appsv1.Deployment) []string {
 	var names []string
 	for _, volume := range dep.Spec.Template.Spec.Volumes {
@@ -350,5 +368,105 @@ func TestDeploymentInitContainers(t *testing.T) {
 
 		assert.Equal(t, "registry.example.com/bootstrapper:v1", dep.Spec.Template.Spec.InitContainers[0].Image)
 		assert.Contains(t, dep.Spec.Template.Spec.ImagePullSecrets, corev1.LocalObjectReference{Name: "pull-secret"})
+	})
+}
+
+func TestDeploymentExtraVolumes(t *testing.T) {
+	emptyDir := func(name string) corev1.Volume {
+		return corev1.Volume{
+			Name:         name,
+			VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}},
+		}
+	}
+
+	t.Run("the server's extra mounts are not inherited by init containers", func(t *testing.T) {
+		vw := newCompiledVirtualWorkspace(operatorv1alpha1.VirtualWorkspaceSpec{
+			ExtraVolumes:      []corev1.Volume{emptyDir("server-scratch")},
+			ExtraVolumeMounts: []corev1.VolumeMount{{Name: "server-scratch", MountPath: "/scratch"}},
+			InitContainers: []operatorv1alpha1.VirtualWorkspaceInitContainer{{
+				Name: "init",
+			}},
+		})
+
+		dep := reconcileDeployment(t, vw)
+		require.Len(t, dep.Spec.Template.Spec.InitContainers, 1)
+
+		assert.Contains(t, mountNames(dep.Spec.Template.Spec.Containers[0]), "server-scratch")
+		assert.NotContains(t, mountNames(dep.Spec.Template.Spec.InitContainers[0]), "server-scratch")
+
+		// The volume is still pod-scoped and therefore declared regardless.
+		assert.Contains(t, volumeNames(dep), "server-scratch")
+	})
+
+	t.Run("an init container's extra volumes and mounts stay with that container", func(t *testing.T) {
+		vw := newCompiledVirtualWorkspace(operatorv1alpha1.VirtualWorkspaceSpec{
+			InitContainers: []operatorv1alpha1.VirtualWorkspaceInitContainer{
+				{
+					Name:         "first",
+					Volumes:      []corev1.Volume{emptyDir("first-scratch")},
+					VolumeMounts: []corev1.VolumeMount{{Name: "first-scratch", MountPath: "/first"}},
+				},
+				{
+					Name: "second",
+				},
+			},
+		})
+
+		dep := reconcileDeployment(t, vw)
+		require.Len(t, dep.Spec.Template.Spec.InitContainers, 2)
+
+		first, second := dep.Spec.Template.Spec.InitContainers[0], dep.Spec.Template.Spec.InitContainers[1]
+
+		assert.Contains(t, volumeNames(dep), "first-scratch")
+		assert.Contains(t, mountNames(first), "first-scratch")
+		assert.NotContains(t, mountNames(second), "first-scratch")
+		assert.NotContains(t, mountNames(dep.Spec.Template.Spec.Containers[0]), "first-scratch")
+	})
+
+	t.Run("init containers still inherit the operator-managed mounts", func(t *testing.T) {
+		vw := newCompiledVirtualWorkspace(operatorv1alpha1.VirtualWorkspaceSpec{
+			ExtraVolumeMounts: []corev1.VolumeMount{{Name: "server-scratch", MountPath: "/scratch"}},
+			ExtraVolumes:      []corev1.Volume{emptyDir("server-scratch")},
+			InitContainers: []operatorv1alpha1.VirtualWorkspaceInitContainer{{
+				Name:         "init",
+				Volumes:      []corev1.Volume{emptyDir("init-scratch")},
+				VolumeMounts: []corev1.VolumeMount{{Name: "init-scratch", MountPath: "/init"}},
+			}},
+		})
+
+		dep := reconcileDeployment(t, vw)
+		init := dep.Spec.Template.Spec.InitContainers[0]
+
+		// The certificates the operator manages reach every container, extras or not.
+		assert.Contains(t, mountPaths(init), "/etc/kcp/tls/ca/root")
+		assert.Contains(t, mountPaths(init), "/etc/kcp/tls/server")
+	})
+
+	t.Run("a volume name declared more than once is emitted once", func(t *testing.T) {
+		vw := newCompiledVirtualWorkspace(operatorv1alpha1.VirtualWorkspaceSpec{
+			ExtraVolumes: []corev1.Volume{emptyDir("shared")},
+			InitContainers: []operatorv1alpha1.VirtualWorkspaceInitContainer{
+				{
+					Name:         "first",
+					Volumes:      []corev1.Volume{emptyDir("shared")},
+					VolumeMounts: []corev1.VolumeMount{{Name: "shared", MountPath: "/shared"}},
+				},
+				{
+					Name:         "second",
+					Volumes:      []corev1.Volume{emptyDir("shared")},
+					VolumeMounts: []corev1.VolumeMount{{Name: "shared", MountPath: "/shared"}},
+				},
+			},
+		})
+
+		dep := reconcileDeployment(t, vw)
+
+		var count int
+		for _, name := range volumeNames(dep) {
+			if name == "shared" {
+				count++
+			}
+		}
+		assert.Equal(t, 1, count, "duplicate volume names would make the Pod invalid")
 	})
 }

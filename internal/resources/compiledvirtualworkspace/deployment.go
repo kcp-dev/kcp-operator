@@ -219,11 +219,14 @@ func DeploymentReconciler(vw *deployv1alpha1.CompiledVirtualWorkspace) reconcili
 				)
 			}
 
-			// Volumes exist for every mount, whether or not a given container uses it. Only the
-			// per-container mount lists differ. User-supplied extras are shared by all containers;
-			// both slices are cloned because containerMounts appends to them per container.
+			// Volumes are pod-scoped and exist for every mount, whether or not a given container
+			// uses it; only the per-container mount lists differ. sharedMounts holds just the
+			// operator-managed certificates and kubeconfigs, which every container gets so that
+			// bootstrapping binaries reach them without knowing the operator's mount paths.
+			// User-supplied extra mounts are deliberately not shared -- the server container gets
+			// the VirtualWorkspace's, each init container gets its own.
 			volumes := slices.Clone(vw.Spec.VirtualWorkspace.ExtraVolumes)
-			sharedMounts := slices.Clone(vw.Spec.VirtualWorkspace.ExtraVolumeMounts)
+			sharedMounts := []corev1.VolumeMount{}
 
 			for _, sm := range secretMounts {
 				v, vm := sm.Build()
@@ -238,23 +241,25 @@ func DeploymentReconciler(vw *deployv1alpha1.CompiledVirtualWorkspace) reconcili
 				adminVolumeMounts = append(adminVolumeMounts, vm)
 			}
 
-			// containerMounts assembles the mounts for one container: everything shared, plus
-			// either its own kubeconfig or, when it has none, the logical-cluster-admin fallback.
-			containerMounts := func(ref *corev1.LocalObjectReference, volumeName, mountPath string) []corev1.VolumeMount {
+			// containerMounts assembles the mounts for one container: everything shared, then
+			// either its own kubeconfig or, when it has none, the logical-cluster-admin fallback,
+			// and finally that container's own extra mounts.
+			containerMounts := func(ref *corev1.LocalObjectReference, volumeName, mountPath string, extra []corev1.VolumeMount) []corev1.VolumeMount {
 				mounts := slices.Clone(sharedMounts)
 				if ref == nil {
-					return append(mounts, adminVolumeMounts...)
+					mounts = append(mounts, adminVolumeMounts...)
+				} else {
+					volume, mount := utils.SecretMount{
+						VolumeName: volumeName,
+						SecretName: ref.Name,
+						MountPath:  mountPath,
+					}.Build()
+
+					volumes = append(volumes, volume)
+					mounts = append(mounts, mount)
 				}
 
-				volume, mount := utils.SecretMount{
-					VolumeName: volumeName,
-					SecretName: ref.Name,
-					MountPath:  mountPath,
-				}.Build()
-
-				volumes = append(volumes, volume)
-
-				return append(mounts, mount)
+				return append(mounts, extra...)
 			}
 
 			image, imagePullSecrets, _ := resources.GetImageSettings(vw.Spec.VirtualWorkspace.Image)
@@ -273,16 +278,17 @@ func DeploymentReconciler(vw *deployv1alpha1.CompiledVirtualWorkspace) reconcili
 					vw.Spec.VirtualWorkspace.KubeconfigSecretRef,
 					"server-kubeconfig",
 					getServerKubeconfigMountPath(),
+					vw.Spec.VirtualWorkspace.ExtraVolumeMounts,
 				),
 				Resources: defaultResourceRequirements,
 			}
 			container = utils.ApplyResources(container, vw.Spec.VirtualWorkspace.Resources)
 
-			initContainers, initPullSecrets := getInitContainers(vw, image, containerMounts)
+			initContainers, initVolumes, initPullSecrets := getInitContainers(vw, image, containerMounts)
 
 			dep.Spec.Template.Spec.Containers = []corev1.Container{container}
 			dep.Spec.Template.Spec.InitContainers = initContainers
-			dep.Spec.Template.Spec.Volumes = volumes
+			dep.Spec.Template.Spec.Volumes = dedupeVolumes(append(volumes, initVolumes...))
 			dep.Spec.Template.Spec.ImagePullSecrets = append(imagePullSecrets, initPullSecrets...)
 
 			if vw.Spec.VirtualWorkspace.Replicas != nil {
@@ -324,14 +330,15 @@ func DeploymentReconciler(vw *deployv1alpha1.CompiledVirtualWorkspace) reconcili
 func getInitContainers(
 	vw *deployv1alpha1.CompiledVirtualWorkspace,
 	serverImage string,
-	containerMounts func(ref *corev1.LocalObjectReference, volumeName, mountPath string) []corev1.VolumeMount,
-) ([]corev1.Container, []corev1.LocalObjectReference) {
+	containerMounts func(ref *corev1.LocalObjectReference, volumeName, mountPath string, extra []corev1.VolumeMount) []corev1.VolumeMount,
+) ([]corev1.Container, []corev1.Volume, []corev1.LocalObjectReference) {
 	specs := vw.Spec.VirtualWorkspace.InitContainers
 	if len(specs) == 0 {
-		return nil, nil
+		return nil, nil, nil
 	}
 
 	containers := make([]corev1.Container, 0, len(specs))
+	var volumes []corev1.Volume
 	var pullSecrets []corev1.LocalObjectReference
 
 	for _, spec := range specs {
@@ -342,6 +349,10 @@ func getInitContainers(
 			pullSecrets = append(pullSecrets, secrets...)
 		}
 
+		// Volumes are pod-scoped, so an init container's volumes join the pod's list, but only
+		// this container mounts them.
+		volumes = append(volumes, spec.Volumes...)
+
 		container := corev1.Container{
 			Name:    spec.Name,
 			Image:   image,
@@ -351,6 +362,7 @@ func getInitContainers(
 				spec.KubeconfigSecretRef,
 				fmt.Sprintf("init-%s-kubeconfig", spec.Name),
 				getInitKubeconfigMountPath(),
+				spec.VolumeMounts,
 			),
 			Resources: defaultResourceRequirements,
 		}
@@ -358,7 +370,27 @@ func getInitContainers(
 		containers = append(containers, utils.ApplyResources(container, spec.Resources))
 	}
 
-	return containers, pullSecrets
+	return containers, volumes, pullSecrets
+}
+
+// dedupeVolumes drops volumes whose name was already seen, keeping the first declaration. Volume
+// names are pod-scoped while extraVolumes can be declared on the VirtualWorkspace and on every
+// init container, so the same name legitimately shows up more than once when several containers
+// want the same scratch volume. Kubernetes rejects a Pod that lists a volume name twice.
+func dedupeVolumes(volumes []corev1.Volume) []corev1.Volume {
+	seen := make(map[string]struct{}, len(volumes))
+	deduped := make([]corev1.Volume, 0, len(volumes))
+
+	for _, volume := range volumes {
+		if _, ok := seen[volume.Name]; ok {
+			continue
+		}
+
+		seen[volume.Name] = struct{}{}
+		deduped = append(deduped, volume)
+	}
+
+	return deduped
 }
 
 // serverKubeconfigMountPath returns the directory holding the kubeconfig the server container
