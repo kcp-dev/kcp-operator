@@ -32,8 +32,9 @@ spec:
     repository: ghcr.io/kcp-dev/contrib-access-virtual-workspace
     tag: latest
 
-  # The image's entrypoint. Setting this marks the server as a custom one, which also drops
-  # `--shard-external-url` and `--cache-kubeconfig` from the generated arguments.
+  # The image's entrypoint, and nothing more. The operator generates only the arguments every
+  # aggregated apiserver accepts; flags specific to one implementation -- kcp's own included --
+  # go in `extraArgs` below, since only you know which ones this binary takes.
   command:
     - /access-vw
 

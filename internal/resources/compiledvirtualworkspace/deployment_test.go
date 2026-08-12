@@ -107,16 +107,13 @@ func hasArgPrefix(args []string, prefix string) bool {
 }
 
 func TestDeploymentServerCommand(t *testing.T) {
-	t.Run("kcp's own server keeps the default entrypoint and its kcp-specific args", func(t *testing.T) {
+	t.Run("kcp's own server is the default entrypoint", func(t *testing.T) {
 		dep := reconcileDeployment(t, newCompiledVirtualWorkspace(operatorv1alpha1.VirtualWorkspaceSpec{}))
 
-		container := dep.Spec.Template.Spec.Containers[0]
-		assert.Equal(t, []string{DefaultServerCommand}, container.Command)
-		assert.True(t, hasArgPrefix(container.Args, "--shard-external-url="))
-		assert.True(t, hasArgPrefix(container.Args, "--cache-kubeconfig="))
+		assert.Equal(t, []string{DefaultServerCommand}, dep.Spec.Template.Spec.Containers[0].Command)
 	})
 
-	t.Run("a custom command replaces the entrypoint and drops the kcp-specific args", func(t *testing.T) {
+	t.Run("a custom command replaces the entrypoint but changes nothing else", func(t *testing.T) {
 		dep := reconcileDeployment(t, newCompiledVirtualWorkspace(operatorv1alpha1.VirtualWorkspaceSpec{
 			Command:   []string{"/access-vw"},
 			ExtraArgs: []string{"--endpoint-base=https://kcp.example.com/clusters/"},
@@ -125,11 +122,8 @@ func TestDeploymentServerCommand(t *testing.T) {
 		container := dep.Spec.Template.Spec.Containers[0]
 		assert.Equal(t, []string{"/access-vw"}, container.Command)
 
-		// Flags a custom server would reject are gone ...
-		assert.False(t, hasArgPrefix(container.Args, "--shard-external-url="))
-		assert.False(t, hasArgPrefix(container.Args, "--cache-kubeconfig="))
-
-		// ... while everything an aggregated apiserver needs is still passed.
+		// The same arguments are generated whichever server runs; spec.command only picks the
+		// binary.
 		for _, prefix := range []string{
 			"--client-ca-file=",
 			"--tls-cert-file=",
@@ -145,22 +139,39 @@ func TestDeploymentServerCommand(t *testing.T) {
 		}
 	})
 
-	t.Run("a custom server does not get the cache server volumes", func(t *testing.T) {
+	t.Run("implementation-specific flags are left to extraArgs", func(t *testing.T) {
+		// Generated for nobody, including kcp's own server: the operator cannot know which binary
+		// spec.command names, so a flag only some servers accept is the user's to pass.
+		for _, spec := range []operatorv1alpha1.VirtualWorkspaceSpec{
+			{},
+			{Command: []string{"/access-vw"}},
+		} {
+			container := reconcileDeployment(t, newCompiledVirtualWorkspace(spec)).Spec.Template.Spec.Containers[0]
+
+			assert.False(t, hasArgPrefix(container.Args, "--shard-external-url="))
+			assert.False(t, hasArgPrefix(container.Args, "--cache-kubeconfig="))
+		}
+	})
+
+	t.Run("the cache server kubeconfig is still mounted for extraArgs to point at", func(t *testing.T) {
 		dep := reconcileDeployment(t, newCompiledVirtualWorkspace(operatorv1alpha1.VirtualWorkspaceSpec{
 			Command: []string{"/access-vw"},
 		}))
 
-		for _, volume := range dep.Spec.Template.Spec.Volumes {
-			assert.NotContains(t, volume.Name, "cache-server")
-		}
+		// Only the operator knows the Secret's name, so it keeps mounting it at a stable path even
+		// though it no longer generates the flag that names it.
+		assert.Contains(t, volumeNames(dep), "cache-server-kubeconfig")
+		assert.Contains(t, mountPaths(dep.Spec.Template.Spec.Containers[0]), getCacheServerKubeconfigMountPath())
 	})
 }
 
-// TestCustomServerArgumentSurface pins the exact set of flags a custom server is asked to
-// understand. Anything added to the generated arguments has to be a flag every aggregated
-// apiserver accepts, or it belongs behind the isCustomServer check -- a custom server exits on an
-// unknown flag rather than ignoring it, so widening this set silently breaks every non-kcp server.
-func TestCustomServerArgumentSurface(t *testing.T) {
+// TestVirtualWorkspaceArgumentSurface pins the set of flags every virtual workspace server is asked
+// to understand, kcp's own and any plugged in via spec.command alike. A server that uses pflag exits
+// on an unknown flag rather than ignoring it, so anything added here becomes a hard requirement on
+// third-party servers and a breaking change for the ones already deployed. Only flags that every
+// aggregated apiserver accepts belong here; anything implementation-specific is the user's to pass
+// through spec.extraArgs.
+func TestVirtualWorkspaceArgumentSurface(t *testing.T) {
 	allowed := []string{
 		"--client-ca-file",
 		"--tls-private-key-file",
@@ -189,7 +200,7 @@ func TestCustomServerArgumentSurface(t *testing.T) {
 		}
 
 		assert.Contains(t, allowed, name,
-			"%q is generated for custom servers; either it is universally understood and belongs in this list, or it belongs behind isCustomServer()", arg)
+			"%q is generated for every server; adding to this set requires every third-party virtual workspace to accept it", arg)
 	}
 }
 

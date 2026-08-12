@@ -316,12 +316,13 @@ func assertDeploymentShape(t *testing.T, ctx context.Context, workloadClient ctr
 		t.Errorf("Server command is %v, expected the image's own entrypoint.", got)
 	}
 
-	// The flags only kcp's own server understands must not be generated for this image. The mock
-	// would have refused to start, but assert it directly so the failure names the cause.
+	// Flags that only some server implementations understand are never generated -- they belong in
+	// spec.extraArgs, where the user names the ones their binary actually takes. The mock would
+	// have refused to start, but assert it directly so the failure names the cause.
 	for _, arg := range server.Args {
 		for _, forbidden := range []string{"--shard-external-url", "--cache-kubeconfig"} {
 			if strings.HasPrefix(arg, forbidden) {
-				t.Errorf("Server was passed the kcp-only flag %q.", arg)
+				t.Errorf("Server was passed the implementation-specific flag %q.", arg)
 			}
 		}
 	}

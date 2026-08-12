@@ -36,13 +36,40 @@ Servers that are not kcp's own — the ones under
 [kcp-dev](https://github.com/orgs/kcp-dev/repositories?q=virtual-workspace), or your own — need two
 things beyond a different image.
 
-Their binary is not at `/virtual-workspaces`, so `spec.command` has to name it. Setting
-`spec.command` also tells the operator that this is not kcp's server, and it stops generating the
-arguments that only kcp's server accepts (`--shard-external-url` and `--cache-kubeconfig`, along
-with the cache server's kubeconfig mount). That matters because an apiserver rejects flags it does
-not know and exits before it ever serves. Everything an aggregated apiserver does understand — the
-serving certificate, the client and requestheader CA configuration, the bind address and port, and
-`--kubeconfig` — is still passed, and `spec.extraArgs` covers the rest.
+Their binary is not at `/virtual-workspaces`, so `spec.command` has to name it. That is all
+`spec.command` does — it picks the binary and nothing else.
+
+The operator generates only the arguments every aggregated apiserver accepts, so a server plugged
+in here starts without having to know anything about kcp:
+
+```
+--tls-cert-file         --requestheader-client-ca-file        --client-ca-file
+--tls-private-key-file  --requestheader-allowed-names         --kubeconfig
+--bind-address          --requestheader-username-headers      -v
+--secure-port           --requestheader-group-headers
+                        --requestheader-extra-headers-prefix
+```
+
+Anything beyond that is `spec.extraArgs`, including flags that kcp's own server takes. The operator
+does not pass them, because it cannot know which binary `spec.command` names or which flags that
+binary understands — and an apiserver built on `pflag` exits on a flag it does not know, before it
+ever serves.
+
+!!! note
+    This applies to kcp's own virtual-workspace server too. It takes `--shard-external-url` on kcp
+    releases before 0.31, where the flag was required, and `--cache-kubeconfig` where a cache
+    server is configured. Both go in `spec.extraArgs`:
+
+    ```yaml
+    spec:
+      extraArgs:
+        - --shard-external-url=https://127.0.0.1:6443    # kcp < 0.31 only; unused, any URL will do
+        - --cache-kubeconfig=/etc/cache-server/kubeconfig/kubeconfig
+    ```
+
+The cache server's kubeconfig, CA and client certificate are still mounted whenever a cache server
+is configured, at the fixed paths above, so `--cache-kubeconfig` has something to point at without
+you having to name the Secret yourself.
 
 Many of these servers also have to bootstrap themselves in kcp before they can serve, typically by
 creating a workspace and installing an `APIExport` in it. `spec.initContainers` runs that first.

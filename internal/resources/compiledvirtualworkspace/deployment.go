@@ -94,21 +94,10 @@ func getCacheServerClientCertMountPath() string {
 	return "/etc/cache-server/tls/client-certificate"
 }
 
-// isCustomServer reports whether this virtual workspace runs a server other than kcp's own, which
-// is the case exactly when the user had to override the image's entrypoint. Custom servers only get
-// the arguments and mounts that are not specific to kcp's own implementation.
-func isCustomServer(vw *deployv1alpha1.CompiledVirtualWorkspace) bool {
-	return len(vw.Spec.VirtualWorkspace.Command) > 0
-}
-
 // getEffectiveCacheRef returns the cache server reference to use for this virtual workspace.
 // It inherits from the target (shard or rootShard). If the target is a shard with no cache config,
-// the rootShard's cache config is used. Custom servers do not talk to the cache server, so they
-// never get a reference.
+// the rootShard's cache config is used.
 func getEffectiveCacheRef(vw *deployv1alpha1.CompiledVirtualWorkspace) string {
-	if isCustomServer(vw) {
-		return ""
-	}
 	if shard := vw.Spec.Shard; shard != nil && shard.Spec.Cache != nil && shard.Spec.Cache.Reference != nil {
 		return shard.Spec.Cache.Reference.Name
 	}
@@ -265,7 +254,7 @@ func DeploymentReconciler(vw *deployv1alpha1.CompiledVirtualWorkspace) reconcili
 			image, imagePullSecrets, _ := resources.GetImageSettings(vw.Spec.VirtualWorkspace.Image)
 
 			command := []string{DefaultServerCommand}
-			if isCustomServer(vw) {
+			if len(vw.Spec.VirtualWorkspace.Command) > 0 {
 				command = vw.Spec.VirtualWorkspace.Command
 			}
 
@@ -405,13 +394,6 @@ func serverKubeconfigMountPath(vw *deployv1alpha1.CompiledVirtualWorkspace) stri
 }
 
 func getArgs(vw *deployv1alpha1.CompiledVirtualWorkspace) []string {
-	// Configure the cache kubeconfig to point either to an explicitly configured cache (maybe on the
-	// shard, maybe on the root shard), or the root shard itself (in case no external cache is configured).
-	var cacheKubeconfigMount string
-	if getEffectiveCacheRef(vw) != "" {
-		cacheKubeconfigMount = getCacheServerKubeconfigMountPath()
-	}
-
 	args := []string{
 		// TLS setup
 		fmt.Sprintf("--client-ca-file=%s/tls.crt", getCAMountPath(operatorv1alpha1.ClientCA)),
@@ -433,19 +415,12 @@ func getArgs(vw *deployv1alpha1.CompiledVirtualWorkspace) []string {
 		fmt.Sprintf("--kubeconfig=%s/kubeconfig", serverKubeconfigMountPath(vw)),
 	}
 
-	// The remaining flags only exist on kcp's own virtual-workspace server; a custom server would
-	// reject them and refuse to start. Those servers configure themselves via ExtraArgs.
-	if !isCustomServer(vw) {
-		// This flag was deprecated in #3849 (kcp 0.31+), but was required in all earlier versions.
-		// Since it was never actually used by kcp, the easiest way to handle this is to just provide
-		// a dummy URL for now until the kcp-operator stops supporting older kcp versions.
-		args = append(args, "--shard-external-url=https://127.0.0.1:6443")
-
-		// If a cache server is configured, add the --cache-kubeconfig flag
-		if cacheKubeconfigMount != "" {
-			args = append(args, fmt.Sprintf("--cache-kubeconfig=%s/kubeconfig", cacheKubeconfigMount))
-		}
-	}
+	// Flags that are specific to one server implementation are deliberately not generated here --
+	// see TestVirtualWorkspaceArgumentSurface. kcp's own server takes `--shard-external-url` on
+	// versions before 0.31 and `--cache-kubeconfig` where a cache server is configured; both belong
+	// in spec.extraArgs, because only the operator's user knows which binary is running and which
+	// flags it understands. The operator still mounts the cache server's kubeconfig, since it alone
+	// knows the Secret's name.
 
 	args = append(args, utils.GetLoggingArgs(vw.Spec.VirtualWorkspace.Logging)...)
 
