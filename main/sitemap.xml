@@ -43,6 +43,12 @@
         <xhtml:link rel="alternate" hreflang="en" href="https://docs.kcp.io/kcp-operator/main/architecture/pki/"/>
     </url>
     <url>
+        <loc>https://docs.kcp.io/kcp-operator/main/architecture/virtual-workspaces/</loc>
+        <lastmod>2026-08-12</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://docs.kcp.io/kcp-operator/main/architecture/virtual-workspaces/"/>
+    </url>
+    <url>
         <loc>https://docs.kcp.io/kcp-operator/main/contributing/</loc>
         <lastmod>2026-08-12</lastmod>
         <changefreq>daily</changefreq>
