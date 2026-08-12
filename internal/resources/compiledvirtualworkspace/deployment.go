@@ -186,8 +186,8 @@ func DeploymentReconciler(vw *deployv1alpha1.CompiledVirtualWorkspace) reconcili
 				)
 			}
 
-			volumes := []corev1.Volume{}
-			volumeMounts := []corev1.VolumeMount{}
+			volumes := vw.Spec.VirtualWorkspace.ExtraVolumes
+			volumeMounts := vw.Spec.VirtualWorkspace.ExtraVolumeMounts
 
 			for _, sm := range secretMounts {
 				v, vm := sm.Build()

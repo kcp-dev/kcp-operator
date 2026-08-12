@@ -36,11 +36,13 @@ import (
 
 func (r *reconciler) deploymentReconciler() reconciling.NamedDeploymentReconcilerFactory {
 	var (
-		name         string
-		imageSpec    *operatorv1alpha1.ImageSpec
-		depResources *corev1.ResourceRequirements
-		template     *operatorv1alpha1.DeploymentTemplate
-		replicas     *int32
+		name              string
+		imageSpec         *operatorv1alpha1.ImageSpec
+		depResources      *corev1.ResourceRequirements
+		template          *operatorv1alpha1.DeploymentTemplate
+		replicas          *int32
+		extraVolumes      []corev1.Volume
+		extraVolumeMounts []corev1.VolumeMount
 	)
 
 	if r.frontProxy != nil {
@@ -49,6 +51,8 @@ func (r *reconciler) deploymentReconciler() reconciling.NamedDeploymentReconcile
 		depResources = r.frontProxy.Spec.FrontProxy.Resources
 		template = r.frontProxy.Spec.FrontProxy.DeploymentTemplate
 		replicas = r.frontProxy.Spec.FrontProxy.Replicas
+		extraVolumes = r.frontProxy.Spec.FrontProxy.ExtraVolumes
+		extraVolumeMounts = r.frontProxy.Spec.FrontProxy.ExtraVolumeMounts
 	} else {
 		name = resources.GetCompiledRootShardProxyDeploymentName(r.rootShard)
 
@@ -57,6 +61,8 @@ func (r *reconciler) deploymentReconciler() reconciling.NamedDeploymentReconcile
 			depResources = proxy.Resources
 			template = proxy.DeploymentTemplate
 			replicas = proxy.Replicas
+			extraVolumes = proxy.ExtraVolumes
+			extraVolumeMounts = proxy.ExtraVolumeMounts
 		}
 	}
 
@@ -127,8 +133,8 @@ func (r *reconciler) deploymentReconciler() reconciling.NamedDeploymentReconcile
 				},
 			}
 
-			volumes := []corev1.Volume{}
-			volumeMounts := []corev1.VolumeMount{}
+			volumes := extraVolumes
+			volumeMounts := extraVolumeMounts
 
 			mountSecret := func(secretName string, mountPath string, readOnly bool) {
 				volumes = append(volumes, corev1.Volume{
@@ -296,6 +302,10 @@ func (r *reconciler) getArgs(version *semver.Version) []string {
 
 	// rootshard proxy mode
 	if r.frontProxy == nil {
+		if proxy := r.rootShardSpec().Proxy; proxy != nil {
+			args = append(args, utils.GetLoggingArgs(proxy.Logging)...)
+			args = append(args, proxy.ExtraArgs...)
+		}
 		return args
 	}
 

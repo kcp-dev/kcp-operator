@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -56,6 +57,25 @@ type CacheServerSpec struct {
 	// Optional: Etcd configures an external etcd connection for this cache server.
 	// If not provided, an embedded etcd is used.
 	Etcd *EtcdConfig `json:"etcd,omitempty"`
+
+	// Optional: ExtraArgs defines additional command line arguments to pass to the cache server container.
+	ExtraArgs []string `json:"extraArgs,omitempty"`
+
+	// Optional: ExtraVolumes defines additional volumes that should be added to the cache server Pod.
+	//
+	// +optional
+	// +listType=map
+	// +listMapKey=name
+	ExtraVolumes []corev1.Volume `json:"extraVolumes,omitempty"`
+
+	// Optional: ExtraVolumeMounts defines additional volume mounts that should be added to the
+	// cache server container. Each entry's `name` must match the `name` of a volume defined in
+	// ExtraVolumes (or one of the volumes the operator manages).
+	//
+	// +optional
+	// +listType=map
+	// +listMapKey=name
+	ExtraVolumeMounts []corev1.VolumeMount `json:"extraVolumeMounts,omitempty"`
 }
 
 // CacheServerStatus defines the observed state of CacheServer

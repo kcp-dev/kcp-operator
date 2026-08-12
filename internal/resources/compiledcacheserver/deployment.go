@@ -198,6 +198,9 @@ func getVolumeMounts(server *deployv1alpha1.CompiledCacheServer) (volumes []core
 		}}
 	}
 
+	volumes = append(volumes, server.Spec.CacheServer.ExtraVolumes...)
+	volumeMounts = append(volumeMounts, server.Spec.CacheServer.ExtraVolumeMounts...)
+
 	return
 }
 
@@ -240,6 +243,7 @@ func getArgs(server *deployv1alpha1.CompiledCacheServer, version *semver.Version
 	}
 
 	args = append(args, utils.GetLoggingArgs(server.Spec.CacheServer.Logging)...)
+	args = append(args, server.Spec.CacheServer.ExtraArgs...)
 
 	return args
 }

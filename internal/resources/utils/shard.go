@@ -157,6 +157,25 @@ func ApplyCommonShardConfig(deployment *appsv1.Deployment, spec *operatorv1alpha
 	deployment = applyEtcdConfiguration(deployment, spec.Etcd)
 	deployment = applyAuditConfiguration(deployment, spec.Audit)
 	deployment = applyAuthorizationConfiguration(deployment, spec.Authorization)
+	deployment = applyExtraVolumes(deployment, spec.ExtraVolumes, spec.ExtraVolumeMounts)
+
+	return deployment
+}
+
+// applyExtraVolumes appends user-configured extra volumes and volume mounts to the
+// shard container, e.g. to mount an EncryptionConfiguration Secret referenced by an
+// `--encryption-provider-config` flag set via ExtraArgs.
+func applyExtraVolumes(deployment *appsv1.Deployment, volumes []corev1.Volume, volumeMounts []corev1.VolumeMount) *appsv1.Deployment {
+	if len(volumes) == 0 && len(volumeMounts) == 0 {
+		return deployment
+	}
+
+	podSpec := deployment.Spec.Template.Spec
+
+	podSpec.Volumes = append(podSpec.Volumes, volumes...)
+	podSpec.Containers[0].VolumeMounts = append(podSpec.Containers[0].VolumeMounts, volumeMounts...)
+
+	deployment.Spec.Template.Spec = podSpec
 
 	return deployment
 }

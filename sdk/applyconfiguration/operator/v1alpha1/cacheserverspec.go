@@ -19,6 +19,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	v1 "k8s.io/api/core/v1"
+
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
@@ -34,6 +36,9 @@ type CacheServerSpecApplyConfiguration struct {
 	ServiceTemplate      *ServiceTemplateApplyConfiguration       `json:"serviceTemplate,omitempty"`
 	DeploymentTemplate   *DeploymentTemplateApplyConfiguration    `json:"deploymentTemplate,omitempty"`
 	Etcd                 *EtcdConfigApplyConfiguration            `json:"etcd,omitempty"`
+	ExtraArgs            []string                                 `json:"extraArgs,omitempty"`
+	ExtraVolumes         []v1.Volume                              `json:"extraVolumes,omitempty"`
+	ExtraVolumeMounts    []v1.VolumeMount                         `json:"extraVolumeMounts,omitempty"`
 }
 
 // CacheServerSpecApplyConfiguration constructs a declarative configuration of the CacheServerSpec type for use with
@@ -111,5 +116,35 @@ func (b *CacheServerSpecApplyConfiguration) WithDeploymentTemplate(value *Deploy
 // If called multiple times, the Etcd field is set to the value of the last call.
 func (b *CacheServerSpecApplyConfiguration) WithEtcd(value *EtcdConfigApplyConfiguration) *CacheServerSpecApplyConfiguration {
 	b.Etcd = value
+	return b
+}
+
+// WithExtraArgs adds the given value to the ExtraArgs field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the ExtraArgs field.
+func (b *CacheServerSpecApplyConfiguration) WithExtraArgs(values ...string) *CacheServerSpecApplyConfiguration {
+	for i := range values {
+		b.ExtraArgs = append(b.ExtraArgs, values[i])
+	}
+	return b
+}
+
+// WithExtraVolumes adds the given value to the ExtraVolumes field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the ExtraVolumes field.
+func (b *CacheServerSpecApplyConfiguration) WithExtraVolumes(values ...v1.Volume) *CacheServerSpecApplyConfiguration {
+	for i := range values {
+		b.ExtraVolumes = append(b.ExtraVolumes, values[i])
+	}
+	return b
+}
+
+// WithExtraVolumeMounts adds the given value to the ExtraVolumeMounts field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the ExtraVolumeMounts field.
+func (b *CacheServerSpecApplyConfiguration) WithExtraVolumeMounts(values ...v1.VolumeMount) *CacheServerSpecApplyConfiguration {
+	for i := range values {
+		b.ExtraVolumeMounts = append(b.ExtraVolumeMounts, values[i])
+	}
 	return b
 }
