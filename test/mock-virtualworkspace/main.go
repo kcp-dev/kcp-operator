@@ -80,7 +80,9 @@ type options struct {
 	requestheaderExtraPrefix  []string
 
 	// Connection to kcp.
-	kubeconfig string
+	kubeconfig       string
+	cacheKubeconfig  string
+	shardExternalURL string
 
 	// Mock-specific, passed through spec.extraArgs / an init container's args.
 	mode           string
@@ -101,6 +103,8 @@ func main() {
 	fs.StringVar(&opts.bindAddress, "bind-address", "0.0.0.0", "")
 	fs.IntVar(&opts.securePort, "secure-port", 6443, "")
 	fs.StringVar(&opts.clientCAFile, "client-ca-file", "", "")
+	fs.StringVar(&opts.cacheKubeconfig, "cache-kubeconfig", "", "")
+	fs.StringVar(&opts.shardExternalURL, "shard-external-url", "", "")
 	fs.StringVar(&opts.requestheaderClientCAFile, "requestheader-client-ca-file", "", "")
 	fs.StringSliceVar(&opts.requestheaderAllowedNames, "requestheader-allowed-names", nil, "")
 	fs.StringSliceVar(&opts.requestheaderUsernames, "requestheader-username-headers", nil, "")
