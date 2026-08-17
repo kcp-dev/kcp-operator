@@ -46,6 +46,7 @@ const cleanupFinalizer = "operator.kcp.io/cleanup-rbac"
 // KubeconfigRBACReconciler reconciles a Kubeconfig object
 type KubeconfigRBACReconciler struct {
 	GetCluster func(ctx context.Context, clusterName multicluster.ClusterName) (cluster.Cluster, error)
+	Address    operatorclient.Addresser
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -141,7 +142,7 @@ func (r *KubeconfigRBACReconciler) reconcile(ctx context.Context, client ctrlrun
 }
 
 func (r *KubeconfigRBACReconciler) reconcileBindings(ctx context.Context, client ctrlruntimeclient.Client, kc *operatorv1alpha1.Kubeconfig) error {
-	targetClient, err := operatorclient.NewInternalKubeconfigClient(ctx, client, kc, kc.GetRBACTargetWorkspace(), nil)
+	targetClient, err := operatorclient.NewInternalKubeconfigClient(ctx, client, r.Address, kc, kc.GetRBACTargetWorkspace(), nil)
 	if err != nil {
 		return fmt.Errorf("failed to create client to kubeconfig target: %w", err)
 	}
@@ -216,7 +217,7 @@ func (r *KubeconfigRBACReconciler) unprovisionCluster(ctx context.Context, clien
 		return nil
 	}
 
-	targetClient, err := operatorclient.NewInternalKubeconfigClient(ctx, client, kc, logicalcluster.NewPath(cluster), nil)
+	targetClient, err := operatorclient.NewInternalKubeconfigClient(ctx, client, r.Address, kc, logicalcluster.NewPath(cluster), nil)
 	if err != nil {
 		return fmt.Errorf("failed to create client to kubeconfig target: %w", err)
 	}

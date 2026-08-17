@@ -31,6 +31,8 @@ import (
 func CompiledCacheServerReconciler(server *operatorv1alpha1.CacheServer, revisions map[string]string) reconciling.NamedCompiledCacheServerReconcilerFactory {
 	return func() (string, reconciling.CompiledCacheServerReconciler) {
 		return server.Name, func(obj *deployv1alpha1.CompiledCacheServer) (*deployv1alpha1.CompiledCacheServer, error) {
+			obj.Labels = maps.Clone(server.Labels)
+			obj.Annotations = maps.Clone(server.Annotations)
 			// Certificate revisions ride along so a renewal changes this object, which is what
 			// tells anything watching it that the Secrets it mounts have moved on.
 			if obj.Annotations == nil {

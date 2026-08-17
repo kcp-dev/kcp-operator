@@ -32,48 +32,31 @@ import (
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
-// NewRootShardClient returns a new client for talking to the kcp root shard service directly.
-func NewRootShardClient(ctx context.Context, c ctrlruntimeclient.Client, rootShard *operatorv1alpha1.RootShard, cluster logicalcluster.Path, scheme *runtime.Scheme) (ctrlruntimeclient.Client, error) {
-	baseUrl := fmt.Sprintf("https://%s.%s.svc.cluster.local:6443", resources.GetRootShardServiceName(rootShard), rootShard.Namespace)
-
-	if !cluster.Empty() {
-		baseUrl += cluster.RequestPath()
-	}
-
-	return newClient(ctx, c, baseUrl, scheme, rootShard)
+// NewRootShardClient returns a new client for talking to the kcp root shard directly.
+func NewRootShardClient(ctx context.Context, c ctrlruntimeclient.Client, addr Addresser, rootShard *operatorv1alpha1.RootShard, cluster logicalcluster.Path, scheme *runtime.Scheme) (ctrlruntimeclient.Client, error) {
+	return newClient(ctx, c, addr.RootShard(rootShard), cluster, scheme, rootShard)
 }
 
 // NewRootShardProxyClient returns a new client that connects to the operator's internal front-proxy.
-func NewRootShardProxyClient(ctx context.Context, c ctrlruntimeclient.Client, rootShard *operatorv1alpha1.RootShard, cluster logicalcluster.Path, scheme *runtime.Scheme) (ctrlruntimeclient.Client, error) {
-	baseUrl := fmt.Sprintf("https://%s.%s.svc.cluster.local:6443", resources.GetRootShardProxyServiceName(rootShard), rootShard.Namespace)
-
-	if !cluster.Empty() {
-		baseUrl += cluster.RequestPath()
-	}
-
-	return newClient(ctx, c, baseUrl, scheme, rootShard)
+func NewRootShardProxyClient(ctx context.Context, c ctrlruntimeclient.Client, addr Addresser, rootShard *operatorv1alpha1.RootShard, cluster logicalcluster.Path, scheme *runtime.Scheme) (ctrlruntimeclient.Client, error) {
+	return newClient(ctx, c, addr.RootShardProxy(rootShard), cluster, scheme, rootShard)
 }
 
-// NewShardClient returns a new client for talking to a kcp shard service directly.
-func NewShardClient(ctx context.Context, c ctrlruntimeclient.Client, shard *operatorv1alpha1.Shard, cluster logicalcluster.Path, scheme *runtime.Scheme) (ctrlruntimeclient.Client, error) {
+// NewShardClient returns a new client for talking to a kcp shard directly.
+func NewShardClient(ctx context.Context, c ctrlruntimeclient.Client, addr Addresser, shard *operatorv1alpha1.Shard, cluster logicalcluster.Path, scheme *runtime.Scheme) (ctrlruntimeclient.Client, error) {
 	rootShard, err := getRootShardForShard(ctx, c, shard)
 	if err != nil {
 		return nil, fmt.Errorf("failed to determine effective RootShard: %w", err)
 	}
 
-	baseUrl := fmt.Sprintf("https://%s.%s.svc.cluster.local:6443", resources.GetShardServiceName(shard), shard.Namespace)
-
-	if !cluster.Empty() {
-		baseUrl += cluster.RequestPath()
-	}
-
-	return newClient(ctx, c, baseUrl, scheme, rootShard)
+	return newClient(ctx, c, addr.Shard(shard), cluster, scheme, rootShard)
 }
 
 func newClient(
 	ctx context.Context,
 	c ctrlruntimeclient.Client,
-	url string,
+	endpoint Endpoint,
+	cluster logicalcluster.Path,
 	scheme *runtime.Scheme,
 	rootShard *operatorv1alpha1.RootShard,
 ) (ctrlruntimeclient.Client, error) {
@@ -81,10 +64,17 @@ func newClient(
 	if err != nil {
 		return nil, fmt.Errorf("failed to determine TLS settings: %w", err)
 	}
+	tlsConfig.ServerName = endpoint.ServerName
+
+	host := endpoint.URL
+	if !cluster.Empty() {
+		host += cluster.RequestPath()
+	}
 
 	cfg := &rest.Config{
-		Host:            url,
+		Host:            host,
 		TLSClientConfig: tlsConfig,
+		Dial:            endpoint.Dial,
 	}
 
 	return ctrlruntimeclient.New(cfg, ctrlruntimeclient.Options{Scheme: scheme})
