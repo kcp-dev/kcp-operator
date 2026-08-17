@@ -28,7 +28,6 @@ import (
 	"os"
 	"slices"
 	"strconv"
-	"strings"
 	"testing"
 	"time"
 
@@ -314,17 +313,6 @@ func assertDeploymentShape(t *testing.T, ctx context.Context, workloadClient ctr
 	server := podSpec.Containers[0]
 	if got := server.Command; len(got) != 1 || got[0] != "/mock-virtualworkspace" {
 		t.Errorf("Server command is %v, expected the image's own entrypoint.", got)
-	}
-
-	// Flags that only some server implementations understand are never generated -- they belong in
-	// spec.extraArgs, where the user names the ones their binary actually takes. The mock would
-	// have refused to start, but assert it directly so the failure names the cause.
-	for _, arg := range server.Args {
-		for _, forbidden := range []string{"--shard-external-url", "--cache-kubeconfig"} {
-			if strings.HasPrefix(arg, forbidden) {
-				t.Errorf("Server was passed the implementation-specific flag %q.", arg)
-			}
-		}
 	}
 
 	// Each container sees its own credential and not the other's, nor the privileged fallback
