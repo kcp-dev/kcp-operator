@@ -139,20 +139,6 @@ func TestDeploymentServerCommand(t *testing.T) {
 		}
 	})
 
-	t.Run("implementation-specific flags are left to extraArgs", func(t *testing.T) {
-		// Generated for nobody, including kcp's own server: the operator cannot know which binary
-		// spec.command names, so a flag only some servers accept is the user's to pass.
-		for _, spec := range []operatorv1alpha1.VirtualWorkspaceSpec{
-			{},
-			{Command: []string{"/access-vw"}},
-		} {
-			container := reconcileDeployment(t, newCompiledVirtualWorkspace(spec)).Spec.Template.Spec.Containers[0]
-
-			assert.False(t, hasArgPrefix(container.Args, "--shard-external-url="))
-			assert.False(t, hasArgPrefix(container.Args, "--cache-kubeconfig="))
-		}
-	})
-
 	t.Run("the cache server kubeconfig is still mounted for extraArgs to point at", func(t *testing.T) {
 		dep := reconcileDeployment(t, newCompiledVirtualWorkspace(operatorv1alpha1.VirtualWorkspaceSpec{
 			Command: []string{"/access-vw"},
@@ -184,6 +170,8 @@ func TestVirtualWorkspaceArgumentSurface(t *testing.T) {
 		"--requestheader-group-headers",
 		"--requestheader-extra-headers-prefix",
 		"--kubeconfig",
+		"--shard-external-url",
+		"--cache-kubeconfig",
 	}
 
 	vw := newCompiledVirtualWorkspace(operatorv1alpha1.VirtualWorkspaceSpec{
