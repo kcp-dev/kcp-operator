@@ -109,7 +109,7 @@ test-e2e: build ## Run e2e tests using existing cluster, bootstrap prerequisites
 	USE_EXISTING_CLUSTER=true NO_TEARDOWN=true WHAT=$(WHAT) hack/run-e2e-tests.sh
 
 # Creates a kind cluster and runs the e2e tests in them. The kind cluster is destroyed after the tests.
-# Example: USE_EXISTING_CLUSTER=true NO_TEARDOWN=true make test-e2e WHAT=./test/e2e/shards TEST_ARGS="-timeout 2h -v -run TestShardBundleAnnotation -count=1"
+# Example: USE_EXISTING_CLUSTER=true NO_TEARDOWN=true make test-e2e WHAT=./test/e2e/shards TEST_ARGS="-timeout 2h -v -run TestCreateShard -count=1"
 .PHONY: test-e2e-with-kind  # Run the e2e tests against a temporary kind cluster.
 test-e2e-with-kind: ## Run e2e tests in a temporary single-topology kind cluster. Use WHAT= to specify test path.
 	@E2E_TOPOLOGY=single WHAT=$(WHAT) hack/run-e2e-tests.sh
@@ -157,7 +157,6 @@ clean-tools: ## Remove all downloaded tools.
 .PHONY: build
 build: ## Build manager binary.
 	go build $(GOTOOLFLAGS) -o $(BUILD_DEST)/manager ./cmd/operator/
-	go build $(GOTOOLFLAGS) -o $(BUILD_DEST)/bundler ./cmd/bundle/
 
 .PHONY: run
 run: fmt vet ## Run a controller from your host.

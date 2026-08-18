@@ -26,8 +26,6 @@ import (
 )
 
 type ClusterInterface interface {
-	// Bundles returns a BundleClusterInformer
-	Bundles() BundleClusterInformer
 	// CacheServers returns a CacheServerClusterInformer
 	CacheServers() CacheServerClusterInformer
 	// FrontProxies returns a FrontProxyClusterInformer
@@ -50,11 +48,6 @@ type version struct {
 // New returns a new ClusterInterface.
 func New(f internalinterfaces.SharedInformerFactory, tweakListOptions internalinterfaces.TweakListOptionsFunc) ClusterInterface {
 	return &version{factory: f, tweakListOptions: tweakListOptions}
-}
-
-// Bundles returns a BundleClusterInformer
-func (v *version) Bundles() BundleClusterInformer {
-	return &bundleClusterInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
 // CacheServers returns a CacheServerClusterInformer
@@ -88,8 +81,6 @@ func (v *version) VirtualWorkspaces() VirtualWorkspaceClusterInformer {
 }
 
 type Interface interface {
-	// Bundles returns a BundleInformer
-	Bundles() BundleInformer
 	// CacheServers returns a CacheServerInformer
 	CacheServers() CacheServerInformer
 	// FrontProxies returns a FrontProxyInformer
@@ -113,11 +104,6 @@ type scopedVersion struct {
 // New returns a new ClusterInterface.
 func NewScoped(f internalinterfaces.SharedScopedInformerFactory, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
 	return &scopedVersion{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
-}
-
-// Bundles returns a BundleInformer
-func (v *scopedVersion) Bundles() BundleInformer {
-	return &bundleScopedInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // CacheServers returns a CacheServerInformer

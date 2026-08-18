@@ -48,8 +48,6 @@ func CompiledCacheServerReconciler(server *operatorv1alpha1.CacheServer, revisio
 
 			obj.Spec.CacheServer = server.Spec
 
-			resources.CopyBundleAnnotation(server, obj)
-
 			return obj, nil
 		}
 	}

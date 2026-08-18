@@ -23,12 +23,6 @@ import (
 	"k8s.io/component-base/featuregate"
 )
 
-const (
-	// ConfigurationBundle enables the configuration bundle feature for managing
-	// bundled kcp configurations and resources.
-	ConfigurationBundle featuregate.Feature = "ConfigurationBundle"
-)
-
 var (
 	// DefaultMutableFeatureGate is a mutable version of DefaultFeatureGate.
 	// Only top-level commands should make use of this.
@@ -39,9 +33,7 @@ var (
 
 	// defaultKCPOperatorFeatureGates consists of all known kcp-operator-specific feature keys.
 	// To add a new feature, define a key for it above and add it here.
-	defaultKCPOperatorFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
-		ConfigurationBundle: {Default: false, PreRelease: featuregate.Alpha},
-	}
+	defaultKCPOperatorFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{}
 )
 
 func init() {

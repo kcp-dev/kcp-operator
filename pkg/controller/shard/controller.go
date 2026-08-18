@@ -49,7 +49,6 @@ import (
 
 	"github.com/kcp-dev/kcp-operator/internal/resources/shard"
 	operatorclient "github.com/kcp-dev/kcp-operator/pkg/client"
-	bundlehelper "github.com/kcp-dev/kcp-operator/pkg/controller/bundle"
 	"github.com/kcp-dev/kcp-operator/pkg/controller/util"
 	"github.com/kcp-dev/kcp-operator/pkg/metrics"
 	"github.com/kcp-dev/kcp-operator/pkg/reconciling"
@@ -176,11 +175,6 @@ func (r *ShardReconciler) reconcile(ctx context.Context, client ctrlruntimeclien
 		return conditions, nil // Will be requeued
 	}
 
-	// Ensure Bundle object exists if annotation is present
-	if _, err := bundlehelper.EnsureBundleForOwner(ctx, client, scheme, s); err != nil {
-		errs = append(errs, fmt.Errorf("failed to ensure bundle: %w", err))
-	}
-
 	cond, rootShard := util.FetchRootShard(ctx, client, s.Namespace, s.Spec.RootShard.Reference)
 	conditions = append(conditions, cond)
 
@@ -270,22 +264,12 @@ func (r *ShardReconciler) reconcileStatus(ctx context.Context, client ctrlruntim
 	newShard := oldShard.DeepCopy()
 	var errs []error
 
-	// Add Bundle condition
-	bundleCond := bundlehelper.GetBundleReadyCondition(ctx, client, newShard, newShard.Generation)
-	conditions = append(conditions, bundleCond)
-
-	// Check if shard is bundled (has bundle annotation with Ready bundle)
-	isBundled := bundleCond.Status == metav1.ConditionTrue && bundleCond.Reason == "BundleReady"
-
-	// Only check the rendered workloads if not bundled
-	if !isBundled {
-		compiled := &deployv1alpha1.CompiledShard{}
-		key := types.NamespacedName{Namespace: newShard.Namespace, Name: newShard.Name}
-		if err := client.Get(ctx, key, compiled); ctrlruntimeclient.IgnoreNotFound(err) != nil {
-			errs = append(errs, err)
-		} else {
-			conditions = append(conditions, util.GetCompiledAvailableCondition(compiled.Status.Conditions, "CompiledShard "+newShard.Name))
-		}
+	compiled := &deployv1alpha1.CompiledShard{}
+	key := types.NamespacedName{Namespace: newShard.Namespace, Name: newShard.Name}
+	if err := client.Get(ctx, key, compiled); ctrlruntimeclient.IgnoreNotFound(err) != nil {
+		errs = append(errs, err)
+	} else {
+		conditions = append(conditions, util.GetCompiledAvailableCondition(compiled.Status.Conditions, "CompiledShard "+newShard.Name))
 	}
 
 	for _, condition := range conditions {
@@ -294,7 +278,6 @@ func (r *ShardReconciler) reconcileStatus(ctx context.Context, client ctrlruntim
 	}
 
 	availableCond := apimeta.FindStatusCondition(newShard.Status.Conditions, string(operatorv1alpha1.ConditionTypeAvailable))
-	bundleStatusCond := apimeta.FindStatusCondition(newShard.Status.Conditions, string(operatorv1alpha1.ConditionTypeBundle))
 
 	switch {
 	case availableCond != nil && availableCond.Status == metav1.ConditionTrue:
@@ -302,16 +285,6 @@ func (r *ShardReconciler) reconcileStatus(ctx context.Context, client ctrlruntim
 
 	case newShard.DeletionTimestamp != nil:
 		newShard.Status.Phase = operatorv1alpha1.ShardPhaseDeleting
-
-	case isBundled:
-		// Shard is bundled, deployment scaled to 0, resources exported via bundle
-		newShard.Status.Phase = operatorv1alpha1.ShardPhaseBundled
-
-	case bundleStatusCond != nil && bundleStatusCond.Status != metav1.ConditionTrue:
-		newShard.Status.Phase = operatorv1alpha1.ShardPhaseProvisioning
-
-	case availableCond != nil && availableCond.Status == metav1.ConditionTrue:
-		newShard.Status.Phase = operatorv1alpha1.ShardPhaseRunning
 
 	case newShard.Status.Phase == "":
 		newShard.Status.Phase = operatorv1alpha1.ShardPhaseProvisioning

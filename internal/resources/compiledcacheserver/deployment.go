@@ -164,19 +164,6 @@ func DeploymentReconciler(server *deployv1alpha1.CompiledCacheServer) reconcilin
 
 			dep = utils.ApplyDeploymentTemplate(dep, server.Spec.CacheServer.DeploymentTemplate)
 
-			// If the cacheserver has bundle annotation, store desired replicas in annotation then scale deployment to 0 locally
-			if server.Annotations != nil && server.Annotations[resources.BundleAnnotation] != "" {
-				// Store the desired replicas in an annotation so bundle can capture the correct value
-				if dep.Spec.Replicas != nil && *dep.Spec.Replicas > 0 {
-					if dep.Annotations == nil {
-						dep.Annotations = make(map[string]string)
-					}
-					dep.Annotations[resources.BundleDesiredReplicasAnnotation] = fmt.Sprintf("%d", *dep.Spec.Replicas)
-				}
-				// Scale to 0 locally
-				dep.Spec.Replicas = ptr.To(int32(0))
-			}
-
 			return dep, nil
 		}
 	}

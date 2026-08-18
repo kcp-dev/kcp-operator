@@ -77,16 +77,6 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &applyconfigurationoperatorv1alpha1.AuthorizationWebhookSpecApplyConfiguration{}
 	case operatorv1alpha1.SchemeGroupVersion.WithKind("AuthSpec"):
 		return &applyconfigurationoperatorv1alpha1.AuthSpecApplyConfiguration{}
-	case operatorv1alpha1.SchemeGroupVersion.WithKind("Bundle"):
-		return &applyconfigurationoperatorv1alpha1.BundleApplyConfiguration{}
-	case operatorv1alpha1.SchemeGroupVersion.WithKind("BundleObjectStatus"):
-		return &applyconfigurationoperatorv1alpha1.BundleObjectStatusApplyConfiguration{}
-	case operatorv1alpha1.SchemeGroupVersion.WithKind("BundleSpec"):
-		return &applyconfigurationoperatorv1alpha1.BundleSpecApplyConfiguration{}
-	case operatorv1alpha1.SchemeGroupVersion.WithKind("BundleStatus"):
-		return &applyconfigurationoperatorv1alpha1.BundleStatusApplyConfiguration{}
-	case operatorv1alpha1.SchemeGroupVersion.WithKind("BundleTarget"):
-		return &applyconfigurationoperatorv1alpha1.BundleTargetApplyConfiguration{}
 	case operatorv1alpha1.SchemeGroupVersion.WithKind("CacheServer"):
 		return &applyconfigurationoperatorv1alpha1.CacheServerApplyConfiguration{}
 	case operatorv1alpha1.SchemeGroupVersion.WithKind("CacheServerSpec"):

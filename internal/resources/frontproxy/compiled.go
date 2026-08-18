@@ -57,8 +57,6 @@ func CompiledFrontProxyReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootS
 
 			obj.Spec.Shards = utils.ShardNames(shards)
 
-			resources.CopyBundleAnnotation(frontProxy, obj)
-
 			return obj, nil
 		}
 	}

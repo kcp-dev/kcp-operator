@@ -23,8 +23,6 @@ import (
 	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
 
 	operatorclient "github.com/kcp-dev/kcp-operator/pkg/client"
-	"github.com/kcp-dev/kcp-operator/pkg/config"
-	"github.com/kcp-dev/kcp-operator/pkg/controller/bundle"
 	"github.com/kcp-dev/kcp-operator/pkg/controller/cacheserver"
 	"github.com/kcp-dev/kcp-operator/pkg/controller/compiledcacheserver"
 	"github.com/kcp-dev/kcp-operator/pkg/controller/compiledfrontproxy"
@@ -83,13 +81,6 @@ func AddConfigControllers(mgr mcmanager.Manager, options Options) error {
 		GetCluster: mgr.GetCluster,
 	}).SetupWithManager(mgr, options.Engage...); err != nil {
 		return fmt.Errorf("unable to create controller %s: %w", "VirtualWorkspace", err)
-	}
-	if config.Enabled(config.ConfigurationBundle) {
-		if err := (&bundle.BundleReconciler{
-			GetCluster: mgr.GetCluster,
-		}).SetupWithManager(mgr, options.Engage...); err != nil {
-			return fmt.Errorf("unable to create controller %s: %w", "Bundle", err)
-		}
 	}
 	if err := (&kubeconfigrbac.KubeconfigRBACReconciler{
 		GetCluster: mgr.GetCluster,

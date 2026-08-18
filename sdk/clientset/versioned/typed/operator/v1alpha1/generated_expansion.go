@@ -18,8 +18,6 @@ limitations under the License.
 
 package v1alpha1
 
-type BundleExpansion interface{}
-
 type CacheServerExpansion interface{}
 
 type FrontProxyExpansion interface{}

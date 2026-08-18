@@ -233,32 +233,6 @@ func (r *reconciler) deploymentReconciler() reconciling.NamedDeploymentReconcile
 
 			if r.frontProxy != nil {
 				dep = utils.ApplyAuthConfiguration(dep, r.frontProxy.Spec.FrontProxy.Auth, r.rootShardName(), r.frontProxy.Spec.Shards)
-
-				// If frontproxy has bundle annotation, store desired replicas in annotation then scale deployment to 0 locally
-				if r.frontProxy.Annotations != nil && r.frontProxy.Annotations[resources.BundleAnnotation] != "" {
-					// Store the desired replicas in an annotation so bundle can capture the correct value
-					if dep.Spec.Replicas != nil && *dep.Spec.Replicas > 0 {
-						if dep.Annotations == nil {
-							dep.Annotations = make(map[string]string)
-						}
-						dep.Annotations[resources.BundleDesiredReplicasAnnotation] = fmt.Sprintf("%d", *dep.Spec.Replicas)
-					}
-					// Scale to 0 locally
-					dep.Spec.Replicas = ptr.To(int32(0))
-				}
-			} else if r.rootShard != nil {
-				// If rootshard has bundle annotation, store desired replicas in annotation then scale proxy deployment to 0 locally
-				if r.rootShard.Annotations != nil && r.rootShard.Annotations[resources.BundleAnnotation] != "" {
-					// Store the desired replicas in an annotation so bundle can capture the correct value
-					if dep.Spec.Replicas != nil && *dep.Spec.Replicas > 0 {
-						if dep.Annotations == nil {
-							dep.Annotations = make(map[string]string)
-						}
-						dep.Annotations[resources.BundleDesiredReplicasAnnotation] = fmt.Sprintf("%d", *dep.Spec.Replicas)
-					}
-					// Scale to 0 locally
-					dep.Spec.Replicas = ptr.To(int32(0))
-				}
 			}
 
 			return dep, nil
