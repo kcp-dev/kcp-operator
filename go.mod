@@ -1,6 +1,6 @@
 module github.com/kcp-dev/kcp-operator
 
-go 1.26.3
+go 1.26.6
 
 replace github.com/kcp-dev/kcp-operator/sdk => ./sdk
 

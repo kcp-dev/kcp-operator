@@ -7,7 +7,7 @@ presubmits:
       preset-goproxy: "true"
     spec:
       containers:
-        - image: ghcr.io/kcp-dev/infra/build:1.26.4-1
+        - image: ghcr.io/kcp-dev/infra/build:1.26.6-1
           command:
             - make
             - verify
@@ -24,7 +24,7 @@ presubmits:
       preset-goproxy: "true"
     spec:
       containers:
-        - image: ghcr.io/kcp-dev/infra/build:1.26.4-1
+        - image: ghcr.io/kcp-dev/infra/build:1.26.6-1
           command:
             - make
             - lint
@@ -65,7 +65,7 @@ presubmits:
       preset-goproxy: "true"
     spec:
       containers:
-        - image: ghcr.io/kcp-dev/infra/build:1.26.4-1
+        - image: ghcr.io/kcp-dev/infra/build:1.26.6-1
           command:
             - make
             - test
@@ -86,7 +86,7 @@ presubmits:
       preset-goproxy: "true"
     spec:
       containers:
-        - image: ghcr.io/kcp-dev/infra/build:1.26.4-1
+        - image: ghcr.io/kcp-dev/infra/build:1.26.6-1
           command:
             - hack/ci/run-e2e-tests.sh
           env:
@@ -109,7 +109,7 @@ presubmits:
       preset-goproxy: "true"
     spec:
       containers:
-        - image: ghcr.io/kcp-dev/infra/build:1.26.4-1
+        - image: ghcr.io/kcp-dev/infra/build:1.26.6-1
           command:
             - hack/ci/run-e2e-tests.sh
           env:
@@ -132,7 +132,7 @@ presubmits:
       preset-goproxy: "true"
     spec:
       containers:
-        - image: ghcr.io/kcp-dev/infra/build:1.26.4-1
+        - image: ghcr.io/kcp-dev/infra/build:1.26.6-1
           command:
             - hack/ci/run-e2e-tests.sh
           env:
@@ -155,7 +155,7 @@ presubmits:
       preset-goproxy: "true"
     spec:
       containers:
-        - image: ghcr.io/kcp-dev/infra/build:1.26.4-1
+        - image: ghcr.io/kcp-dev/infra/build:1.26.6-1
           command:
             - hack/ci/run-e2e-tests.sh
           env:
@@ -180,7 +180,7 @@ presubmits:
       preset-goproxy: "true"
     spec:
       containers:
-        - image: ghcr.io/kcp-dev/infra/build:1.26.4-1
+        - image: ghcr.io/kcp-dev/infra/build:1.26.6-1
           command:
             - hack/ci/run-e2e-tests.sh
           resources:
@@ -200,7 +200,7 @@ presubmits:
       preset-goproxy: "true"
     spec:
       containers:
-        - image: ghcr.io/kcp-dev/infra/build:1.26.4-1
+        - image: ghcr.io/kcp-dev/infra/build:1.26.6-1
           command:
             - hack/ci/run-e2e-tests.sh
           env:
