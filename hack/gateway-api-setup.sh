@@ -239,6 +239,12 @@ spec:
   extraArgs:
     # both shards share the etcd installed above
     - --etcd-prefix=/shard/root
+    # for the ephemeral-resources virtual workspace: reference-driven
+    # replication is alpha and gated, and the shard has to trust the serving
+    # chain of the endpoint URLs it dials (they go through the front-proxy,
+    # whose certificate chains up to the root CA mounted in every shard pod).
+    - --feature-gates=CacheAPIs=true
+    - --shard-virtual-workspace-ca-file=/etc/kcp/tls/ca/root/tls.crt
   # The operator also deploys an internal proxy (root-proxy) through which
   # other shards reach the root shard. It dials shardBaseURL, so it needs the
   # same hostname mapping as everything else — and the same image version.
@@ -314,6 +320,9 @@ spec:
   shardBaseURL: https://alpha.$BASE_DOMAIN:$PORT
   extraArgs:
     - --etcd-prefix=/shard/alpha
+    # see the RootShard above
+    - --feature-gates=CacheAPIs=true
+    - --shard-virtual-workspace-ca-file=/etc/kcp/tls/ca/root/tls.crt
   # Unlike the RootShard, a Shard has no certificates/issuer or external
   # config of its own: its PKI and client-facing address come from the
   # referenced root shard. Only the serving certificate's SAN is shard-local.
@@ -373,7 +382,12 @@ spec:
   additionalPathMappings:
     - path: /services/access
       backend: https://access-virtual-workspace.default.svc.cluster.local:6443
-      backend_server_ca: /etc/kcp-front-proxy/tls/ca/tls.crt
+      backend_server_ca: /etc/kcp/tls/ca/tls.crt
+      proxy_client_cert: /etc/kcp-front-proxy/requestheader-client/tls.crt
+      proxy_client_key: /etc/kcp-front-proxy/requestheader-client/tls.key
+    - path: /services/ephemeral-buckets
+      backend: https://ephemeral-virtual-workspace.default.svc.cluster.local:6443
+      backend_server_ca: /etc/kcp/tls/ca/tls.crt
       proxy_client_cert: /etc/kcp-front-proxy/requestheader-client/tls.crt
       proxy_client_key: /etc/kcp-front-proxy/requestheader-client/tls.key
   deploymentTemplate:
@@ -545,15 +559,15 @@ spec:
                 - alpha.$BASE_DOMAIN
 EOF
 
-log "Waiting for the access virtual workspace (the init container bootstraps root:access in kcp first)..."
-retry 60 10 kubectl get deployment access-virtual-workspace >/dev/null 2>&1
-kubectl wait deployment/access-virtual-workspace --for=condition=Available --timeout=10m >/dev/null
-log "  access-virtual-workspace is ready."
-
 # The access-vw-controller ClusterRole the init container installs was written
 # for a ServiceAccount, which kcp exempts from the workspace `access` check.
 # The certificate identity minted above is not exempt, so grant it explicitly —
 # see the comments in config/samples/virtual-workspaces/access.yaml.
+#
+# Ordering matters: the server refuses to start until this grant exists (its
+# startup discovery is answered with "access denied" otherwise), so the grant
+# has to land BEFORE waiting for the Deployment — right after the init
+# container has bootstrapped the workspace it applies to.
 ACCESS_RBAC_MANIFEST="$(mktemp)"
 cat > "$ACCESS_RBAC_MANIFEST" <<EOF
 apiVersion: rbac.authorization.k8s.io/v1
@@ -579,20 +593,399 @@ subjects:
 EOF
 
 if python3 -c "import socket; socket.gethostbyname('$BASE_DOMAIN')" >/dev/null 2>&1; then
+  log "Waiting for the init container to bootstrap root:access:controllers..."
+  retry 60 10 sh -c "[ \"\$(kubectl --kubeconfig '$KUBECONFIG_OUT' --server 'https://$BASE_DOMAIN:$PORT/clusters/root:access' get workspace controllers -o jsonpath='{.status.phase}' 2>/dev/null)\" = Ready ]"
+
   log "Granting the server's identity workspace access in root:access:controllers..."
   retry 30 5 kubectl --kubeconfig "$KUBECONFIG_OUT" \
     --server "https://$BASE_DOMAIN:$PORT/clusters/root:access:controllers" \
     apply -f "$ACCESS_RBAC_MANIFEST" >/dev/null
 
-  log "Verifying the access virtual workspace answers through the front-proxy..."
-  retry 30 5 sh -c "kubectl --kubeconfig '$KUBECONFIG_OUT' get --raw '/services/access/clusters/root/apis/access.contrib.kcp.io/v1alpha1' 2>/dev/null | grep -q access.contrib.kcp.io"
-  log "  /services/access serves the access.contrib.kcp.io API."
+  log "Waiting for the access virtual workspace..."
+  retry 60 10 kubectl get deployment access-virtual-workspace >/dev/null 2>&1
+  kubectl wait deployment/access-virtual-workspace --for=condition=Available --timeout=10m >/dev/null
+  log "  access-virtual-workspace is ready."
+
+  log "Verifying the access virtual workspace answers a SelfClusterAccessReview..."
+  # SCAR is a create-only REST resource served directly under /services/access —
+  # no /clusters/<ws> segment, see the repository's test/e2e.
+  SCAR_FILE="$(mktemp)"
+  printf '{"apiVersion":"access.contrib.kcp.io/v1alpha1","kind":"SelfClusterAccessReview"}' > "$SCAR_FILE"
+  retry 30 5 sh -c "kubectl --kubeconfig '$KUBECONFIG_OUT' create --raw '/services/access/apis/access.contrib.kcp.io/v1alpha1/selfclusteraccessreviews' -f '$SCAR_FILE' 2>/dev/null | grep -q SelfClusterAccessReview"
+  log "  /services/access answers SelfClusterAccessReview."
 else
-  echo "NOTE: $BASE_DOMAIN does not resolve here yet, so one manual step remains once it does:"
+  echo "NOTE: $BASE_DOMAIN does not resolve here, so the workspace-access grant the"
+  echo "server needs could not be applied and its Deployment will crash-loop until"
+  echo "you apply it manually once the hostname resolves:"
   echo "  kubectl --kubeconfig $KUBECONFIG_OUT --server https://$BASE_DOMAIN:$PORT/clusters/root:access:controllers apply -f $ACCESS_RBAC_MANIFEST"
 fi
 
-log "Skipping the MCP and ephemeral-resources virtual workspaces: no published images yet (see config/samples/virtual-workspaces/README.md)."
+# --- Ephemeral resources virtual workspace -------------------------------
+#
+# Webhook-backed, never-persisted resources (see
+# config/samples/virtual-workspaces/ephemeral-resources.yaml). There is no
+# published container image, so this builds one from a local checkout of
+# https://github.com/kcp-dev/contrib-virtual-ephemeral-resources-virtual-workspace
+# (override the location with EPHEMERAL_VW_DIR) covering all three binaries:
+# the server, the endpointslice-controller and the example webhook.
+#
+# What gets stood up, following the repository's docs/example:
+#   * provider workspace root:providers:s3 with the endpoint slice CRD,
+#     APIResourceSchemas, the APIExport (bucketinfos with virtual storage) and
+#     the EphemeralResourceEndpointSlice;
+#   * the example webhook as a Deployment, with a cert-manager-issued serving
+#     certificate;
+#   * the virtual workspace itself through the operator, routed via the
+#     front-proxy at /services/ephemeral-buckets;
+#   * the endpointslice-controller as a plain Deployment, publishing
+#     https://$BASE_DOMAIN:$PORT into the slice;
+#   * a consumer workspace binding the export, verified by creating a
+#     BucketInfo and getting the webhook's answer back.
+#
+# Provider-side RBAC for the shard identity is deliberately absent: the
+# operator issues shard client certificates in system:masters, which
+# short-circuits the server's authorizer. Production deployments issue a
+# non-privileged shard identity and grant it `access` on / plus create on
+# apiexports/content in the provider workspace instead.
+
+EPHEMERAL_VW_DIR="${EPHEMERAL_VW_DIR:-$(pwd)/../contrib-virtual-ephemeral-resources-virtual-workspace}"
+
+fpctl() {
+  local workspace="$1"
+  shift
+  kubectl --kubeconfig "$KUBECONFIG_OUT" --server "https://$BASE_DOMAIN:$PORT/clusters/$workspace" "$@"
+}
+
+if [[ ! -d "$EPHEMERAL_VW_DIR/docs/example" ]]; then
+  echo "NOTE: no contrib-virtual-ephemeral-resources-virtual-workspace checkout at"
+  echo "$EPHEMERAL_VW_DIR (set EPHEMERAL_VW_DIR); skipping the ephemeral-resources virtual workspace."
+elif ! python3 -c "import socket; socket.gethostbyname('$BASE_DOMAIN')" >/dev/null 2>&1; then
+  echo "NOTE: $BASE_DOMAIN does not resolve on this machine; skipping the"
+  echo "ephemeral-resources virtual workspace (its kcp-side bootstrap runs through the gateway)."
+else
+  EPHEMERAL_IMAGE="ephemeral-vw:gateway-api-dev"
+  log "Building the ephemeral-resources image from $EPHEMERAL_VW_DIR ($EPHEMERAL_IMAGE)..."
+  docker build -t "$EPHEMERAL_IMAGE" -f - "$EPHEMERAL_VW_DIR" <<'EOF' >/dev/null
+FROM golang:1.26 AS builder
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 go build -o /out/ephemeral-virtual-workspace ./cmd/ephemeral-virtual-workspace \
+ && CGO_ENABLED=0 go build -o /out/endpointslice-controller ./cmd/endpointslice-controller \
+ && CGO_ENABLED=0 go build -o /out/example-webhook ./examples/webhook
+FROM gcr.io/distroless/static:nonroot
+COPY --from=builder /out/ /
+USER 65532:65532
+EOF
+  kind load docker-image "$EPHEMERAL_IMAGE" --name "$CLUSTER_NAME" >/dev/null
+
+  # ensure_workspace <parent path> <name> — create a workspace pinned to the
+  # shard the virtual workspace is attached to, and wait for it to be Ready.
+  #
+  # The pinning is load-bearing, and both halves of it fail loudly if omitted.
+  # Workspaces are scheduled round-robin across shards, while this virtual
+  # workspace is attached to one (spec.target.rootShardRef):
+  #
+  #   * a provider workspace on another shard makes the consumer's shard resolve
+  #     spec.resources[].storage.virtual.reference against its own CRD informer,
+  #     which does not hold another shard's CRDs — the resource vanishes from
+  #     discovery with "no matches for kind EphemeralResourceEndpointSlice";
+  #   * a consumer workspace on another shard is invisible to this server's
+  #     APIBinding informer, and a create is refused with "logical cluster ...
+  #     has no APIBinding to APIExport ...".
+  #
+  # Hence everything lands on the root shard here. Lifting this is the
+  # repository's known gap #2 ("not tested against a sharded kcp").
+  ensure_workspace() {
+    local parent="$1" name="$2"
+    cat > "$WS_MANIFEST" <<WSEOF
+apiVersion: tenancy.kcp.io/v1alpha1
+kind: Workspace
+metadata:
+  name: $name
+spec:
+  location:
+    selector:
+      matchLabels:
+        name: root
+WSEOF
+    retry 30 5 fpctl "$parent" apply -f "$WS_MANIFEST" >/dev/null
+    retry 60 5 sh -c "[ \"\$(kubectl --kubeconfig '$KUBECONFIG_OUT' --server 'https://$BASE_DOMAIN:$PORT/clusters/$parent' get workspace $name -o jsonpath='{.status.phase}' 2>/dev/null)\" = Ready ]"
+  }
+
+  log "Bootstrapping the provider workspace root:providers:s3..."
+  WS_MANIFEST="$(mktemp)"
+  ensure_workspace root providers
+  ensure_workspace root:providers s3
+
+  # The provider-side objects, in the repository's documented order. The
+  # identityHash filter tracks a kcp API change: ResourceSchemaStorageVirtual
+  # lost the field, but the repository's example still carries it.
+  ASSET_FILE="$(mktemp)"
+  sed '/identityHash:/d' "$EPHEMERAL_VW_DIR/docs/example/00-endpointslice-crd.yaml" > "$ASSET_FILE"
+  retry 30 5 fpctl root:providers:s3 apply -f "$ASSET_FILE" >/dev/null
+
+  # The APIExport must not be created before the kind it references is served.
+  # kcp's apiexport-reference controller resolves spec.resources[].storage.virtual.reference
+  # through the RESTMapper; on a no-match it skips the reference silently and never
+  # requeues (it watches APIExports and ClusterCachedResources, not CRDs). Applying
+  # 00 and 02 in the same breath therefore leaves no ClusterCachedResource, the
+  # EphemeralResourceEndpointSlice never reaches the cache server, and every shard
+  # fails discovery for the virtual resource with "failed to retrieve virtual
+  # workspace URL" — permanently, until something touches the APIExport again.
+  endpointslice_crd_served() {
+    fpctl root:providers:s3 api-resources --api-group=ephemeral.contrib.kcp.io 2>/dev/null \
+      | grep -q '^ephemeralresourceendpointslices[[:space:]]'
+  }
+  log "Waiting for the EphemeralResourceEndpointSlice CRD to be served..."
+  retry 60 2 endpointslice_crd_served >/dev/null
+
+  for asset in 01-apiresourceschema 02-apiexport 03-endpointslice; do
+    sed '/identityHash:/d' "$EPHEMERAL_VW_DIR/docs/example/$asset.yaml" > "$ASSET_FILE"
+    retry 30 5 fpctl root:providers:s3 apply -f "$ASSET_FILE" >/dev/null
+  done
+
+  log "Issuing the example webhook's serving certificate..."
+  retry 10 5 kubectl apply -f - <<EOF >/dev/null
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: ephemeral-webhook-ca
+spec:
+  isCA: true
+  commonName: ephemeral-webhook-ca
+  secretName: ephemeral-webhook-ca
+  issuerRef:
+    group: cert-manager.io
+    kind: Issuer
+    name: selfsigned
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: ephemeral-webhook-ca
+spec:
+  ca:
+    secretName: ephemeral-webhook-ca
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: ephemeral-webhook
+spec:
+  dnsNames:
+    - ephemeral-webhook.default.svc.cluster.local
+    - ephemeral-webhook.default.svc
+    - ephemeral-webhook
+  secretName: ephemeral-webhook-tls
+  issuerRef:
+    group: cert-manager.io
+    kind: Issuer
+    name: ephemeral-webhook-ca
+EOF
+
+  log "Deploying the example webhook..."
+  kubectl apply -f - <<EOF >/dev/null
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ephemeral-webhook
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ephemeral-webhook
+  template:
+    metadata:
+      labels:
+        app: ephemeral-webhook
+    spec:
+      containers:
+        - name: webhook
+          image: $EPHEMERAL_IMAGE
+          command:
+            - /example-webhook
+          args:
+            - --address=:18443
+            - --tls-cert-file=/etc/webhook/tls/tls.crt
+            - --tls-private-key-file=/etc/webhook/tls/tls.key
+          volumeMounts:
+            - name: tls
+              mountPath: /etc/webhook/tls
+              readOnly: true
+      volumes:
+        - name: tls
+          secret:
+            secretName: ephemeral-webhook-tls
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ephemeral-webhook
+spec:
+  selector:
+    app: ephemeral-webhook
+  ports:
+    - port: 18443
+      targetPort: 18443
+EOF
+
+  log "Deploying the ephemeral-resources virtual workspace and endpoint slice controller..."
+  kubectl apply -f - <<EOF >/dev/null
+# The registry of webhook-backed resources, read by the server at startup.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ephemeral-vw-config
+data:
+  ephemeral-config.yaml: |
+    apiVersion: ephemeral.contrib.kcp.io/v1alpha1
+    kind: EphemeralWebhookConfiguration
+    resources:
+      - export:
+          path: root:providers:s3
+          name: s3.example.com
+        group: s3.example.com
+        resource: bucketinfos
+        webhook:
+          url: https://ephemeral-webhook.default.svc.cluster.local:18443/ephemeral/bucketinfos
+          caBundleFile: /etc/ephemeral/webhook-ca/ca.crt
+          timeoutSeconds: 10
+---
+# The identity the endpointslice-controller writes slice status with, already
+# scoped to the provider workspace.
+apiVersion: operator.kcp.io/v1alpha1
+kind: Kubeconfig
+metadata:
+  name: ephemeral-controller
+spec:
+  target:
+    frontProxyRef:
+      name: frontproxy
+  targetWorkspace: root:providers:s3
+  username: kcp-admin
+  groups:
+    - system:kcp:admin
+  validity: 8766h
+  secretRef:
+    name: ephemeral-controller-kubeconfig
+---
+apiVersion: operator.kcp.io/v1alpha1
+kind: VirtualWorkspace
+metadata:
+  name: ephemeral
+spec:
+  target:
+    rootShardRef:
+      name: root
+  external:
+    hostname: $BASE_DOMAIN
+    port: $PORT
+  image:
+    repository: ${EPHEMERAL_IMAGE%:*}
+    tag: "${EPHEMERAL_IMAGE##*:}"
+  command:
+    - /ephemeral-virtual-workspace
+  replicas: 1
+  extraArgs:
+    - --ephemeral-config=/etc/ephemeral/config/ephemeral-config.yaml
+    - --virtual-workspace-name=ephemeral-buckets
+    # the webhook Service resolves to a cluster-internal address, which the
+    # SSRF guard refuses by default
+    - --allow-private-webhook-addresses
+    # the APIExport may be owned by the other shard; only the cache server
+    # sees every shard's objects. The operator mounts the kubeconfig, the flag
+    # is ours to pass since this is not kcp's own virtual-workspace binary.
+    - --cache-kubeconfig=/etc/cache-server/kubeconfig/kubeconfig
+  extraVolumes:
+    - name: ephemeral-config
+      configMap:
+        name: ephemeral-vw-config
+    - name: webhook-ca
+      secret:
+        secretName: ephemeral-webhook-tls
+        items:
+          - key: ca.crt
+            path: ca.crt
+  extraVolumeMounts:
+    - name: ephemeral-config
+      mountPath: /etc/ephemeral/config
+      readOnly: true
+    - name: webhook-ca
+      mountPath: /etc/ephemeral/webhook-ca
+      readOnly: true
+  deploymentTemplate:
+    spec:
+      template:
+        spec:
+          hostAliases:
+            - ip: $GATEWAY_IP
+              hostnames:
+                - $BASE_DOMAIN
+                - root.$BASE_DOMAIN
+                - alpha.$BASE_DOMAIN
+---
+# Publishes this server's address into the EphemeralResourceEndpointSlice; a
+# separate, provider-scoped process by design.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ephemeral-endpointslice-controller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ephemeral-endpointslice-controller
+  template:
+    metadata:
+      labels:
+        app: ephemeral-endpointslice-controller
+    spec:
+      hostAliases:
+        - ip: $GATEWAY_IP
+          hostnames:
+            - $BASE_DOMAIN
+      containers:
+        - name: controller
+          image: $EPHEMERAL_IMAGE
+          command:
+            - /endpointslice-controller
+          args:
+            - --kubeconfig=/etc/kcp/kubeconfig/kubeconfig
+            - --external-url=https://$BASE_DOMAIN:$PORT
+            - --virtual-workspace-name=ephemeral-buckets
+            - --export=s3.example.com
+          volumeMounts:
+            - name: kubeconfig
+              mountPath: /etc/kcp/kubeconfig
+              readOnly: true
+      volumes:
+        - name: kubeconfig
+          secret:
+            secretName: ephemeral-controller-kubeconfig
+EOF
+
+  log "Waiting for the webhook, server and controller..."
+  kubectl wait deployment/ephemeral-webhook --for=condition=Available --timeout=5m >/dev/null
+  retry 60 10 kubectl get deployment ephemeral-virtual-workspace >/dev/null 2>&1
+  kubectl wait deployment/ephemeral-virtual-workspace --for=condition=Available --timeout=10m >/dev/null
+  kubectl wait deployment/ephemeral-endpointslice-controller --for=condition=Available --timeout=5m >/dev/null
+
+  log "Waiting for the endpoint slice to carry this server's URL..."
+  retry 60 10 sh -c "kubectl --kubeconfig '$KUBECONFIG_OUT' --server 'https://$BASE_DOMAIN:$PORT/clusters/root:providers:s3' get ephemeralresourceendpointslice s3.example.com -o jsonpath='{.status.endpoints[*].url}' 2>/dev/null | grep -q ephemeral-buckets"
+
+  log "Binding the export in a consumer workspace..."
+  ensure_workspace root consumer
+  retry 30 5 fpctl root:consumer apply -f "$EPHEMERAL_VW_DIR/docs/example/04-apibinding.yaml" >/dev/null
+  retry 60 5 sh -c "[ \"\$(kubectl --kubeconfig '$KUBECONFIG_OUT' --server 'https://$BASE_DOMAIN:$PORT/clusters/root:consumer' get apibinding s3.example.com -o jsonpath='{.status.phase}' 2>/dev/null)\" = Bound ]"
+
+  log "Verifying a BucketInfo create is answered by the webhook (nothing is stored)..."
+  retry 60 10 sh -c "kubectl --kubeconfig '$KUBECONFIG_OUT' --server 'https://$BASE_DOMAIN:$PORT/clusters/root:consumer' create -f '$EPHEMERAL_VW_DIR/docs/example/bucketinfo.yaml' -o yaml 2>/dev/null | grep -q 'kind: BucketInfo'"
+  log "  BucketInfo answered by the webhook through /services/ephemeral-buckets."
+fi
+
+log "Skipping the MCP virtual workspace: no published image yet (see config/samples/virtual-workspaces/README.md)."
 
 # --- Client-side wrap-up -------------------------------------------------
 
