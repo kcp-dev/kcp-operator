@@ -1,0 +1,132 @@
+# Deploying the MCP virtual workspace
+# (https://github.com/kcp-dev/contrib-mcp-virtual-workspace), which serves the Model Context
+# Protocol scoped to what the calling user can actually see.
+#
+# It depends on the access virtual workspace (see access.yaml in this directory): each request
+# fetches the caller's workspace list from `/services/access`, and per-workspace API calls are made
+# with this server's own credential impersonating the caller. Deploy access.yaml first.
+#
+# The operator's generated arguments cover everything else: serving certificate, client CA, and the
+# requestheader CA configuration. Behind the front-proxy the caller arrives as X-Remote-* headers,
+# and the requestheader flags the operator passes satisfy the server's "at least one authentication
+# method" startup check — no OIDC flags are needed here.
+#
+# Since #292 the operator also passes `--shard-external-url` to custom servers; the server binary
+# has to tolerate that flag to start.
+apiVersion: operator.kcp.io/v1alpha1
+kind: VirtualWorkspace
+metadata:
+  labels:
+    app.kubernetes.io/name: kcp-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: mcp
+spec:
+  # A singleton virtual workspace: one deployment for the whole installation, connected to the
+  # root shard.
+  target:
+    rootShardRef:
+      name: shard-sample
+
+  # Where clients reach this virtual workspace. Routed through the front-proxy (see the FrontProxy
+  # patch below), so this is the front-proxy's own hostname and port.
+  external:
+    hostname: example.operator.kcp.io
+    port: 6443
+
+  image:
+    repository: ghcr.io/kcp-dev/contrib-mcp-virtual-workspace
+    tag: latest
+
+  # The image's entrypoint plus the serve subcommand. The operator's generated arguments (TLS,
+  # requestheader CAs, --secure-port=6443, --kubeconfig) are all flags this server accepts, so its
+  # default port 9444 is overridden to the operator's 6443.
+  command:
+    - /mcp-virtual-workspace
+    - serve
+
+  # The identity this server connects to kcp with, minted by the Kubeconfig object below. It holds
+  # impersonation rights and nothing else: everything the server does, it does as the caller.
+  kubeconfigSecretRef:
+    name: mcp-vw-server-kubeconfig
+
+  extraArgs:
+    # The access virtual workspace, through the front-proxy. Requires access.yaml to be deployed
+    # and its /services/access path mapping merged into the FrontProxy.
+    - --access-url=https://example.operator.kcp.io:6443/services/access
+    # The front-proxy's serving certificate chains up to the root CA the operator mounts into
+    # every virtual workspace pod.
+    - --access-ca-file=/etc/kcp/tls/ca/root/tls.crt
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 512Mi
+
+  deploymentTemplate:
+    spec:
+      template:
+        spec:
+          hostAliases:
+            # Both --access-url and the minted kubeconfig address the front-proxy by its external
+            # hostname, so it has to resolve from inside this pod. Same override as in the
+            # RootShard sample, pointing at the front-proxy Service's hard-coded cluster IP.
+            - ip: "10.96.100.100"
+              hostnames:
+                - "example.operator.kcp.io"
+
+---
+# The identity the server runs as. It carries no resource permissions of its own — it acts through
+# impersonation, so kcp authorizes every per-workspace request as the caller, and the audit log
+# records both identities.
+#
+# The operator provisions the ClusterRoleBinding below in the kubeconfig's target workspace (root
+# by default), but only the binding: the ClusterRole itself has to exist. Apply the
+# mcp-virtual-workspace-impersonator ClusterRole from the repository's deploy/kcp/rbac.yaml —
+# impersonate on users, groups, serviceaccounts and userextras — in every workspace whose
+# resources the server should reach on a caller's behalf.
+apiVersion: operator.kcp.io/v1alpha1
+kind: Kubeconfig
+metadata:
+  labels:
+    app.kubernetes.io/name: kcp-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: mcp-vw-server
+spec:
+  target:
+    frontProxyRef:
+      name: frontproxy-sample
+  # Matches the subject in the upstream deploy/kcp/rbac.yaml binding.
+  username: mcp-virtual-workspace
+  validity: 8766h
+  secretRef:
+    name: mcp-vw-server-kubeconfig
+  authorization:
+    clusterRoleBindings:
+      clusterRoles:
+        - mcp-virtual-workspace-impersonator
+
+---
+# The front-proxy has to route the MCP path prefix to this server's Service. Merge this into the
+# FrontProxy object (see operator.kcp.io_v1alpha1_frontproxy.yaml, and the equivalent patch in
+# access.yaml); it is shown as a separate object here only to keep the sample self-contained.
+#
+# The backend is the Service the operator creates for the VirtualWorkspace, named
+# `<name>-virtual-workspace`, listening on 6443 in the VirtualWorkspace's namespace — adjust the
+# namespace to wherever you applied these samples. Its serving certificate chains up to the root
+# CA the front-proxy already mounts.
+apiVersion: operator.kcp.io/v1alpha1
+kind: FrontProxy
+metadata:
+  name: frontproxy-sample
+spec:
+  rootShard:
+    ref:
+      name: shard-sample
+  additionalPathMappings:
+    - path: /services/mcp
+      backend: https://mcp-virtual-workspace.default.svc.cluster.local:6443
+      backend_server_ca: /etc/kcp-front-proxy/tls/ca/tls.crt
+      proxy_client_cert: /etc/kcp-front-proxy/requestheader-client/tls.crt
+      proxy_client_key: /etc/kcp-front-proxy/requestheader-client/tls.key

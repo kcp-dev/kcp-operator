@@ -170,8 +170,6 @@ func TestVirtualWorkspaceArgumentSurface(t *testing.T) {
 		"--requestheader-group-headers",
 		"--requestheader-extra-headers-prefix",
 		"--kubeconfig",
-		"--shard-external-url",
-		"--cache-kubeconfig",
 	}
 
 	vw := newCompiledVirtualWorkspace(operatorv1alpha1.VirtualWorkspaceSpec{
@@ -190,6 +188,10 @@ func TestVirtualWorkspaceArgumentSurface(t *testing.T) {
 		assert.Contains(t, allowed, name,
 			"%q is generated for every server; adding to this set requires every third-party virtual workspace to accept it", arg)
 	}
+
+	// kcp's own server, on the other hand, requires its implementation-specific flags.
+	kcpArgs := getArgs(newCompiledVirtualWorkspace(operatorv1alpha1.VirtualWorkspaceSpec{}))
+	assert.Contains(t, kcpArgs, "--shard-external-url=https://127.0.0.1:6443")
 }
 
 func TestDeploymentServerKubeconfig(t *testing.T) {
