@@ -1344,7 +1344,7 @@ run the operator as a binary.</p>
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>make<span class="w"> </span>docker-build
 </code></pre></div>
 <p>Load the image into the kind cluster:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>kind<span class="w"> </span>load<span class="w"> </span>docker-image<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$IMG</span><span class="s2">&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>kind<span class="w"> </span>load<span class="w"> </span>docker-image<span class="w"> </span><span class="s2">"</span><span class="nv">$IMG</span><span class="s2">"</span>
 </code></pre></div>
 <p>Deploy the operator manifests into the cluster:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>make<span class="w"> </span>deploy
@@ -1374,7 +1374,7 @@ environment via its front-proxy:</p>
 <h2 id="connect-to-kcp">Connect to kcp</h2>
 <p>Once the kubeconfig above has been reconciled, we can use it to connect to kcp.</p>
 <p>First, fetch the created kubeconfig:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>sample-kubeconfig<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s2">&quot;{.data.kubeconfig}&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="w"> </span>&gt;<span class="w"> </span>admin.kubeconfig
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>sample-kubeconfig<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s2">"{.data.kubeconfig}"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="w"> </span>&gt;<span class="w"> </span>admin.kubeconfig
 </code></pre></div>
 <p>Create a port-forwarding in a second terminal:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>kubectl<span class="w"> </span>port-forward<span class="w"> </span>svc/frontproxy-sample-front-proxy<span class="w"> </span><span class="m">6443</span><span class="w"> </span>--address<span class="o">=</span><span class="m">127</span>.0.0.2

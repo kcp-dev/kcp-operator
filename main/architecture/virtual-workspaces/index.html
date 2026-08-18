@@ -1346,8 +1346,8 @@ container, the binding stays pending until the virtual workspace has run once.</
 on <code>verb=access</code> for the non-resource URL <code>/</code> in the workspace, <em>before</em> any RBAC on the
 resource is consulted, so an identity without it can do nothing at all:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">rules</span><span class="p">:</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">verbs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;access&quot;</span><span class="p p-Indicator">]</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="nt">nonResourceURLs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;/&quot;</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">verbs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"access"</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="nt">nonResourceURLs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"/"</span><span class="p p-Indicator">]</span>
 </code></pre></div>
 <p>ServiceAccounts declared inside the workspace are exempt from that gate, which is why roles
 written for a ServiceAccount often omit the rule and then appear to grant nothing when bound to
