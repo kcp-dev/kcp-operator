@@ -9,9 +9,6 @@ patches:
   - patch: |-
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --feature-gates=ConfigurationBundle=true
-      - op: add
-        path: /spec/template/spec/containers/0/args/-
         value: --enabled-controller-groups=config
     target:
       kind: Deployment

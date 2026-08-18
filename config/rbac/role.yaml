@@ -32,10 +32,9 @@ rules:
   - ""
   resources:
   - configmaps
-  - secrets
+  - services
   verbs:
   - create
-  - delete
   - get
   - list
   - patch
@@ -44,9 +43,10 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - services
+  - secrets
   verbs:
   - create
+  - delete
   - get
   - list
   - patch
@@ -91,7 +91,6 @@ rules:
 - apiGroups:
   - operator.kcp.io
   resources:
-  - bundles
   - cacheservers
   - frontproxies
   verbs:
@@ -105,7 +104,6 @@ rules:
 - apiGroups:
   - operator.kcp.io
   resources:
-  - bundles/finalizers
   - cacheservers/finalizers
   - frontproxies/finalizers
   - kubeconfigs/finalizers
@@ -116,7 +114,6 @@ rules:
 - apiGroups:
   - operator.kcp.io
   resources:
-  - bundles/status
   - cacheservers/status
   - frontproxies/status
   - kubeconfigs/status

@@ -227,7 +227,6 @@ type ShardPhase string
 const (
 	ShardPhaseProvisioning ShardPhase = "Provisioning"
 	ShardPhaseRunning      ShardPhase = "Running"
-	ShardPhaseBundled      ShardPhase = "Bundled"
 	ShardPhaseDeleting     ShardPhase = "Deleting"
 )
 

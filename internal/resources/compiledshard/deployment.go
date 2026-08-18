@@ -27,7 +27,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	"github.com/kcp-dev/kcp-operator/internal/resources"
 	"github.com/kcp-dev/kcp-operator/internal/resources/utils"
@@ -226,19 +225,6 @@ func DeploymentReconciler(shard *deployv1alpha1.CompiledShard) reconciling.Named
 			dep = utils.ApplyCommonShardConfig(dep, &shard.Spec.Shard.CommonShardSpec)
 			dep = utils.ApplyDeploymentTemplate(dep, shard.Spec.Shard.DeploymentTemplate)
 			dep = utils.ApplyAuthConfiguration(dep, shard.Spec.Shard.Auth, shard.Spec.RootShard.Name, shard.Spec.Shards)
-
-			// If shard has bundle annotation, store desired replicas in annotation then scale deployment to 0 locally
-			if shard.Annotations != nil && shard.Annotations[resources.BundleAnnotation] != "" {
-				// Store the desired replicas in an annotation so bundle can capture the correct value
-				if dep.Spec.Replicas != nil && *dep.Spec.Replicas > 0 {
-					if dep.Annotations == nil {
-						dep.Annotations = make(map[string]string)
-					}
-					dep.Annotations[resources.BundleDesiredReplicasAnnotation] = fmt.Sprintf("%d", *dep.Spec.Replicas)
-				}
-				// Scale to 0 locally
-				dep.Spec.Replicas = ptr.To(int32(0))
-			}
 
 			return dep, nil
 		}

@@ -37,9 +37,7 @@ kcp-operator supports Kubernetes-style feature gates to enable or disable experi
 
 ### Available Feature Gates
 
-| Feature | Default | Stage | Description |
-|---------|---------|-------|-------------|
-| `ConfigurationBundle` | `false` | Alpha | Enable the configuration bundle feature for managing bundled kcp configurations and resources |
+There are currently no feature gates defined.
 
 ### Usage
 
@@ -47,13 +45,11 @@ Enable feature gates when starting the operator:
 
 ```bash
 # Enable a single feature
-./operator --feature-gates=ConfigurationBundle=true
+./operator --feature-gates=SomeFeature=true
 
 # Enable multiple features
-./operator --feature-gates=ConfigurationBundle=true,AnotherFeature=true
+./operator --feature-gates=SomeFeature=true,AnotherFeature=true
 ```
-
-For more details on feature gates, see the [feature gates documentation](internal/config/README.md).
 
 ## Contributing
 

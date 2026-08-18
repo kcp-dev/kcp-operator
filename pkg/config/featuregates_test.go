@@ -22,32 +22,25 @@ import (
 	"k8s.io/component-base/featuregate"
 )
 
-func TestFeatureGates(t *testing.T) {
-	tests := []struct {
-		name            string
-		feature         featuregate.Feature
-		expectedDefault bool
-	}{
-		{
-			name:            "ConfigurationBundle is disabled by default",
-			feature:         ConfigurationBundle,
-			expectedDefault: false,
-		},
+// testFeature is a feature key that only exists for the tests in this package; the operator
+// currently ships without any feature gates of its own.
+const testFeature featuregate.Feature = "TestFeature"
+
+var testFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
+	testFeature: {Default: false, PreRelease: featuregate.Alpha},
+}
+
+func TestDefaultFeatureGates(t *testing.T) {
+	// All shipped feature gates must be registered without errors.
+	fg := featuregate.NewFeatureGate()
+	if err := fg.Add(defaultKCPOperatorFeatureGates); err != nil {
+		t.Fatalf("failed to add feature gates: %v", err)
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Reset feature gate to defaults for each test
-			fg := featuregate.NewFeatureGate()
-			if err := fg.Add(defaultKCPOperatorFeatureGates); err != nil {
-				t.Fatalf("failed to add feature gates: %v", err)
-			}
-
-			enabled := fg.Enabled(tt.feature)
-			if enabled != tt.expectedDefault {
-				t.Errorf("expected feature %q to be %v by default, got %v", tt.feature, tt.expectedDefault, enabled)
-			}
-		})
+	for feature, spec := range defaultKCPOperatorFeatureGates {
+		if enabled := fg.Enabled(feature); enabled != spec.Default {
+			t.Errorf("expected feature %q to be %v by default, got %v", feature, spec.Default, enabled)
+		}
 	}
 }
 
@@ -63,7 +56,7 @@ func TestSetFeatureGateDuringTest(t *testing.T) {
 	// Create a new feature gate for testing
 	DefaultMutableFeatureGate = featuregate.NewFeatureGate()
 	DefaultFeatureGate = DefaultMutableFeatureGate
-	if err := DefaultMutableFeatureGate.Add(defaultKCPOperatorFeatureGates); err != nil {
+	if err := DefaultMutableFeatureGate.Add(testFeatureGates); err != nil {
 		t.Fatalf("failed to add feature gates: %v", err)
 	}
 
@@ -73,13 +66,13 @@ func TestSetFeatureGateDuringTest(t *testing.T) {
 		enableValue bool
 	}{
 		{
-			name:        "enable ConfigurationBundle",
-			feature:     ConfigurationBundle,
+			name:        "enable TestFeature",
+			feature:     testFeature,
 			enableValue: true,
 		},
 		{
-			name:        "disable ConfigurationBundle",
-			feature:     ConfigurationBundle,
+			name:        "disable TestFeature",
+			feature:     testFeature,
 			enableValue: false,
 		},
 	}
@@ -109,21 +102,21 @@ func TestEnabledFunction(t *testing.T) {
 	// Create a new feature gate for testing
 	DefaultMutableFeatureGate = featuregate.NewFeatureGate()
 	DefaultFeatureGate = DefaultMutableFeatureGate
-	if err := DefaultMutableFeatureGate.Add(defaultKCPOperatorFeatureGates); err != nil {
+	if err := DefaultMutableFeatureGate.Add(testFeatureGates); err != nil {
 		t.Fatalf("failed to add feature gates: %v", err)
 	}
 
 	// Test default (disabled)
-	if Enabled(ConfigurationBundle) {
-		t.Error("ConfigurationBundle should be disabled by default")
+	if Enabled(testFeature) {
+		t.Error("TestFeature should be disabled by default")
 	}
 
 	// Enable and test
-	if err := SetFeatureGateDuringTest(ConfigurationBundle, true); err != nil {
+	if err := SetFeatureGateDuringTest(testFeature, true); err != nil {
 		t.Fatalf("failed to enable feature gate: %v", err)
 	}
 
-	if !Enabled(ConfigurationBundle) {
-		t.Error("ConfigurationBundle should be enabled after setting")
+	if !Enabled(testFeature) {
+		t.Error("TestFeature should be enabled after setting")
 	}
 }

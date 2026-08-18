@@ -59,8 +59,6 @@ func CompiledRootShardReconciler(rootShard *operatorv1alpha1.RootShard, kcpVW *o
 
 			obj.Spec.Shards = utils.ShardNames(shards)
 
-			resources.CopyBundleAnnotation(rootShard, obj)
-
 			return obj, nil
 		}
 	}

@@ -62,8 +62,6 @@ func CompiledVirtualWorkspaceReconciler(vw *operatorv1alpha1.VirtualWorkspace, r
 				}
 			}
 
-			resources.CopyBundleAnnotation(vw, obj)
-
 			return obj, nil
 		}
 	}
