@@ -23,7 +23,13 @@ source_repositories:
       - config/crd/bases
     cr_paths:
       - config/samples
+    # A CRD without an entry here is skipped by the generator ("skipping ... as
+    # no metadata found"), so its reference page is never written and any link
+    # to it fails the strict mkdocs build.
     metadata:
+      cacheservers.operator.kcp.io:
+        owner:
+          - https://github.com/kcp-dev/kcp-operator
       frontproxies.operator.kcp.io:
         owner:
           - https://github.com/kcp-dev/kcp-operator
@@ -34,5 +40,8 @@ source_repositories:
         owner:
           - https://github.com/kcp-dev/kcp-operator
       shards.operator.kcp.io:
+        owner:
+          - https://github.com/kcp-dev/kcp-operator
+      virtualworkspaces.operator.kcp.io:
         owner:
           - https://github.com/kcp-dev/kcp-operator

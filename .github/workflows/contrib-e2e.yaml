@@ -1,0 +1,136 @@
+# Copyright 2026 The kcp Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Not a required check: slow, and network/image dependent.
+name: contrib e2e
+
+on:
+  pull_request:
+    paths:
+      - 'contrib/**'
+      - 'config/crd/**'
+      - 'config/samples/virtual-workspaces/**'
+      - '.github/workflows/contrib-e2e.yaml'
+  workflow_dispatch:
+    inputs:
+      virtualworkspaces:
+        description: 'Virtual workspaces to deploy (space separated), or empty for the default set'
+        required: false
+        default: ''
+
+concurrency:
+  group: contrib-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: shellcheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: shellcheck
+        run: |
+          find contrib -name '*.sh' -print0 \
+            | xargs -0 -r shellcheck --severity=warning
+
+  e2e:
+    name: kcp + virtual workspaces
+    needs: lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check out the ephemeral-resources virtual workspace
+        uses: actions/checkout@v4
+        with:
+          repository: kcp-dev/contrib-virtual-ephemeral-resources-virtual-workspace
+          path: .e2e/contrib-virtual-ephemeral-resources-virtual-workspace
+
+      - name: Install kind
+        uses: helm/kind-action@v1
+        with:
+          install_only: true
+
+      - name: Check the tools contrib expects
+        run: |
+          command -v envsubst >/dev/null \
+            || sudo apt-get install -y --no-install-recommends gettext-base
+
+          missing=()
+          for tool in kind kubectl helm docker envsubst python3 curl; do
+            if path="$(command -v "$tool")"; then
+              printf '%-9s %s\n' "$tool" "$path"
+            else
+              printf '%-9s MISSING\n' "$tool"
+              missing+=("$tool")
+            fi
+          done
+          if [[ ${#missing[@]} -gt 0 ]]; then
+            echo "::error::missing tools: ${missing[*]}"
+            exit 1
+          fi
+
+          kind --version
+          kubectl version --client=true
+          helm version --short
+
+      - name: Resolve the gateway hostnames
+        run: |
+          echo "127.0.0.1 kcp.localhost root.kcp.localhost alpha.kcp.localhost" | sudo tee -a /etc/hosts
+
+      - name: Deploy kcp and the virtual workspaces
+        env:
+          EPHEMERAL_VW_DIR: ${{ github.workspace }}/.e2e/contrib-virtual-ephemeral-resources-virtual-workspace
+          VIRTUAL_WORKSPACES: ${{ github.event.inputs.virtualworkspaces }}
+        run: |
+          [[ -n "${VIRTUAL_WORKSPACES:-}" ]] || unset VIRTUAL_WORKSPACES
+          ./contrib/deploy.sh
+
+      - name: Show what is running
+        if: always()
+        run: |
+          kubectl --kubeconfig .gateway-api-cluster.kubeconfig get pods -A || true
+          kubectl --kubeconfig kcp-admin.kubeconfig get workspaces || true
+
+      - name: Collect diagnostics
+        if: failure()
+        run: |
+          mkdir -p /tmp/diag
+          export KUBECONFIG="$PWD/.gateway-api-cluster.kubeconfig"
+          df -h                                          > /tmp/diag/disk.txt 2>&1 || true
+          docker system df                              >> /tmp/diag/disk.txt 2>&1 || true
+          kubectl get events -A --sort-by=.lastTimestamp > /tmp/diag/events.txt 2>&1 || true
+          kubectl get pods -A -o wide                    > /tmp/diag/pods.txt 2>&1 || true
+          for deployment in $(kubectl get deploy -n default -o name 2>/dev/null); do
+            name="${deployment##*/}"
+            kubectl -n default logs "$deployment" --all-containers --tail=2000 \
+              > "/tmp/diag/$name.log" 2>&1 || true
+          done
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: contrib-e2e-diagnostics
+          path: /tmp/diag
+          retention-days: 7
+
+      - name: Tear down
+        if: always()
+        run: ./contrib/deploy.sh down || true

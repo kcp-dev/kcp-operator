@@ -1,0 +1,125 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ephemeral-vw-config
+data:
+  ephemeral-config.yaml: |
+    apiVersion: ephemeral.contrib.kcp.io/v1alpha1
+    kind: EphemeralWebhookConfiguration
+    resources:
+      - export:
+          path: root:providers:s3
+          name: s3.example.com
+        group: s3.example.com
+        resource: bucketinfos
+        webhook:
+          url: https://ephemeral-webhook.default.svc.cluster.local:18443/ephemeral/bucketinfos
+          caBundleFile: /etc/ephemeral/webhook-ca/ca.crt
+          timeoutSeconds: 10
+---
+apiVersion: operator.kcp.io/v1alpha1
+kind: Kubeconfig
+metadata:
+  name: ephemeral-controller
+spec:
+  target:
+    frontProxyRef:
+      name: frontproxy
+  targetWorkspace: root:providers:s3
+  username: kcp-admin
+  groups:
+    - system:kcp:admin
+  validity: 8766h
+  secretRef:
+    name: ephemeral-controller-kubeconfig
+---
+apiVersion: operator.kcp.io/v1alpha1
+kind: VirtualWorkspace
+metadata:
+  name: ephemeral
+spec:
+  resources:
+    requests:
+      cpu: ${KCP_CPU_REQUEST}
+      memory: ${KCP_MEMORY_REQUEST}
+  target:
+    rootShardRef:
+      name: root
+  external:
+    hostname: $BASE_DOMAIN
+    port: $PORT
+  image:
+    repository: ${EPHEMERAL_IMAGE_REPOSITORY}
+    tag: "${EPHEMERAL_IMAGE_TAG}"
+  command:
+    - /ephemeral-virtual-workspace
+  replicas: 1
+  extraArgs:
+    - --ephemeral-config=/etc/ephemeral/config/ephemeral-config.yaml
+    - --virtual-workspace-name=ephemeral-buckets
+    - --allow-private-webhook-addresses
+    - --cache-kubeconfig=/etc/cache-server/kubeconfig/kubeconfig
+  extraVolumes:
+    - name: ephemeral-config
+      configMap:
+        name: ephemeral-vw-config
+    - name: webhook-ca
+      secret:
+        secretName: ephemeral-webhook-tls
+        items:
+          - key: ca.crt
+            path: ca.crt
+  extraVolumeMounts:
+    - name: ephemeral-config
+      mountPath: /etc/ephemeral/config
+      readOnly: true
+    - name: webhook-ca
+      mountPath: /etc/ephemeral/webhook-ca
+      readOnly: true
+  deploymentTemplate:
+    spec:
+      template:
+        spec:
+          hostAliases:
+            - ip: $GATEWAY_IP
+              hostnames:
+                - $BASE_DOMAIN
+                - root.$BASE_DOMAIN
+                - alpha.$BASE_DOMAIN
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ephemeral-endpointslice-controller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ephemeral-endpointslice-controller
+  template:
+    metadata:
+      labels:
+        app: ephemeral-endpointslice-controller
+    spec:
+      hostAliases:
+        - ip: $GATEWAY_IP
+          hostnames:
+            - $BASE_DOMAIN
+      containers:
+        - name: controller
+          image: $EPHEMERAL_IMAGE
+          command:
+            - /endpointslice-controller
+          args:
+            - --kubeconfig=/etc/kcp/kubeconfig/kubeconfig
+            - --external-url=https://$BASE_DOMAIN:$PORT
+            - --virtual-workspace-name=ephemeral-buckets
+            - --export=s3.example.com
+          volumeMounts:
+            - name: kubeconfig
+              mountPath: /etc/kcp/kubeconfig
+              readOnly: true
+      volumes:
+        - name: kubeconfig
+          secret:
+            secretName: ephemeral-controller-kubeconfig
