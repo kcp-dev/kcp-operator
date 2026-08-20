@@ -195,7 +195,7 @@ type AuthorizationWebhookSpec struct {
 	// If specified, completely overwrites the default of [/healthz,/readyz,/livez].
 	//
 	// Deprecated: Use spec.authorization.allowPaths instead. This field is kept for backward
-	// compatibility but spec.authorization.allowPaths will override it.
+	// compatibility but can not be used at the same time as spec.authorization.allowPaths.
 	// +optional
 	AllowPaths *[]string `json:"allowPaths,omitempty"`
 	// The duration to cache 'authorized' responses from the webhook authorizer.
