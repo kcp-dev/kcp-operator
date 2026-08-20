@@ -21,13 +21,31 @@ package v1alpha1
 // AuthorizationSpecApplyConfiguration represents a declarative configuration of the AuthorizationSpec type for use
 // with apply.
 type AuthorizationSpecApplyConfiguration struct {
-	Webhook *AuthorizationWebhookSpecApplyConfiguration `json:"webhook,omitempty"`
+	AllowPaths *[]string                                   `json:"allowPaths,omitempty"`
+	Order      *[]string                                   `json:"order,omitempty"`
+	Webhook    *AuthorizationWebhookSpecApplyConfiguration `json:"webhook,omitempty"`
 }
 
 // AuthorizationSpecApplyConfiguration constructs a declarative configuration of the AuthorizationSpec type for use with
 // apply.
 func AuthorizationSpec() *AuthorizationSpecApplyConfiguration {
 	return &AuthorizationSpecApplyConfiguration{}
+}
+
+// WithAllowPaths sets the AllowPaths field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the AllowPaths field is set to the value of the last call.
+func (b *AuthorizationSpecApplyConfiguration) WithAllowPaths(value []string) *AuthorizationSpecApplyConfiguration {
+	b.AllowPaths = &value
+	return b
+}
+
+// WithOrder sets the Order field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Order field is set to the value of the last call.
+func (b *AuthorizationSpecApplyConfiguration) WithOrder(value []string) *AuthorizationSpecApplyConfiguration {
+	b.Order = &value
+	return b
 }
 
 // WithWebhook sets the Webhook field in the declarative configuration to the given value

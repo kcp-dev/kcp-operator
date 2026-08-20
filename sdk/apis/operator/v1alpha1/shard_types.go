@@ -194,14 +194,29 @@ type AuditWebhookSpec struct {
 	Version string `json:"version,omitempty"`
 }
 
+// +kubebuilder:validation:XValidation:rule="!(has(self.allowPaths) && has(self.webhook.allowPaths))",message="Cannot set both allowPaths and webhook.allowPaths (deprecated). Use allowPaths only."
 type AuthorizationSpec struct {
+	// A list of HTTP paths to skip during authorization, i.e. these are authorized without contacting the 'core' kubernetes server.
+	// If specified, completely overwrites the default of [/healthz,/readyz,/livez].
+	// +optional
+	AllowPaths *[]string `json:"allowPaths,omitempty"`
+	// A list of authorizers that should be enabled, allowing administrator rearrange the default order.
+	// The default order is: [AlwaysAllowGroups,AlwaysAllowPaths,RBAC,Webhook]
+	// +optional
+	Order *[]string `json:"order,omitempty"`
+	// Authorization Webhook configuration.
+	// +optional
 	Webhook *AuthorizationWebhookSpec `json:"webhook,omitempty"`
 }
 
 type AuthorizationWebhookSpec struct {
 	// A list of HTTP paths to skip during authorization, i.e. these are authorized without contacting the 'core' kubernetes server.
 	// If specified, completely overwrites the default of [/healthz,/readyz,/livez].
-	AllowPaths []string `json:"allowPaths,omitempty"`
+	//
+	// Deprecated: Use spec.authorization.allowPaths instead. This field is kept for backward
+	// compatibility but can not be used at the same time as spec.authorization.allowPaths.
+	// +optional
+	AllowPaths *[]string `json:"allowPaths,omitempty"`
 	// The duration to cache 'authorized' responses from the webhook authorizer.
 	CacheAuthorizedTTL *metav1.Duration `json:"cacheAuthorizedTTL,omitempty"`
 	// The duration to cache 'unauthorized' responses from the webhook authorizer.
