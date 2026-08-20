@@ -25,6 +25,10 @@ export CLUSTER_NAME="${CLUSTER_NAME:-kcp-gateway}"
 export BASE_DOMAIN="${BASE_DOMAIN:-kcp.localhost}"
 export PORT="${PORT:-6443}"
 export GATEWAY_IP="${GATEWAY_IP:-10.96.2.2}"
+# One of each. The operator defaults to 2, which needs more CPU than a 4-vCPU
+# GitHub runner has: the shards stay Pending on "Insufficient cpu" and the wait
+# times out after 15m.
+export KCP_REPLICAS="${KCP_REPLICAS:-1}"
 export KCP_IMAGE_REPOSITORY="${KCP_IMAGE_REPOSITORY:-ghcr.io/kcp-dev/kcp}"
 export KCP_IMAGE_TAG="${KCP_IMAGE_TAG:-04fcc9232}"
 export KUBECONFIG_OUT="${KUBECONFIG_OUT:-$REPO_ROOT/kcp-admin.kubeconfig}"

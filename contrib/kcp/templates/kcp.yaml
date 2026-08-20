@@ -3,6 +3,7 @@ kind: CacheServer
 metadata:
   name: cache
 spec:
+  replicas: ${KCP_REPLICAS}
   image:
     repository: $KCP_IMAGE_REPOSITORY
     tag: "$KCP_IMAGE_TAG"
@@ -17,6 +18,7 @@ kind: RootShard
 metadata:
   name: root
 spec:
+  replicas: ${KCP_REPLICAS}
   image:
     repository: $KCP_IMAGE_REPOSITORY
     tag: "$KCP_IMAGE_TAG"
@@ -91,6 +93,7 @@ kind: Shard
 metadata:
   name: alpha
 spec:
+  replicas: ${KCP_REPLICAS}
   rootShard:
     ref:
       name: root
@@ -143,6 +146,7 @@ kind: FrontProxy
 metadata:
   name: frontproxy
 spec:
+  replicas: ${KCP_REPLICAS}
   image:
     repository: $KCP_IMAGE_REPOSITORY
     tag: "$KCP_IMAGE_TAG"
