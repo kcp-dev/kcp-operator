@@ -390,6 +390,11 @@ spec:
       backend_server_ca: /etc/kcp/tls/ca/tls.crt
       proxy_client_cert: /etc/kcp-front-proxy/requestheader-client/tls.crt
       proxy_client_key: /etc/kcp-front-proxy/requestheader-client/tls.key
+    - path: /services/mcp
+      backend: https://mcp-virtual-workspace.default.svc.cluster.local:6443
+      backend_server_ca: /etc/kcp/tls/ca/tls.crt
+      proxy_client_cert: /etc/kcp-front-proxy/requestheader-client/tls.crt
+      proxy_client_key: /etc/kcp-front-proxy/requestheader-client/tls.key
   deploymentTemplate:
     spec:
       template:
@@ -437,6 +442,70 @@ EOF
 log "Waiting for the gateway to be programmed..."
 kubectl --namespace envoy-gateway-system wait gateway/eg --for=condition=Programmed --timeout=5m >/dev/null
 
+# Let the front-proxy carry a shard's forwarded identity through to a virtual
+# workspace.
+#
+# A shard proxying a request to a virtual workspace stamps the caller into
+# X-Remote-User and dials with --shard-client-cert-file. When that dial goes
+# through the front-proxy (which it does here: the endpoint slice publishes
+# $BASE_DOMAIN:$PORT), the proxy does what an edge proxy must — strips the
+# inbound X-Remote-* and re-stamps whoever it authenticated. The shard's
+# certificate is signed by the client CA and named after the shard, so it
+# authenticates as an ordinary user and the caller is lost. Every ephemeral
+# create then fails with
+#
+#   User "root" cannot create resource "bucketinfos" ... : access denied
+#
+# where "root" is the root shard's certificate common name, not an account.
+#
+# The front-proxy preserves a forwarded identity only for callers that pass
+# request-header authentication, so the shards have to satisfy it: their CA in
+# the request-header bundle, their common names in the allowed list.
+#
+# WHAT THIS COSTS: the client CA becomes an impersonation CA for those two
+# names. Anyone who can get a certificate issued from it with CN=root can assert
+# any identity at the edge — and that CA also signs every ordinary user
+# certificate, kcp-admin included. Acceptable in a throwaway dev stack, which is
+# the only thing this script builds. The clean fix is a shard certificate issued
+# from the request-header CA specifically for dialling virtual workspaces; kcp
+# reuses --shard-client-cert-file for that hop today, so there is nothing to
+# point at yet.
+log "Trusting the shards' forwarded identity at the front-proxy..."
+retry 60 5 kubectl get secret root-requestheader-client-ca >/dev/null 2>&1
+retry 60 5 kubectl get secret root-client-ca >/dev/null 2>&1
+
+RH_BUNDLE="$(mktemp)"
+kubectl get secret root-requestheader-client-ca -o jsonpath='{.data.tls\.crt}' | base64 -d >  "$RH_BUNDLE"
+kubectl get secret root-client-ca              -o jsonpath='{.data.tls\.crt}' | base64 -d >> "$RH_BUNDLE"
+kubectl create secret generic frontproxy-shard-requestheader-ca \
+  --from-file=tls.crt="$RH_BUNDLE" --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+rm -f "$RH_BUNDLE"
+
+# Shard client certificate common names: the root shard uses its own name, an
+# additional shard is prefixed. Both are listed so this keeps working whichever
+# shard a consumer workspace lands on.
+#
+# The allowed-names list is passed in full rather than as an addition: pflag
+# appends on repeated string slices, so naming only the extras would depend on
+# that staying true. Duplicates are harmless.
+kubectl patch frontproxy frontproxy --type=merge -p "$(cat <<EOF
+{
+  "spec": {
+    "extraArgs": [
+      "--requestheader-client-ca-file=/etc/kcp-front-proxy/shard-requestheader-ca/tls.crt",
+      "--requestheader-allowed-names=kcp-front-proxy,kcp-mounts-proxy,root,shard-alpha"
+    ],
+    "extraVolumes": [
+      {"name": "shard-requestheader-ca", "secret": {"secretName": "frontproxy-shard-requestheader-ca"}}
+    ],
+    "extraVolumeMounts": [
+      {"name": "shard-requestheader-ca", "mountPath": "/etc/kcp-front-proxy/shard-requestheader-ca", "readOnly": true}
+    ]
+  }
+}
+EOF
+)" >/dev/null
+
 log "Waiting for kcp to come up (first start pulls images and issues the whole PKI, this can take a few minutes)..."
 for deployment in root-kcp alpha-shard-kcp frontproxy-front-proxy; do
   retry 60 10 kubectl get deployment "$deployment" >/dev/null 2>&1
@@ -469,11 +538,13 @@ echo $! > "$PORT_FORWARD_PID_FILE"
 
 # --- Virtual workspaces --------------------------------------------------
 #
-# Of the three virtual workspace samples in config/samples/virtual-workspaces/,
-# only the access virtual workspace has a published container image, so it is
-# the one deployed here. The MCP server (which depends on it) and the
-# ephemeral-resources server have no image on ghcr.io yet — build your own and
-# adapt the samples to deploy them.
+# All three virtual workspace samples in config/samples/virtual-workspaces/ are
+# deployed here, in dependency order: access first, then ephemeral-resources,
+# then MCP — which calls the access virtual workspace on every request and so
+# needs it serving before it starts.
+#
+# access and MCP have published images on ghcr.io. The ephemeral-resources
+# server does not, so it is built from a local checkout further down.
 
 log "Deploying the access virtual workspace (see config/samples/virtual-workspaces/access.yaml)..."
 kubectl apply -f - <<EOF >/dev/null
@@ -613,6 +684,60 @@ if python3 -c "import socket; socket.gethostbyname('$BASE_DOMAIN')" >/dev/null 2
   printf '{"apiVersion":"access.contrib.kcp.io/v1alpha1","kind":"SelfClusterAccessReview"}' > "$SCAR_FILE"
   retry 30 5 sh -c "kubectl --kubeconfig '$KUBECONFIG_OUT' create --raw '/services/access/apis/access.contrib.kcp.io/v1alpha1/selfclusteraccessreviews' -f '$SCAR_FILE' 2>/dev/null | grep -q SelfClusterAccessReview"
   log "  /services/access answers SelfClusterAccessReview."
+
+  # A workspace only appears in the access graph once it binds the export: the
+  # server builds the graph from APIBindings, and the permission claims are what
+  # let it read that workspace's RBAC. Without at least one binding everything
+  # below still works and answers with an empty list, which is a tedious thing
+  # to debug — /services/access returns 200, MCP's list_workspaces returns
+  # {"workspaces":[]}, and nothing anywhere is in error.
+  # Mirrors config/examples/apibinding-consumer.yaml in the access virtual
+  # workspace repository. Inlined rather than read from a checkout, because
+  # nothing else in this section needs one. The permission claims are what let
+  # the server read this workspace's RBAC; without them the binding succeeds and
+  # the graph stays empty.
+  log "Binding the access APIExport in root:consumer so it appears in the graph..."
+  ACCESS_BINDING_MANIFEST="$(mktemp)"
+  cat > "$ACCESS_BINDING_MANIFEST" <<'EOF'
+apiVersion: apis.kcp.io/v1alpha2
+kind: APIBinding
+metadata:
+  name: access.contrib.kcp.io
+spec:
+  reference:
+    export:
+      path: root:access:controllers
+      name: access.contrib.kcp.io
+  permissionClaims:
+    - group: rbac.authorization.k8s.io
+      resource: clusterrolebindings
+      verbs: [get, list, watch]
+      state: Accepted
+      selector:
+        matchAll: true
+    - group: rbac.authorization.k8s.io
+      resource: rolebindings
+      verbs: [get, list, watch]
+      state: Accepted
+      selector:
+        matchAll: true
+    - group: rbac.authorization.k8s.io
+      resource: clusterroles
+      verbs: [get, list, watch]
+      state: Accepted
+      selector:
+        matchAll: true
+    - group: rbac.authorization.k8s.io
+      resource: roles
+      verbs: [get, list, watch]
+      state: Accepted
+      selector:
+        matchAll: true
+EOF
+  retry 30 5 kubectl --kubeconfig "$KUBECONFIG_OUT" \
+    --server "https://$BASE_DOMAIN:$PORT/clusters/root:consumer" \
+    apply -f "$ACCESS_BINDING_MANIFEST" >/dev/null
+  log "  root:consumer binds access.contrib.kcp.io."
 else
   echo "NOTE: $BASE_DOMAIN does not resolve here, so the workspace-access grant the"
   echo "server needs could not be applied and its Deployment will crash-loop until"
@@ -985,7 +1110,135 @@ EOF
   log "  BucketInfo answered by the webhook through /services/ephemeral-buckets."
 fi
 
-log "Skipping the MCP virtual workspace: no published image yet (see config/samples/virtual-workspaces/README.md)."
+# --- MCP virtual workspace -----------------------------------------------
+#
+# Serves the Model Context Protocol at /services/mcp, scoped to what the calling
+# user can see. See config/samples/virtual-workspaces/mcp.yaml.
+#
+# Deployed last because it depends on the access virtual workspace: every
+# request fetches the caller's workspace list from /services/access, so that has
+# to be serving first (it was verified above).
+#
+# The server holds no resource rights of its own. It impersonates the caller, so
+# kcp authorizes each per-workspace request as the human who asked and the audit
+# log records both identities. That is why the only grant below is `impersonate`.
+log "Deploying the MCP virtual workspace (see config/samples/virtual-workspaces/mcp.yaml)..."
+
+# The operator provisions the ClusterRoleBinding for the Kubeconfig's identity,
+# but not the ClusterRole itself — that has to exist wherever the binding lands
+# (root, for a front-proxy-targeted Kubeconfig with no targetWorkspace) and in
+# every workspace whose resources the server should reach on a caller's behalf.
+# Taken from deploy/kcp/rbac.yaml in the repository.
+MCP_RBAC_MANIFEST="$(mktemp)"
+cat > "$MCP_RBAC_MANIFEST" <<'EOF'
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: mcp-virtual-workspace-impersonator
+rules:
+  - apiGroups: [""]
+    resources: ["users", "groups", "serviceaccounts", "userextras"]
+    verbs: ["impersonate"]
+EOF
+
+# root only: that is where a front-proxy-targeted Kubeconfig with no
+# targetWorkspace puts its binding, and the impersonation this server does today
+# — the SelfClusterAccessReview it sends to /services/access on the caller's
+# behalf — is authorized there. Verified by removing it everywhere else and
+# watching list_workspaces keep working.
+#
+# A tool that reads resources inside a consumer's workspace would need the role
+# there too; none exists yet.
+retry 30 5 kubectl --kubeconfig "$KUBECONFIG_OUT" \
+  --server "https://$BASE_DOMAIN:$PORT/clusters/root" \
+  apply -f "$MCP_RBAC_MANIFEST" >/dev/null
+
+kubectl apply -f - <<EOF >/dev/null
+# The identity the server connects to kcp with. Impersonation rights and nothing
+# else; the ClusterRole above is what the operator's binding points at.
+apiVersion: operator.kcp.io/v1alpha1
+kind: Kubeconfig
+metadata:
+  name: mcp-vw-server
+spec:
+  target:
+    frontProxyRef:
+      name: frontproxy
+  username: mcp-virtual-workspace
+  validity: 8766h
+  secretRef:
+    name: mcp-vw-server-kubeconfig
+  authorization:
+    clusterRoleBindings:
+      clusterRoles:
+        - mcp-virtual-workspace-impersonator
+---
+apiVersion: operator.kcp.io/v1alpha1
+kind: VirtualWorkspace
+metadata:
+  name: mcp
+spec:
+  target:
+    rootShardRef:
+      name: root
+  external:
+    hostname: $BASE_DOMAIN
+    port: $PORT
+  image:
+    repository: ghcr.io/kcp-dev/contrib-mcp-virtual-workspace
+    tag: latest
+  # The entrypoint plus its subcommand. The operator's generated flags (TLS, the
+  # requestheader CAs, --secure-port=6443, --kubeconfig) are all accepted, and
+  # the requestheader configuration is what satisfies the server's "at least one
+  # authentication method" startup check — no OIDC flags needed behind the
+  # front-proxy.
+  command:
+    - /mcp-virtual-workspace
+    - serve
+  replicas: 1
+  kubeconfigSecretRef:
+    name: mcp-vw-server-kubeconfig
+  extraArgs:
+    - --access-url=https://$BASE_DOMAIN:$PORT/services/access
+    # The front-proxy's serving certificate chains up to the root CA the
+    # operator mounts into every virtual workspace pod.
+    - --access-ca-file=/etc/kcp/tls/ca/root/tls.crt
+  deploymentTemplate:
+    spec:
+      template:
+        spec:
+          hostAliases:
+            - ip: $GATEWAY_IP
+              hostnames:
+                - $BASE_DOMAIN
+                - root.$BASE_DOMAIN
+                - alpha.$BASE_DOMAIN
+EOF
+
+log "Waiting for the MCP virtual workspace..."
+retry 60 5 kubectl get deployment mcp-virtual-workspace >/dev/null 2>&1
+kubectl wait deployment/mcp-virtual-workspace --for=condition=Available --timeout=10m >/dev/null
+log "  mcp-virtual-workspace is ready."
+
+if python3 -c "import socket; socket.gethostbyname('$BASE_DOMAIN')" >/dev/null 2>&1; then
+  # An unauthenticated JSON-RPC initialize. 401/403 is the pass: it proves the
+  # path routed to this server and its filter chain ran. A 404 would mean the
+  # front-proxy mapping did not match and kcp answered instead — the one failure
+  # this check exists to catch. Anything authenticated needs a client
+  # certificate, which the e2e suite in the repository covers.
+  log "Verifying /services/mcp routes and authenticates..."
+  mcp_rejects_anonymous() {
+    local code
+    code="$(curl -sk -o /dev/null -w '%{http_code}' --max-time 10 \
+      -X POST "https://$BASE_DOMAIN:$PORT/services/mcp" \
+      -H 'Content-Type: application/json' \
+      -H 'Accept: application/json, text/event-stream' \
+      -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}' 2>/dev/null)"
+    [[ "$code" == "401" || "$code" == "403" ]]
+  }
+  retry 30 5 mcp_rejects_anonymous >/dev/null
+  log "  /services/mcp is routed and rejects anonymous callers."
+fi
 
 # --- Client-side wrap-up -------------------------------------------------
 
