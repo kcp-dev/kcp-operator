@@ -1,0 +1,212 @@
+apiVersion: operator.kcp.io/v1alpha1
+kind: CacheServer
+metadata:
+  name: cache
+spec:
+  image:
+    repository: $KCP_IMAGE_REPOSITORY
+    tag: "$KCP_IMAGE_TAG"
+  certificates:
+    issuerRef:
+      group: cert-manager.io
+      kind: Issuer
+      name: selfsigned
+---
+apiVersion: operator.kcp.io/v1alpha1
+kind: RootShard
+metadata:
+  name: root
+spec:
+  image:
+    repository: $KCP_IMAGE_REPOSITORY
+    tag: "$KCP_IMAGE_TAG"
+  shardBaseURL: https://root.$BASE_DOMAIN:$PORT
+  external:
+    hostname: $BASE_DOMAIN
+    port: $PORT
+  extraArgs:
+    - --etcd-prefix=/shard/root
+    - --feature-gates=CacheAPIs=true
+    - --shard-virtual-workspace-ca-file=/etc/kcp/tls/ca/root/tls.crt
+  proxy:
+    image:
+      repository: $KCP_IMAGE_REPOSITORY
+      tag: "$KCP_IMAGE_TAG"
+    deploymentTemplate:
+      spec:
+        template:
+          spec:
+            hostAliases:
+              - ip: $GATEWAY_IP
+                hostnames:
+                  - $BASE_DOMAIN
+                  - root.$BASE_DOMAIN
+                  - alpha.$BASE_DOMAIN
+  certificates:
+    issuerRef:
+      group: cert-manager.io
+      kind: Issuer
+      name: selfsigned
+  certificateTemplates:
+    server:
+      spec:
+        dnsNames:
+          - root.$BASE_DOMAIN
+  cache:
+    ref:
+      name: cache
+  etcd:
+    endpoints:
+      - http://etcd.default.svc.cluster.local:2379
+  deploymentTemplate:
+    spec:
+      template:
+        spec:
+          hostAliases:
+            - ip: $GATEWAY_IP
+              hostnames:
+                - $BASE_DOMAIN
+                - root.$BASE_DOMAIN
+                - alpha.$BASE_DOMAIN
+---
+apiVersion: gateway.networking.k8s.io/v1alpha3
+kind: TLSRoute
+metadata:
+  name: root
+  namespace: default
+spec:
+  parentRefs:
+    - name: eg
+      namespace: envoy-gateway-system
+  hostnames:
+    - root.$BASE_DOMAIN
+  rules:
+    - backendRefs:
+        - name: root-kcp
+          port: 6443
+          namespace: default
+---
+apiVersion: operator.kcp.io/v1alpha1
+kind: Shard
+metadata:
+  name: alpha
+spec:
+  rootShard:
+    ref:
+      name: root
+  image:
+    repository: $KCP_IMAGE_REPOSITORY
+    tag: "$KCP_IMAGE_TAG"
+  shardBaseURL: https://alpha.$BASE_DOMAIN:$PORT
+  extraArgs:
+    - --etcd-prefix=/shard/alpha
+    - --feature-gates=CacheAPIs=true
+    - --shard-virtual-workspace-ca-file=/etc/kcp/tls/ca/root/tls.crt
+  certificateTemplates:
+    server:
+      spec:
+        dnsNames:
+          - alpha.$BASE_DOMAIN
+  etcd:
+    endpoints:
+      - http://etcd.default.svc.cluster.local:2379
+  deploymentTemplate:
+    spec:
+      template:
+        spec:
+          hostAliases:
+            - ip: $GATEWAY_IP
+              hostnames:
+                - $BASE_DOMAIN
+                - root.$BASE_DOMAIN
+                - alpha.$BASE_DOMAIN
+---
+apiVersion: gateway.networking.k8s.io/v1alpha3
+kind: TLSRoute
+metadata:
+  name: alpha
+  namespace: default
+spec:
+  parentRefs:
+    - name: eg
+      namespace: envoy-gateway-system
+  hostnames:
+    - alpha.$BASE_DOMAIN
+  rules:
+    - backendRefs:
+        - name: alpha-shard-kcp
+          port: 6443
+          namespace: default
+---
+apiVersion: operator.kcp.io/v1alpha1
+kind: FrontProxy
+metadata:
+  name: frontproxy
+spec:
+  image:
+    repository: $KCP_IMAGE_REPOSITORY
+    tag: "$KCP_IMAGE_TAG"
+  rootShard:
+    ref:
+      name: root
+  external:
+    hostname: $BASE_DOMAIN
+    port: $PORT
+  additionalPathMappings:
+    - path: /services/access
+      backend: https://access-virtual-workspace.default.svc.cluster.local:6443
+      backend_server_ca: /etc/kcp/tls/ca/tls.crt
+      proxy_client_cert: /etc/kcp-front-proxy/requestheader-client/tls.crt
+      proxy_client_key: /etc/kcp-front-proxy/requestheader-client/tls.key
+    - path: /services/ephemeral-buckets
+      backend: https://ephemeral-virtual-workspace.default.svc.cluster.local:6443
+      backend_server_ca: /etc/kcp/tls/ca/tls.crt
+      proxy_client_cert: /etc/kcp-front-proxy/requestheader-client/tls.crt
+      proxy_client_key: /etc/kcp-front-proxy/requestheader-client/tls.key
+    - path: /services/mcp
+      backend: https://mcp-virtual-workspace.default.svc.cluster.local:6443
+      backend_server_ca: /etc/kcp/tls/ca/tls.crt
+      proxy_client_cert: /etc/kcp-front-proxy/requestheader-client/tls.crt
+      proxy_client_key: /etc/kcp-front-proxy/requestheader-client/tls.key
+  deploymentTemplate:
+    spec:
+      template:
+        spec:
+          hostAliases:
+            - ip: $GATEWAY_IP
+              hostnames:
+                - $BASE_DOMAIN
+                - root.$BASE_DOMAIN
+                - alpha.$BASE_DOMAIN
+---
+apiVersion: gateway.networking.k8s.io/v1alpha3
+kind: TLSRoute
+metadata:
+  name: front-proxy
+  namespace: default
+spec:
+  parentRefs:
+    - name: eg
+      namespace: envoy-gateway-system
+  hostnames:
+    - $BASE_DOMAIN
+  rules:
+    - backendRefs:
+        - name: frontproxy-front-proxy
+          port: $PORT
+          namespace: default
+---
+apiVersion: operator.kcp.io/v1alpha1
+kind: Kubeconfig
+metadata:
+  name: kubeconfig-kcp-admin
+spec:
+  username: kcp-admin
+  groups:
+    - system:kcp:admin
+  validity: 8766h
+  secretRef:
+    name: admin-kubeconfig
+  target:
+    frontProxyRef:
+      name: frontproxy

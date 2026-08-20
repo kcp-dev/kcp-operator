@@ -1,0 +1,75 @@
+apiVersion: operator.kcp.io/v1alpha1
+kind: Kubeconfig
+metadata:
+  name: access-vw-bootstrap
+spec:
+  target:
+    frontProxyRef:
+      name: frontproxy
+  username: kcp-admin
+  groups:
+    - system:kcp:admin
+  validity: 8766h
+  secretRef:
+    name: access-vw-bootstrap-kubeconfig
+---
+apiVersion: operator.kcp.io/v1alpha1
+kind: Kubeconfig
+metadata:
+  name: access-vw-server
+spec:
+  target:
+    frontProxyRef:
+      name: frontproxy
+  targetWorkspace: root:access:controllers
+  username: access-vw
+  validity: 8766h
+  secretRef:
+    name: access-vw-server-kubeconfig
+  authorization:
+    clusterRoleBindings:
+      clusterRoles:
+        - access-vw-controller
+---
+apiVersion: operator.kcp.io/v1alpha1
+kind: VirtualWorkspace
+metadata:
+  name: access
+spec:
+  target:
+    rootShardRef:
+      name: root
+  external:
+    hostname: $BASE_DOMAIN
+    port: $PORT
+  image:
+    repository: ghcr.io/kcp-dev/contrib-access-virtual-workspace
+    tag: latest
+  command:
+    - /access-vw
+  replicas: 1
+  kubeconfigSecretRef:
+    name: access-vw-server-kubeconfig
+  initContainers:
+    - name: init
+      kubeconfigSecretRef:
+        name: access-vw-bootstrap-kubeconfig
+      command:
+        - /access-vw-init
+      args:
+        - --kubeconfig=/etc/kcp/init-kubeconfig/kubeconfig
+        - --workspace-prefix=root:access
+        - --controllers-workspace=controllers
+  extraArgs:
+    - --apiexport-endpointslice=access.contrib.kcp.io
+    - --endpoint-base=https://$BASE_DOMAIN:$PORT/clusters/
+  deploymentTemplate:
+    spec:
+      template:
+        spec:
+          hostAliases:
+            - ip: $GATEWAY_IP
+              hostnames:
+                - $BASE_DOMAIN
+                - root.$BASE_DOMAIN
+                - alpha.$BASE_DOMAIN

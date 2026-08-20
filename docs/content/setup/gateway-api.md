@@ -21,11 +21,22 @@ including the virtual workspace samples.
 
 !!! tip "One-shot local setup"
     Everything below (on `kcp.localhost` hostnames, using a kind cluster) can
-    be created in one go with a script from the kcp-operator repository:
+    be created in one go with the scripts under
+    [`contrib/`](https://github.com/kcp-dev/kcp-operator/tree/main/contrib) in
+    the kcp-operator repository:
 
     ```sh
-    hack/gateway-api-setup.sh        # create kind cluster, gateway, kcp, kubeconfig
-    hack/gateway-api-setup.sh down   # tear it down again
+    contrib/deploy.sh        # kind cluster, gateway, kcp, then every virtual workspace
+    contrib/deploy.sh down   # tear it down again
+    ```
+
+    The layers are separately runnable, so iterating on one piece does not mean
+    rebuilding the cluster:
+
+    ```sh
+    contrib/kcp/deploy.sh                        # only the kcp layer
+    contrib/virtualworkspaces/deploy.sh          # only the virtual workspaces
+    contrib/virtualworkspaces/deploy.sh mcp      # only one of them
     ```
 
     It finishes with an admin kubeconfig in `./kcp-admin.kubeconfig` and a
