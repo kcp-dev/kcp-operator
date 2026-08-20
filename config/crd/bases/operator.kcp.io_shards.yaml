@@ -284,6 +284,16 @@ spec:
                   webhook:
                     description: Authorization Webhook configuration.
                     properties:
+                      allowPaths:
+                        description: |-
+                          A list of HTTP paths to skip during authorization, i.e. these are authorized without contacting the 'core' kubernetes server.
+                          If specified, completely overwrites the default of [/healthz,/readyz,/livez].
+
+                          Deprecated: Use spec.authorization.allowPaths instead. This field is kept for backward
+                          compatibility but spec.authorization.allowPaths will override it.
+                        items:
+                          type: string
+                        type: array
                       cacheAuthorizedTTL:
                         description: The duration to cache 'authorized' responses
                           from the webhook authorizer.
@@ -303,6 +313,10 @@ spec:
                         type: string
                     type: object
                 type: object
+                x-kubernetes-validations:
+                - message: Cannot set both allowPaths and webhook.allowPaths (deprecated).
+                    Use allowPaths only.
+                  rule: '!(has(self.allowPaths) && has(self.webhook.allowPaths))'
               caBundleSecretRef:
                 description: |-
                   CABundle references a v1.Secret object that contains the CA bundle that should be used

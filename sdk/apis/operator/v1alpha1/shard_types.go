@@ -175,6 +175,7 @@ type AuditWebhookSpec struct {
 	Version string `json:"version,omitempty"`
 }
 
+// +kubebuilder:validation:XValidation:rule="!(has(self.allowPaths) && has(self.webhook.allowPaths))",message="Cannot set both allowPaths and webhook.allowPaths (deprecated). Use allowPaths only."
 type AuthorizationSpec struct {
 	// A list of HTTP paths to skip during authorization, i.e. these are authorized without contacting the 'core' kubernetes server.
 	// If specified, completely overwrites the default of [/healthz,/readyz,/livez].
@@ -190,6 +191,13 @@ type AuthorizationSpec struct {
 }
 
 type AuthorizationWebhookSpec struct {
+	// A list of HTTP paths to skip during authorization, i.e. these are authorized without contacting the 'core' kubernetes server.
+	// If specified, completely overwrites the default of [/healthz,/readyz,/livez].
+	//
+	// Deprecated: Use spec.authorization.allowPaths instead. This field is kept for backward
+	// compatibility but spec.authorization.allowPaths will override it.
+	// +optional
+	AllowPaths *[]string `json:"allowPaths,omitempty"`
 	// The duration to cache 'authorized' responses from the webhook authorizer.
 	CacheAuthorizedTTL *metav1.Duration `json:"cacheAuthorizedTTL,omitempty"`
 	// The duration to cache 'unauthorized' responses from the webhook authorizer.

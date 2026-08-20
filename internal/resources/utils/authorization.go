@@ -53,6 +53,7 @@ func applyAuthorizationBaseConfiguration(deployment *appsv1.Deployment, config *
 	}
 
 	podSpec.Containers[0].Args = append(podSpec.Containers[0].Args, extraArgs...)
+	deployment.Spec.Template.Spec = podSpec
 
 	return deployment
 }
@@ -61,6 +62,12 @@ func applyAuthorizationWebhookConfiguration(deployment *appsv1.Deployment, confi
 	podSpec := deployment.Spec.Template.Spec
 
 	var extraArgs []string
+
+	// DEPRECATED: keep support for the deprecated .spec.webhook.allowPaths field for now
+	// to not break existing shard installations.
+	if config.AllowPaths != nil {
+		extraArgs = append(extraArgs, fmt.Sprintf("--authorization-always-allow-paths=%s", strings.Join(*config.AllowPaths, ",")))
+	}
 
 	if val := config.CacheAuthorizedTTL; val != nil {
 		extraArgs = append(extraArgs, fmt.Sprintf("--authorization-webhook-cache-authorized-ttl=%v", val.Duration))
