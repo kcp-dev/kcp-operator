@@ -4,6 +4,10 @@ metadata:
   name: cache
 spec:
   replicas: ${KCP_REPLICAS}
+  resources:
+    requests:
+      cpu: ${KCP_CPU_REQUEST}
+      memory: ${KCP_MEMORY_REQUEST}
   image:
     repository: $KCP_IMAGE_REPOSITORY
     tag: "$KCP_IMAGE_TAG"
@@ -19,6 +23,10 @@ metadata:
   name: root
 spec:
   replicas: ${KCP_REPLICAS}
+  resources:
+    requests:
+      cpu: ${KCP_CPU_REQUEST}
+      memory: ${KCP_MEMORY_REQUEST}
   image:
     repository: $KCP_IMAGE_REPOSITORY
     tag: "$KCP_IMAGE_TAG"
@@ -31,6 +39,11 @@ spec:
     - --feature-gates=CacheAPIs=true
     - --shard-virtual-workspace-ca-file=/etc/kcp/tls/ca/root/tls.crt
   proxy:
+    replicas: ${KCP_REPLICAS}
+    resources:
+      requests:
+        cpu: ${KCP_CPU_REQUEST}
+        memory: ${KCP_MEMORY_REQUEST}
     image:
       repository: $KCP_IMAGE_REPOSITORY
       tag: "$KCP_IMAGE_TAG"
@@ -94,6 +107,10 @@ metadata:
   name: alpha
 spec:
   replicas: ${KCP_REPLICAS}
+  resources:
+    requests:
+      cpu: ${KCP_CPU_REQUEST}
+      memory: ${KCP_MEMORY_REQUEST}
   rootShard:
     ref:
       name: root
@@ -147,6 +164,10 @@ metadata:
   name: frontproxy
 spec:
   replicas: ${KCP_REPLICAS}
+  resources:
+    requests:
+      cpu: ${KCP_CPU_REQUEST}
+      memory: ${KCP_MEMORY_REQUEST}
   image:
     repository: $KCP_IMAGE_REPOSITORY
     tag: "$KCP_IMAGE_TAG"

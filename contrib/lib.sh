@@ -29,6 +29,11 @@ export GATEWAY_IP="${GATEWAY_IP:-10.96.2.2}"
 # GitHub runner has: the shards stay Pending on "Insufficient cpu" and the wait
 # times out after 15m.
 export KCP_REPLICAS="${KCP_REPLICAS:-1}"
+# The operator requests 1 full CPU per shard and per virtual workspace, which on
+# a 4-vCPU runner does not fit. Requests only, no limits, so components still
+# burst as needed.
+export KCP_CPU_REQUEST="${KCP_CPU_REQUEST:-100m}"
+export KCP_MEMORY_REQUEST="${KCP_MEMORY_REQUEST:-256Mi}"
 export KCP_IMAGE_REPOSITORY="${KCP_IMAGE_REPOSITORY:-ghcr.io/kcp-dev/kcp}"
 export KCP_IMAGE_TAG="${KCP_IMAGE_TAG:-04fcc9232}"
 export KUBECONFIG_OUT="${KUBECONFIG_OUT:-$REPO_ROOT/kcp-admin.kubeconfig}"

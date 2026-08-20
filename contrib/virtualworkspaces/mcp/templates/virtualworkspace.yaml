@@ -20,6 +20,10 @@ kind: VirtualWorkspace
 metadata:
   name: mcp
 spec:
+  resources:
+    requests:
+      cpu: ${KCP_CPU_REQUEST}
+      memory: ${KCP_MEMORY_REQUEST}
   target:
     rootShardRef:
       name: root

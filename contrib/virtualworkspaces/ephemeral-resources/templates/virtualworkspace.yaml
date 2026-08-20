@@ -38,6 +38,10 @@ kind: VirtualWorkspace
 metadata:
   name: ephemeral
 spec:
+  resources:
+    requests:
+      cpu: ${KCP_CPU_REQUEST}
+      memory: ${KCP_MEMORY_REQUEST}
   target:
     rootShardRef:
       name: root

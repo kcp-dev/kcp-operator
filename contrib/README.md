@@ -101,7 +101,8 @@ knowing:
 | `PORT` | `6443` | Gateway port, and the local port the forward binds. |
 | `GATEWAY_IP` | `10.96.2.2` | Must be free in the cluster's service CIDR. |
 | `KCP_IMAGE_REPOSITORY` / `KCP_IMAGE_TAG` | `ghcr.io/kcp-dev/kcp:04fcc9232` | kcp image. |
-| `KCP_REPLICAS` | `1` | Replicas per shard/front-proxy/cache server. The operator defaults to 2, which does not fit a 4-vCPU CI runner. |
+| `KCP_REPLICAS` | `1` | Replicas per shard, proxy, front-proxy and cache server. The operator defaults to 2. |
+| `KCP_CPU_REQUEST` / `KCP_MEMORY_REQUEST` | `100m` / `256Mi` | Per-component requests. The operator defaults to 1 CPU per shard and per virtual workspace — about 5.5 cores all told, which does not fit a 4-vCPU CI runner. Requests only, no limits, so components still burst. |
 | `OPERATOR_IMAGE` | built from this checkout | Set to skip the operator build. |
 | `VIRTUAL_WORKSPACES` | `access ephemeral-resources mcp` | Which ones to deploy, in order. |
 | `EPHEMERAL_VW_DIR` | `../contrib-virtual-ephemeral-resources-virtual-workspace` | Checkout supplying that virtual workspace's `docs/example` manifests; it skips itself if absent. |
