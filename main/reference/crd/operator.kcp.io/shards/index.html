@@ -2129,11 +2129,80 @@ authentication webhook configuration.</p>
 
 <div class="property depth-2">
 <div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.authorization.allowPaths">.spec.authorization.allowPaths</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">array</span>
+
+</div>
+
+<div class="property-description">
+<p>A list of HTTP paths to skip during authorization, i.e. these are authorized without contacting the &lsquo;core&rsquo; kubernetes server.
+If specified, completely overwrites the default of [/healthz,/readyz,/livez].</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.authorization.allowPaths[*]">.spec.authorization.allowPaths[*]</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.authorization.order">.spec.authorization.order</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">array</span>
+
+</div>
+
+<div class="property-description">
+<p>A list of authorizers that should be enabled, allowing administrator rearrange the default order.
+The default order is: [AlwaysAllowGroups,AlwaysAllowPaths,RBAC,Webhook]</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha1-.spec.authorization.order[*]">.spec.authorization.order[*]</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
 <h3 class="property-path" id="v1alpha1-.spec.authorization.webhook">.spec.authorization.webhook</h3>
 </div>
 <div class="property-body">
 <div class="property-meta">
 <span class="property-type">object</span>
+
+</div>
+
+<div class="property-description">
+<p>Authorization Webhook configuration.</p>
 
 </div>
 
@@ -2153,6 +2222,9 @@ authentication webhook configuration.</p>
 <div class="property-description">
 <p>A list of HTTP paths to skip during authorization, i.e. these are authorized without contacting the &lsquo;core&rsquo; kubernetes server.
 If specified, completely overwrites the default of [/healthz,/readyz,/livez].</p>
+
+<p>Deprecated: Use spec.authorization.allowPaths instead. This field is kept for backward
+compatibility but can not be used at the same time as spec.authorization.allowPaths.</p>
 
 </div>
 
