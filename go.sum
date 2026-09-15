@@ -101,8 +101,8 @@ github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnr
 github.com/json-iterator/go v1.1.12/go.mod h1:e30LSqwooZae/UwlEbR2852Gd8hjQvJoHmT4TnhNGBo=
 github.com/kcp-dev/logicalcluster/v3 v3.0.5 h1:JbYakokb+5Uinz09oTXomSUJVQsqfxEvU4RyHUYxHOU=
 github.com/kcp-dev/logicalcluster/v3 v3.0.5/go.mod h1:EWBUBxdr49fUB1cLMO4nOdBWmYifLbP1LfoL20KkXYY=
-github.com/kcp-dev/sdk v0.32.0 h1:H7BPHf/aZbdw/DbYLQX3Nu3lGeR5bmqOsmbt8KyqKRY=
-github.com/kcp-dev/sdk v0.32.0/go.mod h1:H6SCvNS25sReJ61YDy6OPEmngTUFP7/CY0fRM576FM4=
+github.com/kcp-dev/sdk v0.33.0 h1:IqqZ1GtL7g+5jz4DQF9ZzC1tBaOWm0zhy/bQey6FZe0=
+github.com/kcp-dev/sdk v0.33.0/go.mod h1:LMenQETN1Qrt0eq5OOpDq4ZqVhFQoW9+GckmWxDix7U=
 github.com/klauspost/compress v1.18.0 h1:c/Cqfb0r+Yi+JtIEq73FWXVkRonBlf0CRNYc8Zttxdo=
 github.com/klauspost/compress v1.18.0/go.mod h1:2Pp+KzxcywXVXMr50+X0Q/Lsb43OQHYWRCY2AiWywWQ=
 github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=
