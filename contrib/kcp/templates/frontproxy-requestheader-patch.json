@@ -1,0 +1,21 @@
+{
+  "spec": {
+    "extraArgs": [
+      "--requestheader-client-ca-file=/etc/kcp-front-proxy/shard-requestheader-ca/tls.crt",
+      "--requestheader-allowed-names=kcp-front-proxy,kcp-mounts-proxy,root,shard-alpha"
+    ],
+    "extraVolumes": [
+      {
+        "name": "shard-requestheader-ca",
+        "secret": { "secretName": "frontproxy-shard-requestheader-ca" }
+      }
+    ],
+    "extraVolumeMounts": [
+      {
+        "name": "shard-requestheader-ca",
+        "mountPath": "/etc/kcp-front-proxy/shard-requestheader-ca",
+        "readOnly": true
+      }
+    ]
+  }
+}

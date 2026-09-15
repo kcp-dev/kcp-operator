@@ -1,0 +1,20 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: access-vw-workspace-access
+rules:
+  - verbs: ["access"]
+    nonResourceURLs: ["/"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: access-vw-workspace-access
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: access-vw-workspace-access
+subjects:
+  - apiGroup: rbac.authorization.k8s.io
+    kind: User
+    name: access-vw
