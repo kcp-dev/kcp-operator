@@ -46,3 +46,14 @@ type NamedVirtualWorkspaceSpec struct {
 	// Spec is the resolved copy of the VirtualWorkspace spec.
 	Spec operatorv1alpha1.VirtualWorkspaceSpec `json:"spec"`
 }
+
+// ShardPeer is a shard of the installation that serves the Admin workspace
+// (/services/admin), which front-proxies use to discover all shards.
+type ShardPeer struct {
+	// Name is the name of the RootShard or Shard object.
+	Name string `json:"name"`
+
+	// URL is the base URL of the server serving the shard's Admin workspace:
+	// the shard itself, or its external VirtualWorkspace server if one is configured.
+	URL string `json:"url"`
+}

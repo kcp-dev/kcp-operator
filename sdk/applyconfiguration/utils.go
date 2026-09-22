@@ -61,6 +61,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &deployv1alpha1.NamedShardSpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("NamedVirtualWorkspaceSpec"):
 		return &deployv1alpha1.NamedVirtualWorkspaceSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ShardPeer"):
+		return &deployv1alpha1.ShardPeerApplyConfiguration{}
 
 		// Group=operator.kcp.io, Version=v1alpha1
 	case operatorv1alpha1.SchemeGroupVersion.WithKind("AuditPolicySpec"):

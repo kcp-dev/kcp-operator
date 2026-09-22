@@ -28,6 +28,7 @@ type CompiledFrontProxySpecApplyConfiguration struct {
 	FrontProxy *operatorv1alpha1.FrontProxySpecApplyConfiguration `json:"frontProxy,omitempty"`
 	RootShard  *NamedRootShardSpecApplyConfiguration              `json:"rootShard,omitempty"`
 	Shards     []string                                           `json:"shards,omitempty"`
+	ShardPeers []ShardPeerApplyConfiguration                      `json:"shardPeers,omitempty"`
 }
 
 // CompiledFrontProxySpecApplyConfiguration constructs a declarative configuration of the CompiledFrontProxySpec type for use with
@@ -58,6 +59,19 @@ func (b *CompiledFrontProxySpecApplyConfiguration) WithRootShard(value *NamedRoo
 func (b *CompiledFrontProxySpecApplyConfiguration) WithShards(values ...string) *CompiledFrontProxySpecApplyConfiguration {
 	for i := range values {
 		b.Shards = append(b.Shards, values[i])
+	}
+	return b
+}
+
+// WithShardPeers adds the given value to the ShardPeers field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the ShardPeers field.
+func (b *CompiledFrontProxySpecApplyConfiguration) WithShardPeers(values ...*ShardPeerApplyConfiguration) *CompiledFrontProxySpecApplyConfiguration {
+	for i := range values {
+		if values[i] == nil {
+			panic("nil value passed to WithShardPeers")
+		}
+		b.ShardPeers = append(b.ShardPeers, *values[i])
 	}
 	return b
 }

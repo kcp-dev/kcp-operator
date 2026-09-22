@@ -165,6 +165,10 @@ func (r *reconciler) deploymentReconciler() reconciling.NamedDeploymentReconcile
 				mountSecret(secretName, frontProxyBasepath+"/kubeconfig", false)
 			}
 
+			if len(r.shardPeers()) > 0 && supportsShardPeers(version) {
+				mountSecret(r.peersKubeconfigSecretName(), peersKubeconfigPath, true)
+			}
+
 			// front-proxy kubeconfig client cert
 			mountSecret(r.certName(operatorv1alpha1.KubeconfigCertificate), frontProxyBasepath+"/kubeconfig-client-cert", true)
 
@@ -249,6 +253,20 @@ var defaultArgs = []string{
 	"--mapping-file=/etc/kcp-front-proxy/config/path-mapping.yaml",
 }
 
+const peersKubeconfigPath = frontProxyBasepath + "/peers-kubeconfig"
+
+// supportsShardPeers returns whether the front-proxy discovers shards through the Admin
+// workspace and accepts --shard-peer-kubeconfig.
+func supportsShardPeers(version *semver.Version) bool {
+	if version == nil {
+		return true
+	}
+
+	constraint, _ := semver.NewConstraint(">=0.34.0-0")
+
+	return constraint.Check(version)
+}
+
 func supportsMountProxy(version *semver.Version) bool {
 	if version == nil {
 		return true
@@ -263,6 +281,10 @@ func (r *reconciler) getArgs(version *semver.Version) []string {
 	args := defaultArgs
 
 	args = append(args, fmt.Sprintf("--client-ca-file=%s/client-ca/tls.crt", frontProxyBasepath))
+
+	if len(r.shardPeers()) > 0 && supportsShardPeers(version) {
+		args = append(args, fmt.Sprintf("--shard-peer-kubeconfig=%s/kubeconfig", peersKubeconfigPath))
+	}
 
 	if supportsMountProxy(version) {
 		args = append(args,

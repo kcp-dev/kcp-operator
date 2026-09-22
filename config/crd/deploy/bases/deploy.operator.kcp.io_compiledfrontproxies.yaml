@@ -11510,6 +11510,28 @@ spec:
                 - name
                 - spec
                 type: object
+              shardPeers:
+                description: |-
+                  Optional: ShardPeers are the root shard and all Shards belonging to it, used to
+                  seed shard discovery through the Admin workspace.
+                items:
+                  description: |-
+                    ShardPeer is a shard of the installation that serves the Admin workspace
+                    (/services/admin), which front-proxies use to discover all shards.
+                  properties:
+                    name:
+                      description: Name is the name of the RootShard or Shard object.
+                      type: string
+                    url:
+                      description: |-
+                        URL is the base URL of the server serving the shard's Admin workspace:
+                        the shard itself, or its external VirtualWorkspace server if one is configured.
+                      type: string
+                  required:
+                  - name
+                  - url
+                  type: object
+                type: array
               shards:
                 description: 'Optional: Shards are the names of all Shards belonging
                   to the root shard.'

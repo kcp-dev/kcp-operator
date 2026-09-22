@@ -90,6 +90,22 @@ func (r *reconciler) rootShardCAName(caName operatorv1alpha1.CA) string {
 	return resources.GetCompiledRootShardCAName(r.rootShard, caName)
 }
 
+// shardPeers returns the shards seeding the proxy's shard discovery, in either mode.
+func (r *reconciler) shardPeers() []deployv1alpha1.ShardPeer {
+	if r.frontProxy != nil {
+		return r.frontProxy.Spec.ShardPeers
+	}
+	return r.rootShard.Spec.ShardPeers
+}
+
+// peersKubeconfigSecretName is the Secret holding the kubeconfig for --shard-peer-kubeconfig.
+func (r *reconciler) peersKubeconfigSecretName() string {
+	if r.frontProxy != nil {
+		return resources.GetCompiledFrontProxyPeersKubeconfigName(r.frontProxy)
+	}
+	return resources.GetCompiledRootShardProxyPeersKubeconfigName(r.rootShard)
+}
+
 // certName returns the name of one of the proxy's own certificates.
 func (r *reconciler) certName(certKind operatorv1alpha1.Certificate) string {
 	if r.frontProxy != nil {
@@ -152,6 +168,10 @@ func (r *reconciler) Reconcile(ctx context.Context, client ctrlruntimeclient.Cli
 
 	secretReconcilers := []k8creconciling.NamedSecretReconcilerFactory{
 		r.dynamicKubeconfigSecretReconciler(),
+	}
+
+	if len(r.shardPeers()) > 0 {
+		secretReconcilers = append(secretReconcilers, r.peersKubeconfigSecretReconciler())
 	}
 
 	deploymentReconcilers := []k8creconciling.NamedDeploymentReconcilerFactory{

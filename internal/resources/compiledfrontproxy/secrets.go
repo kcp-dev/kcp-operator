@@ -93,3 +93,63 @@ func (r *reconciler) dynamicKubeconfig() ([]byte, error) {
 
 	return yaml.Marshal(kubeconfig)
 }
+
+func (r *reconciler) peersKubeconfigSecretReconciler() reconciling.NamedSecretReconcilerFactory {
+	return func() (string, reconciling.SecretReconciler) {
+		return r.peersKubeconfigSecretName(), func(obj *corev1.Secret) (*corev1.Secret, error) {
+			obj.SetLabels(r.resourceLabels)
+
+			kubeconfig, err := r.peersKubeconfig()
+			if err != nil {
+				return nil, err
+			}
+
+			obj.Data = map[string][]byte{
+				"kubeconfig": kubeconfig,
+			}
+
+			return obj, nil
+		}
+	}
+}
+
+// peersKubeconfig lists every shard as a named cluster. kcp discovers shards through the
+// Admin workspace of these seed peers; the current context supplies the credentials and
+// TLS settings used for all of them.
+func (r *reconciler) peersKubeconfig() ([]byte, error) {
+	peers := r.shardPeers()
+
+	kubeconfig := clientcmdv1.Config{
+		Contexts: []clientcmdv1.NamedContext{
+			{
+				Name: "peers",
+				Context: clientcmdv1.Context{
+					Cluster:  peers[0].Name,
+					AuthInfo: "admin",
+				},
+			},
+		},
+		CurrentContext: "peers",
+		AuthInfos: []clientcmdv1.NamedAuthInfo{
+			{
+				Name: "admin",
+				AuthInfo: clientcmdv1.AuthInfo{
+					ClientCertificate: clientCertificatePath,
+					ClientKey:         clientKeyPath,
+				},
+			},
+		},
+	}
+
+	for _, peer := range peers {
+		kubeconfig.Clusters = append(kubeconfig.Clusters, clientcmdv1.NamedCluster{
+			Name: peer.Name,
+			Cluster: clientcmdv1.Cluster{
+				CertificateAuthority: kubeconfigCAPath,
+				Server:               peer.URL,
+			},
+		})
+	}
+
+	return yaml.Marshal(kubeconfig)
+}

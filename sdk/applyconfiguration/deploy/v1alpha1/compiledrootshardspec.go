@@ -28,6 +28,7 @@ type CompiledRootShardSpecApplyConfiguration struct {
 	RootShard        *operatorv1alpha1.RootShardSpecApplyConfiguration `json:"rootShard,omitempty"`
 	VirtualWorkspace *NamedVirtualWorkspaceSpecApplyConfiguration      `json:"virtualWorkspace,omitempty"`
 	Shards           []string                                          `json:"shards,omitempty"`
+	ShardPeers       []ShardPeerApplyConfiguration                     `json:"shardPeers,omitempty"`
 }
 
 // CompiledRootShardSpecApplyConfiguration constructs a declarative configuration of the CompiledRootShardSpec type for use with
@@ -58,6 +59,19 @@ func (b *CompiledRootShardSpecApplyConfiguration) WithVirtualWorkspace(value *Na
 func (b *CompiledRootShardSpecApplyConfiguration) WithShards(values ...string) *CompiledRootShardSpecApplyConfiguration {
 	for i := range values {
 		b.Shards = append(b.Shards, values[i])
+	}
+	return b
+}
+
+// WithShardPeers adds the given value to the ShardPeers field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the ShardPeers field.
+func (b *CompiledRootShardSpecApplyConfiguration) WithShardPeers(values ...*ShardPeerApplyConfiguration) *CompiledRootShardSpecApplyConfiguration {
+	for i := range values {
+		if values[i] == nil {
+			panic("nil value passed to WithShardPeers")
+		}
+		b.ShardPeers = append(b.ShardPeers, *values[i])
 	}
 	return b
 }
