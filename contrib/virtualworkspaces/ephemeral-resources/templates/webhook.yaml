@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ephemeral-webhook
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ephemeral-webhook
+  template:
+    metadata:
+      labels:
+        app: ephemeral-webhook
+    spec:
+      containers:
+        - name: webhook
+          image: $EPHEMERAL_IMAGE
+          command:
+            - /example-webhook
+          args:
+            - --address=:18443
+            - --tls-cert-file=/etc/webhook/tls/tls.crt
+            - --tls-private-key-file=/etc/webhook/tls/tls.key
+          volumeMounts:
+            - name: tls
+              mountPath: /etc/webhook/tls
+              readOnly: true
+      volumes:
+        - name: tls
+          secret:
+            secretName: ephemeral-webhook-tls
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ephemeral-webhook
+spec:
+  selector:
+    app: ephemeral-webhook
+  ports:
+    - port: 18443
+      targetPort: 18443

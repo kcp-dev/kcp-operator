@@ -283,7 +283,7 @@ spec:
   additionalPathMappings:
     - path: /services/access
       backend: https://access-virtual-workspace.example.svc.cluster.local:6443
-      backend_server_ca: /etc/kcp-front-proxy/tls/ca/tls.crt
+      backend_server_ca: /etc/kcp/tls/ca/tls.crt
       proxy_client_cert: /etc/kcp-front-proxy/requestheader-client/tls.crt
       proxy_client_key: /etc/kcp-front-proxy/requestheader-client/tls.key
 ```

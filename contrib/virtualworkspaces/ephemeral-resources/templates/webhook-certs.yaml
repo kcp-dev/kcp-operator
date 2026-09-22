@@ -1,0 +1,35 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: ephemeral-webhook-ca
+spec:
+  isCA: true
+  commonName: ephemeral-webhook-ca
+  secretName: ephemeral-webhook-ca
+  issuerRef:
+    group: cert-manager.io
+    kind: Issuer
+    name: selfsigned
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: ephemeral-webhook-ca
+spec:
+  ca:
+    secretName: ephemeral-webhook-ca
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: ephemeral-webhook
+spec:
+  dnsNames:
+    - ephemeral-webhook.default.svc.cluster.local
+    - ephemeral-webhook.default.svc
+    - ephemeral-webhook
+  secretName: ephemeral-webhook-tls
+  issuerRef:
+    group: cert-manager.io
+    kind: Issuer
+    name: ephemeral-webhook-ca

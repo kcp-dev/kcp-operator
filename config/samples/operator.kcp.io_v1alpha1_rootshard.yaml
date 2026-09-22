@@ -6,6 +6,12 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
   name: shard-sample
 spec:
+  # Pin the kcp image. This build carries the in-flight virtual-workspace changes
+  # (SelfClusterAccessReview, ephemeral resources) that the samples in
+  # virtual-workspaces/ rely on.
+  image:
+    repository: ghcr.io/kcp-dev/kcp
+    tag: "04fcc9232"
   # if APIExportEndpointSlices should provide publicly accessible shard endpoints
   # (like the api endpoint described by field external, they require a public
   # DNS name. These fields  must be set in secondary shards, also.
