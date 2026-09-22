@@ -157,7 +157,9 @@ func (r *reconciler) kubeconfigCertificateReconciler() reconciling.NamedCertific
 				CommonName: r.certCommonName(),
 
 				Subject: &certmanagerv1.X509Subject{
-					Organizations: []string{"system:masters"},
+					// system:kcp:admin is required to reach the Admin workspace
+					// (/services/admin) that front-proxy uses for shard discovery.
+					Organizations: []string{"system:masters", "system:kcp:admin"},
 				},
 
 				Usages: []certmanagerv1.KeyUsage{
