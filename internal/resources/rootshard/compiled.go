@@ -29,7 +29,7 @@ import (
 
 // CompiledRootShardReconciler resolves a RootShard and everything it references into the
 // render input the CompiledRootShard controller consumes.
-func CompiledRootShardReconciler(rootShard *operatorv1alpha1.RootShard, kcpVW *operatorv1alpha1.VirtualWorkspace, shards []operatorv1alpha1.Shard, revisions map[string]string) reconciling.NamedCompiledRootShardReconcilerFactory {
+func CompiledRootShardReconciler(rootShard *operatorv1alpha1.RootShard, kcpVW *operatorv1alpha1.VirtualWorkspace, shards []operatorv1alpha1.Shard, peers []deployv1alpha1.ShardPeer, revisions map[string]string) reconciling.NamedCompiledRootShardReconcilerFactory {
 	return func() (string, reconciling.CompiledRootShardReconciler) {
 		return rootShard.Name, func(obj *deployv1alpha1.CompiledRootShard) (*deployv1alpha1.CompiledRootShard, error) {
 			obj.Labels = maps.Clone(rootShard.Labels)
@@ -58,6 +58,7 @@ func CompiledRootShardReconciler(rootShard *operatorv1alpha1.RootShard, kcpVW *o
 			}
 
 			obj.Spec.Shards = utils.ShardNames(shards)
+			obj.Spec.ShardPeers = peers
 
 			return obj, nil
 		}

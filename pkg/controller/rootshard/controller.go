@@ -252,6 +252,14 @@ func (r *RootShardReconciler) reconcile(ctx context.Context, client ctrlruntimec
 		errs = append(errs, fmt.Errorf("failed to list shards: %w", shardsErr))
 	}
 
+	var peers []deployv1alpha1.ShardPeer
+	if shardsErr == nil {
+		peers, shardsErr = util.GetShardPeers(ctx, client, rootShard, shards)
+		if shardsErr != nil {
+			errs = append(errs, fmt.Errorf("failed to determine shard peers: %w", shardsErr))
+		}
+	}
+
 	if err := frontproxy.NewRootShardProxy(rootShard).Reconcile(ctx, client, rootShard.Namespace, modifier.Capture(&certs)); err != nil {
 		errs = append(errs, fmt.Errorf("failed to reconcile proxy: %w", err))
 	}
@@ -263,7 +271,7 @@ func (r *RootShardReconciler) reconcile(ctx context.Context, client ctrlruntimec
 	// The workloads themselves are rendered by the CompiledRootShard controller.
 	if vwConfigValid && shardsErr == nil && certsReady {
 		if err := reconciling.ReconcileCompiledRootShards(ctx, []reconciling.NamedCompiledRootShardReconcilerFactory{
-			rootshard.CompiledRootShardReconciler(rootShard, kcpVW, shards, util.MutateKeys(revisions, "cert-", "-revision")),
+			rootshard.CompiledRootShardReconciler(rootShard, kcpVW, shards, peers, util.MutateKeys(revisions, "cert-", "-revision")),
 		}, rootShard.Namespace, client, ownerRefWrapper); err != nil {
 			errs = append(errs, err)
 		}

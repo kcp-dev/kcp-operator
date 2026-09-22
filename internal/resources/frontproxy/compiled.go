@@ -29,7 +29,7 @@ import (
 
 // CompiledFrontProxyReconciler resolves a FrontProxy and everything it references into the
 // render input the CompiledFrontProxy controller consumes.
-func CompiledFrontProxyReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootShard *operatorv1alpha1.RootShard, shards []operatorv1alpha1.Shard, revisions map[string]string) reconciling.NamedCompiledFrontProxyReconcilerFactory {
+func CompiledFrontProxyReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootShard *operatorv1alpha1.RootShard, shards []operatorv1alpha1.Shard, peers []deployv1alpha1.ShardPeer, revisions map[string]string) reconciling.NamedCompiledFrontProxyReconcilerFactory {
 	return func() (string, reconciling.CompiledFrontProxyReconciler) {
 		return frontProxy.Name, func(obj *deployv1alpha1.CompiledFrontProxy) (*deployv1alpha1.CompiledFrontProxy, error) {
 			obj.Labels = maps.Clone(frontProxy.Labels)
@@ -56,6 +56,7 @@ func CompiledFrontProxyReconciler(frontProxy *operatorv1alpha1.FrontProxy, rootS
 			}
 
 			obj.Spec.Shards = utils.ShardNames(shards)
+			obj.Spec.ShardPeers = peers
 
 			return obj, nil
 		}

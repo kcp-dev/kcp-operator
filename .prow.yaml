@@ -229,7 +229,7 @@ presubmits:
             - name: KCP_TAG
               value: main
             - name: KCP_RELEASE
-              value: '0.33'
+              value: '0.34'
           resources:
             requests:
               memory: 8Gi

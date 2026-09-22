@@ -550,6 +550,14 @@ func GetCompiledFrontProxyDynamicKubeconfigName(f *deployv1alpha1.CompiledFrontP
 	return fmt.Sprintf("%s-%s-dynamic-kubeconfig", f.Spec.RootShard.Name, f.Name)
 }
 
+func GetCompiledRootShardProxyPeersKubeconfigName(r *deployv1alpha1.CompiledRootShard) string {
+	return fmt.Sprintf("%s-proxy-peers-kubeconfig", r.Name)
+}
+
+func GetCompiledFrontProxyPeersKubeconfigName(f *deployv1alpha1.CompiledFrontProxy) string {
+	return fmt.Sprintf("%s-%s-peers-kubeconfig", f.Spec.RootShard.Name, f.Name)
+}
+
 func GetCacheServerClientCertificateName(s *operatorv1alpha1.CacheServer) string {
 	return fmt.Sprintf("%s-client-certificate", s.Name)
 }

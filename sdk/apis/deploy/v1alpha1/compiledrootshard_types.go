@@ -35,6 +35,10 @@ type CompiledRootShardSpec struct {
 
 	// Optional: Shards are the names of all Shards belonging to the root shard.
 	Shards []string `json:"shards,omitempty"`
+
+	// Optional: ShardPeers are the root shard and all Shards belonging to it, used to
+	// seed shard discovery through the Admin workspace.
+	ShardPeers []ShardPeer `json:"shardPeers,omitempty"`
 }
 
 // +genclient

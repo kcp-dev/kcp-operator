@@ -76,6 +76,29 @@ func (r *FrontProxyReconciler) SetupWithManager(mgr mcmanager.Manager, opts ...m
 		return requests
 	})
 
+	// Shards are seed peers for the front-proxy's shard discovery, so keep them current.
+	shardHandler := util.EnqueueMapped(func(ctx context.Context, client ctrlruntimeclient.Client, obj ctrlruntimeclient.Object) []reconcile.Request {
+		shard := obj.(*operatorv1alpha1.Shard)
+		if shard.Spec.RootShard.Reference == nil {
+			return nil
+		}
+
+		var fpList operatorv1alpha1.FrontProxyList
+		if err := client.List(ctx, &fpList, &ctrlruntimeclient.ListOptions{Namespace: shard.Namespace}); err != nil {
+			utilruntime.HandleError(err)
+			return nil
+		}
+
+		var requests []reconcile.Request
+		for _, frontProxy := range fpList.Items {
+			if ref := frontProxy.Spec.RootShard.Reference; ref != nil && ref.Name == shard.Spec.RootShard.Reference.Name {
+				requests = append(requests, reconcile.Request{NamespacedName: ctrlruntimeclient.ObjectKeyFromObject(&frontProxy)})
+			}
+		}
+
+		return requests
+	})
+
 	return mcbuilder.ControllerManagedBy(mgr).
 		Named("frontproxy").
 		For(&operatorv1alpha1.FrontProxy{}, util.EngageFor(opts)...).
@@ -83,6 +106,7 @@ func (r *FrontProxyReconciler) SetupWithManager(mgr mcmanager.Manager, opts ...m
 		Owns(&corev1.Secret{}, util.EngageOwns(opts)...).
 		Owns(&certmanagerv1.Certificate{}, util.EngageOwns(opts)...).
 		Watches(&operatorv1alpha1.RootShard{}, rootShardHandler, util.EngageWatches(opts)...).
+		Watches(&operatorv1alpha1.Shard{}, shardHandler, util.EngageWatches(opts)...).
 		Complete(r)
 }
 
@@ -151,6 +175,11 @@ func (r *FrontProxyReconciler) reconcile(ctx context.Context, client ctrlruntime
 		return conditions, fmt.Errorf("failed to list shards: %w", err)
 	}
 
+	peers, err := util.GetShardPeers(ctx, client, rootShard, shards)
+	if err != nil {
+		return conditions, fmt.Errorf("failed to determine shard peers: %w", err)
+	}
+
 	// Certificates and CA bundles stay here; the workloads are rendered by the
 	// CompiledFrontProxy controller.
 	var certs []*certmanagerv1.Certificate
@@ -168,7 +197,7 @@ func (r *FrontProxyReconciler) reconcile(ctx context.Context, client ctrlruntime
 	}
 
 	if err := reconciling.ReconcileCompiledFrontProxys(ctx, []reconciling.NamedCompiledFrontProxyReconcilerFactory{
-		frontproxy.CompiledFrontProxyReconciler(frontProxy, rootShard, shards, util.MutateKeys(revisions, "cert-", "-revision")),
+		frontproxy.CompiledFrontProxyReconciler(frontProxy, rootShard, shards, peers, util.MutateKeys(revisions, "cert-", "-revision")),
 	}, frontProxy.Namespace, client, ownerRefWrapper); err != nil {
 		errs = append(errs, err)
 	}
