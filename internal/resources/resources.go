@@ -44,7 +44,7 @@ const (
 	//
 	// When changing this to a new minor version, you must also update
 	// the .prow.yaml accordingly and shift the jobs.
-	ImageTag = "v0.33.0"
+	ImageTag = "v0.33.1"
 
 	appNameLabel      = "app.kubernetes.io/name"
 	appInstanceLabel  = "app.kubernetes.io/instance"
