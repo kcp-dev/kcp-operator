@@ -57,7 +57,17 @@ import (
 	operatorv1alpha1 "github.com/kcp-dev/kcp-operator/sdk/apis/operator/v1alpha1"
 )
 
-const cleanupFinalizer = "operator.kcp.io/cleanup-shard"
+const (
+	cleanupFinalizer = "operator.kcp.io/cleanup-shard"
+
+	// shardRepresentationAnnotation marks a Shard in the root workspace as a read-only
+	// representation mirrored by kcp from the shard-owned object. kcp removes it once the
+	// shard-owned object is gone.
+	shardRepresentationAnnotation = "core.kcp.io/shard-representation"
+)
+
+// systemShardCluster is the logical cluster on every shard holding its own Shard object.
+var systemShardCluster = logicalcluster.NewPath("system:shard")
 
 // ShardReconciler reconciles a Shard object
 type ShardReconciler struct {
@@ -318,22 +328,19 @@ func (r *ShardReconciler) handleDeletion(ctx context.Context, client ctrlruntime
 		return []metav1.Condition{cond}, nil
 	}
 
-	// Create client to root shard
-	kcpClient, err := operatorclient.NewRootShardClient(ctx, client, r.Address, rootShard, logicalcluster.NewPath("root"), scheme)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create root shard client: %w", err)
+	// Since kcp 0.34, each shard owns its Shard object in its own system:shard logical cluster,
+	// from where it is replicated to the cache server; the root workspace only holds a read-only
+	// representation maintained by kcp. Older kcp versions register shards directly in root.
+	// Both objects are protected against writes by anyone but system:masters, so the shard is
+	// deregistered using the shard's own client certificate.
+	//
+	// TODO: This will go away once shards owns their owns full lifecycle.
+	if err := r.deleteKCPShard(ctx, client, scheme, r.Address.Shard(s), s, systemShardCluster); err != nil {
+		return nil, err
 	}
 
-	// Delete the kcp Shard object
-	kcpShard := &kcpcorev1alpha1.Shard{}
-	kcpShard.Name = s.Name
-
-	logger.Info("Deleting kcp Shard object from root workspace", "name", s.Name)
-	if err := kcpClient.Delete(ctx, kcpShard); err != nil {
-		if !apierrors.IsNotFound(err) {
-			return nil, fmt.Errorf("failed to delete kcp Shard: %w", err)
-		}
-		logger.V(2).Info("kcp Shard object already deleted")
+	if err := r.deleteKCPShard(ctx, client, scheme, r.Address.RootShard(rootShard), s, logicalcluster.NewPath("root")); err != nil {
+		return nil, err
 	}
 
 	// Remove finalizer
@@ -342,6 +349,38 @@ func (r *ShardReconciler) handleDeletion(ctx context.Context, client ctrlruntime
 	}
 
 	return nil, nil
+}
+
+// deleteKCPShard deletes the kcp Shard object for s from the given logical cluster. Kcp-managed
+// representations are left alone, since kcp removes them itself.
+func (r *ShardReconciler) deleteKCPShard(ctx context.Context, client ctrlruntimeclient.Client, scheme *runtime.Scheme, endpoint operatorclient.Endpoint, s *operatorv1alpha1.Shard, cluster logicalcluster.Path) error {
+	logger := log.FromContext(ctx).WithValues("name", s.Name, "cluster", cluster.String())
+
+	kcpClient, err := operatorclient.NewShardIdentityClient(ctx, client, endpoint, s, cluster, scheme)
+	if err != nil {
+		return fmt.Errorf("failed to create client for %s: %w", cluster, err)
+	}
+
+	kcpShard := &kcpcorev1alpha1.Shard{}
+	if err := kcpClient.Get(ctx, types.NamespacedName{Name: s.Name}, kcpShard); err != nil {
+		if apierrors.IsNotFound(err) {
+			logger.V(2).Info("kcp Shard object does not exist")
+			return nil
+		}
+		return fmt.Errorf("failed to get kcp Shard in %s: %w", cluster, err)
+	}
+
+	if kcpShard.Annotations[shardRepresentationAnnotation] == "true" {
+		logger.V(2).Info("Leaving kcp Shard representation to kcp")
+		return nil
+	}
+
+	logger.Info("Deleting kcp Shard object")
+	if err := kcpClient.Delete(ctx, kcpShard); ctrlruntimeclient.IgnoreNotFound(err) != nil {
+		return fmt.Errorf("failed to delete kcp Shard in %s: %w", cluster, err)
+	}
+
+	return nil
 }
 
 func (r *ShardReconciler) ensureFinalizer(ctx context.Context, client ctrlruntimeclient.Client, s *operatorv1alpha1.Shard) (bool, error) {
