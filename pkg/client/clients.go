@@ -52,6 +52,23 @@ func NewShardClient(ctx context.Context, c ctrlruntimeclient.Client, addr Addres
 	return newClient(ctx, c, addr.Shard(shard), cluster, scheme, rootShard)
 }
 
+// NewShardIdentityClient returns a new client for talking to the given endpoint as the shard
+// itself, using the shard's own (system:masters) client certificate. This is required for
+// managing the shard's own Shard object, which kcp protects against writes by anyone else.
+func NewShardIdentityClient(ctx context.Context, c ctrlruntimeclient.Client, endpoint Endpoint, shard *operatorv1alpha1.Shard, cluster logicalcluster.Path, scheme *runtime.Scheme) (ctrlruntimeclient.Client, error) {
+	key := types.NamespacedName{
+		Namespace: shard.Namespace,
+		Name:      resources.GetShardCertificateName(shard, operatorv1alpha1.ClientCertificate),
+	}
+
+	tlsConfig, err := getTLSConfigFromSecret(ctx, c, key)
+	if err != nil {
+		return nil, fmt.Errorf("failed to determine TLS settings: %w", err)
+	}
+
+	return newClientWithTLS(endpoint, cluster, scheme, tlsConfig)
+}
+
 func newClient(
 	ctx context.Context,
 	c ctrlruntimeclient.Client,
@@ -64,6 +81,11 @@ func newClient(
 	if err != nil {
 		return nil, fmt.Errorf("failed to determine TLS settings: %w", err)
 	}
+
+	return newClientWithTLS(endpoint, cluster, scheme, tlsConfig)
+}
+
+func newClientWithTLS(endpoint Endpoint, cluster logicalcluster.Path, scheme *runtime.Scheme, tlsConfig rest.TLSClientConfig) (ctrlruntimeclient.Client, error) {
 	tlsConfig.ServerName = endpoint.ServerName
 
 	host := endpoint.URL
@@ -90,9 +112,14 @@ func getTLSConfig(ctx context.Context, c ctrlruntimeclient.Client, rootShard *op
 		Name:      resources.GetRootShardCertificateName(rootShard, operatorv1alpha1.OperatorCertificate),
 	}
 
+	return getTLSConfigFromSecret(ctx, c, key)
+}
+
+// getTLSConfigFromSecret returns the CA and client certificate stored in a cert-manager Secret.
+func getTLSConfigFromSecret(ctx context.Context, c ctrlruntimeclient.Client, key types.NamespacedName) (rest.TLSClientConfig, error) {
 	certSecret := &corev1.Secret{}
 	if err := c.Get(ctx, key, certSecret); err != nil {
-		return rest.TLSClientConfig{}, fmt.Errorf("failed to get root shard proxy Secret: %w", err)
+		return rest.TLSClientConfig{}, fmt.Errorf("failed to get client certificate Secret %s: %w", key.Name, err)
 	}
 
 	return rest.TLSClientConfig{
