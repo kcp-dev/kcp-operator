@@ -248,22 +248,22 @@ func GetNamedVirtualWorkspaceResourceLabels(vw deployv1alpha1.NamedVirtualWorksp
 	return getResourceLabels(vw.Name, "virtual-workspace")
 }
 
-func GetRootShardBaseHost(r *operatorv1alpha1.RootShard) string {
-	clusterDomain := r.Spec.ClusterDomain
-	if clusterDomain == "" {
-		clusterDomain = defaultClusterDomain
+// GetRootShardClusterDomain returns the DNS domain of the cluster the RootShard runs in,
+// defaulting to the cluster default when the spec does not configure one.
+func GetRootShardClusterDomain(r *operatorv1alpha1.RootShard) string {
+	if r.Spec.ClusterDomain != "" {
+		return r.Spec.ClusterDomain
 	}
 
-	return fmt.Sprintf("%s-kcp.%s.svc.%s", r.Name, r.Namespace, clusterDomain)
+	return defaultClusterDomain
+}
+
+func GetRootShardBaseHost(r *operatorv1alpha1.RootShard) string {
+	return fmt.Sprintf("%s-kcp.%s.svc.%s", r.Name, r.Namespace, GetRootShardClusterDomain(r))
 }
 
 func GetRootShardProxyBaseHost(r *operatorv1alpha1.RootShard) string {
-	clusterDomain := r.Spec.ClusterDomain
-	if clusterDomain == "" {
-		clusterDomain = defaultClusterDomain
-	}
-
-	return fmt.Sprintf("%s-proxy.%s.svc.%s", r.Name, r.Namespace, clusterDomain)
+	return fmt.Sprintf("%s-proxy.%s.svc.%s", r.Name, r.Namespace, GetRootShardClusterDomain(r))
 }
 
 func GetCompiledRootShardBaseHost(r *deployv1alpha1.CompiledRootShard) string {
