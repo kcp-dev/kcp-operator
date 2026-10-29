@@ -7,7 +7,7 @@
 #
 # Build context is the repository root:
 #   docker build --file hack/ci/testdata/mock-vw/Dockerfile .
-FROM docker.io/golang:1.26.4 AS builder
+FROM docker.io/golang:1.26.7 AS builder
 
 WORKDIR /workspace
 COPY go.mod go.mod
