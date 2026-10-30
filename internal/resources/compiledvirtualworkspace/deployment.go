@@ -402,14 +402,19 @@ func getArgs(vw *deployv1alpha1.CompiledVirtualWorkspace) []string {
 		fmt.Sprintf("--kubeconfig=%s/kubeconfig", serverKubeconfigMountPath(vw)),
 	}
 
-	// --shard-external-url is deprecated in v0.31 but before that a required but unused flag.
-	// TODO(ntnn): We need a way to shut this off if it isn't required.
-	args = append(args, "--shard-external-url=https://127.0.0.1:6443")
+	// Flags only kcp's own virtual-workspace server understands. A custom server (spec.command
+	// set) built on pflag exits on an unknown flag rather than ignoring it, so these are only
+	// generated for kcp's own server — which matches the API documentation on spec.command. The
+	// cache server's kubeconfig stays mounted either way; a custom server that wants it passes
+	// the flag through spec.extraArgs. See TestVirtualWorkspaceArgumentSurface.
+	if len(vw.Spec.VirtualWorkspace.Command) == 0 {
+		// --shard-external-url is deprecated in v0.31 but before that a required but unused flag.
+		args = append(args, "--shard-external-url=https://127.0.0.1:6443")
 
-	// --cache-kubeconfig is required for kcp's own virtual-workspace.
-	// TODO(ntnn): We need a way to shut this off if it isn't required.
-	if getEffectiveCacheRef(vw) != "" {
-		args = append(args, fmt.Sprintf("--cache-kubeconfig=%s/kubeconfig", getCacheServerKubeconfigMountPath()))
+		// --cache-kubeconfig is required for kcp's own virtual-workspace.
+		if getEffectiveCacheRef(vw) != "" {
+			args = append(args, fmt.Sprintf("--cache-kubeconfig=%s/kubeconfig", getCacheServerKubeconfigMountPath()))
+		}
 	}
 
 	args = append(args, utils.GetLoggingArgs(vw.Spec.VirtualWorkspace.Logging)...)

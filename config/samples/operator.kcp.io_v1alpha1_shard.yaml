@@ -6,6 +6,10 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
   name: secondary-shard
 spec:
+  # Keep in sync with the root shard's image (operator.kcp.io_v1alpha1_rootshard.yaml).
+  image:
+    repository: ghcr.io/kcp-dev/kcp
+    tag: "04fcc9232"
   etcd:
     endpoints:
       - http://etcd-shard.default.svc.cluster.local:2379

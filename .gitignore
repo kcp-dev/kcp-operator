@@ -36,3 +36,8 @@ go.work.sum
 
 # developer local files
 .pre-commit-config.yaml
+
+# hack/gateway-api-setup.sh runtime files
+.gateway-api-cluster.kubeconfig
+.gateway-api-port-forward.pid
+kcp-admin.kubeconfig
