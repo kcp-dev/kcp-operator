@@ -1,0 +1,54 @@
+apiVersion: operator.kcp.io/v1alpha1
+kind: Kubeconfig
+metadata:
+  name: mcp-vw-server
+spec:
+  target:
+    frontProxyRef:
+      name: frontproxy
+  username: mcp-virtual-workspace
+  validity: 8766h
+  secretRef:
+    name: mcp-vw-server-kubeconfig
+  authorization:
+    clusterRoleBindings:
+      clusterRoles:
+        - mcp-virtual-workspace-impersonator
+---
+apiVersion: operator.kcp.io/v1alpha1
+kind: VirtualWorkspace
+metadata:
+  name: mcp
+spec:
+  resources:
+    requests:
+      cpu: ${KCP_CPU_REQUEST}
+      memory: ${KCP_MEMORY_REQUEST}
+  target:
+    rootShardRef:
+      name: root
+  external:
+    hostname: $BASE_DOMAIN
+    port: $PORT
+  image:
+    repository: ghcr.io/kcp-dev/contrib-mcp-virtual-workspace
+    tag: latest
+  command:
+    - /mcp-virtual-workspace
+    - serve
+  replicas: 1
+  kubeconfigSecretRef:
+    name: mcp-vw-server-kubeconfig
+  extraArgs:
+    - --access-url=https://$BASE_DOMAIN:$PORT/services/access
+    - --access-ca-file=/etc/kcp/tls/ca/root/tls.crt
+  deploymentTemplate:
+    spec:
+      template:
+        spec:
+          hostAliases:
+            - ip: $GATEWAY_IP
+              hostnames:
+                - $BASE_DOMAIN
+                - root.$BASE_DOMAIN
+                - alpha.$BASE_DOMAIN

@@ -1,0 +1,156 @@
+# Deploying the ephemeral resources virtual workspace
+# (https://github.com/kcp-dev/contrib-virtual-ephemeral-resources-virtual-workspace), which serves
+# webhook-backed, non-persisted resources: a client POSTs an object, a provider's webhook answers
+# synchronously, and nothing reaches etcd.
+#
+# This one asks more of the installation than the other samples in this directory:
+#
+#   * kcp itself must carry the ephemeral-resources PRs (kcp-dev/kcp#4302..#4305). The image
+#     pinned in ../operator.kcp.io_v1alpha1_rootshard.yaml (ghcr.io/kcp-dev/kcp:04fcc9232) does.
+#   * The shards need `--feature-gates=CacheAPIs=true` (via spec.extraArgs on the RootShard/Shard),
+#     or the endpoint slice is never replicated and the bound CRD serves the resource from etcd
+#     instead — everything appears to work while doing the opposite of what this server is for.
+#   * The provider-side objects (the EphemeralResourceEndpointSlice CRD, APIResourceSchemas,
+#     APIExport, RBAC) have to be bootstrapped in a provider workspace, and the repository's
+#     endpointslice-controller has to run against that workspace to publish this server's URL —
+#     it is a separate, provider-scoped process and deliberately not part of this Deployment.
+#     See docs/deployment.md in the repository for the full procedure.
+#   * The provider's webhook must be reachable from this pod; the example webhook in the
+#     repository works for smoke tests.
+#
+# There is no published container image for this repository yet: build one from its Dockerfile-less
+# tree (a two-line distroless Dockerfile around `go build ./cmd/ephemeral-virtual-workspace` is
+# enough) and point spec.image at it.
+#
+# The operator's generated arguments all fit: the server is built on the generic apiserver options,
+# so the serving certificate, client CA, requestheader flags and --kubeconfig are understood, and
+# `--cache-kubeconfig` is a flag it accepts natively. Since #292 the operator also passes
+# `--shard-external-url`, which the server binary has to tolerate to start.
+#
+# No kubeconfigSecretRef is set on purpose: the server's informers watch every logical cluster at
+# once, which needs the wildcard-capable logical-cluster-admin credential the operator mounts by
+# default — the same one kcp's own virtual-workspace server uses.
+apiVersion: operator.kcp.io/v1alpha1
+kind: VirtualWorkspace
+metadata:
+  labels:
+    app.kubernetes.io/name: kcp-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: ephemeral
+spec:
+  # A singleton virtual workspace: shards on the far side resolve the endpoint slice's URL and
+  # dial it, whichever shard the consumer workspace lives on.
+  target:
+    rootShardRef:
+      name: shard-sample
+
+  # Where shards reach this virtual workspace: routed through the front-proxy (see the FrontProxy
+  # patch below), so this is the front-proxy's hostname and port. It must match the
+  # --external-url the endpointslice-controller publishes, or shards will dial an address nothing
+  # answers on.
+  external:
+    hostname: example.operator.kcp.io
+    port: 6443
+
+  image:
+    # No published image yet — build and push your own, see the header comment.
+    repository: ghcr.io/kcp-dev/contrib-virtual-ephemeral-resources-virtual-workspace
+    tag: latest
+
+  command:
+    - /ephemeral-virtual-workspace
+
+  extraArgs:
+    # The registry of webhook-backed resources, from the ConfigMap below. Read once at startup;
+    # changing the ConfigMap requires a rollout.
+    - --ephemeral-config=/etc/ephemeral/config/ephemeral-config.yaml
+    # Part of the served path: <external-url>/services/<name>/<cluster>/<export>. Has to match
+    # what the endpointslice-controller publishes and the front-proxy mapping below.
+    - --virtual-workspace-name=ephemeral-buckets
+
+  # The webhook registry. This volume/mount pair is why extraVolumes exists: the operator knows
+  # nothing about this server's config file.
+  extraVolumes:
+    - name: ephemeral-config
+      configMap:
+        name: ephemeral-vw-config
+  extraVolumeMounts:
+    - name: ephemeral-config
+      mountPath: /etc/ephemeral/config
+      readOnly: true
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 512Mi
+
+  deploymentTemplate:
+    spec:
+      template:
+        spec:
+          hostAliases:
+            # The logical-cluster-admin kubeconfig addresses the shard by its external hostname.
+            # Same override as in the RootShard sample.
+            - ip: "10.96.100.100"
+              hostnames:
+                - "example.operator.kcp.io"
+
+---
+# The registry of webhook-backed resources, mounted into the server above. Modelled on
+# docs/example/ephemeral-config.yaml in the repository; every value below is example data that has
+# to match your provider workspace, APIExport and webhook endpoint.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app.kubernetes.io/name: kcp-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: ephemeral-vw-config
+data:
+  ephemeral-config.yaml: |
+    apiVersion: ephemeral.contrib.kcp.io/v1alpha1
+    kind: EphemeralWebhookConfiguration
+    resources:
+      - export:
+          # Workspace path (or logical cluster name) and name of the APIExport.
+          path: root:providers:s3
+          name: s3.example.com
+        # Which resource of that export is webhook-backed.
+        group: s3.example.com
+        resource: bucketinfos
+        webhook:
+          # https only, and it must not resolve to a private address unless the server is
+          # started with --allow-private-webhook-addresses (development only). Replace with the
+          # provider's real endpoint.
+          url: https://webhook.example.com:18443/ephemeral/bucketinfos
+          # Verifies the webhook's serving certificate; omit to use the system trust store.
+          # A client certificate (clientCertFile/clientKeyFile) is strongly recommended, since
+          # the review asserts the caller's identity — mount it via extraVolumes.
+          timeoutSeconds: 10
+
+---
+# The front-proxy routes the served path prefix to this server's Service, so the URL the
+# endpointslice-controller publishes (--external-url=https://example.operator.kcp.io:6443) works
+# from any shard. Merge this into the FrontProxy object (see
+# operator.kcp.io_v1alpha1_frontproxy.yaml and the other samples in this directory).
+#
+# Note what this routing implies: the shard's client certificate terminates at the front-proxy,
+# which re-originates with its requestheader client certificate — so this server authenticates the
+# forwarded X-Remote-* identity via the requestheader CA the operator already configures. The
+# operator's --requestheader-allowed-names covers the front-proxy's certificate.
+apiVersion: operator.kcp.io/v1alpha1
+kind: FrontProxy
+metadata:
+  name: frontproxy-sample
+spec:
+  rootShard:
+    ref:
+      name: shard-sample
+  additionalPathMappings:
+    - path: /services/ephemeral-buckets
+      backend: https://ephemeral-virtual-workspace.default.svc.cluster.local:6443
+      backend_server_ca: /etc/kcp/tls/ca/tls.crt
+      proxy_client_cert: /etc/kcp-front-proxy/requestheader-client/tls.crt
+      proxy_client_key: /etc/kcp-front-proxy/requestheader-client/tls.key

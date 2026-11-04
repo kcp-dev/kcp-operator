@@ -2,8 +2,9 @@
 # (https://github.com/kcp-dev/contrib-access-virtual-workspace) as the example.
 #
 # The operator mounts the same PKI it gives kcp's own virtual-workspace server: the serving
-# certificate and the client and requestheader CAs. Because spec.command is set, it leaves out the
-# flags only kcp's own server understands, so the custom server does not die on an unknown flag.
+# certificate and the client and requestheader CAs. Note that since #292 the operator passes
+# `--shard-external-url` (and `--cache-kubeconfig`, when a cache server is referenced) to custom
+# servers as well, so the server binary has to tolerate those flags to start.
 #
 # The two containers run as different identities, both minted by the Kubeconfig objects below and
 # both reaching kcp through the front-proxy: the init container bootstraps as kcp-admin, the server
@@ -180,6 +181,6 @@ spec:
   additionalPathMappings:
     - path: /services/access
       backend: https://access-virtual-workspace.default.svc.cluster.local:6443
-      backend_server_ca: /etc/kcp-front-proxy/tls/ca/tls.crt
+      backend_server_ca: /etc/kcp/tls/ca/tls.crt
       proxy_client_cert: /etc/kcp-front-proxy/requestheader-client/tls.crt
       proxy_client_key: /etc/kcp-front-proxy/requestheader-client/tls.key
