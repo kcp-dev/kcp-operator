@@ -156,6 +156,39 @@ func TestDeploymentReconciler(t *testing.T) {
 			},
 		},
 		{
+			name: "old kcp version passes the root shard kubeconfig",
+			shard: compiledShard(operatorv1alpha1.ShardSpec{
+				CommonShardSpec: operatorv1alpha1.CommonShardSpec{
+					Image: &operatorv1alpha1.ImageSpec{
+						Tag: "v0.33.6",
+					},
+				},
+			}),
+			validateDeploy: func(t *testing.T, dep *appsv1.Deployment) {
+				container := dep.Spec.Template.Spec.Containers[0]
+				assert.Contains(t, container.Args, "--root-shard-kubeconfig-file=/etc/kcp/client-kubeconfig/kubeconfig")
+			},
+		},
+		{
+			name: "new kcp version omits the root shard kubeconfig",
+			shard: compiledShard(operatorv1alpha1.ShardSpec{
+				CommonShardSpec: operatorv1alpha1.CommonShardSpec{
+					Image: &operatorv1alpha1.ImageSpec{
+						Tag: "v0.34.0",
+					},
+				},
+			}),
+			validateDeploy: func(t *testing.T, dep *appsv1.Deployment) {
+				container := dep.Spec.Template.Spec.Containers[0]
+				for _, arg := range container.Args {
+					assert.NotContains(t, arg, "--root-shard-kubeconfig-file")
+				}
+
+				// the client kubeconfig is still needed as the fallback cache kubeconfig
+				assert.Contains(t, container.Args, "--cache-kubeconfig=/etc/kcp/client-kubeconfig/kubeconfig")
+			},
+		},
+		{
 			name: "old kcp version omits mount-proxy flags and mount",
 			shard: compiledShard(operatorv1alpha1.ShardSpec{
 				CommonShardSpec: operatorv1alpha1.CommonShardSpec{
