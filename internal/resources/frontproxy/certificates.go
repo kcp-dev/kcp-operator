@@ -72,29 +72,7 @@ func (r *reconciler) serverCertificateReconciler() reconciling.NamedCertificateR
 
 	name := r.certName(certKind)
 	template := r.certTemplateMap().CertificateTemplate(certKind)
-	fpService := r.serviceName()
-
-	dnsNames := []string{
-		fpService,
-		fmt.Sprintf("%s.%s", fpService, r.rootShard.Namespace),
-		fmt.Sprintf("%s.%s.svc.cluster.local", fpService, r.rootShard.Namespace),
-	}
-
-	if r.frontProxy != nil {
-		// only add the external hostname if this is not reconciling the rootshard-internal-only proxy
-		dnsNames = append(dnsNames, r.rootShard.Spec.External.Hostname)
-		if r.rootShard.Spec.External.PrivateHostname != "" {
-			dnsNames = append(dnsNames, r.rootShard.Spec.External.PrivateHostname)
-		}
-
-		// DEPRECATED: keep support for the deprecated ExternalHostname field for now
-		// to not break existing front-proxy installations.
-		if r.frontProxy.Spec.ExternalHostname != "" { //nolint:staticcheck
-			dnsNames = append(dnsNames, r.frontProxy.Spec.ExternalHostname) //nolint:staticcheck
-		} else if r.frontProxy.Spec.External.Hostname != "" {
-			dnsNames = append(dnsNames, r.frontProxy.Spec.External.Hostname)
-		}
-	}
+	dnsNames := r.serverDNSNames()
 
 	return func() (string, reconciling.CertificateReconciler) {
 		return name, func(cert *certmanagerv1.Certificate) (*certmanagerv1.Certificate, error) {
@@ -130,6 +108,38 @@ func (r *reconciler) serverCertificateReconciler() reconciling.NamedCertificateR
 			return utils.ApplyCertificateTemplate(cert, &template), nil
 		}
 	}
+}
+
+// serverDNSNames returns the DNS names for the proxy's server certificate: the Service
+// short forms plus the fully qualified Service name, which lives in the cluster domain
+// configured on the RootShard. The operator itself addresses the proxy through exactly
+// that name (see GetRootShardProxyBaseURL), so it has to be covered by the certificate.
+func (r *reconciler) serverDNSNames() []string {
+	serviceName := r.serviceName()
+
+	dnsNames := []string{
+		serviceName,
+		fmt.Sprintf("%s.%s", serviceName, r.rootShard.Namespace),
+		fmt.Sprintf("%s.%s.svc.%s", serviceName, r.rootShard.Namespace, resources.GetRootShardClusterDomain(r.rootShard)),
+	}
+
+	if r.frontProxy != nil {
+		// only add the external hostname if this is not reconciling the rootshard-internal-only proxy
+		dnsNames = append(dnsNames, r.rootShard.Spec.External.Hostname)
+		if r.rootShard.Spec.External.PrivateHostname != "" {
+			dnsNames = append(dnsNames, r.rootShard.Spec.External.PrivateHostname)
+		}
+
+		// DEPRECATED: keep support for the deprecated ExternalHostname field for now
+		// to not break existing front-proxy installations.
+		if r.frontProxy.Spec.ExternalHostname != "" { //nolint:staticcheck
+			dnsNames = append(dnsNames, r.frontProxy.Spec.ExternalHostname) //nolint:staticcheck
+		} else if r.frontProxy.Spec.External.Hostname != "" {
+			dnsNames = append(dnsNames, r.frontProxy.Spec.External.Hostname)
+		}
+	}
+
+	return dnsNames
 }
 
 func (r *reconciler) kubeconfigCertificateReconciler() reconciling.NamedCertificateReconcilerFactory {
