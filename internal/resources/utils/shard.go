@@ -71,6 +71,7 @@ func ApplyCommonShardDeploymentProperties(deployment *appsv1.Deployment) *appsv1
 		},
 		ReadOnlyRootFilesystem:   ptr.To(true),
 		AllowPrivilegeEscalation: ptr.To(false),
+		RunAsNonRoot:             ptr.To(true),
 		Capabilities: &corev1.Capabilities{
 			Drop: []corev1.Capability{
 				corev1.Capability("ALL"),
