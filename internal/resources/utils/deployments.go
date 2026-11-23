@@ -130,6 +130,9 @@ func ApplyAuthConfiguration(deployment *appsv1.Deployment, config *operatorv1alp
 
 // ApplyPodSecurityContext applies the specified podSecurityContext to the overall pod in the deployment
 func ApplyPodSecurityContext(deployment *appsv1.Deployment, podSecurityContext *corev1.PodSecurityContext) *appsv1.Deployment {
+	if podSecurityContext == nil {
+		return deployment
+	}
 	deployment.Spec.Template.Spec.SecurityContext = podSecurityContext.DeepCopy()
 	return deployment
 }
