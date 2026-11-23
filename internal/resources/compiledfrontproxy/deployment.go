@@ -36,13 +36,15 @@ import (
 
 func (r *reconciler) deploymentReconciler() reconciling.NamedDeploymentReconcilerFactory {
 	var (
-		name              string
-		imageSpec         *operatorv1alpha1.ImageSpec
-		depResources      *corev1.ResourceRequirements
-		template          *operatorv1alpha1.DeploymentTemplate
-		replicas          *int32
-		extraVolumes      []corev1.Volume
-		extraVolumeMounts []corev1.VolumeMount
+		name               string
+		imageSpec          *operatorv1alpha1.ImageSpec
+		depResources       *corev1.ResourceRequirements
+		template           *operatorv1alpha1.DeploymentTemplate
+		replicas           *int32
+		extraVolumes       []corev1.Volume
+		extraVolumeMounts  []corev1.VolumeMount
+		podSecurityContext *corev1.PodSecurityContext
+		securityContext    *corev1.SecurityContext
 	)
 
 	if r.frontProxy != nil {
@@ -53,6 +55,8 @@ func (r *reconciler) deploymentReconciler() reconciling.NamedDeploymentReconcile
 		replicas = r.frontProxy.Spec.FrontProxy.Replicas
 		extraVolumes = r.frontProxy.Spec.FrontProxy.ExtraVolumes
 		extraVolumeMounts = r.frontProxy.Spec.FrontProxy.ExtraVolumeMounts
+		podSecurityContext = r.frontProxy.Spec.FrontProxy.PodSecurityContext
+		securityContext = r.frontProxy.Spec.FrontProxy.SecurityContext
 	} else {
 		name = resources.GetCompiledRootShardProxyDeploymentName(r.rootShard)
 
@@ -63,6 +67,8 @@ func (r *reconciler) deploymentReconciler() reconciling.NamedDeploymentReconcile
 			replicas = proxy.Replicas
 			extraVolumes = proxy.ExtraVolumes
 			extraVolumeMounts = proxy.ExtraVolumeMounts
+			podSecurityContext = proxy.PodSecurityContext
+			securityContext = proxy.SecurityContext
 		}
 	}
 
@@ -227,6 +233,8 @@ func (r *reconciler) deploymentReconciler() reconciling.NamedDeploymentReconcile
 				dep.Spec.Replicas = ptr.To[int32](2)
 			}
 
+			dep = utils.ApplyContainerSecurityContext(dep, securityContext)
+
 			dep.Spec.Template.Spec.Containers = []corev1.Container{
 				utils.ApplyResources(container, depResources),
 			}
@@ -234,6 +242,8 @@ func (r *reconciler) deploymentReconciler() reconciling.NamedDeploymentReconcile
 			dep.Spec.Template.Spec.ImagePullSecrets = imagePullSecrets
 
 			dep = utils.ApplyDeploymentTemplate(dep, template)
+
+			dep = utils.ApplyPodSecurityContext(dep, podSecurityContext)
 
 			if r.frontProxy != nil {
 				dep = utils.ApplyAuthConfiguration(dep, r.frontProxy.Spec.FrontProxy.Auth, r.rootShardName(), r.frontProxy.Spec.Shards)

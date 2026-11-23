@@ -95,6 +95,12 @@ type FrontProxySpec struct {
 
 	// Optional: Logging configures the logging settings for the front-proxy.
 	Logging *LoggingSpec `json:"logging,omitempty"`
+
+	// Optional: PodSecurityContext allows configuring securityContext for the overall frontproxy pod
+	PodSecurityContext *corev1.PodSecurityContext `json:"podSecurityContext,omitempty"`
+
+	// Optional: PodSecurityContext allows configuring securityContext for the primary frontproxy container. It overrides PodSecurityContext
+	SecurityContext *corev1.SecurityContext `json:"securityContext,omitempty"`
 }
 
 type AuthSpec struct {

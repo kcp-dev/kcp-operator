@@ -154,6 +154,8 @@ func ApplyCommonShardConfig(deployment *appsv1.Deployment, spec *operatorv1alpha
 	deployment.Spec.Template.Spec.ImagePullSecrets = imagePullSecrets
 	deployment.Spec.Template.Spec.Containers[0] = container
 
+	deployment = ApplyPodSecurityContext(deployment, spec.PodSecurityContext)
+	deployment = ApplyContainerSecurityContext(deployment, spec.SecurityContext)
 	deployment = applyEtcdConfiguration(deployment, spec.Etcd)
 	deployment = applyAuditConfiguration(deployment, spec.Audit)
 	deployment = applyAuthorizationConfiguration(deployment, spec.Authorization)

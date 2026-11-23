@@ -39,6 +39,8 @@ type CacheServerSpecApplyConfiguration struct {
 	ExtraArgs            []string                                 `json:"extraArgs,omitempty"`
 	ExtraVolumes         []v1.Volume                              `json:"extraVolumes,omitempty"`
 	ExtraVolumeMounts    []v1.VolumeMount                         `json:"extraVolumeMounts,omitempty"`
+	PodSecurityContext   *v1.PodSecurityContext                   `json:"podSecurityContext,omitempty"`
+	SecurityContext      *v1.SecurityContext                      `json:"securityContext,omitempty"`
 }
 
 // CacheServerSpecApplyConfiguration constructs a declarative configuration of the CacheServerSpec type for use with
@@ -146,5 +148,21 @@ func (b *CacheServerSpecApplyConfiguration) WithExtraVolumeMounts(values ...v1.V
 	for i := range values {
 		b.ExtraVolumeMounts = append(b.ExtraVolumeMounts, values[i])
 	}
+	return b
+}
+
+// WithPodSecurityContext sets the PodSecurityContext field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the PodSecurityContext field is set to the value of the last call.
+func (b *CacheServerSpecApplyConfiguration) WithPodSecurityContext(value v1.PodSecurityContext) *CacheServerSpecApplyConfiguration {
+	b.PodSecurityContext = &value
+	return b
+}
+
+// WithSecurityContext sets the SecurityContext field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the SecurityContext field is set to the value of the last call.
+func (b *CacheServerSpecApplyConfiguration) WithSecurityContext(value v1.SecurityContext) *CacheServerSpecApplyConfiguration {
+	b.SecurityContext = &value
 	return b
 }
