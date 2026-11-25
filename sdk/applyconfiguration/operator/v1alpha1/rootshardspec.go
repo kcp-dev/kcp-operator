@@ -198,6 +198,22 @@ func (b *RootShardSpecApplyConfiguration) WithLogging(value *LoggingSpecApplyCon
 	return b
 }
 
+// WithPodSecurityContext sets the PodSecurityContext field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the PodSecurityContext field is set to the value of the last call.
+func (b *RootShardSpecApplyConfiguration) WithPodSecurityContext(value v1.PodSecurityContext) *RootShardSpecApplyConfiguration {
+	b.CommonShardSpecApplyConfiguration.PodSecurityContext = &value
+	return b
+}
+
+// WithSecurityContext sets the SecurityContext field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the SecurityContext field is set to the value of the last call.
+func (b *RootShardSpecApplyConfiguration) WithSecurityContext(value v1.SecurityContext) *RootShardSpecApplyConfiguration {
+	b.CommonShardSpecApplyConfiguration.SecurityContext = &value
+	return b
+}
+
 // WithExternal sets the External field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the External field is set to the value of the last call.

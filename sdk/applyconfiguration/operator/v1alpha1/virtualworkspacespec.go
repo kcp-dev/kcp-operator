@@ -45,6 +45,8 @@ type VirtualWorkspaceSpecApplyConfiguration struct {
 	ExtraVolumeMounts    []v1.VolumeMount                                  `json:"extraVolumeMounts,omitempty"`
 	Logging              *LoggingSpecApplyConfiguration                    `json:"logging,omitempty"`
 	ClusterDomain        *string                                           `json:"clusterDomain,omitempty"`
+	PodSecurityContext   *v1.PodSecurityContext                            `json:"podSecurityContext,omitempty"`
+	SecurityContext      *v1.SecurityContext                               `json:"securityContext,omitempty"`
 }
 
 // VirtualWorkspaceSpecApplyConfiguration constructs a declarative configuration of the VirtualWorkspaceSpec type for use with
@@ -207,5 +209,21 @@ func (b *VirtualWorkspaceSpecApplyConfiguration) WithLogging(value *LoggingSpecA
 // If called multiple times, the ClusterDomain field is set to the value of the last call.
 func (b *VirtualWorkspaceSpecApplyConfiguration) WithClusterDomain(value string) *VirtualWorkspaceSpecApplyConfiguration {
 	b.ClusterDomain = &value
+	return b
+}
+
+// WithPodSecurityContext sets the PodSecurityContext field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the PodSecurityContext field is set to the value of the last call.
+func (b *VirtualWorkspaceSpecApplyConfiguration) WithPodSecurityContext(value v1.PodSecurityContext) *VirtualWorkspaceSpecApplyConfiguration {
+	b.PodSecurityContext = &value
+	return b
+}
+
+// WithSecurityContext sets the SecurityContext field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the SecurityContext field is set to the value of the last call.
+func (b *VirtualWorkspaceSpecApplyConfiguration) WithSecurityContext(value v1.SecurityContext) *VirtualWorkspaceSpecApplyConfiguration {
+	b.SecurityContext = &value
 	return b
 }

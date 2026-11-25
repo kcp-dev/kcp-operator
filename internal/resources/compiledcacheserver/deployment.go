@@ -159,6 +159,7 @@ func DeploymentReconciler(server *deployv1alpha1.CompiledCacheServer) reconcilin
 					},
 				},
 			}}
+			applySecurityContext(dep, server)
 			dep.Spec.Template.Spec.Volumes = volumes
 			dep.Spec.Template.Spec.ImagePullSecrets = imagePullSecrets
 
@@ -167,6 +168,15 @@ func DeploymentReconciler(server *deployv1alpha1.CompiledCacheServer) reconcilin
 			return dep, nil
 		}
 	}
+}
+
+func applySecurityContext(deployment *appsv1.Deployment, cacheserver *deployv1alpha1.CompiledCacheServer) *appsv1.Deployment {
+	securityContext := cacheserver.Spec.CacheServer.SecurityContext
+	podSecurityContext := cacheserver.Spec.CacheServer.PodSecurityContext
+
+	deployment = utils.ApplyContainerSecurityContext(deployment, securityContext)
+	deployment = utils.ApplyPodSecurityContext(deployment, podSecurityContext)
+	return deployment
 }
 
 func getVolumeMounts(server *deployv1alpha1.CompiledCacheServer) (volumes []corev1.Volume, volumeMounts []corev1.VolumeMount) {

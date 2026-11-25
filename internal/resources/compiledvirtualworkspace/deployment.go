@@ -287,6 +287,8 @@ func DeploymentReconciler(vw *deployv1alpha1.CompiledVirtualWorkspace) reconcili
 			}
 
 			dep = utils.ApplyCommonShardDeploymentProperties(dep)
+			dep = utils.ApplyPodSecurityContext(dep, vw.Spec.VirtualWorkspace.PodSecurityContext)
+			dep = utils.ApplyContainerSecurityContext(dep, vw.Spec.VirtualWorkspace.SecurityContext)
 			dep = utils.ApplyDeploymentTemplate(dep, vw.Spec.VirtualWorkspace.DeploymentTemplate)
 
 			dep.Spec.Template.Spec.Containers[0].ReadinessProbe = nil

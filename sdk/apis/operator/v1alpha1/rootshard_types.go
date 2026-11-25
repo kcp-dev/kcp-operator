@@ -81,6 +81,12 @@ type RootShardProxySpec struct {
 
 	// Optional: Logging configures the logging settings for the root shard.
 	Logging *LoggingSpec `json:"logging,omitempty"`
+
+	// Optional: PodSecurityContext allows configuring securityContext for the overall pod
+	PodSecurityContext *corev1.PodSecurityContext `json:"podSecurityContext,omitempty"`
+
+	// Optional: SecurityContext allows configuring securityContext for the primary container. It overrides PodSecurityContext
+	SecurityContext *corev1.SecurityContext `json:"securityContext,omitempty"`
 }
 
 type ExternalConfig struct {

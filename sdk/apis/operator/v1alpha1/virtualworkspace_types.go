@@ -156,6 +156,12 @@ type VirtualWorkspaceSpec struct {
 	//
 	// +optional
 	ClusterDomain string `json:"clusterDomain,omitempty"`
+
+	// Optional: PodSecurityContext allows configuring securityContext for the overall virtualworkspace pod
+	PodSecurityContext *corev1.PodSecurityContext `json:"podSecurityContext,omitempty"`
+
+	// Optional: SecurityContext allows configuring securityContext for the primary virtualworkspace container. It overrides PodSecurityContext
+	SecurityContext *corev1.SecurityContext `json:"securityContext,omitempty"`
 }
 
 // VirtualWorkspaceInitContainer describes a container that runs to completion before the virtual

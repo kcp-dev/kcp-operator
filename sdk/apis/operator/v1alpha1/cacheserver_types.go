@@ -76,6 +76,12 @@ type CacheServerSpec struct {
 	// +listType=map
 	// +listMapKey=name
 	ExtraVolumeMounts []corev1.VolumeMount `json:"extraVolumeMounts,omitempty"`
+
+	// Optional: PodSecurityContext allows configuring securityContext for the overall cacheserver pod
+	PodSecurityContext *corev1.PodSecurityContext `json:"podSecurityContext,omitempty"`
+
+	// Optional: PodSecurityContext allows configuring securityContext for the primary cacheserver container. It overrides PodSecurityContext
+	SecurityContext *corev1.SecurityContext `json:"securityContext,omitempty"`
 }
 
 // CacheServerStatus defines the observed state of CacheServer
