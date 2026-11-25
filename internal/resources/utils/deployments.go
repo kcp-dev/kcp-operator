@@ -137,7 +137,7 @@ func ApplyPodSecurityContext(deployment *appsv1.Deployment, podSecurityContext *
 	return deployment
 }
 
-// ApplyContainerSecurityContext applies the specified securityContext to the primary container in the pod.
+// ApplyContainerSecurityContext applies the specified securityContext to all the containers in the pod.
 // If not specified, persists with the deployment default already set
 func ApplyContainerSecurityContext(deployment *appsv1.Deployment, securityContext *corev1.SecurityContext) *appsv1.Deployment {
 	if securityContext == nil || len(deployment.Spec.Template.Spec.Containers) < 1 {

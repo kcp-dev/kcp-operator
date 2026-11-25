@@ -172,9 +172,10 @@ func DeploymentReconciler(server *deployv1alpha1.CompiledCacheServer) reconcilin
 
 func applySecurityContext(deployment *appsv1.Deployment, cacheserver *deployv1alpha1.CompiledCacheServer) *appsv1.Deployment {
 	securityContext := cacheserver.Spec.CacheServer.SecurityContext
+	podSecurityContext := cacheserver.Spec.CacheServer.PodSecurityContext
 
 	deployment = utils.ApplyContainerSecurityContext(deployment, securityContext)
-	deployment = utils.ApplyPodSecurityContext(deployment, cacheserver.Spec.CacheServer.PodSecurityContext)
+	deployment = utils.ApplyPodSecurityContext(deployment, podSecurityContext)
 	return deployment
 }
 
